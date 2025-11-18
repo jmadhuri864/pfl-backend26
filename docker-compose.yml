@@ -1,0 +1,39 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_primefresh1
+    ports:
+      - '6500:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: node_typeorm
+      TZ: Asia/Kolkata
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_primefresh1
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_primefresh1
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: password123
+    ports:
+      - '9000:80'
+    depends_on:
+      - postgres
+
+
+volumes:
+  pgdata:
+  redis_data:

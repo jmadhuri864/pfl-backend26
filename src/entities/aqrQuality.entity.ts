@@ -1,0 +1,35 @@
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
+import Model from "./model.entity";
+import { Aqr} from "./aqr.entity";
+
+enum QualityParameterType {
+    GOOD = "good",
+    BAD = "bad"
+}
+@Entity("aqr_parameter")
+export class AqrParameter extends Model {
+
+    @Column()
+    qualityParameterId: string;
+
+    @Column()
+    qualityParameterName: string;
+
+    @Column({
+        type: "enum",
+        enum: QualityParameterType
+    })
+    qualityParameterType: QualityParameterType;
+
+    @Column("float")
+    quantity: number;
+
+    @Column("float")
+    percentage: number;
+
+   @ManyToOne(() => Aqr, (aqr) => aqr.parameters,{ onDelete: "SET NULL" })
+   aqr: Aqr;
+   
+
+}
+//@JoinColumn({ name: "aqr_id" })

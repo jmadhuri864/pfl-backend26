@@ -1,0 +1,588 @@
+import { Request, Response, NextFunction } from "express";
+import { VendorService } from "../services/vendor.service";
+import {
+  controller,
+  httpGet,
+  httpPost,
+  httpDelete,
+  request,
+  response,
+  requestBody,
+  requestParam,
+  next,
+  httpPatch,
+  httpPut,
+} from "inversify-express-utils";
+import { inject } from "inversify";
+import { TYPES } from "../types";
+import AppError from "../utils/appError";
+import { UpdateVendor } from "../schemas/vendor.schema";
+
+import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import logger from "../utils/logger";
+import { upload, uploadNone } from "../middleware/multerConfig";
+import { uploadFileMultiple } from "../middleware/multiFileWithAWS";
+import { PaginationOptions } from "../utils/pagination";
+import { uploads } from "../middleware/muterConfigCSV";
+import { Status } from "../utils/status.enum";
+
+
+@controller("/vendors", deserializeUser, requireUser)
+export class VendorController {
+  constructor(
+    @inject(TYPES.VendorService)
+    private vendorService: VendorService
+  ) {}
+
+  @httpGet("/:id")
+  public async getVendorById(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      console.log("Received request to get vendor by ID");
+      const vendor = await this.vendorService.getVendorById(id);
+      if (!vendor) {
+        return next(new AppError(404, "Vendor not found"));
+      }
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  @httpGet("/view/:id")
+  public async getVendorByIdforview(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      console.log("Received request to get vendor by ID");
+      const vendor = await this.vendorService.getVendorByIdforview(id);
+      if (!vendor) {
+        return next(new AppError(404, "Vendor not found"));
+      }
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+ @httpGet("/update/:id")
+  public async getVendorByIdforupdate(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      console.log("Received request to get vendor by ID");
+      const vendor = await this.vendorService.getVendorByIdforupdate(id);
+      if (!vendor) {
+        return next(new AppError(404, "Vendor not found"));
+      }
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  @httpGet("/vendorcode/:vendorCode")
+  public async getVendorByVendorCode(
+    @requestParam("vendorCode") vendorCode: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const vendor = await this.vendorService.getVendorByVendorCode(vendorCode);
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @httpGet("/vendorname/:companyName")
+  public async getVendorBycompanyName(
+    @requestParam("companyName") companyName: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const vendor = await this.vendorService.getVendorByVendorName(
+        companyName
+      );
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @httpGet("/")
+public async getAllVendors(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {const { page, limit, search, sort} = req.query;
+            
+        
+              const queryOptions: PaginationOptions = {
+                page: page ? Number(page) : undefined,  
+                limit: limit ? Number(limit) : undefined,
+               // searchFields: ['vendor.companyName'],
+                filters: {},
+                sort: sort as string || undefined, 
+                search: search as string|| '',
+              };
+    //const subcategoryId = req.query.search as string; // Extract subcategoryId from query
+    const vendors = await this.vendorService.getAllVendors1(queryOptions); // Correct method name
+    console .log(vendors);
+    res.status(200).json({
+      status: "success",
+      data: vendors.data,
+      allRecords: vendors.meta.total,
+      totalPages: vendors.meta.pages,
+      page: vendors.meta.page,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+@httpGet("/filterVendor/all")
+  public async getAllVendor(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+
+       const { page, limit, search, sort} = req.query;
+          
+                const queryOptions: PaginationOptions = {
+                page: page ? Number(page) : undefined,  
+                limit: limit ? Number(limit) : undefined,
+                //searchFields: ['companyName'],
+                filters: {},
+                sort: sort as string || undefined, 
+                search: search as string|| '',
+              };
+
+      const vendors = await this.vendorService.getAllVendorsbyfilter(queryOptions);
+      res.status(200).json({
+        status: "success",
+        data: vendors.data,
+        meta:vendors.meta
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+@httpGet("/bysearch/getvendors")
+public async getAllVendorsWithselectedSub(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+    const subcategoryId = req.query.search as string; // Extract subcategoryId from query
+    const vendors = await this.vendorService.getAllVendor(subcategoryId); // Correct method name
+    res.status(200).json({
+      status: "success",
+      data: vendors,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+@httpGet("/byquery/getvendor")
+public async getVendorsWithId(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+    const id = req.query.search as string; // Extract subcategoryId from query
+    const vendors = await this.vendorService.getvendorwithid(id); // Correct method name
+    res.status(200).json({
+      status: "success",
+      data: vendors,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+  // @httpGet("/filterVendor/all")
+  // public async getAllVendor(
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const vendors = await this.vendorService.getAllVendorsbyfilter();
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vendors,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+
+
+  @httpPost(
+    "/",
+    uploadFileMultiple.fields([
+      { name: "gstnCopy", maxCount: 1 },
+      { name: "panCardCopy", maxCount: 1 },
+      { name: "msmeCopy", maxCount: 1 },
+      { name: "cancelledChequeCopy", maxCount: 1 },
+    ])
+  )
+
+  //TODO: Create vendor
+  public async createVendor(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    //console.log("Request body:", req.body); // Log the body
+console.log("Request files:", req.files); // Log the files
+console.log(req.body)
+    try {
+      console.log("================================");
+      
+      const vendorData = req.body;
+      vendorData.createdBy = res.locals.user.id;
+      vendorData.registeredDate=new Date();
+      console.log(req.body);
+      //console.log(req.files)
+      // const files = req.files as {
+      //   gstnCopy?: Express.Multer.File[];
+      //   panCardCopy?: Express.Multer.File[];
+      //   msmeCopy?: Express.Multer.File[];
+      //   cancelledChequeCopy?: Express.Multer.File[];
+      // };
+
+      const files = req.files as {
+        gstnCopy?: Express.MulterS3.File[];
+        panCardCopy?: Express.MulterS3.File[];
+        msmeCopy?: Express.MulterS3.File[];
+        cancelledChequeCopy?: Express.MulterS3.File[];
+      };
+      console.log(files)
+
+      // if (files?.gstnCopy) {
+      //   vendorData.gstnCopy = files.gstnCopy[0].path;
+      // }
+      // if (files?.panCardCopy) {
+      //   vendorData.panCardCopy = files.panCardCopy[0].path;
+      // }
+      // if (files?.msmeCopy) {
+      //   vendorData.msmeCopy = files.msmeCopy[0].path;
+      // }
+      // if (files?.cancelledChequeCopy) {
+      //   vendorData.cancelledChequeCopy = files.cancelledChequeCopy[0].path;
+      // }
+
+        // Assign S3 URLs to vendor data
+    if (files.gstnCopy) vendorData.gstnCopy= files.gstnCopy[0].location;
+    if (files.panCardCopy) vendorData.panCardCopy = files.panCardCopy[0].location;
+    if (files.msmeCopy) vendorData.msmeCopy = files.msmeCopy[0].location;
+    //if (files.cancelledChequeCopy) vendorData.bankDetailsVend.cancelledChequeCopy = files.cancelledChequeCopy[0].location;
+
+    
+
+  if (files.cancelledChequeCopy) {
+      vendorData.vendorBankDetails.cancelledChequeCopy = files.cancelledChequeCopy[0].location;
+  }
+    if (vendorData.dateOfIncorporation === 'null' || vendorData.dateOfIncorporation === '') {
+      vendorData.dateOfIncorporation = null;
+    }
+    console.log("Vendor data with files:", vendorData);
+      //console.log("vendor sale info",vendorData);
+      const newVendor = await this.vendorService.createVendor(vendorData);
+      if( !newVendor){
+        return next(new AppError(400, "Vendor not created"));
+      }
+      
+      //console.log(newVendor)
+      res.status(201).json({
+        status: "success",
+        data: newVendor.id,
+        message: "Vendor created successfully",
+      });
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  }
+@httpPost("/upload-vendor", uploads.single("file"))
+  public async uploadVendorExcel(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      if (!req.file) {
+        return next(new AppError(400, "No file uploaded"));
+      }
+
+      const filePath = req.file.path;
+      const result = await this.vendorService.createVendorWithExcel(filePath);
+      res.status(200).json({
+        status: "success",
+        message: "File processed successfully",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  // @httpPatch("/:id")
+  // public async updateVendor(
+  //   @requestParam("id") id: string,
+  //   @requestBody() vendordata: UpdateVendor,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const updateBy = res.locals.user.id;
+  //     const updatedVendor = await this.vendorService.updateVendor(
+  //       id,
+  //       vendordata,
+  //       updateBy
+  //     );
+  //     if (!updatedVendor) {
+  //       return next(new AppError(404, "Vendor not found or update failed"));
+  //     }
+  //     logger.info("Vendor updated successfully", { vendorId: id });
+  //     res.status(200).json({
+  //       status: "success",
+  //       message: "Vendor updated successfully",
+  //       data: updatedVendor, // Return updated vendor data
+  //     });
+  //   } catch (error) {
+  //     logger.error("Error updating vendor", { error: error });
+  //     next(error);
+  //   }
+  // }
+  @httpPut("/:id",
+      uploadFileMultiple.fields([
+      { name: "gstnCopy", maxCount: 1 },
+      { name: "panCardCopy", maxCount: 1 },
+      { name: "msmeCopy", maxCount: 1 },
+      { name: "cancelledChequeCopy", maxCount: 1 },
+    ])
+  )
+  public async updateVendor(
+    @requestParam("id") id: string,
+    @request() req: Request<{}, {}, any>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const updateBy = res.locals.user.id;
+
+      // Transform address fields if they are strings (IDs)
+      const vendorUpdateData: any = { ...req.body };
+      console.log("vendordata",req.body);
+      console.log("vendorUpdateData",vendorUpdateData);
+      
+      if(req.files){
+      const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+
+      vendorUpdateData.gstnCopy = files.gstnCopy ? files.gstnCopy[0].location : vendorUpdateData.gstnCopy;
+      vendorUpdateData.panCardCopy = files.panCardCopy ? files.panCardCopy[0].location : vendorUpdateData.panCardCopy;
+      vendorUpdateData.msmeCopy = files.msmeCopy ? files.msmeCopy[0].location : vendorUpdateData.msmeCopy;
+      vendorUpdateData.cancelledChequeCopy = files.cancelledChequeCopy ? files.cancelledChequeCopy[0].location : vendorUpdateData.cancelledChequeCopy;
+      }
+      
+      
+      const updatedVendor = await this.vendorService.updateVendor(
+        id,
+        vendorUpdateData,
+        updateBy
+      );
+      if (!updatedVendor) {
+        return next(new AppError(404, "Vendor not found or update failed"));
+      }
+      logger.info("Vendor updated successfully", { vendorId: id });
+      res.status(200).json({
+        status: "success",
+        message: "Vendor updated successfully",
+        data: updatedVendor, // Return updated vendor data
+      });
+    } catch (error) {
+      logger.error("Error updating vendor", { error: error });
+      next(error);
+    }
+  }
+// PATCH /vendors/:id/approve
+@httpPatch("/approve/:id")
+async approveVendor(req: Request, res: Response, next: NextFunction) {
+try {
+const vendorId = req.params.id;
+const adminUser = res.locals.user.id;
+const status = req.query.status as Status;
+
+const approvedVendor = await this.vendorService.approveVendor(vendorId, adminUser,status);
+return res.status(200).json({ message: "Vendor approved successfully", vendor: approvedVendor });
+} catch (error: any) {
+  next(error);
+
+}
+}
+
+  @httpDelete("/:id")
+  public async deleteVendor(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      if (!id) {
+        logger.warn("Vendor ID not provided");
+        return next(new AppError(400, "Vendor ID is required"));
+      }
+      const result = await this.vendorService.deleteVendor(id);
+      if (!result) {
+        return next(
+          new AppError(404, "Vendor not found or could not be deleted")
+        );
+      }
+      res.status(200).json({
+        status: "success",
+        message: "Vendor deleted successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  //   @httpGet("/filter/allvendors")
+  // public async filtergetAllVendors(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   console.log("Received request to filter vendors");
+  //   try {
+  //     const filterCriteria = req.query; // Capture query parameters
+  //     const vendors = await this.vendorService.getAllVendorsbyfilter();
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vendors,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error fetching filtered vendors:", error);
+  //     next(error);
+  //   }
+  // }
+  @httpGet("/filterData/:id")
+  public async getFilterVendorById(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const vendor = await this.vendorService.getVendorByIdWithFilter(id);
+
+      if (!vendor) {
+        return next(new AppError(404, "Vendor not found"));
+      }
+      res.status(200).json({
+        status: "success",
+        data: vendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @httpGet("/filterVendor/withfilter")  
+  public async getpartialVendor(
+    @response() res: Response,
+    @request() req:Request,
+    @next() next: NextFunction
+  ) {
+    try {
+      const filter=req.query.search as string;
+      const vendors = await this.vendorService.getAllVendorsbyquery(filter);
+      res.status(200).json({
+        status: "success",
+        data: vendors,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  @httpGet("/filter/vendors")
+public async filterVendors(req: Request, res: Response, next: NextFunction) {
+    try {
+
+      console.log("Filtering vendors with query:", req.query);
+      
+
+      const {
+        classification,
+        category,
+        subcategory,
+        pincode,
+        city,
+        state,
+        product,
+        page,
+        limit,
+      } = req.query;
+
+      const filters = {
+        classification: classification as string,
+        categoryId: category as string,
+        subcategoryId: subcategory as string,
+        pincode: pincode as string,
+        city: city as string,
+        state: state as string,
+        productId: product as string,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+      };
+
+      const vendors = await this.vendorService.filterVendors(filters);
+      if(!vendors){
+        return next(new AppError(404, "No vendors found with the given filters"));
+      }
+
+      return res.status(200).json({
+       
+        status: "success",
+      data:vendors.data,
+      allRecords: vendors.pagination?.total,
+      totalPages: vendors.pagination?.totalPages,
+      page: vendors.pagination?.page,
+      });
+    } catch (error) {
+      console.error('Error filtering vendors:', error);
+      return next(error);
+    }
+  }
+
+}

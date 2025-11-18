@@ -1,0 +1,474 @@
+import { inject } from "inversify";
+import {
+  controller,
+  httpPost,
+  httpGet,
+  httpPatch,
+  httpDelete,
+  request,
+  requestParam,
+  response,
+  next,
+} from "inversify-express-utils";
+import { TYPES } from "../types";
+import { NextFunction, Request, Response } from "express";
+import AppError from "../utils/appError";
+import logger from "../utils/logger";
+import { uploadNone } from "../middleware/multerConfig"; // if needed for file upload
+import { VehicleDispatchService } from "../services/vehicleDispatch.service";
+import { NotificationService } from "../services/notification.service";
+import { deserialize } from "v8";
+import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import { PaginationOptions } from "../utils/pagination";
+
+@controller("/vehicleDispatches",deserializeUser,requireUser)
+export class VehicleDispatchController {
+  constructor(
+    @inject(TYPES.VehicleDispatchService)
+    private vehicleDispatchService: VehicleDispatchService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService // Inject NotificationService
+  ) {}
+
+  @httpPost("/")
+  public async createVehicleDispatch(
+    @request() req: Request<{}, {}, any>, // Adjust the type to `any` for the request body
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      console.log("in the vehicle dispatch ")
+      // logger.info("Attempting to create a new vehicle dispatch", {
+      //   requestedBy: res.locals.user.id,
+      // });
+//       const dispatchData = req.body;
+console.log(req.body)
+
+// // Convert empty strings to null for UUID fields
+// if (dispatchData. clientGRNNo === '') {
+//   dispatchData. clientGRNNo= null;
+// }
+// if (dispatchData.dcNo === '') {
+//   dispatchData.dcNo = null;
+// }
+const dispatchData = {
+  ...req.body,
+  // Handle null values for GRN and DC
+  //clientGRNNo: req.body.clientGRNNo || null,
+  dcNo: req.body.dcNo || null,
+ 
+};
+
+dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
+
+
+      logger.debug("Vehicle dispatch data prepared for creation", dispatchData);
+      const vehicleDispatch = await this.vehicleDispatchService.create(
+        dispatchData
+      );
+      if (!vehicleDispatch) {
+        logger.error("Failed to create vehicle dispatch", { dispatchData });
+        return next(new AppError(400, "Vehicle dispatch could not be created"));
+      }
+      logger.info("Vehicle dispatch created successfully", {
+        vehicleDispatchId: vehicleDispatch.id,
+      });
+
+      // // Trigger a notification
+      // await this.notificationService.createNoti(
+      //   `New vehicle dispatch created: ${vehicleDispatch.id}`,
+      //   res.locals.user.id
+      // );
+
+      res.status(201).json({
+        status: "success",
+        message: "Vehicle Dispatch created successfully",
+        data: vehicleDispatch.id,
+      });
+    } catch (err) {
+      logger.error("Error occurred while creating vehicle dispatch", {
+        error: err,
+      });
+      console.log(err)
+      next(err);
+    }
+  }
+ //TODO: get All Recycle Bin Vehical Dispatch.....By Vaishali
+    @httpGet('/recyclebin')
+    public async getAllRecycleBinVehicalDispatch(
+      @request() req: Request,
+      @response() res: Response,
+      @next() next: NextFunction,
+    ) {
+      try {
+        logger.info('Fetching all Vehical Dispatch...');
+        const {
+          page,
+          limit,
+          search,
+          sort,
+          vehicleType,
+          vehicleNo,
+        } = req.query;
+    
+        const userId = res.locals.user.id;
+    
+        const filters: any = {};
+        if (vehicleType) filters.vehicleType = vehicleType;
+        if (vehicleNo) filters.vehicleNo = vehicleNo;
+        
+    
+        const queryOptions: PaginationOptions = {
+          page: page ? Number(page) : 1,
+          limit: limit ? Number(limit) : 10,
+          searchFields: ['vehicleType vehicleNo'],
+          filters,
+          sort: (sort as string) || undefined,
+          search: (search as string) || '',
+        };
+    
+        const vehicalDispatch = await this.vehicleDispatchService.getAllRecycleBinVehicalDispatch(queryOptions, userId);
+    
+        if (!vehicalDispatch || vehicalDispatch.data.length === 0) {
+          logger.warn('No Vehical Dispatch found for this user.');
+          return res.status(200).json({
+            status: 'success',
+            data: [],
+            allRecords: 0,
+            totalPages: 0,
+            page: queryOptions.page,
+          });
+        }
+    
+      //  logger.info(Total Vehical Dispatch fetched: ${vehicalDispatch.data.length});
+    
+        res.status(200).json({
+          status: 'success',
+          data: vehicalDispatch.data,
+          allRecords: vehicalDispatch.meta.total,
+          totalPages: vehicalDispatch.meta.pages,
+          page: vehicalDispatch.meta.page,
+        });
+      } catch (error) {
+        console.error('Error fetching Vehical Dispatch:', error);
+        next(error);
+      }
+    }
+  @httpGet('/filter')
+public async filterVehicalDispatch(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction,
+) {
+try {
+      // Extract pagination
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 10;
+
+      // Remove pagination keys and treat the rest as filters
+      const { page: _p, limit: _l, ...restQuery } = req.query;
+
+      // Always initialize filters as a Record
+      const filters: Record<string, any> = {};
+
+      for (const [key, value] of Object.entries(restQuery ?? {})) {
+        if (value !== undefined && value !== "") {
+          filters[key] = value;
+        }
+      }
+
+      const result = await this.vehicleDispatchService.filterVehicalDispatch(page, limit, filters);
+
+      res.json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: "Server Error" });
+    }
+}
+
+  @httpGet("/:id")
+  public async getVehicleDispatchById(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      logger.info("Fetching vehicle dispatch details by ID", {
+        vehicleDispatchId: id,
+      });
+      const vehicleDispatch = await this.vehicleDispatchService.findById(id);
+      if (!vehicleDispatch) {
+        logger.warn("Vehicle Dispatch not found", { vehicleDispatchId: id });
+        return next(new AppError(404, "Vehicle Dispatch not found"));
+      }
+      logger.info("Vehicle Dispatch details retrieved successfully", {
+        vehicleDispatch,
+      });
+
+      res.status(200).json({
+        status: "success",
+        data: vehicleDispatch,
+      });
+    } catch (err) {
+      logger.error("Error occurred while fetching vehicle dispatch details", {
+        vehicleDispatchId: id,
+        error: err,
+      });
+      next(err);
+    }
+  }
+
+  // @httpGet("/")
+  // public async getAllVehicleDispatches(
+  //   @response() res: Response,
+  //   @request() req:Request,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     logger.info("Fetching all vehicle dispatches");
+  //     const { page, limit, search, sort,} = req.query;
+    
+
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : undefined,  
+  //       limit: limit ? Number(limit) : undefined,
+  //       searchFields: ['vehicleDispatch.id'],
+  //       filters: {},
+  //       sort: sort as string || undefined, // Adjust this line to match your sorting requirements
+  //       search: search as string|| '',
+  //     };
+  //     const vehicleDispatches = await this.vehicleDispatchService.findAll(queryOptions);
+  //     if (!vehicleDispatches.data) {
+  //       logger.error("No vehicle dispatches found");
+  //       return next(new AppError(404, "No vehicle dispatches found"));
+  //     }
+  //     logger.info("Vehicle dispatches retrieved successfully");
+
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vehicleDispatches.data,
+  //       allRecords: vehicleDispatches.meta.total,
+  //       totalPages: vehicleDispatches.meta.pages,
+  //       page: vehicleDispatches.meta.page,
+  //     });
+  //   } catch (err) {
+  //     logger.error("Error occurred while fetching all vehicle dispatches", {
+  //       error: err,
+  //     });
+  //     next(err);
+  //   }
+  // }
+
+  @httpPatch("/:id")
+  public async updateVehicleDispatch(
+    @requestParam("id") id: string,
+    @request() req: Request<{}, {}, any>, // Adjust the type to `any` for the request body
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      logger.info("Updating vehicle dispatch details", {
+        vehicleDispatchId: id,
+      });
+      const data = req.body;
+      console.log(data)
+      const updateBy=res.locals.user.id
+      const updatedDispatch = await this.vehicleDispatchService.update(
+        id,
+        req.body,
+        updateBy
+      );
+      if (!updatedDispatch) {
+        logger.warn("Vehicle Dispatch not found or could not be updated", {
+          vehicleDispatchId: id,
+        });
+        return next(
+          new AppError(
+            404,
+            "Vehicle Dispatch not found or could not be updated"
+          )
+        );
+      }
+      logger.info("Vehicle Dispatch updated successfully", { updatedDispatch });
+
+      await this.notificationService.createNoti(
+        `Vehicle dispatch updated for ID: ${updatedDispatch.id}`,
+        res.locals.user.id
+      );
+
+      res.status(200).json({
+        status: "success",
+        message: "Vehicle Dispatch updated successfully",
+        data: updatedDispatch,
+      });
+    } catch (err) {
+      logger.error("Error occurred while updating vehicle dispatch", {
+        vehicleDispatchId: id,
+        error: err,
+      });
+      console.log(err)
+      next(err);
+    }
+  }
+
+  @httpDelete("/:id")
+  public async deleteVehicleDispatch(
+    @requestParam("id") id: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      logger.info("Deleting vehicle dispatch", { vehicleDispatchId: id });
+      const result= await this.vehicleDispatchService.delete(id);
+      //res.status(204).send(); // No content
+
+      if (!result) {
+              return next(
+                new AppError(404, "Vehicle Dispatch not found or could not be deleted")
+              );
+            }
+
+      res.status(200).json({
+        status: "success",
+        message: "Vehicle Dispatch has been deleted",
+      });
+    } catch (err) {
+      logger.error("Error occurred while deleting vehicle dispatch", {
+        vehicleDispatchId: id,
+        error: err,
+      });
+      next(err);
+    }
+  }
+
+
+  //TODO: get All Vehical Dispatch.....By Vaishali
+    @httpGet('/')
+    public async getAllvehicalDispatch(
+      @request() req: Request,
+      @response() res: Response,
+      @next() next: NextFunction,
+    ) {
+      try {
+        logger.info('Fetching all Vehical Dispatch...');
+        const {
+          page,
+          limit,
+          search,
+          sort,
+          vehicleType,
+          vehicleNo,
+        } = req.query;
+    
+        const userId = res.locals.user.id;
+    
+        const filters: any = {};
+        if (vehicleType) filters.vehicleType = vehicleType;
+        if (vehicleNo) filters.vehicleNo = vehicleNo;
+        
+    
+        const queryOptions: PaginationOptions = {
+          page: page ? Number(page) : 1,
+          limit: limit ? Number(limit) : 10,
+          searchFields: ['vehicleType vehicleNo'],
+          filters,
+          sort: (sort as string) || undefined,
+          search: (search as string) || '',
+        };
+    
+        const vehicalDispatch = await this.vehicleDispatchService.getAllvehicalDispatch(queryOptions, userId);
+    
+        if (!vehicalDispatch || vehicalDispatch.data.length === 0) {
+          logger.warn('No Vehical Dispatch found for this user.');
+          return res.status(200).json({
+            status: 'success',
+            data: [],
+            allRecords: 0,
+            totalPages: 0,
+            page: queryOptions.page,
+          });
+        }
+    
+      //  logger.info(Total Vehical Dispatch fetched: ${vehicalDispatch.data.length});
+    
+        res.status(200).json({
+          status: 'success',
+          data: vehicalDispatch.data,
+          allRecords: vehicalDispatch.meta.total,
+          totalPages: vehicalDispatch.meta.pages,
+          page: vehicalDispatch.meta.page,
+        });
+      } catch (error) {
+        console.error('Error fetching Vehical Dispatch:', error);
+        next(error);
+      }
+    }
+
+
+     //TODO: Vehical Dispatch get by id for view...BY Vaishali
+      @httpGet('/view/:docid')
+      public async getVehicalDispatchByIdForView(
+        @requestParam('docid') docid: string,
+        @response() res: Response,
+        @next() next: NextFunction,
+      ) {
+        try {
+       //   logger.info(Fetching Vehical Dispatch with Document ID);
+          console.log("Shriiiiiiiiiii");
+          
+          console.log(docid);
+          const userId = res.locals.user.id;
+          const vehicalDispatch = await this.vehicleDispatchService.getVehicalDispatchByIdForView(docid,userId);
+          console.log(vehicalDispatch);
+          if (!vehicalDispatch) {
+            return res.status(403).json({
+            status: 'fail',
+            message: 'You do not have permission to view this Inward Register',
+          });
+            //return next(new AppError(404, 'dealSlip not found'));
+          }
+          logger.info(`Vehical Dispatch with ID fetched successfully.`);
+          const requestedBy = res.locals.user.id;
+          console.log('user is ', requestedBy);
+          // Send a notification when the user logs in successfully
+          // const message = Welcome back! You have successfully logged in.;
+          // await this.notificationService.createNoti(message, requestedBy);
+          res.status(200).json({
+            status: 'success',
+            data: vehicalDispatch,
+          });
+        } catch (error) {
+          console.log(error);
+          logger.error('Error fetching Vehical Dispatch by ID:', error);
+          next(error);
+        }
+      }
+@httpDelete('/delete/multiple')
+    public async deleteMultipleVehicleDispatch(
+      @request() req: Request,
+      @response() res: Response,
+      @next() next: NextFunction,
+    ) {
+      try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+          return next(new AppError(400, 'An array of Vehicle Dispatch IDs is required'));
+        }
+        const result = await this.vehicleDispatchService.deleteMultipleVehicleDispatch(ids);
+        res.status(200).json({
+          message: result.message,
+          success: result.success,
+          failed: result.failed,
+        });
+      }
+        catch (error) {
+        logger.error('Error deleting multiple Vehicle Dispatch', { error });
+        next(error);
+      }
+    }
+
+
+}

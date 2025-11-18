@@ -1,0 +1,46 @@
+import { inject } from 'inversify';
+import {
+  controller,
+  httpGet,
+  httpPost,
+} from 'inversify-express-utils';
+import { Request,Response } from 'express';
+import { AddressService } from '../services/address.service';
+import { TYPES } from '../types';
+
+@controller('/pincode')
+export class AddressController {
+  constructor(
+    @inject(TYPES.AddressService)
+    private readonly addressService: AddressService,
+  ) {}
+
+  //TODO:Fetch Address By Putting Pincode
+
+  @httpGet('/fetchAddressByPincode')
+  async fetchAddressByPincode(
+   req:Request,
+   res:Response
+  ) {
+    console.log(req.query);
+    const { pincode } = req.query;
+
+    // ✅ Validate
+    if (!pincode || typeof pincode !== 'string') {
+      return res.status(400).json({ error: 'Pincode must be a string' });
+    }
+
+    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+      return res
+        .status(400)
+        .json({ error: 'Pincode must be a 6-digit number string' });
+    }
+     try {
+      const address = await this.addressService.fetchAddressByPincode(pincode);
+      return res.status(200).json(address);
+    } catch (err: any) {
+      console.log(err)
+      return res.status(404).json({ error: err.message });
+    }
+  }
+}

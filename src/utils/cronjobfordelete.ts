@@ -1,0 +1,64 @@
+import cron from 'node-cron';
+import { LessThan } from 'typeorm';
+import { DealSlip } from '../entities/dealSlip.entity';
+import { AppDataSource } from './data-source';
+import { GRN } from '../entities/grn.entity';
+import { RFPA } from '../entities/rfpa.entity';
+import { InwardRegister } from '../entities/inwardRegister.entity';
+import { VehicleDispatch } from '../entities/vehicleDispatch.entity';
+import { Aqr } from '../entities/aqr.entity';
+import { PackingMaterial } from '../entities/packingMaterial.entity';
+import { CashVoucher } from '../entities/mCashVoucher.entity';
+
+import { TPVoucher } from '../entities/transportPaymentvoucher.entity';
+import { DumpRegister } from '../entities/dumpRegister.entity';
+import { StockReportEod } from '../entities/eodReportforinvendtory.entity';
+import { PostReturnByCustomer } from '../entities/postReturnByCustomer.entity';
+import { SecondSale } from '../entities/secondSale.entity';
+
+import {Invoice} from '../entities/invoice.entity';
+
+
+export const startAutoDeleteJob = () => {
+  cron.schedule('*/5 * * * *', async () => {  // runs every 5 minutes
+    console.log('Running auto-delete job...');
+
+    const repositories = [
+      AppDataSource.getRepository(GRN),
+      AppDataSource.getRepository(RFPA),
+      AppDataSource.getRepository(DealSlip),
+      AppDataSource.getRepository(InwardRegister),
+      AppDataSource.getRepository(VehicleDispatch), 
+      AppDataSource.getRepository(Aqr), 
+      AppDataSource.getRepository(PackingMaterial), 
+      AppDataSource.getRepository(CashVoucher), 
+      AppDataSource.getRepository(TPVoucher), 
+      AppDataSource.getRepository(TPVoucher), 
+      AppDataSource.getRepository(DumpRegister), 
+      AppDataSource.getRepository(StockReportEod), 
+      AppDataSource.getRepository(PostReturnByCustomer), 
+      AppDataSource.getRepository(SecondSale), 
+      AppDataSource.getRepository(Invoice), 
+
+    ];
+
+    const cutoffDate = new Date();
+    cutoffDate.setMinutes(cutoffDate.getMinutes() - 5);
+
+    for (const repo of repositories as any[]) {
+      const oldRecords = await repo.find({
+        where: {
+          isDeleted: true,
+          deletedAt: LessThan(cutoffDate),
+        },
+      });
+
+      if (oldRecords.length > 0) {
+        if (oldRecords.length > 0) {
+          await repo.remove(oldRecords);
+          console.log(`Deleted ${oldRecords.length} old records from ${repo.metadata.name}`);
+        }
+      }
+    }
+  });
+};

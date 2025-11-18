@@ -1,0 +1,185 @@
+import {
+  controller,
+  httpGet,
+  httpPatch,
+  httpPost,
+  next,
+  request,
+  requestParam,
+  response,
+} from 'inversify-express-utils';
+import { deserializeUser, requireUser } from '../middleware/deserializeUser';
+import { NextFunction, Request, Response } from 'express';
+import logger from '../utils/logger';
+import { inject } from 'inversify';
+import { TYPES } from '../types';
+import { PackingMaterialService } from '../services/packingMaterial.service';
+import AppError from '../utils/appError';
+import { PaginationOptions } from '../utils/pagination';
+
+@controller('/packingMaterial', deserializeUser, requireUser)
+export class PackingMaterialController {
+  constructor(
+    @inject(TYPES.PackingMaterialService)
+    private packingMaterialService: PackingMaterialService,
+  ) {}
+  @httpGet('/')
+  public async getAllPackingMaterial(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      logger.info('Fetching all packing materials');
+      const { page, limit, search, sort, inwardId } = req.query;
+
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        //searchFields: [''],
+        filters: {},
+        sort: (sort as string) || undefined, // Adjust this line to match your sorting requirements
+        search: (search as string) || '',
+      };
+      const materials = await this.packingMaterialService.getAll(queryOptions);
+
+      res.status(200).json({
+        status: 'success',
+        data: materials.formatResponse,
+        allRecords: materials.data1.total,
+        totalPages: materials.data1.pages,
+        page: materials.data1.page,
+      });
+    } catch (err) {
+      logger.error('Error fetching packing materials', { error: err });
+      console.log(err);
+      next(err);
+    }
+  }
+
+  @httpPost('/')
+  public async createPackingMaterial(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      logger.info('getting data');
+      console.log(req.body);
+      const data = req.body;
+      const materials = await this.packingMaterialService.createPackingMaterial(
+        data,
+      );
+
+      if (!materials) {
+        logger.error('No materials found');
+        return next(new AppError(404, 'No materials found'));
+      }
+      logger.info('materials saved successfully');
+      res.status(200).json({
+        status: 'success',
+      });
+    } catch (err) {
+      console.log(err);
+      logger.error('Error occurred while fetching all materials', {
+        error: err,
+      });
+      next(err);
+    }
+  }
+
+  @httpGet('/:id')
+  public async getPackingMaterialId(
+    @requestParam('id') id: string,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      logger.info('Fetching material details by ID', { materialId: id });
+      const material = await this.packingMaterialService.getMaterialById(id);
+      if (!material) {
+        logger.warn('Material not found', { farmerId: id });
+        return next(new AppError(404, 'Material not found'));
+      }
+      logger.info('Material details retrieved successfully', { material });
+
+      res.status(200).json({
+        status: 'success',
+        data: material,
+      });
+    } catch (err) {
+      logger.error('Error occurred while fetching Material details', {
+        materiald: id,
+        error: err,
+      });
+      next(err);
+    }
+  }
+
+  @httpPatch('/:id')
+  public async updatePackingMaterial(
+    @requestParam('id') id: string,
+    @request() req: Request<{}, {}, any>,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      console.log(req.body);
+      logger.info('Updating packing Material', { id, body: req.body });
+      const updatedBy = res.locals.user.id;
+      console.log(updatedBy);
+      const updatedData = req.body;
+
+      const packingMaterial =
+        await this.packingMaterialService.updatePackingMaterial(
+          id,
+          updatedData,
+          updatedBy,
+        );
+
+      if (!packingMaterial) {
+        logger.warn('Packing Material not found or not updated', { id });
+        return next(
+          new AppError(
+            404,
+            `Packing Material with ID ${id} not found or not updated`,
+          ),
+        );
+      }
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Packing Material updated successfully',
+        data: packingMaterial,
+      });
+    } catch (err) {
+      logger.error('Error updating Packing Material', { id, error: err });
+      console.log(err);
+      next(err);
+    }
+  }
+  @httpGet('/all/partial')
+  public async partialPackingMaterial(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const packingMaterial = await this.packingMaterialService.getAllPartial();
+
+      if (!packingMaterial || packingMaterial.length === 0) {
+        logger.warn('Packing Material not found');
+        return next(new AppError(404, 'Packing Material not found'));
+      }
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Packing materials fetched successfully',
+        data: packingMaterial,
+      });
+    } catch (err) {
+      logger.error('Error fetching packing materials', { error: err });
+      next(err);
+    }
+  }
+}
