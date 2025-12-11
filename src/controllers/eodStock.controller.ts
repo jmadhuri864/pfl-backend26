@@ -12,11 +12,10 @@ import {
 } from 'inversify-express-utils';
 import { TYPES } from '../types';
 import { EodStockService } from '../services/eodStock.service';
-import { uploadNone } from '../middleware/multerConfig';
 import { NextFunction, Request, Response } from 'express';
-import logger from '../utils/logger';
 import AppError from '../utils/appError';
 import { NotificationService } from '../services/notification.service';
+import { ControllerLogger } from '../utils/controllerLogger';
 import {
   captureUser,
   deserializeUser,
@@ -40,185 +39,125 @@ export class EodStockController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(req.body);
-      logger.info('Attempting to create a new eodstockreport', {
-        requestedBy: res.locals.user.id,
-      });
-
       const stockData = req.body;
-      console.log(req.body);
-
       stockData.submittedBy = res.locals.user.id;
 
-      logger.debug('stock data prepared for creation', stockData);
       const stock = await this.eodStockService.createEodStock(stockData);
-      console.log(stock);
+      
       if (!stock) {
-        logger.error('Failed to create stock', { stockData });
+        ControllerLogger.logOperationFailed('Create', 'EOD Stock', 'Creation failed', req, res);
         return next(new AppError(400, 'stock could not be created'));
       }
-      logger.info('Stock created successfully', stock);
 
       await this.notificationService.createNoti(
-        `New stock created: ${stock} `,
+        `New stock created: ${stock}`,
         res.locals.user.id,
       );
+      
+      ControllerLogger.logSuccess('EOD Stock created', stock.id, req, res);
       res.status(201).json({
         status: 'success',
         message: 'Eod Stock created successfully',
         data: stock.id,
       });
     } catch (err) {
-      logger.error('Error occurred while creating farmer', { error: err });
+      ControllerLogger.logError('Create EOD Stock', err, req, res);
       next(err);
     }
   }
 
-   @httpGet('/view/:id')
+  @httpGet('/view/:id')
   public async getEodStockReportForView(
-     @requestParam('id') docId: string,
+    @requestParam('id') docId: string,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Attempting to fetch EOD stock report', {
-        requestedBy: res.locals.user.id,
-      });
-
-      const stockId = req.params.id;
-
-      if (!stockId) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Stock ID is required',
-        });
-      }
-
-      const stock = await this.eodStockService.getEodStockByIdForView(
-        docId
-      )
+      const stock = await this.eodStockService.getEodStockByIdForView(docId);
 
       if (!stock) {
-        logger.error('Failed to fetch stock', { stockId });
+        ControllerLogger.logNotFound('EOD Stock', docId, req, res);
         return next(new AppError(404, 'Stock report not found'));
       }
-
-      logger.info('Stock report fetched successfully', { stockId });
 
       await this.notificationService.createNoti(
         `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('EOD Stock', docId, req, res);
       return res.status(200).json({
         status: 'success',
         message: 'EOD stock report fetched successfully',
         data: stock,
       });
     } catch (err) {
-      logger.error('Error occurred while fetching EOD stock report', {
-        error: err,
-      });
+      ControllerLogger.logError('Get EOD Stock for view', err, req, res);
       return next(err);
     }
   }
-@httpGet('/update/:id')
+
+  @httpGet('/update/:id')
   public async getEodStockReportForupdate(
-     @requestParam('id') id: string,
+    @requestParam('id') id: string,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Attempting to fetch EOD stock report', {
-        requestedBy: res.locals.user.id,
-      });
-
-      const id = req.params.id;
-
-      if (!id) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Stock ID is required',
-        });
-      }
-
-      const stock = await this.eodStockService.getEodStockByIdForUpdate(
-        id
-      )
+      const stock = await this.eodStockService.getEodStockByIdForUpdate(id);
 
       if (!stock) {
-        logger.error('Failed to fetch stock', { id });
+        ControllerLogger.logNotFound('EOD Stock', id, req, res);
         return next(new AppError(404, 'Stock report not found'));
       }
-
-      logger.info('Stock report fetched successfully', { id });
 
       await this.notificationService.createNoti(
         `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('EOD Stock (for update)', id, req, res);
       return res.status(200).json({
         status: 'success',
         message: 'EOD stock report fetched successfully',
         data: stock,
       });
     } catch (err) {
-      logger.error('Error occurred while fetching EOD stock report', {
-        error: err,
-      });
+      ControllerLogger.logError('Get EOD Stock for update', err, req, res);
       return next(err);
     }
   }
-
 
   @httpGet('/:id')
   public async getEodStockReport(
+    @requestParam('id') stockId: string,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Attempting to fetch EOD stock report', {
-        requestedBy: res.locals.user.id,
-      });
-
-      const stockId = req.params.id;
-
-      if (!stockId) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Stock ID is required',
-        });
-      }
-
-      const stock = await this.eodStockService.getEodStockById(
-        stockId as string,
-      );
+      const stock = await this.eodStockService.getEodStockById(stockId);
 
       if (!stock) {
-        logger.error('Failed to fetch stock', { stockId });
+        ControllerLogger.logNotFound('EOD Stock', stockId, req, res);
         return next(new AppError(404, 'Stock report not found'));
       }
-
-      logger.info('Stock report fetched successfully', { stockId });
 
       await this.notificationService.createNoti(
         `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('EOD Stock', stockId, req, res);
       return res.status(200).json({
         status: 'success',
         message: 'EOD stock report fetched successfully',
         data: stock,
       });
     } catch (err) {
-      logger.error('Error occurred while fetching EOD stock report', {
-        error: err,
-      });
+      ControllerLogger.logError('Get EOD Stock by ID', err, req, res);
       return next(err);
     }
   }
@@ -230,19 +169,17 @@ export class EodStockController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Attempting to fetch all EOD stock reports', {
-        requestedBy: res.locals.user.id,
-      });
-
       const userId = res.locals.user.id;
+      
       if (!userId) {
+        ControllerLogger.logValidationError('Get All EOD Stocks', 'User ID is required', req, res);
         return res.status(400).json({
           status: 'error',
           message: 'User ID is required',
         });
       }
 
-      const { page, limit, search, sort, eodStockId } = req.query;
+      const { page, limit, search, sort } = req.query;
 
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
@@ -253,20 +190,17 @@ export class EodStockController {
         search: (search as string) || '',
       };
 
-      const stocks = await this.eodStockService.getAllEodStocks(queryOptions,userId);
+      const stocks = await this.eodStockService.getAllEodStocks(queryOptions, userId);
 
       if (!stocks.data || stocks.data.length === 0) {
-        logger.warn('No EOD stock reports found');
+        ControllerLogger.logOperationFailed('Get All', 'EOD Stocks', 'No records found', req, res);
         return res.status(404).json({
           status: 'error',
           message: 'No EOD stock reports found',
         });
       }
 
-      logger.info('All EOD stock reports fetched successfully', {
-        totalReports: stocks.length,
-      });
-
+      ControllerLogger.logGetAllRecords('EOD Stocks', req, res);
       return res.status(200).json({
         status: 'success',
         message: 'All EOD stock reports fetched successfully',
@@ -276,12 +210,11 @@ export class EodStockController {
         page: stocks.meta.page,
       });
     } catch (err) {
-      logger.error('Error occurred while fetching all EOD stock reports', {
-        error: err,
-      });
+      ControllerLogger.logError('Get All EOD Stocks', err, req, res);
       return next(err);
     }
   }
+
   @httpPatch('/:id', captureUser)
   async updateEodStock(
     @requestParam('id') id: string,
@@ -290,10 +223,7 @@ export class EodStockController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Updating EOD stock report', { stockId: id });
-
       const stockData = req.body;
-
       const updatedBy = res.locals.updatedBy;
 
       const updatedStock = await this.eodStockService.updateEodStock(
@@ -301,50 +231,44 @@ export class EodStockController {
         stockData,
         updatedBy,
       );
+      
       if (!updatedStock) {
-        logger.warn('Stock report not found or could not be updated', {
-          stockId: id,
-        });
+        ControllerLogger.logNotFound('EOD Stock', id, req, res);
         return next(
           new AppError(404, 'Stock report not found or could not be updated'),
         );
       }
 
-      logger.info('Stock report updated successfully', { updatedStock });
-
+      ControllerLogger.logSuccess('EOD Stock updated', id, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Stock report updated successfully',
         data: updatedStock,
       });
     } catch (err) {
-      logger.error('Error occurred while updating stock report', {
-        stockId: id,
-        error: err,
-      });
+      ControllerLogger.logError('Update EOD Stock', err, req, res);
       next(err);
     }
   }
-   @httpGet('/recyclebin')
+
+  @httpGet('/recyclebin')
   public async getAllRecycleBinEodStockReports(
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Attempting to fetch all EOD stock reports', {
-        requestedBy: res.locals.user.id,
-      });
-
       const userId = res.locals.user.id;
+      
       if (!userId) {
+        ControllerLogger.logValidationError('Get Recycle Bin EOD Stocks', 'User ID is required', req, res);
         return res.status(400).json({
           status: 'error',
           message: 'User ID is required',
         });
       }
 
-      const { page, limit, search, sort, eodStockId } = req.query;
+      const { page, limit, search, sort } = req.query;
 
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
@@ -355,20 +279,17 @@ export class EodStockController {
         search: (search as string) || '',
       };
 
-      const stocks = await this.eodStockService.getAllRecycleBinEodStocks(queryOptions,userId);
+      const stocks = await this.eodStockService.getAllRecycleBinEodStocks(queryOptions, userId);
 
       if (!stocks.data || stocks.data.length === 0) {
-        logger.warn('No EOD stock reports found');
+        ControllerLogger.logOperationFailed('Get All', 'EOD Stocks (Recycle Bin)', 'No records found', req, res);
         return res.status(404).json({
           status: 'error',
           message: 'No EOD stock reports found',
         });
       }
 
-      logger.info('All EOD stock reports fetched successfully', {
-        totalReports: stocks.length,
-      });
-
+      ControllerLogger.logGetAllRecords('EOD Stocks (Recycle Bin)', req, res);
       return res.status(200).json({
         status: 'success',
         message: 'All EOD stock reports fetched successfully',
@@ -378,24 +299,23 @@ export class EodStockController {
         page: stocks.meta.page,
       });
     } catch (err) {
-      logger.error('Error occurred while fetching all EOD stock reports', {
-        error: err,
-      });
+      ControllerLogger.logError('Get Recycle Bin EOD Stocks', err, req, res);
       return next(err);
     }
   }
+
   @httpDelete('/:id')
   public async deleteEodStock(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Marking EOD Stock report for deletion', { eodStockId: id });
-
       const result = await this.eodStockService.deleteEodStock(id);
 
       if (!result) {
+        ControllerLogger.logNotFound('EOD Stock', id, req, res);
         return next(
           new AppError(
             404,
@@ -404,15 +324,10 @@ export class EodStockController {
         );
       }
 
-      logger.info('EOD Stock report marked for deletion successfully', {
-        eodStockId: id,
-      });
+      ControllerLogger.logSuccess('EOD Stock deleted', id, req, res);
       res.status(204).send();
     } catch (err) {
-      logger.error(
-        'Error occurred while marking EOD Stock report for deletion',
-        { eodStockId: id, error: err },
-      );
+      ControllerLogger.logError('Delete EOD Stock', err, req, res);
       next(err);
     }
   }

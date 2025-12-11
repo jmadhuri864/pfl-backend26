@@ -1,39 +1,55 @@
-import { Column, Entity, JoinColumn, ManyToOne, Unique } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
 import Model from "./model.entity";
 import { Branches } from "./branches.entity";
-import { Product } from "./product.entity";
 import { Company } from "./company.entity";
+import { Product } from "./product.entity";
 import { ProductVarient } from "./productVarient.entity";
 
 @Entity("inventory_stock")
 export class InventoryStock extends Model {
 
-    @ManyToOne(() => Branches, { nullable: true,onDelete: "SET NULL" })
-     @JoinColumn({ name: "location_id" })
-     location: Branches;
+  @ManyToOne(() => Branches, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "location_id" })
+  location: Branches;
 
-     
-    @ManyToOne(() => Company, { nullable: true,onDelete: "SET NULL" })
-    @JoinColumn({ name: "company_id" })
-    companyName: Company;
+  @ManyToOne(() => Company, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "company_id" })
+  company: Company;
 
-      @ManyToOne(() => Product, { nullable: true,onDelete: "SET NULL" })
-       @JoinColumn({ name: "product_id" })
-       product: Product;
+  @ManyToOne(() => Product, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "product_id" })
+  product: Product;
 
-      
-      @ManyToOne(() => ProductVarient, { onDelete: 'SET NULL', cascade: true })
-        @JoinColumn({ name: 'varient_id' })
-        varients: ProductVarient;
+  @ManyToOne(() => ProductVarient, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "variant_id" })
+  variant: ProductVarient;
 
-      @Column('decimal', { name: "onhandQty", nullable: true, precision: 10, scale: 2 })
-      onHandQty: number;
 
-      @Column('decimal', { name: "countedQty", nullable: true, precision: 10, scale: 2 })
-        countedQty: number;
 
-        @Column('decimal', { name: "amount", nullable: true, precision: 10, scale: 2 })
-        amount: number;
 
-       
+  // Purchase (Opening Inward from GRN / Purchase)
+  // @Column("decimal", { precision: 10, scale: 2, default: 0 })
+  // purchaseQty: number;
+
+  // @Column("decimal", { precision: 12, scale: 2, default: 0 })
+  // purchaseAmt: number;
+
+
+  // Inward (Inward Register, Production, Transfers)
+  @Column("decimal", { precision: 10, scale: 2, default: 0 })
+  inwardQty: number;
+
+  @Column("decimal", { precision: 12, scale: 2, default: 0 })
+  inwardAmt: number;
+
+
+  // Dump / Wastage
+  @Column("decimal", { precision: 10, scale: 2, default: 0 })
+  dumpQty: number;
+
+  @Column("decimal", { precision: 12, scale: 2, default: 0 })
+  dumpAmt: number;
+
+
+  
 }

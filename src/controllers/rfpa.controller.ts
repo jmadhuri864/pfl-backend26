@@ -20,6 +20,7 @@ import { Source } from '../utils/status.enum';
 import logger from '../utils/logger';
 import { PaginationOptions } from '../utils/pagination';
 import { checkPermission } from '../middleware/checkPermission';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 
 @controller('/rfpa', deserializeUser, requireUser)
@@ -182,6 +183,9 @@ public async getRecycleBinRfpa(
     }
 
     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+
+    // Log successful retrieval with specific message
+    ControllerLogger.logRfpaData(req, res);
 
     res.status(200).json({
       status: 'success',
@@ -675,6 +679,9 @@ public async getAllRfpa(
     }
 
     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+
+    // Log successful retrieval with specific message
+    ControllerLogger.logRfpaData(req, res);
 
     res.status(200).json({
       status: 'success',

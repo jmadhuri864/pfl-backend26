@@ -3,14 +3,13 @@ import {
   controller,
   httpPost,
   httpGet,
-  httpPatch,
+
   httpDelete,
   request,
   requestParam,
   response,
   next,
-  queryParam,
-  requestBody,
+ 
   httpPut,
 } from 'inversify-express-utils';
 import { TYPES } from '../types';
@@ -23,7 +22,7 @@ import {
   requireUser,
 } from '../middleware/deserializeUser';
 import { Source, CompanyName } from '../utils/status.enum';
-import { uploadNone, upload } from '../middleware/multerConfig';
+
 import logger from '../utils/logger';
 import { http } from 'winston';
 import { uploadFile } from '../middleware/uploadwithAWS';
@@ -36,6 +35,7 @@ import { GrnRepository } from '../repositories/grn.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/grns', deserializeUser, requireUser)
 export class GrnController {
@@ -108,7 +108,7 @@ export class GrnController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Starting GRN creation...');
+      
       const grnData = req.body;
       console.log(grnData, 'grnData');
 
@@ -134,7 +134,7 @@ export class GrnController {
       grnData.requestingDepartment = res.locals.user.selectDepartment;
       if (grnData === '')
         if (grnData.source === Source.VENDOR && !grnData.selectedParty) {
-          logger.error('Vendor source provided without selectedParty.');
+          
           return next(
             new AppError(
               400,
@@ -142,7 +142,7 @@ export class GrnController {
             ),
           );
         } else if (grnData.source === Source.FARMER && !grnData.selectedParty) {
-          logger.error('Farmer source provided without selectedParty.');
+         
           return next(
             new AppError(
               400,
@@ -162,10 +162,10 @@ export class GrnController {
 
       const newGrn = await this.grnService.createGrn(grnData);
       if (!newGrn) {
-        logger.error('Failed to create GRN.');
+        
         return next(new AppError(400, 'GRN could not be created'));
       }
-      logger.info(`GRN created successfully with ID: ${newGrn.id}`);
+      
 
       // 🔔 Send SSE notification to creator
       try {
@@ -173,9 +173,9 @@ export class GrnController {
           `GRN ${newGrn.grnNo} created successfully and submitted for approval`,
           requestedBy
         );
-        logger.info(`Notification sent to user ${requestedBy} for GRN ${newGrn.grnNo}`);
+       
       } catch (notifError) {
-        logger.error('Failed to send notification:', notifError);
+        
         // Don't fail the main operation if notification fails
       }
 
@@ -218,11 +218,11 @@ export class GrnController {
               `New GRN ${newGrn.grnNo} requires your approval`,
               approverId
             );
-            logger.info(`Approval notification sent to ${approverId} for GRN ${newGrn.grnNo}`);
+            
           }
         }
       } catch (approverNotifError) {
-        logger.error('Failed to send approver notifications:', approverNotifError);
+       
         // Don't fail the main operation
       }
 
@@ -249,11 +249,13 @@ export class GrnController {
           httpMethod: req.method,
           statusCode: 201,
         });
-        logger.info(`Activity logged: CREATE GRN ${newGrn.grnNo} by user ${requestedBy}`);
+       
       } catch (activityLogError) {
-        logger.error('Failed to log activity:', activityLogError);
+        
         // Don't fail the main operation
       }
+
+      ControllerLogger.logSuccess('GRN created', newGrn.id, req, res);
 
       res.status(201).json({
         status: 'success',
@@ -262,7 +264,7 @@ export class GrnController {
       });
     } catch (error) {
       console.log(error);
-      logger.error('Error during GRN creation:', error);
+      ControllerLogger.logError('GRN creation', error, req, res);
       next(error);
     }
   }
@@ -275,7 +277,7 @@ export class GrnController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching all GRNs...');
+     
       const { page, limit, search, sort, rfpaId, companyName, source, grnType, locationType } = req.query;
       const userId = res.locals.user.id;
       console.log('userId is ', userId);
@@ -306,10 +308,12 @@ export class GrnController {
       const grns = await this.grnService.getAllRecycleBinGrns(queryOptions, userId);
       //console.log(grns)
       if (!grns) {
-        logger.error('No GRNs found.');
+        
         return next(new AppError(404, 'No GRNs found'));
       }
-      logger.info(`Total GRNs fetched: ${grns.data.length}`);
+      
+      ControllerLogger.logList('GRN Recycle Bin', req, res);
+
       res.status(200).json({
         status: 'success',
         data: grns.data,
@@ -319,6 +323,7 @@ export class GrnController {
       });
     } catch (error) {
       console.log(error);
+      ControllerLogger.logError('GRN recycle bin retrieval', error, req, res);
       next(error);
     }
   }
@@ -330,7 +335,7 @@ export class GrnController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching all GRNs...');
+
       const { page, limit, search, sort, rfpaId, companyName, source, grnType, locationType } = req.query;
       const userId = res.locals.user.id;
       console.log('userId is ', userId);
@@ -358,10 +363,10 @@ export class GrnController {
       const grns = await this.grnService.getAllGrns(queryOptions, userId);
       //console.log(grns)
       if (!grns) {
-        logger.error('No GRNs found.');
+        
         return next(new AppError(404, 'No GRNs found'));
       }
-      logger.info(`Total GRNs fetched: ${grns.data.length}`);
+      
       
       // 📊 Log activity
       await this.logUserActivity(req, res, ActivityAction.VIEW,
@@ -369,15 +374,19 @@ export class GrnController {
         { metadata: { count: grns.data.length, filters, page, limit } }
       );
 
+      ControllerLogger.logList('GRN', req, res);
+
       res.status(200).json({
         status: 'success',
         data: grns.data,
+
         allRecords: grns.meta.total,
         totalPages: grns.meta.pages,
         page: grns.meta.page,
       });
     } catch (error) {
       console.log(error);
+      ControllerLogger.logError('GRN list retrieval', error, req, res);
       next(error);
     }
   }
@@ -387,11 +396,12 @@ export class GrnController {
   @httpGet('/:id')
   public async getGrnById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Fetching GRN with ID`);
+      
       console.log(id);
       
       const grn = await this.grnService.getGrnById(id);
@@ -399,7 +409,7 @@ export class GrnController {
       if (!grn) {
         return next(new AppError(404, 'GRN not found'));
       }
-      logger.info(`GRN with ID fetched successfully.`);
+      
       const accessedBy = res.locals.user.id;
       console.log('user is ', accessedBy);
 
@@ -443,11 +453,11 @@ export class GrnController {
               `${accessorName} viewed GRN ${grn.grnNo}`,
               grn.createdBy.id
             );
-            logger.info(`Access notification sent to creator for GRN ${grn.grnNo}`);
+            
           }
         }
       } catch (notifError) {
-        logger.error('Failed to send access notification:', notifError);
+        
       }
 
       // 📊 Log activity
@@ -459,13 +469,15 @@ export class GrnController {
         }
       );
 
+      ControllerLogger.logView('GRN', grn.id, req, res);
+
       res.status(200).json({
         status: 'success',
         data: grn,
       });
     } catch (error) {
       console.log(error);
-      logger.error('Error fetching GRN by ID:', error);
+      ControllerLogger.logError('GRN view', error, req, res);
       next(error);
     }
   }
@@ -474,11 +486,12 @@ export class GrnController {
   @httpGet('/view/:docid')
   public async getGrnByIdForView(
     @requestParam('docid') docid: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Fetching GRN with Document ID`);
+      
       console.log("Shriiiiiiiiiii");
 
       console.log(docid);
@@ -487,7 +500,7 @@ export class GrnController {
       if (!grn) {
         return next(new AppError(404, 'GRN not found'));
       }
-      logger.info(`GRN with ID fetched successfully.`);
+      
       const viewedBy = res.locals.user.id;
       console.log('user is ', viewedBy);
 
@@ -531,12 +544,14 @@ export class GrnController {
               `${viewerName} is reviewing GRN ${grn.grnNo}`,
               res.locals.user.id
             );
-            logger.info(`View notification sent to creator for GRN ${grn.grnNo}`);
+            
           }
         }
       } catch (notifError) {
-        logger.error('Failed to send view notification:', notifError);
+        
       }
+
+      ControllerLogger.logView('GRN', grn.id, req, res);
 
       res.status(200).json({
         status: 'success',
@@ -544,7 +559,7 @@ export class GrnController {
       });
     } catch (error) {
       console.log(error);
-      logger.error('Error fetching GRN by ID:', error);
+      ControllerLogger.logError('GRN view', error, req, res);
       next(error);
     }
   }
@@ -553,11 +568,12 @@ export class GrnController {
   @httpGet('/update/:id')
   public async getGrnByIdForupdate(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Fetching GRN with ID`);
+      
       console.log(id);
       const grn = await this.grnService.getGrnByIdForupdate(id);
       //console.log(grn);
@@ -565,7 +581,7 @@ export class GrnController {
         return next(new AppError(404, 'GRN not found'));
       }
       console.log(grn)
-      logger.info(`GRN with ID fetched successfully.`);
+  
       const requestedBy = res.locals.user.id;
       console.log('user is ', requestedBy);
 
@@ -582,7 +598,7 @@ export class GrnController {
             `${editorName} is editing GRN ${grnNo}`,
             grn.createdBy.id
           );
-          logger.info(`Edit notification sent to creator for GRN ${grnNo}`);
+          
         }
 
         // Notify approvers that GRN is being edited
@@ -622,8 +638,10 @@ export class GrnController {
           }
         }
       } catch (notifError) {
-        logger.error('Failed to send edit notification:', notifError);
+        
       }
+
+      ControllerLogger.logView('GRN (for update)', grn.id, req, res);
 
       res.status(200).json({
         status: 'success',
@@ -631,7 +649,7 @@ export class GrnController {
       });
     } catch (error) {
       console.log(error);
-      logger.error('Error fetching GRN by ID:', error);
+      ControllerLogger.logError('GRN retrieval for update', error, req, res);
       next(error);
     }
   }
@@ -640,6 +658,7 @@ export class GrnController {
   //TODO: Get all GRN numbers
   @httpGet('/grnnumbers/getAllgrnNo')
   public async getAllGrnNumbers(
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -648,13 +667,15 @@ export class GrnController {
       if (!grns || grns.length === 0) {
         return next(new AppError(404, 'No GRNs found'));
       }
-      logger.info(`Total GRNs fetched: ${grns.length}`);
+     
+      ControllerLogger.logList('GRN Numbers', req, res);
+
       res.status(200).json({
         status: 'success',
         data: grns, // Respond with the fetched GRN data
       });
     } catch (error) {
-      logger.error('Error fetching all GRNs:', error);
+      ControllerLogger.logError('GRN numbers retrieval', error, req, res);
       next(error); // Pass any errors to the error-handling middleware
     }
   }
@@ -668,7 +689,7 @@ export class GrnController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Updating GRN with ID: ${id}`);
+     
 
       let grnData = req.body;
 
@@ -702,7 +723,7 @@ export class GrnController {
           `GRN ${updatedGrn.grnNo} updated successfully`,
           updatedBy
         );
-        logger.info(`Update notification sent to user ${updatedBy} for GRN ${updatedGrn.grnNo}`);
+        
 
         // 🔔 Notify approvers about the update
         const document = await this.documentbService.getDocumentByTypeId(updatedGrn.id);
@@ -743,8 +764,10 @@ export class GrnController {
           }
         }
       } catch (notifError) {
-        logger.error('Failed to send update notifications:', notifError);
+       
       }
+
+      ControllerLogger.logSuccess('GRN updated', updatedGrn.id, req, res);
 
       res.status(200).json({
         status: 'success',
@@ -752,7 +775,7 @@ export class GrnController {
         data: updatedGrn,
       });
     } catch (error) {
-      logger.error('Error updating GRN:', error);
+      ControllerLogger.logError('GRN update', error, req, res);
       next(error);
     }
   }
@@ -762,6 +785,7 @@ export class GrnController {
   @httpDelete('/:id')
   public async deleteGrn(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -783,7 +807,7 @@ export class GrnController {
           `GRN ${grnNo} deleted successfully`,
           deletedBy
         );
-        logger.info(`Delete notification sent to user ${deletedBy} for GRN ${grnNo}`);
+        
 
         // 🔔 Notify relevant users about deletion
         if (grn) {
@@ -832,14 +856,17 @@ export class GrnController {
           }
         }
       } catch (notifError) {
-        logger.error('Failed to send delete notifications:', notifError);
+        
       }
+
+      ControllerLogger.logSuccess('GRN deleted', id, req, res);
 
       res.status(200).json({
         status: 'success',
         message: 'Grn deleted successfully',
       });
     } catch (error) {
+      ControllerLogger.logError('GRN deletion', error, req, res);
       next(error);
     }
   }
@@ -848,22 +875,25 @@ export class GrnController {
   @httpGet('/details/:id')
   public async getGrnDetails(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Getting GRN with ID`);
+      
       const grnDetails = await this.grnService.getGrnDetails(id);
       if (!grnDetails) {
         return next(new AppError(404, 'GRN details not found'));
       }
-      logger.info(`Getting GRN with Id Successfully`);
+      
+      ControllerLogger.logView('GRN Details', id, req, res);
+
       res.status(200).json({
         status: 'success',
         data: grnDetails,
       });
     } catch (error) {
-      logger.error('Error approving GRN:', error);
+      ControllerLogger.logError('GRN details retrieval', error, req, res);
       next(error);
     }
   }
@@ -924,8 +954,10 @@ export class GrnController {
   ) {
     try {
       const grns = await this.documentbService.getAllHoldGrnDocuments();
+      ControllerLogger.logList('Hold GRNs', req, res);
       res.status(200).json({ status: 'success', data: grns });
     } catch (error) {
+      ControllerLogger.logError('Hold GRNs retrieval', error, req, res);
       next(error);
     }
   }
@@ -935,9 +967,11 @@ export class GrnController {
   async getAllGrn(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
     try {
       const resutl = await this.grnRepository.find();
+      ControllerLogger.logList('All GRNs', req, res);
       res.status(200).json({ status: 'success', data: resutl });
     } catch (error) {
-
+      ControllerLogger.logError('All GRNs retrieval', error, req, res);
+      next(error);
     }
   }
   @httpDelete('/delete/multiple')
@@ -949,7 +983,7 @@ export class GrnController {
     try {
       const { ids } = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        logger.warn('GRN IDs not provided or invalid');
+      
         return next(new AppError(400, 'An array of GRN IDs is required'));
       }
 
@@ -968,7 +1002,7 @@ export class GrnController {
           `${ids.length} GRNs deleted successfully`,
           deletedBy
         );
-        logger.info(`Bulk delete notification sent to user ${deletedBy}`);
+       
 
         // 🔔 Notify relevant users about bulk deletion
         const notifiedUsers = new Set<string>();
@@ -1024,13 +1058,16 @@ export class GrnController {
           );
         }
       } catch (notifError) {
-        logger.error('Failed to send bulk delete notifications:', notifError);
+       
       }
+
+      ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
 
       res.status(200).json({
         message: result.message,
       });
     } catch (error) {
+      ControllerLogger.logError('Multiple GRNs deletion', error, req, res);
       next(error);
     }
   }

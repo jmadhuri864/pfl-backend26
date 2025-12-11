@@ -7,6 +7,11 @@ import { Branches } from "./branches.entity";
 import { Company } from "./company.entity";
 import { format } from "date-fns";
 
+export enum DumpType {
+  Purchase = 'purchase',
+  Transferred = 'transferred',
+  ReturnedByCustomer = 'returned-by-customer',
+}
 @Entity("dump_register")
 export class DumpRegister extends Model {
  
@@ -26,7 +31,14 @@ export class DumpRegister extends Model {
   date: Date;
   @ManyToOne(() => GRN, { nullable: true, cascade:true,onDelete: "SET NULL" })
   @JoinColumn({ name: "grn_id" })
-  grn: GRN; 
+  grn: GRN;
+  
+   @Column({
+    type: 'enum',
+    nullable: true,
+    enum: DumpType,
+  })
+  dumpType: DumpType;
   @Column({ nullable: true })
   batchNo: string; 
   @Column({ nullable: true })

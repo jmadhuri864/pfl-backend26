@@ -9,12 +9,12 @@ import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 
 import { formatDateTime } from '../utils/dateUtils';
-// import { InventoryStockRepository } from '../repositories/inventoryStock.repository';
+
 import { ProductVarientService } from './productVarient.service';
-import { ProductVarientsRepository } from '../repositories/productVarients.repository';
+
 import { ProductRepository } from '../repositories/product.repository';
 import { InventoryStockRepository } from '../repositories/inventoryStock.repository';
-import { InwardProduct } from '../entities/inwardProduct.entity';
+
 import { DocSingalApproverService } from './DocSingalApproverService.service';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
@@ -32,49 +32,44 @@ export class InwardRegisterService {
     private readonly inwardRegisterRepo: InwardRepository,
     @inject(TYPES.AuditLogService)
     private readonly auditLogService: AuditLogService,
-    // @inject(TYPES.ProductVarientsRepository)
-    // private readonly variantRepository: ProductVarientsRepository,
+
      @inject(TYPES.ProductVarientRepository)
       private productVarientsRepository: ProductVarientRepository,
- @inject(TYPES.InwardProductRepository)
-    private readonly inwardProductRepository: InwardProductRepository,
+ 
 
-    @inject(TYPES.ProductRepository)
-    private readonly productRepository: ProductRepository,
+   
     @inject(TYPES.InventoryStockRepository)
     private readonly inventoryStockRepository: InventoryStockRepository,
-    @inject(TYPES.ProductVarientService)
-    private readonly productVarientService: ProductVarientService,
-    @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource,
+ 
+   
      @inject(TYPES.DocSingalApproverService)
         private readonly docSingalApproverService: DocSingalApproverService,
         @inject(TYPES.DocumentbService)
         private readonly documentbService: DocumentbService,
         @inject(TYPES .DocumentbRepository) private documentbRepository: DocumentbRepository,
-        @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+     
   ) {}
 
- public async createInwardRegister(data: any): Promise<any> {
+public async createInwardRegister(data: any): Promise<any> {
   try {
-    // ✅ Normalize variant IDs
-    const variantIds = Array.isArray(data.variants)
-      ? data.variants
-      : data.variants
-      ? [data.variants]
-      : [];
+    // 1. Normalize variant IDs
+    let variantIds: string[] = [];
+    if (Array.isArray(data.variants)) {
+      variantIds = data.variants;
+    } else if (data.variants) {
+      variantIds = [data.variants];
+    }
 
-    // ✅ Fetch variants with related products
+    // 2. Fetch variants with product relation
     const variants = await this.productVarientsRepository.find({
       where: { id: In(variantIds) },
       relations: ['product'],
     });
 
-    // ✅ Extract product IDs
+    // 3. Extract product IDs from variants
     const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
-    // ✅ Create Inward Register
+    // 4. Create Inward Register
     const inward = this.inwardRegisterRepo.create({
       ...data,
       variants: variants.map(v => ({ id: v.id })),
@@ -83,79 +78,69 @@ export class InwardRegisterService {
 
     const savedInward = await this.inwardRegisterRepo.save(inward);
 
-    // ✅ Handle array or single entity
-    const savedInwardEntity = Array.isArray(savedInward)
-      ? savedInward[0]
-      : savedInward;
+    // 5. Auto-create document
+    const savedInwardId =
+      Array.isArray(savedInward) ? (savedInward[0] as InwardRegister).id : (savedInward as InwardRegister).id;
 
-    // ✅ Auto-create linked document
     const document = await this.documentbService.createDocument({
       type: DocumentTypeEnum.INWARD_REGISTER,
       docDef: DocDefEnum.OPERATION,
       status: DocumentStatus.HOLD,
       remarks: 'Document auto-created with Inward Register',
       lastActionBy: { id: data.requestedBy },
-      document_type_id: savedInwardEntity.id,
+      document_type_id: savedInwardId
     });
 
     await this.documentbService.startApprovalFlow(document.id);
 
-    // ✅ Process inward products
+    // 6. Process inward products into inventory stock
     for (const item of data.inwardProducts) {
-      const {
-        variant,
-        quantity,
-        unitPrice,
-        netWeight,
-        grossWeight,
-        productName,
-      } = item;
+      const { variant, quantity, unitPrice, netWeight, productName } = item;
 
+      // Amount calculation
       const amount = +(unitPrice * quantity).toFixed(2);
 
-      // 🧠 Ensure productName & variant exist
-      if (!productName || !variant) {
-        throw new Error(`Missing product or variant in inward product entry`);
-      }
-
-      // ✅ Find if stock already exists for (company + location + product + variant)
+      // FIND existing stock for (company + product + variant + location)
       const existingStock = await this.inventoryStockRepository.findOne({
         where: {
-          companyName: { id: data.companyName },
+          company: { id: data.companyName },
           product: { id: productName },
-          varients: { id: variant },
+          variant: { id: variant },
           location: { id: data.location },
         },
-        relations: ['product', 'varients', 'companyName', 'location'],
       });
 
       if (existingStock) {
-        // ✅ Update existing stock
-        existingStock.onHandQty =
-          Number(existingStock.onHandQty ?? 0) + Number(netWeight ?? 0);
-        existingStock.amount =
-          Number(existingStock.amount ?? 0) + Number(amount ?? 0);
+        // UPDATE inward stock movement
+        existingStock.inwardQty = +(existingStock.inwardQty + netWeight);
+        existingStock.inwardAmt = +(existingStock.inwardAmt + amount);
+
+        
 
         await this.inventoryStockRepository.save(existingStock);
+
       } else {
-        // ✅ Create new stock entry
+        // NEW STOCK ENTRY
         const newStock = this.inventoryStockRepository.create({
-          companyName: { id: data.companyName },
-          product: { id: productName },
-          varients: { id: variant },
+          company: { id: data.companyName },
           location: { id: data.location },
-          onHandQty: Number(netWeight ?? 0),
-          countedQty: Number(netWeight ?? 0),
-          amount: Number(amount ?? 0),
+          product: { id: productName },
+          variant: { id: variant },
+
+          // Inward stock values
+          inwardQty: netWeight,
+          inwardAmt: amount,
+
+         
         });
 
         await this.inventoryStockRepository.save(newStock);
       }
     }
 
-    return savedInwardEntity;
+    return savedInward;
+
   } catch (error: any) {
-    console.error('Error creating inward register:', error);
     throw new Error(`Failed to create inward register: ${error.message}`);
   }
 }

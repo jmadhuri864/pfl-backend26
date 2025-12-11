@@ -1149,7 +1149,7 @@ container.bind<UserReportService>(TYPES.UserReportService).to(UserReportService)
 container.bind<UserReportController>(TYPES.UserReportController).to(UserReportController).inSingletonScope();
 container.bind<SuperAdminController>(TYPES.SuperAdminController).to(SuperAdminController).inSingletonScope();
 container.bind<SuperAdminService>(TYPES.SuperAdminService).to(SuperAdminService).inSingletonScope();
-export { container };
+
 // Performance optimization services
 import { CacheService } from "./services/cache.service";
 import { QueryOptimizerService } from "./services/queryOptimizer.service";
@@ -1233,6 +1233,10 @@ import { UserActivityLog } from "./entities/userActivityLog.entity";
 import { UserActivityLogRepository } from "./repositories/userActivityLog.repository";
 import { UserActivityLogService } from "./services/userActivityLog.service";
 import { UserActivityLogController } from "./controllers/userActivityLog.controller";
+import { WorkflowHierarchy } from "./entities/workflowClosure.entity";
+import { WorkflowHierarchyRepository } from "./repositories/WorkflowHierarchy.repository";
+import { WorkflowHierarchyService } from "./services/workFlowHierarchy.service";
+import { WorkflowHierarchyController } from "./controllers/WorkflowHierarchy.controller";
 
 container
   .bind<UserActivityLogRepository>(TYPES.UserActivityLogRepository)
@@ -1252,3 +1256,13 @@ container
   .bind<UserActivityLogController>(TYPES.UserActivityLogController)
   .to(UserActivityLogController)
   .inSingletonScope();
+
+//workflow hirachy
+  container.bind<WorkflowHierarchyRepository>(TYPES.WorkflowHierarchyRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(WorkflowHierarchy).extend(WorkflowHierarchyRepository);
+}).inRequestScope(); 
+container.bind< WorkflowHierarchyService>(TYPES.WorkflowHierarchyService ).to( WorkflowHierarchyService ).inSingletonScope();
+container.bind<WorkflowHierarchyController>(TYPES.WorkflowHierarchyController).to(WorkflowHierarchyController).inSingletonScope();
+
+export { container };

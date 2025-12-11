@@ -55,7 +55,7 @@ export class InvoiceController {
     try {
         const { deliveryChallanId } = req.params;
         const invoiceType='final';
-        const invoice = await this.invoiceService.generateInvoiceq(deliveryChallanId,invoiceType);
+        const invoice = await this.invoiceService.generateFinalInvoice(deliveryChallanId,invoiceType);
         if(!invoice){
           return next(new AppError(400 ,'Delivery Challan not found'))
         }
@@ -67,8 +67,6 @@ export class InvoiceController {
     } catch (error) {
       console.log(error)
       next(error);
-      
-       // res.status(500).json({ message: error });
     }
 }
 @httpGet("/getInvoice/:deliveryChallanId")
@@ -78,34 +76,30 @@ async getInvoice(req: Request, res: Response, next: NextFunction): Promise<void>
       const invoice = await this.invoiceService.getInvoice(deliveryChallanId);
 
       res.status(200).json({
-          //message: 'Invoice generated successfully',
           data:invoice.pdfData,
       });
   } catch (error) {
     console.log(error);
-      res.status(500).json({ message: error });
+    next(error);
   }
 }
 @httpGet("/getproforma/all")
 async getproformaInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-     
       const invoice = await this.invoiceService.getProformaInvoice();
 
       res.status(200).json({
-          //message: 'Invoice generated successfully',
           data:invoice,
       });
   } catch (error) {
     console.log(error);
-      res.status(500).json({ message: error });
+    next(error);
   }
 }
 
 @httpGet("/getfinal/all")
 async getfinalInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-     
       const invoice = await this.invoiceService.getFinalInvoice();
 
       res.status(200).json({
@@ -114,22 +108,35 @@ async getfinalInvoice(req: Request, res: Response, next: NextFunction): Promise<
       });
   } catch (error) {
     console.log(error);
-      res.status(500).json({ message: error });
+    next(error);
   }
 }
 @httpGet("/getAll")
 async getAllInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-     
       const invoice = await this.invoiceService.getAllInvoice();
 
       res.status(200).json({
-          //message: 'Invoice generated successfully',
           data:invoice,
       });
   } catch (error) {
     console.log(error);
-      res.status(500).json({ message: error });
+    next(error);
+  }
+}
+
+@httpPost("/update-returns/:deliveryChallanId")
+async updateDeliveryChallanReturns(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+      const { deliveryChallanId } = req.params;
+      await this.invoiceService.updateDeliveryChallanWithReturns(deliveryChallanId);
+
+      res.status(200).json({
+          message: 'Delivery challan updated with return data successfully',
+      });
+  } catch (error) {
+    console.log(error);
+    next(error);
   }
 }
 }

@@ -420,6 +420,10 @@ TestController: Symbol.for("TestController"),
 UserActivityLogRepository: Symbol.for("UserActivityLogRepository"),
 UserActivityLogService: Symbol.for("UserActivityLogService"),
 UserActivityLogController: Symbol.for("UserActivityLogController"),
+//workflowhirarchy
+WorkflowHierarchyController:Symbol.for("WorkflowHierarchyController"),
+  WorkflowHierarchyService:Symbol.for("WorkflowHierarchyService"),
+  WorkflowHierarchyRepository:Symbol.for("WorkflowHierarchyRepository")
 
 };
 

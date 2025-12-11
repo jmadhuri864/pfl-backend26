@@ -22,6 +22,7 @@ import {
 } from './middleware/timezone';
 import logger from './utils/logger';
 import AppError from './utils/appError';
+import { apiLogger, errorLogger } from './middleware/apiLogger';
 import './cron/cronJob';
 import { seedDocumentDefDatabase } from './seed/documentSeed';
 
@@ -85,6 +86,9 @@ const startServer = async () => {
       app.use(timezoneMiddleware);
       app.use(TransformResponseMiddleware.transform);
       app.use(logRequestMiddleware);
+      
+      // Add API logging middleware (should be after user middleware)
+      app.use(apiLogger);
 
       app.get('/', (req: Request, res: Response) => {
         logger.info('Request received');
@@ -93,6 +97,9 @@ const startServer = async () => {
     });
 
     inversifyServer.setErrorConfig((app) => {
+      // Add error logging middleware
+      app.use(errorLogger);
+      
       app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         if (err instanceof AppError) {
           logger.error(`AppError: ${err.message}`, {
@@ -117,9 +124,10 @@ const startServer = async () => {
 
     const port = process.env.PORT || 8003;
     app.listen(port, () => {
-      logger.info(`🚀 Server started on port ${port}`);
-      logger.info(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
-      logger.info(`🧪 SSE test: http://localhost:${port}/sse/test`);
+      
+    console.log(`🚀 Server started on port ${port}`);
+  console.log(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
+    console.log(`🧪 SSE test: http://localhost:${port}/sse/test`);
     });
 
     process.on('SIGINT', () => {

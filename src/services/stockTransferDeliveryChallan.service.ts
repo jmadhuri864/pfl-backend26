@@ -50,200 +50,125 @@ export class StockTransferDeliveryChallanService {
             
   ) {}
 
-  async create(data: any, requestedBy: any): Promise<any> {
-    try {
-
-      //TODO: Check approval flow is exit or not for logged user
-
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'DC_TYPE_STOCK_TRANSFER')
-
-     //console.log('approval ;', approvalFlowExit);
-     
+ async create(data: any, requestedBy: any): Promise<any> {
+  try {
+    // 1. Approval flow check
+    const approvalFlowExit =
+      await this.approvalFlowService.findApprovalFlowForLoggedUser(
+        requestedBy,
+        'DC_TYPE_STOCK_TRANSFER'
+      );
 
     if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
+      throw new Error('Approval flow not found for user');
     }
 
+    // 2. Generate challan number
+    data.challanNo = await this.deliveryChallanService.generateVoucherNo();
 
-      data.challanNo = await this.deliveryChallanService.generateVoucherNo();
-      //console.log("challan:", data.challan);
-      
-      const challan = this.challanRepository.create(data);
-      const savedchallan = await this.challanRepository.save(challan);
-      if (!savedchallan) {
-        logger.error('Failed to save stock transfer delivery challan');
-        return null;
+    // 3. Save challan
+    const challan = this.challanRepository.create(data);
+    const savedChallanArr = await this.challanRepository.save(challan);
+    const savedChallan = Array.isArray(savedChallanArr)
+      ? savedChallanArr[0]
+      : savedChallanArr;
+
+    // 4. Create document
+    const document = await this.documentbService.createDocument({
+      type: DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER,
+      docDef: DocDefEnum.OPERATION,
+      status: DocumentStatus.HOLD,
+      remarks: 'Document auto-created with Stock Transfer Challan',
+      lastActionBy: { id: requestedBy },
+      document_type_id: savedChallan.id,
+    });
+
+    await this.documentbService.startApprovalFlow(document.id);
+
+    // 5. Reload challan with full relations
+    const challanFull = await this.challanRepository.findOne({
+      where: { id: savedChallan.id },
+      relations: [
+        'deliveryChallanProducts',
+        'fromLocation',
+        'toLocation',
+        'companyName',
+      ],
+    });
+
+    if (!challanFull) return null;
+
+    // -------------------------------------------------------------------
+    // 6. STOCK OUT (ONLY FROM LOCATION)
+    // -------------------------------------------------------------------
+
+    for (const item of challanFull.deliveryChallanProducts) {
+      const { netWeight, amount, variant } = item;
+
+      const deliveredQty = Number(netWeight ?? 0);
+      const deliveredAmt = Number(amount ?? 0);
+
+      const variantId = typeof variant === 'object' ? variant.id : variant;
+
+      // Fetch variant + product (CORRECT ENTITY RELATION)
+      const foundVariant = await this.variantRepository.findOne({
+        where: { id: variantId },
+        relations: ['product'], // VALID RELATION
+      });
+
+      if (!foundVariant) {
+        throw new Error(`Variant not found: ${variantId}`);
       }
 
-      const document = await this.documentbService.createDocument({
-                  type: DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER,
-                  docDef: DocDefEnum.OPERATION,
-                  status: DocumentStatus.HOLD,
-                  remarks: 'Document auto-created with Stock Transfer Challan',
-                  lastActionBy: { id: requestedBy },
-                  document_type_id : Array.isArray(savedchallan) ? (savedchallan[0] as StockTransferDeliveryChallan)?.id : (savedchallan as StockTransferDeliveryChallan).id
-                },/* approvalFlowExit*/);
-                //console.log('Document created:', docuemnt);
-                //const saved = await this.grnRepository.save(savedGrn);
-          
-                await this.documentbService.startApprovalFlow(document.id);
-                const challn = Array.isArray(savedchallan)
-      ? savedchallan[0]
-      : savedchallan;
+      const productId = foundVariant.product?.id;
 
-      
-
-      console.log("after saving chalan.......",challn.id)
-
-
-      const chllan1 = await this.challanRepository.findOne({
-        where: { id: challn.id },
-        relations: [
-          'deliveryChallanProducts',
-          'fromLocation',
-          'toLocation',
-          'companyName'
-        ]
-      })
-      if(!chllan1)
-      {
-        return null
+      if (!productId) {
+        throw new Error(`Product not found for variant: ${variantId}`);
       }
-      console.log(chllan1)
-      for (const item of chllan1.deliveryChallanProducts) {
-        const {
-          count,
-          size,
-          variety,
-          origin,
-          unitPrice,
-          productName,
-          netWeight,
-          amount
-        } = item;
-console.log("companyname for deliverychllan...........",chllan1.companyName.id);
-console.log("fromlocation for dc ------------------",chllan1.fromLocation.id);
-// console.log(variant.productTemplate.id);
-// console.log(variant.id)
-console.log("tolocation------------------",chllan1.toLocation.id)
-        const productId =
-          typeof productName === 'object' ? productName.id : productName;
 
-        let variant = await this.variantRepository.findOne({
-          where: {
-            productTemplate: { id: productId },
-            count,
-            size,
-            variety,
-            origin,
-          },
-          relations: ['productTemplate'],
+      // -------------------------------------------------------------------
+      // OUTWARD STOCK (reduce from FROM location)
+      // -------------------------------------------------------------------
+      let fromStock = await this.inventoryStockRepository.findOne({
+        where: {
+          company: { id: challanFull.companyName.id },
+          location: { id: challanFull.fromLocation.id },
+          product: { id: productId },
+          variant: { id: variantId },
+        },
+      });
+
+      if (fromStock) {
+        // Reduce stock
+        fromStock.inwardQty = Number(fromStock.inwardQty) - deliveredQty;
+        fromStock.inwardAmt = Number(fromStock.inwardAmt) - deliveredAmt;
+
+        await this.inventoryStockRepository.save(fromStock);
+      } else {
+        // No stock exists → create negative (outward movement)
+        fromStock = this.inventoryStockRepository.create({
+          company: { id: challanFull.companyName.id },
+          location: { id: challanFull.fromLocation.id },
+          product: { id: productId },
+          variant: { id: variantId },
+          inwardQty: -deliveredQty,
+          inwardAmt: -deliveredAmt,
         });
-        console.log('varient found', variant);
-        if (!variant) {
-          const product = await this.productRepository.findOne({
-            where: { id: productId },
-          });
-          if (!product) throw new Error('Product not found');
 
-          const generatedCode = this.productVarientService.generateVariantCode(
-            product.productCode,
-            {
-              count,
-              size,
-              variety,
-              productOrigin: origin,
-            },
-          );
+        await this.inventoryStockRepository.save(fromStock);
+      }
 
-          const newVariant = this.variantRepository.create({
-            productTemplate: product,
-            count,
-            size,
-            variety,
-            origin,
-            productCode: generatedCode,
-          });
-          console.log('New variant created:', newVariant);
-          variant = await this.variantRepository.save(newVariant);
-        }
-         const returnedNetWt1 = Number(item.netWeight ?? 0);
-        const returnedQtyAmt1 = Number(item.amount ?? 0);
-
-        // Update fromLocation stock (deduct)
-            let fromStock = await this.inventoryStockRepository.findOne({
-                where: {
-                    companyName: { id: chllan1.companyName.id },
-                    location: { id: chllan1.fromLocation.id },
-                    product: { id: variant.productTemplate.id },
-                    varients: { id: variant.id },
-                },
-                relations: ['product', 'varients', 'location', 'companyName'],
-            });
-
-            if (fromStock) {
-                 fromStock.onHandQty =
-            Number(fromStock.onHandQty) - returnedNetWt1;
-          fromStock.amount = Number(fromStock.amount) - returnedQtyAmt1;
-                await this.inventoryStockRepository.save(fromStock);
-            } else {
-                await this.inventoryStockRepository.save(
-                    this.inventoryStockRepository.create({
-                        companyName: { id: chllan1.companyName.id },
-                        location: { id:chllan1.fromLocation.id },
-                        product: { id: variant.productTemplate.id },
-                        varients: { id: variant.id },
-                        onHandQty: -returnedNetWt1,
-                        amount: -returnedQtyAmt1,
-                    })
-                );
-            }
-            console.log("from stock",fromStock)
-            const returnedNetWt2 = Number(item.netWeight ?? 0);
-        const returnedQtyAmt2 = Number(item.amount ?? 0);
-// Update toLocation stock (add)
-            let toStock = await this.inventoryStockRepository.findOne({
-                where: {
-                    companyName: { id: chllan1.companyName.id },
-                    location: { id: chllan1.toLocation.id },
-                    product: { id: variant.productTemplate.id },
-                    varients: { id: variant.id },
-                },
-                relations: ['product', 'varients', 'location', 'companyName'],
-            });
-
-            if (toStock) {
-               toStock.onHandQty =
-            Number(toStock.onHandQty) + returnedNetWt2;
-          toStock.amount = Number(toStock.amount) + returnedQtyAmt2;
-                await this.inventoryStockRepository.save(toStock);
-            } else {
-                await this.inventoryStockRepository.save(
-                    this.inventoryStockRepository.create({
-                        companyName: { id: chllan1.companyName.id },
-                        location: { id: chllan1.toLocation.id },
-                        product: { id: variant.productTemplate.id },
-                        varients: { id: variant.id },
-                        onHandQty: returnedNetWt2,
-                        amount: returnedQtyAmt2,
-                    })
-                );
-            }
-            console.log("to stock",toStock)
-       }
-
-      return savedchallan;
-    } catch (error: any) {
-      console.error('Error creating dc:', error);
-      throw new Error('Failed to create dc');
+      // ----------------------------------------------------------
+      // ❌ TO-LOCATION STOCK INCREASE REMOVED (As per your code)
+      // ----------------------------------------------------------
     }
+
+    return savedChallan;
+  } catch (error) {
+    console.error('Error creating Stock Transfer:', error);
+    throw new Error('Failed to create Stock Transfer');
   }
-  // catch(err: any) {
-  //   logger.error('Error creating stock transfer delivery challan', {
-  //     error: err,
-  //   });
-  //   return null;
-  // }
+}
 
   async getById(id: string): Promise<any> {
     try {

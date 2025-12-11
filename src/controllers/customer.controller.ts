@@ -15,7 +15,8 @@ import { TYPES } from '../types';
 import AppError from '../utils/appError';
 import { NextFunction, Request, Response } from 'express';
 import { upload } from '../middleware/multifileupload';
-import logger from '../utils/logger';
+
+import { ControllerLogger } from '../utils/controllerLogger';
 import { PaginationOptions } from '../utils/pagination';
 import { uploadFileMultiple } from '../middleware/multiFileWithAWS';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
@@ -60,7 +61,7 @@ export class CustomerController {
     try {
       // Parse the customer data using Zod schema
       console.log('inthe customer', req.body);
-      logger.info('Creating a new customer');
+      
 
       const files = req.files as {
         [fieldname: string]: Express.MulterS3.File[];
@@ -125,7 +126,18 @@ customerData.customerCode = await generateIncrementalCode('customer')
       const customer = await this.customerService.create(customerData);
       console.log('customer is ', customer);
 
-      logger.info('Customer created successfully', { customer });
+      if (!customer) {
+        ControllerLogger.logOperationFailed('Create', 'Customer', 'could not be created', req, res);
+        return res.status(400).json({
+          status: 'error',
+          message: 'Customer could not be created',
+        });
+      }
+      
+      // Log successful creation
+      const customerId = Array.isArray(customer) ? (customer[0] as any)?.id : (customer as any)?.id;
+      ControllerLogger.logSuccess('Customer created', customerId || 'unknown', req, res);
+      
       res.status(201).json({
         status: 'success',
         message: 'Customer created successfully',
@@ -133,7 +145,8 @@ customerData.customerCode = await generateIncrementalCode('customer')
       });
     } catch (err) {
       console.log(err);
-      logger.error('Error creating customer', { error: err });
+     
+      ControllerLogger.logError('Customer creation', err, req, res);
       next(err);
     }
   }
@@ -175,19 +188,31 @@ customerData.customerCode = await generateIncrementalCode('customer')
   // }
 
 @httpPatch("/approve/:id")
-async approveCustomer(req: Request, res: Response, next: NextFunction) {
-try {
-const customerId = req.params.id;
-const adminUser = res.locals.user.id;
-const status = req.query.status as Status;
+async approveCustomer(
+  @request() req: Request, 
+  @response() res: Response, 
+  @next() next: NextFunction
+) {
+  try {
+    const customerId = req.params.id;
+    const adminUser = res.locals.user.id;
+    const status = req.query.status as Status;
 
-
-const approvedCustomer = await this.customerService.approveCustomer(customerId, adminUser,status);
-return res.status(200).json({ message: "customer approved successfully", customer: approvedCustomer });
-} catch (error: any) {
-  next(error);
-
-}
+    const approvedCustomer = await this.customerService.approveCustomer(customerId, adminUser, status);
+    
+    if (!approvedCustomer) {
+      ControllerLogger.logOperationFailed('Approve', 'Customer', 'not found or could not be approved', req, res);
+      return res.status(404).json({ message: "Customer not found or could not be approved" });
+    }
+    
+    // Log successful approval
+    ControllerLogger.logSuccess('Customer approved', customerId, req, res);
+    
+    return res.status(200).json({ message: "Customer approved successfully", customer: approvedCustomer });
+  } catch (error: any) {
+    ControllerLogger.logError('Customer approval', error, req, res);
+    next(error);
+  }
 }
   @httpGet('/')
   public async getAllCustomers(
@@ -196,7 +221,7 @@ return res.status(200).json({ message: "customer approved successfully", custome
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching all customers');
+      
       const { page, limit, search, sort } = req.query;
 
       const queryOptions: PaginationOptions = {
@@ -210,7 +235,19 @@ return res.status(200).json({ message: "customer approved successfully", custome
       const customers = await this.customerService.findAllCustomers(
         queryOptions,
       );
-      logger.info('Customers retrieved successfully', { customers });
+      
+      if (!customers || customers.data.length === 0) {
+        return res.status(200).json({
+          status: 'success',
+          data: [],
+          allRecords: 0,
+          totalPages: 0,
+          page: queryOptions.page || 1,
+        });
+      }
+
+      // Log successful retrieval with specific message
+      ControllerLogger.logGetAllRecords('Customer', req, res);
 
       res.status(200).json({
         status: 'success',
@@ -220,7 +257,7 @@ return res.status(200).json({ message: "customer approved successfully", custome
         page: customers.meta.page,
       });
     } catch (err) {
-      logger.error('Error fetching customers', { error: err });
+      ControllerLogger.logError('Customer retrieval', err, req, res);
       next(err);
     }
   }
@@ -232,16 +269,25 @@ return res.status(200).json({ message: "customer approved successfully", custome
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching all customers');
       const customers = await this.customerService.getCustomersName();
-      logger.info('Customers retrieved successfully', { customers });
+      
+      if (!customers || customers.length === 0) {
+        ControllerLogger.logNotFound('Customer', 'names', req, res);
+        return res.status(404).json({
+          status: 'error',
+          message: 'Customer names not found',
+        });
+      }
+      
+      // Log successful retrieval
+      ControllerLogger.logGetAllRecords('Customer', req, res);
 
       res.status(200).json({
         status: 'success',
         data: customers,
       });
     } catch (err) {
-      logger.error('Error fetching customers', { error: err });
+      ControllerLogger.logError('Customer names retrieval', err, req, res);
       next(err);
     }
   }
@@ -249,25 +295,27 @@ return res.status(200).json({ message: "customer approved successfully", custome
   @httpGet('/partial/all/:id')
   public async getCustomerByIdName(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching customer by ID', { id });
       const customer = await this.customerService.getCustomerFilterById(id);
 
       if (!customer) {
-        logger.warn('Customer not found', { id });
+        ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
       }
-      logger.info('Customer retrieved successfully', { customer });
+      
+      // Log successful view
+      ControllerLogger.logView('Customer', id, req, res);
 
       res.status(200).json({
         status: 'success',
         data: customer.customer,
       });
     } catch (err) {
-      logger.error('Error fetching customer by ID', { error: err });
+      ControllerLogger.logError('Customer partial view', err, req, res);
       next(err);
       console.log(err);
     }
@@ -276,25 +324,27 @@ return res.status(200).json({ message: "customer approved successfully", custome
   @httpGet('/:id')
   public async getCustomerById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching customer by ID', { id });
       const customer = await this.customerService.findCustomerById(id);
 
       if (!customer) {
-        logger.warn('Customer not found', { id });
+        ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
       }
-      logger.info('Customer retrieved successfully', { customer });
+      
+      // Log successful view
+      ControllerLogger.logView('Customer', id, req, res);
 
       res.status(200).json({
         status: 'success',
         data: customer,
       });
     } catch (err) {
-      logger.error('Error fetching customer by ID', { error: err });
+      ControllerLogger.logError('Customer view', err, req, res);
       next(err);
       console.log(err);
     }
@@ -304,25 +354,27 @@ return res.status(200).json({ message: "customer approved successfully", custome
   @httpGet('/view/:id')
   public async getCustomerByIdforview(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching customer by ID', { id });
       const customer = await this.customerService.findCustomerByIdforview(id);
 
       if (!customer) {
-        logger.warn('Customer not found', { id });
+        ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
       }
-      logger.info('Customer retrieved successfully', { customer });
+      
+      // Log successful view
+      ControllerLogger.logView('Customer', id, req, res);
 
       res.status(200).json({
         status: 'success',
         data: customer,
       });
     } catch (err) {
-      logger.error('Error fetching customer by ID', { error: err });
+      ControllerLogger.logError('Customer view', err, req, res);
       next(err);
       console.log(err);
     }
@@ -333,25 +385,27 @@ return res.status(200).json({ message: "customer approved successfully", custome
   @httpGet('/update/:id')
   public async getCustomerByIdforUpdate(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Fetching customer by ID', { id });
       const customer = await this.customerService.findCustomerByIdforupdate(id);
 
       if (!customer) {
-        logger.warn('Customer not found', { id });
+        ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
       }
-      logger.info('Customer retrieved successfully', { customer });
+      
+      // Log successful view for update
+      ControllerLogger.logView('Customer', id, req, res);
 
       res.status(200).json({
         status: 'success',
         data: customer,
       });
     } catch (err) {
-      logger.error('Error fetching customer by ID', { error: err });
+      ControllerLogger.logError('Customer update view', err, req, res);
       next(err);
       console.log(err);
     }
@@ -381,9 +435,13 @@ return res.status(200).json({ message: "customer approved successfully", custome
       { name: 'bg', maxCount: 1 },
     ]),
   )
-  public async updateCustomer(req: Request, res: Response, next: NextFunction) {
+  public async updateCustomer(
+    @request() req: Request, 
+    @response() res: Response, 
+    @next() next: NextFunction
+  ) {
     try {
-      logger.info('Updating customer');
+      
       const { id } = req.params;
       console.log(id);
       console.log(req.body);
@@ -447,55 +505,66 @@ return res.status(200).json({ message: "customer approved successfully", custome
       );
 
       if (!updatedCustomer) {
-        logger.warn('Customer not found for update', { id });
+        ControllerLogger.logOperationFailed('Update', 'Customer', 'not found or could not be updated', req, res);
         return res.status(404).json({ message: 'Customer not found' });
       }
-      logger.info('Customer updated successfully', { updatedCustomer });
+      
+      // Log successful update
+      ControllerLogger.logSuccess('Customer updated', id, req, res);
+      
       return res.status(200).json({
         message: 'Customer updated successfully',
         data: updatedCustomer,
       });
     } catch (error) {
-      logger.error('Error updating customer', { error });
+      ControllerLogger.logError('Customer update', error, req, res);
       console.log(error);
       next(error);
     }
   }
 
-  @httpDelete(':/id')
+  @httpDelete('/:id')
   public async deleteCustomer(
-    req: Request,
-    res: Response,
-    next: NextFunction,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
   ): Promise<Response | void> {
     try {
-      logger.info('Deleting customer');
       const { id } = req.params;
 
       const deletedCustomer = await this.customerService.deleteCustomer(id);
+      
       if (!deletedCustomer) {
-        logger.warn('Customer not found for delete', { id });
+        ControllerLogger.logOperationFailed('Delete', 'Customer', 'not found or could not be deleted', req, res);
         return res.status(404).json({ message: 'Customer not found' });
       }
-      logger.info('Customer deleted successfully', { deletedCustomer });
+      
+      // Log successful deletion
+      ControllerLogger.logSuccess('Customer deleted', id, req, res);
+     
       return res.status(200).json({
         message: 'Customer deleted successfully',
-        //data: ,
       });
     } catch (error) {
-      logger.error('Error deleting customer', { error });
+      ControllerLogger.logError('Customer deletion', error, req, res);
       next(error);
     }
   }
   @httpPost("/upload/customerdata", upload.single('file'))
-    public uploadFile(@request() req: Request, @response() res: Response) {
+    public uploadFile(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
             if (!req.file) {
+                ControllerLogger.logValidationError('Customer file upload', 'No file uploaded', req, res);
                 return res.status(400).send("No file uploaded");
             }
             try {
                 this.customerService.upload(req.file.path);
+                
+                // Log successful upload
+                ControllerLogger.logSuccess('Customer file uploaded', req.file.filename || 'unknown', req, res);
+                
                 return res.status(200).send("Customers uploaded successfully");
             } catch (error) {
+                ControllerLogger.logError('Customer file upload', error, req, res);
                 console.error(error);
                 return res.status(500).send("Error uploading file");
             }

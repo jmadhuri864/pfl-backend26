@@ -1,12 +1,11 @@
-import { controller, httpGet, httpPatch, httpPost, next, response } from "inversify-express-utils";
+import { controller, httpGet, httpPatch, httpPost, next, request, requestParam, response } from "inversify-express-utils";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { TYPES } from "../types";
 import { DocumentDefinitionService } from "../services/documentDefinition.service";
 import { inject } from "inversify";
-import { NextFunction,Response } from "express";
-import logger from "../utils/logger";
+import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
-
+import { ControllerLogger } from "../utils/controllerLogger";
 
 @controller('/document-details',deserializeUser,requireUser)
 export class  DocumentDefinitionController {
@@ -19,98 +18,106 @@ export class  DocumentDefinitionController {
 
     @httpGet('/')
     public async getAllDocumentDef(
+        @request() req: Request,
         @response() res: Response,
         @next() next: NextFunction
       ) {
         try {
-          logger.info("Fetching all documents");
           const document = await this.documentDefinitionService.getAllDocumentDefinitions();
+          
           if (!document) {
-            logger.warn("No document found");
+            ControllerLogger.logOperationFailed('Get All', 'Document Definitions', 'No records found', req, res);
             return next(new AppError(404, "No documents found"));
           }
-          logger.info("DocumentDef retrieved successfully");
+          
+          ControllerLogger.logGetAllRecords('Document Definitions', req, res);
           res.status(200).json({
             status: "success",
             data: document,
           });
         } catch (err) {
-          logger.error("Error occurred while fetching all documentdef", { error: err });
+          ControllerLogger.logError('Get All Document Definitions', err, req, res);
           next(err);
         }
       }
     
     @httpGet('/:id')
     public async getDocumentDefById(
+        @requestParam('id') id: string,
+        @request() req: Request,
         @response() res: Response,
-        @next() next: NextFunction,
-        id: string
+        @next() next: NextFunction
       ) {
         try {
-          logger.info("Fetching document by id");
           const document = await this.documentDefinitionService.getDocumentDefinitionById(id);
+          
           if (!document) {
-            logger.warn("No document found with this id");
+            ControllerLogger.logNotFound('Document Definition', id, req, res);
             return next(new AppError(404, "No documents found with this id"));
           }
-          logger.info("DocumentDef retrieved successfully");
+         
+          ControllerLogger.logView('Document Definition', id, req, res);
           res.status(200).json({
             status: "success",
             data: document,
           });
         } catch (err) {
-          logger.error("Error occurred while fetching documentdef by id", { error: err });
+          ControllerLogger.logError('Get Document Definition by ID', err, req, res);
           next(err);
         }
       }
 
       @httpPost('/')
       public async createDocumentDef(
+        @request() req: Request,
         @response() res: Response,
-        @next() next: NextFunction,
-        data: any
+        @next() next: NextFunction
       ) {
         try {
-          console.log(data, "in controller");
+          const data = req.body;
           
-          logger.info("Creating new documentDef");
           const document = await this.documentDefinitionService.createDocumentDefinition(data);
+          
           if (!document) {
-            logger.warn("Failed to create documentDef");
+            ControllerLogger.logOperationFailed('Create', 'Document Definition', 'Creation failed', req, res);
             return next(new AppError(400, "Failed to create documentDef"));
           }
-          logger.info("DocumentDef created successfully");
+         
+          ControllerLogger.logSuccess('Document Definition created', document.id, req, res);
           res.status(201).json({
             status: "success",
             data: document,
           });
         } catch (err) {
-          logger.error("Error occurred while creating documentdef", { error: err });
+          ControllerLogger.logError('Create Document Definition', err, req, res);
           next(err);
         }
       }
 
       @httpPatch('/:id')
       public async updateDocumentDef(
+        @requestParam('id') id: string,
+        @request() req: Request,
         @response() res: Response,
-        @next() next: NextFunction,
-        id: string,
-        data: any
+        @next() next: NextFunction
       ) {
         try {
-          logger.info("Updating documentDef");
+          const data = req.body;
+          
           const document = await this.documentDefinitionService.updateDocumentDefinition(id, data);
+          
           if (!document) {
-            logger.warn("No document found with this id");
+            ControllerLogger.logNotFound('Document Definition', id, req, res);
             return next(new AppError(404, "No documents found with this id"));
           }
-          logger.info("DocumentDef updated successfully");
+          
+          ControllerLogger.logSuccess('Document Definition updated', id, req, res);
           res.status(200).json({
             status: "success",
             data: document,
           });
         } catch (err) {
-          logger.error("Error occurred while updating documentdef", { error: err });
+          ControllerLogger.logError('Update Document Definition', err, req, res);
           next(err);
         }
       }

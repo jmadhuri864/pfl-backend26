@@ -5,8 +5,9 @@ import { PostReturnByCustomerService } from "../services/postReturnByCustomer.se
 import { NextFunction,Request,Response } from "express";
 import AppError from "../utils/appError";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-import logger from "../utils/logger";
+import logger, { UserLogger } from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
+import { ControllerLogger } from "../utils/controllerLogger";
 
 
 @controller("/returns",deserializeUser,requireUser)
@@ -39,16 +40,16 @@ export class PostReturnByCustomerController {
       const userId = res.locals.user.id;
 console.log("User ID:", userId);
       const postReturns = await this.postReturnByCustomerService.getAllPostReturnByCustomer(queryOptions, userId);
-      // if(!postReturns || postReturns.data.length === 0) {
-      //   return next(new AppError(404, "No post returns found"));
-      // }
+      
+      // Log the successful retrieval
+      ControllerLogger.logList("RFPA", req, res);
+      
       res.status(200).json({
         status: "success",
         data: postReturns.data,
         allRecords: postReturns.meta.total,
         totalPages: postReturns.meta.pages,
         page:postReturns.meta.page,
-        
       });
     } catch (error) {
       next(error);
@@ -78,6 +79,7 @@ console.log("User ID:", userId);
   @httpGet("/view/:docid")
   public async getPostReturnByIdforview(
     @requestParam("docid") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -86,6 +88,10 @@ console.log("User ID:", userId);
       if (!postReturn) {
         return next(new AppError(404, "Post return not found"));
       }
+      
+      // Log the successful view
+      ControllerLogger.logRfpaViewed(id, req, res);
+      
       res.status(200).json({
         status: "success",
         data: postReturn,
@@ -100,6 +106,7 @@ console.log("User ID:", userId);
   @httpGet("/update/:id")
   public async getPostReturnByIdforupdate(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -108,6 +115,10 @@ console.log("User ID:", userId);
       if (!postReturn) {
         return next(new AppError(404, "Post return not found"));
       }
+      
+      // Log loading data for editing
+      ControllerLogger.logView("RFPA data for editing", id, req, res);
+      
       res.status(200).json({
         status: "success",
         data: postReturn,
@@ -122,16 +133,21 @@ console.log("User ID:", userId);
   @httpPost("/")
   public async createPostReturn(
     @requestBody() postReturnData: any,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       console.log(postReturnData)
 
-      const requestedBy = res.locals.user.id;
+      const requestedBy = res.locals.user; // Pass full user object
+      const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
 
-      const newPostReturn = await this.postReturnByCustomerService.createReturn(postReturnData, requestedBy);
-      console.log("data is saved successfully") 
+      const newPostReturn = await this.postReturnByCustomerService.createReturn(postReturnData, requestedBy, clientIp);
+      
+      // Log the successful creation
+      ControllerLogger.logRfpaCreated(newPostReturn.id, req, res);
+      
       res.status(201).json({
         status: "success",
         data: newPostReturn.id,
@@ -158,17 +174,21 @@ console.log("User ID:", userId);
         console.log(data)
        
       
-        logger.info(`Updating postreturn with ID`);
         const updatedBy = res.locals.updatedBy;
-        const postreturn = await this.postReturnByCustomerService.updatePostReturnByCustomer(id, data,updatedBy);
+        const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
+        const postreturn = await this.postReturnByCustomerService.updatePostReturnByCustomer(id, data, updatedBy, clientIp);
+        
         if (!postreturn) {
-          logger.warn(`postreturn with ID not found or update failed`);
+          ControllerLogger.logError(`RFPA update`, new Error("PostReturn not found or update failed"), req, res);
           return next(new AppError(404, "postreturn not found or update failed"));
         }
+        
+        // Log the successful update
+        ControllerLogger.logRfpaUpdated(id, req, res);
+        
         res.status(200).json({
           status: "success",
           message: "postreturn updated successfully",
-          
         });
       } catch (err) {
         logger.error(`Error updating postreturn with ID: ${id}`, { error: err });

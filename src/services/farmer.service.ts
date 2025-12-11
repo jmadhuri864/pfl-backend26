@@ -365,9 +365,9 @@ export class FarmerService {
 
     return {
       id: farmer.id,
-      farmerfName:farmer.farmerfName,
-      farmermName:farmer.farmermName,
-      farmerlName:farmer.farmerlName,
+      farmerfName:farmer.farmerfName ||  null,
+      farmermName:farmer.farmermName || null ,
+      farmerlName:farmer.farmerlName || null,
       gender:farmer.gender,
       dob: farmer.dob,
     idProofNo: farmer.idProofNo,
@@ -411,7 +411,7 @@ export class FarmerService {
 
     crops: farmer.crops?.map((crop: Crop) => ({
       id: crop.id,
-      crop: crop.crop.name,
+      crop: crop.crop?.name || null,
       variety: crop.variety,
       noOfPlants: crop.noOfPlants,
       pruningDate: crop.pruningDate,
@@ -437,11 +437,11 @@ export class FarmerService {
 
     return {
       id: farmer.id,
-      farmerfName:farmer.farmerfName,
-      farmermName:farmer.farmermName,
-      farmerlName:farmer.farmerlName,
+      farmerfName:farmer.farmerfName ||  null,
+      farmermName:farmer.farmermName || null ,
+      farmerlName:farmer.farmerlName || null,
       gender:farmer.gender,
-      dob: farmer.dob,
+      dob: farmer.dob, 
     idProofNo: farmer.idProofNo,
     idProofCopy: farmer.idProofCopy,
     howDoYouSell: farmer.howDoYouSell,
@@ -482,7 +482,7 @@ export class FarmerService {
 
     crops: farmer.crops?.map((crop: Crop) => ({
       id: crop.id,
-      crop: crop.crop.id,
+      crop: crop.crop?.id || null,
       variety: crop.variety,
       noOfPlants: crop.noOfPlants,
       pruningDate: crop.pruningDate,

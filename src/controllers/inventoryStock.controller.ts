@@ -4,7 +4,7 @@ import { inject } from "inversify";
 import { TYPES } from "../types";
 import { InventoryStockService } from "../services/inventoryStock.service";
 import { NextFunction,Request,Response } from "express";
-import logger from "../utils/logger";
+
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
 
@@ -26,7 +26,7 @@ export class InventoryStockController {
         @next() next: NextFunction
       ) {
         try {
-          logger.info("Fetching all Inventory Stock...");
+         
     
           const { page, limit, search, sort } = req.query;
     
@@ -42,11 +42,11 @@ export class InventoryStockController {
           const stocks = await this.inventoryStockService.getAllInventoryStocks(queryOptions);
     
           if (!stocks) {
-            logger.error("No Inventory Stock found.");
+            
             return next(new AppError(404, "No Inventory Stock found"));
           }
     
-          logger.info(`Total inventory stock items fetched: ${stocks.data.length}`);
+         
           res.status(200).json({
             status: "success",
             data: stocks.data,
@@ -55,7 +55,7 @@ export class InventoryStockController {
             page: stocks.meta.page,
           });
         } catch (error) {
-          logger.error("Error fetching Inventory Stock list:", error);
+         
           next(error);
         }
       }
@@ -67,20 +67,20 @@ export class InventoryStockController {
         @next() next: NextFunction
       ) {
         try {
-          logger.info(`Fetching Inventory Stock with ID: ${id}`);
+         
           const stock = await this.inventoryStockService.getInventoryStockById(id);
     
           if (!stock) {
             return next(new AppError(404, "Inventory Stock not found"));
           }
     
-          logger.info(`Inventory Stock with ID ${id} fetched successfully`);
+         
           res.status(200).json({
             status: "success",
             data: stock,
           });
         } catch (error) {
-          logger.error("Error fetching Inventory Stock by ID:", error);
+         
           next(error);
         }
       }
@@ -99,13 +99,7 @@ export class InventoryStockController {
           return next(new AppError(400, "Inventory Stock ID is required"));
         }
     
-        logger.info(`Searching Inventory Stock with filters:`, {
-          id,
-          varientId,
-          productId,
-          locationId,
-          companyId,
-        });
+       
     
         const stock = await this.inventoryStockService.searchStock(
           id ? String(id) : undefined,
@@ -119,14 +113,14 @@ export class InventoryStockController {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
-        logger.info(`Inventory Stock found for ID: ${id}`);
+       
         return res.status(200).json({
           status: "success",
           data: stock,
         });
     
       } catch (error) {
-        logger.error("Error searching Inventory Stock:", error);
+        
         next(error);
       }
     }
@@ -159,18 +153,17 @@ export class InventoryStockController {
     
       } catch (error) {
         console.log(error)
-        logger.error("Error searching Inventory Stock:", error);
+        
         next(error);
       }
     }
     @httpGet("/stock/location-wise")
     public async gettingStockForCompanyOrLocation(
-      @request() req: Request,
       @response() res: Response,
       @next() next: NextFunction
     ) {
       try {
-       logger.info(`Getting Stock Location wise`);
+     
        
         const stock = await this.inventoryStockService.getGroupedInventoryStock()
      
@@ -178,26 +171,25 @@ export class InventoryStockController {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
-        logger.info(`Inventory Stock found `);
+        
         return res.status(200).json({
           status: "success",
           data: stock,
         });
     
       } catch (error) {
-        logger.error("Error searching Inventory Stock:", error);
+       
         next(error);
       }
     }
 
     @httpGet("/stock/accesslocation-wise")
     public async gettingStockaccessLocation(
-      @request() req: Request,
       @response() res: Response,
       @next() next: NextFunction
     ) {
       try {
-       logger.info(`Getting Stock Location wise`);
+      
        const id = res.locals.id
        
         const stock = await this.inventoryStockService.getInventoryStockbyuserAccesslocation(id)
@@ -206,14 +198,14 @@ export class InventoryStockController {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     console.log(stock)
-        logger.info(`Inventory Stock found `);
+       
         return res.status(200).json({
           status: "success",
           data: stock,
         });
     
       } catch (error) {
-        logger.error("Error searching Inventory Stock:", error);
+        
         next(error);
       }
     }
@@ -228,21 +220,21 @@ public async gettingStocksaccessLocation(
     const location = req.query.location as string | undefined;
     const id = res.locals.id;
 
-    logger.info(`Getting Stock Access Location wise`);
+   
 
-    const stock = await this.inventoryStockService.getProductbyaccesslocation(location, id);
+    const stock = await this.inventoryStockService.getProductByAccessLocation(location, id);
 
     if (!stock.length) {
       return next(new AppError(404, "Inventory Stock not found with given filters"));
     }
 
-    logger.info(`Inventory Stock found`);
+    
     return res.status(200).json({
       status: "success",
       data: stock,
     });
   } catch (error) {
-    logger.error("Error searching Inventory Stock:", error);
+   
     next(error);
   }
 }
@@ -255,23 +247,25 @@ public async gettingStocksaccessLocation(
     ) {
       try {
         const {  locationName, companyName} = req.query;
-       logger.info(`Getting Stock Location wise and Company wise`);
+      
        
-        const stock = await this.inventoryStockService.getProductGroupedInventoryStock( locationName ? String(locationName) : undefined,
-        companyName ? String(companyName) : undefined)
+        const stock = await this.inventoryStockService.getProductGroupedInventoryStock( 
+          locationName ? String(locationName) : undefined,
+          companyName ? String(companyName) : undefined
+        )
      
         if (!stock) {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
-        logger.info(`Inventory Stock found `);
+        
         return res.status(200).json({
           status: "success",
           data: stock,
         });
     
       } catch (error) {
-        logger.error("Error searching Inventory Stock:", error);
+        
         next(error);
       }
     }
@@ -283,26 +277,27 @@ public async gettingStocksaccessLocation(
       @next() next: NextFunction
     ) {
       try {
-        const {  locationName, companyName,productName } = req.query;
-       logger.info(`Getting Stock Location wise and Company wise`);
+        const {  locationName, companyName, productName } = req.query;
+      
        
-        const stock = await this.inventoryStockService.getVarientGroupedInventoryStock( 
+        const stock = await this.inventoryStockService.getVariantGroupedInventoryStock( 
           locationName ? String(locationName) : undefined,
-        companyName ? String(companyName) : undefined,
-        productName ? String(productName) : undefined,)
+          companyName ? String(companyName) : undefined,
+          productName ? String(productName) : undefined
+        )
      
         if (!stock) {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
-        logger.info(`Inventory Stock found `);
+       
         return res.status(200).json({
           status: "success",
           data: stock,
         });
     
       } catch (error) {
-        logger.error("Error searching Inventory Stock:", error);
+       
         next(error);
       }
     }
@@ -316,12 +311,9 @@ public async gettingStocksaccessLocation(
     @queryParam("locationId") locationId: string,
     @queryParam("startDate") startDate: string,
     @queryParam("endDate") endDate: string,
-  @request() req: Request,
-      @response() res: Response,
-      @next() next: NextFunction
+      @response() res: Response
   ) {
     try {
-      //console.log(companyName, locationId, startDate, endDate);
       const report = await this.inventoryStockService.getStockReport(
         companyName,
         locationId,
@@ -340,4 +332,114 @@ public async gettingStocksaccessLocation(
       });
     }
   }
+
+  @httpGet("/endoftheday/eod-report")
+  public async getEndOfDayReport(
+    @queryParam("companyId") companyId: string,
+    @queryParam("locationId") locationId: string,
+    @queryParam("startDate") startDate: string,
+    @queryParam("endDate") endDate: string,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      
+
+      const report = await this.inventoryStockService.getEndOfDayReport(
+        companyId,
+        locationId,
+        startDate,
+        endDate
+      );
+
+     
+      return res.status(200).json({
+        status: "success",
+        data: report,
+      });
+    } catch (error: any) {
+      
+      next(error);
+    }
+  }
+
+  @httpGet('/stock/locationwise-companywise')
+  public async getlocationcompanywisestock(
+    @request() req : Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ){
+    try{
+      const {company, location, startDate, endDate, page, limit, search, sort} = req.query;
+
+      const queryOptions = {
+        page: page ? parseInt(page as string) : 1,
+        limit: limit ? parseInt(limit as string) : 10,
+       
+      };
+
+      const result = await this.inventoryStockService.getlocationcompanywisestock(
+        queryOptions,
+        company as string,
+        location as string,
+        startDate as string,
+        endDate as string
+      );
+
+     
+      return res.status(200).json({
+        status: 'success',
+        data: result.data,
+        // meta: result.meta,
+         allRecords: result.meta.total,
+        totalPages: result.meta.pages,
+        page: result.meta.page,
+      });
+
+    }catch(error){
+     
+      next(error);
+    }
+  }
+  @httpGet('/stock/locationwise-companywise-productwise')
+  public async getlocationcompanyproductwisestock(
+    @request() req : Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ){
+    try{
+      const {company, location, product, startDate, endDate, page, limit, search, sort} = req.query;
+
+      const queryOptions = {
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+        search: search as string,
+        sort: sort as string,
+      };
+
+      const result = await this.inventoryStockService.getlocationcompanyproductwisestock(
+        queryOptions,
+        company as string,
+        location as string,
+        product as string,
+        startDate as string,
+        endDate as string
+      );
+
+     
+      return res.status(200).json({
+        status: 'success',
+        data: result.data,
+       // meta: result.meta,
+       allRecords: result.meta.total,
+        totalPages: result.meta.pages,
+        page: result.meta.page,
+      });
+
+    }catch(error){
+      
+      next(error);
+    }
+  }
+
     }

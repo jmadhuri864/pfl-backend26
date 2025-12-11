@@ -316,7 +316,7 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
   const invoiceNumber = await this.generateInvoiceNo(
     deliveryChallan.companyName.name,
-    deliveryChallan.fromLocation?.prefix, // ✅ OfficesData should have prefix field
+    deliveryChallan.fromLocation?.prefix,
     count,
   );
 
@@ -419,7 +419,7 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
     invoiceNo: invoiceNumber,
     invoiceDate: createdDate ? new Date(createdDate) : new Date(),
     type: invoiceType,
-    location: deliveryChallan.offices,
+    location: deliveryChallan.fromLocation,
     deliveryChallan,
     pdfData: pdfUrl,
   });
@@ -430,12 +430,15 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
 
 
-     async generateInvoiceq(
+     async generateFinalInvoice(
   deliveryChallanId: string,
   invoiceType: string
 ): Promise<any> {
   console.log("deliveryChallanId", deliveryChallanId);
   console.log("invoiceType", invoiceType);
+
+  // First, update delivery challan with latest return data
+  await this.updateDeliveryChallanWithReturns(deliveryChallanId);
 
   const deliveryChallan = await this.challanRepository.findOne({
     where: { id: deliveryChallanId },
@@ -463,41 +466,57 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
   // Count for invoice number generation
   const count = await this.invoiceRepository.count({
-    where: { location: { id: deliveryChallan.fromLocation.id } },
+    where: { location: { id: deliveryChallan.fromLocation?.id } },
   });
 
   console.log("Count for fromLocation ID:", count);
 
   const invoiceNumber = await this.generateInvoiceNo(
     deliveryChallan.companyName.name,
-    deliveryChallan.fromLocation.prefix,
+    deliveryChallan.fromLocation?.prefix,
     count
   );
 
-  // Build items with changedQty / changedPrice preference
+  // Build items with changedQty / changedPrice preference and return calculations
   const items = deliveryChallan.deliveryChallanProducts.map((product) => {
-    const quantity =
+    // Get base quantity and price (prefer changed values)
+    const baseQuantity =
       product.changedQty !== null && product.changedQty !== undefined
         ? product.changedQty
         : product.quantity;
-    const unitPrice =
+    const baseUnitPrice =
       product.changedPrice !== null && product.changedPrice !== undefined
         ? product.changedPrice
         : product.unitPrice;
-    const amount = quantity * unitPrice;
+    
+    // Get return values (default to 0 if not set) - using existing returnedQty field
+    const returnQty = product.returnedQty || 0;
+    const returnAmount = product.returnedAmount || 0;
+    const returnNetWeight = product.returnedNetWeight || 0;
+    
+    // Calculate net values after returns
+    const netQuantity = baseQuantity - returnQty;
+    const baseAmount = baseQuantity * baseUnitPrice;
+    const netAmount = baseAmount - returnAmount;
+    const netWeight = (product.netWeight || 0) - returnNetWeight;
 
     return {
       productName: sanitizeValue(product.productName.name),
       uom: sanitizeValue(product.uom?.unit) || "",
-      qty: quantity,
-      rate: unitPrice,
-      amt: amount,
+      originalQty: baseQuantity,
+      returnQty: returnQty,
+      qty: netQuantity,
+      rate: baseUnitPrice,
+      originalAmt: baseAmount,
+      returnAmt: returnAmount,
+      amt: netAmount,
+      netWeight: netWeight,
     };
   });
 
-  console.log("items", items);
+  console.log("items with returns", items);
 
-  // Compute totals
+  // Compute totals (using net amounts after returns)
   const totalAmount = items.reduce((sum, item) => sum + item.amt, 0);
   const totalAmountInWords = toWords(totalAmount).toUpperCase();
 
@@ -589,10 +608,10 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
   // Generate PDF
   const pdfUrl =
-    await this.pdfGeneratorService.generatePdfFromTemplate(
-      "invoiceTemplate",
+    await this.pdfGeneratorService.generateInvoicePdf(
+      
       invoiceData,
-      `invoices/invoice_${invoiceNumber}.pdf`
+      
     );
 
   // Save invoice entity
@@ -603,7 +622,7 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
     location: deliveryChallan.fromLocation,
     deliveryChallan,
     pdfData: pdfUrl,
-    totalAmount, // explicitly save recalculated total
+    totalAmount,
   });
 
   return await this.invoiceRepository.save(invoice);
@@ -627,23 +646,75 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
 
     async getAllInvoice(): Promise<any> {
-   
-    
       const invoice = await this.invoiceRepository.find({
-           
           relations: ['deliveryChallan'], 
       });
-  return invoice;
-      
-  
-    
-     
-  }
+      return invoice;
+    }
+
+    /**
+     * Update delivery challan items with return data from customer returns
+     * This aggregates all returns for a delivery challan and updates the items
+     */
+    async updateDeliveryChallanWithReturns(deliveryChallanId: string): Promise<void> {
+      // Get all returns for this delivery challan
+      const returns = await this.postReturnByCustomerRepository.find({
+        where: { deliveryChallanNo: { id: deliveryChallanId } },
+        relations: ['returnedProducts', 'returnedProducts.productName'],
+      });
+
+      if (!returns || returns.length === 0) {
+        console.log('No returns found for this delivery challan');
+        return;
+      }
+
+      // Get the delivery challan with its products
+      const deliveryChallan = await this.challanRepository.findOne({
+        where: { id: deliveryChallanId },
+        relations: ['deliveryChallanProducts', 'deliveryChallanProducts.productName'],
+      });
+
+      if (!deliveryChallan) {
+        throw new Error('Delivery Challan not found');
+      }
+
+      // Aggregate returns by product
+      const returnsByProduct = new Map<string, { qty: number; amount: number; netWeight: number }>();
+
+      returns.forEach((returnRecord) => {
+        returnRecord.returnedProducts.forEach((returnedProduct) => {
+          const productId = returnedProduct.productName.id;
+          const existing = returnsByProduct.get(productId) || { qty: 0, amount: 0, netWeight: 0 };
+
+          existing.qty += returnedProduct.returnedQty || 0;
+          existing.amount += returnedProduct.returnedQtyAmt || 0;
+          existing.netWeight += returnedProduct.returnedNetWt || 0;
+
+          returnsByProduct.set(productId, existing);
+        });
+      });
+
+      // Update delivery challan products with aggregated return data
+      for (const product of deliveryChallan.deliveryChallanProducts) {
+        const productId = product.productName.id;
+        const returns = returnsByProduct.get(productId);
+
+        if (returns) {
+          product.returnedQty = returns.qty;
+          product.returnedAmount = returns.amount;
+          product.returnedNetWeight = returns.netWeight;
+        }
+      }
+
+      // Save updated delivery challan
+      await this.challanRepository.save(deliveryChallan);
+      console.log('Delivery challan updated with return data');
+    }
     
 }
 
 
 function sanitizeValue(value: any): string {
-    return value == null ? ' ' : value.toString();
+    return value == null ? '' : value.toString();
   }
   

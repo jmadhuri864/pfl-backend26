@@ -15,6 +15,7 @@ import {
 import { TYPES } from '../types';
 import { User } from '../entities/user.entity';
 import logger from '../utils/logger';
+import { ControllerLogger } from '../utils/controllerLogger';
 import { UserSystemInfoRepository } from '../repositories/userSystemInfo.repository';
 import { AppDataSource } from '../utils/data-source';
 import { BlacklistedToken } from '../entities/blacklistedToken.entity';
@@ -177,6 +178,7 @@ export class AuthController {
       await this.userRepository.save(user);
       if (!isPasswordMatch) {
         logger.warn('Invalid password during login', { uid });
+        ControllerLogger.logAuth('User login', req, res, false);
         throw new AppError(401, 'Password is incorrect. Please try again.');
       }
 
@@ -259,6 +261,9 @@ export class AuthController {
         await this.notificationService.createNoti(message, user.id);
       }, 3000); // 1.5 seconds
       //await this.notificationService.createNoti(message, user.id);
+
+      // Log successful login
+      ControllerLogger.logAuth('User login', req, res, true);
 
       res.status(200).json({
         status: 'success',
@@ -401,6 +406,9 @@ export class AuthController {
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
       logger.info('User logged out successfully');
+
+      // Log successful logout
+      ControllerLogger.logAuth('User logout', req, res, true);
 
       res.status(200).json({
         status: 'success',

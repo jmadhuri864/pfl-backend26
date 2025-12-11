@@ -116,13 +116,7 @@ export class User extends Model {
   workEmail: string;
   @Column({ nullable: true })
   isAddressSame: boolean;
-  // @ManyToOne(() => Levels, {
-  //   nullable: true,
-  //   onDelete: 'SET NULL',
-  //   cascade: true,
-  // })
-  // @JoinColumn({ name: 'level_id' })
-  // currentLevel: Levels;
+
 
   @OneToMany(() => DocumentPermission, (permission) => permission.employee, {
     cascade: true,
@@ -136,13 +130,7 @@ export class User extends Model {
   @Column({ nullable: true })
   otherWorkLocationInput: string;
 
-  // @OneToOne(() => Branches, {
-  //   cascade: true,
-  //   nullable: true,
-  //   onDelete: 'SET NULL',
-  // })
-  // @JoinColumn({ name: 'joiningLocation_id' })
-  // joiningLocation: Branches | null;
+  ;
   @ManyToOne(() => Branches, {
     nullable: true,
     onDelete: 'SET NULL',
@@ -151,13 +139,7 @@ export class User extends Model {
   @JoinColumn({ name: 'joiningLocation_id' })
   joiningLocation: Branches | null;
 
-  // @OneToOne(() => OfficesData, {
-  //   cascade: true,
-  //   nullable: true,
-  //   onDelete: 'SET NULL',
-  // })
-  // @JoinColumn({ name: 'joiningofficedata_id' })
-  // joiningOffice: OfficesData | null;
+
   @ManyToOne(() => OfficesData, {
     nullable: true,
     onDelete: 'SET NULL',
@@ -182,10 +164,7 @@ export class User extends Model {
   @JoinColumn({ name: 'currentOffices_id' })
   currentOfficeLocation: OfficesData | null;
 
-  // @OneToMany(() => Branches, (branch) => branch.user, {
-  //   cascade: true,
-  // })
-  // accessLocation: Branches[];
+
 
   @ManyToMany(() => Branches)
   @JoinTable({
@@ -240,6 +219,45 @@ export class User extends Model {
     return { ...this, password: undefined, verified: undefined };
   }
 }
+
+// @Column({ nullable: true })
+// joiningLocationInput: string;
+// @ManyToOne(() => Levels, {
+//   nullable: true,
+//   onDelete: 'SET NULL',
+//   cascade: true,
+// })
+// @JoinColumn({ name: 'level_id' })
+// currentLevel: Levels;
+// @Column({ nullable: true })
+// joiningLocationInput: string;
+// @Column({ nullable: true })
+// joiningLocationInput: string;
+// @ManyToOne(() => Levels, {
+//   nullable: true,
+//   onDelete: 'SET NULL',
+//   cascade: true,
+// })
+// @JoinColumn({ name: 'level_id' })
+// currentLevel: Levels;
+// @OneToOne(() => Branches, {
+//   cascade: true,
+//   nullable: true,
+//   onDelete: 'SET NULL',
+// })
+// @JoinColumn({ name: 'joiningLocation_id' })
+// joiningLocation: Branches | null
+// @OneToMany(() => Branches, (branch) => branch.user, {
+//   cascade: true,
+// })
+// accessLocation: Branches[];
+// @OneToOne(() => OfficesData, {
+//   cascade: true,
+//   nullable: true,
+//   onDelete: 'SET NULL',
+// })
+// @JoinColumn({ name: 'joiningofficedata_id' })
+// joiningOffice: OfficesData | null;
 //  @ManyToMany(() => ReportingManagers, { cascade: true, nullable: true })
 //   @JoinTable({
 //     name: 'user_reporting_managers',

@@ -8,7 +8,7 @@ import { ProductVarient } from './productVarient.entity';
 
 @Entity('item')
 export class Item extends Model {
- 
+
   @ManyToOne(() => Product, {
     cascade: true,
     nullable: true,
@@ -17,49 +17,35 @@ export class Item extends Model {
   @JoinColumn({ name: 'product_id' })
   productName: Product;
 
-   @ManyToOne(() => ProductVarient, { onDelete: 'SET NULL', cascade: true })
-      @JoinColumn({ name: 'varient_id' })
-      variant: ProductVarient;
+  @ManyToOne(() => ProductVarient, { onDelete: 'SET NULL', cascade: true })
+  @JoinColumn({ name: 'varient_id' })
+  variant: ProductVarient;
 
-  
+
   @ManyToOne(() => UOM, { cascade: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'uom_id' })
   uom: UOM;
   @Column('decimal', { precision: 20, scale: 3, nullable: true })
   quantity: number;
-  // @Column({ nullable: true })
-  // size: string;
-  // @Column({ nullable: true })
-  // count: string;
-  // @Column({ nullable: true })
-  // origin: string;
 
-  // @Column({ nullable: true })
-  // variety: string;
-@Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
+  @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
   acceptedQty?: number | null;
   @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
   rejectedQty?: number | null;
   @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
   returnedQty?: number | null;
+  
+ 
+  
   @ManyToOne(() => UOM, { cascade: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'saleuom_id' })
   saleUoM: UOM;
-
-  // @Column({ nullable: true })
-  // saleCount: string;
-
- 
-  // @Column({ nullable: true })
-  // packagingMaterialUoM: string;
-
   @ManyToOne(() => UOM, { cascade: true, nullable: true, onDelete: 'SET NULL' })
   packagingMaterialUoM: UOM;
   @Column({ nullable: true })
   packagingMaterialQuantity: number;
   @Column({ nullable: true })
   packagingMaterialUnitPrice: number;
-
   @Column({ nullable: true })
   packagingMaterialAmount: number;
   @Column({ nullable: true })
@@ -94,6 +80,8 @@ export class Item extends Model {
 
   @Column({ type: 'decimal', precision: 20, scale: 4, nullable: true })
   changedPrice: number;
+
+
 
   @ManyToOne(
     () => DeliveryChallanPurchase,

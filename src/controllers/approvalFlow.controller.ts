@@ -1,10 +1,11 @@
 import { NextFunction ,Response,Request} from "express";
 import { controller, httpDelete, httpGet, httpPatch, httpPost, next, requestBody, response ,request} from "inversify-express-utils";
-import logger from "../utils/logger";
+
 import { inject } from "inversify";
 import { TYPES } from "../types";
 import { ApprovalFlowService } from "../services/approvalFlow.service";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import { ControllerLogger } from "../utils/controllerLogger";
 
 @controller('/approval-flow',deserializeUser,requireUser)
 export class ApprovalFlowController {
@@ -22,16 +23,27 @@ export class ApprovalFlowController {
       ) {
         try {
           console.log("req",req.body)
-          logger.info("Creating a new Approval Flow")
+         
           const category = await this.approvalFlowService.create(data);
-          logger.info("Created new Approval Flow");
+          
+          if (!category) {
+            ControllerLogger.logOperationFailed('Create', 'Approval Flow', 'could not be created', req, res);
+            return res.status(400).json({
+              status: "error",
+              message: "Approval Flow could not be created",
+            });
+          }
+          
+          // Log successful creation
+          ControllerLogger.logSuccess('Approval Flow created', category.id, req, res);
+          
           res.status(201).json({
             status: "success",
             data: category.id,
             message: "Approval Flow created successfully",
           });
         } catch (err) {
-          logger.error("Error creating Approval Flow", {  error: err });
+          ControllerLogger.logError('Approval Flow creation', err, req, res);
           next(err);
         }
       }
@@ -45,13 +57,19 @@ export class ApprovalFlowController {
     try {
       const type = typeof req.query.type === "string" ? req.query.type : undefined;
       const flows = await this.approvalFlowService.getAll(type);
-      if(!flows)
+      
+      if(!flows || flows.length === 0)
       {
+        ControllerLogger.logNotFound('Approval Flow', type || 'all', req, res);
         return res.status(404).json({ status: "error", message: "Not found" });
       }
+      
+      // Log successful data retrieval
+      ControllerLogger.logGetAllRecords('Approval Flow', req, res);
+      
       res.status(200).json({ status: "success", data: flows });
     } catch (err) {
-      logger.error("Error fetching approval flows", { error: err });
+      ControllerLogger.logError('Approval Flow retrieval', err, req, res);
       next(err);
     }
   }
@@ -63,14 +81,20 @@ export class ApprovalFlowController {
     @next() next: NextFunction
   ) {
     try {
-      const id =req.params.id
+      const id = req.params.id;
       const flow = await this.approvalFlowService.getbyidforview(id);
+      
       if (!flow) {
+        ControllerLogger.logNotFound('Approval Flow', id, req, res);
         return res.status(404).json({ status: "error", message: "Not found" });
       }
+      
+      // Log successful view
+      ControllerLogger.logView('Approval Flow', id, req, res);
+      
       res.status(200).json({ status: "success", data: flow });
     } catch (err) {
-      logger.error("Error fetching approval flow", { error: err });
+      ControllerLogger.logError('Approval Flow view', err, req, res);
       next(err);
     }
   }
@@ -82,14 +106,20 @@ export class ApprovalFlowController {
     @next() next: NextFunction
   ) {
     try {
-      const id =req.params.id
+      const id = req.params.id;
       const flow = await this.approvalFlowService.getByIdForUpdate(id);
+      
       if (!flow) {
+        ControllerLogger.logNotFound('Approval Flow', id, req, res);
         return res.status(404).json({ status: "error", message: "Not found" });
       }
+      
+      // Log successful view for update
+      ControllerLogger.logView('Approval Flow', id, req, res);
+      
       res.status(200).json({ status: "success", data: flow });
     } catch (err) {
-      logger.error("Error fetching approval flow", { error: err });
+      ControllerLogger.logError('Approval Flow view', err, req, res);
       next(err);
     }
   }
@@ -103,11 +133,19 @@ export class ApprovalFlowController {
   ) {
     try {
       const id = req.params.id;
-      //console.log(data)
       const updated = await this.approvalFlowService.update(id, data);
+      
+      if (!updated) {
+        ControllerLogger.logOperationFailed('Update', 'Approval Flow', 'not found or could not be updated', req, res);
+        return res.status(404).json({ status: "error", message: "Approval Flow not found or could not be updated" });
+      }
+      
+      // Log successful update
+      ControllerLogger.logSuccess('Approval Flow updated', id, req, res);
+      
       res.status(200).json({ status: "success", data: updated });
     } catch (err) {
-      logger.error("Error updating approval flow", { error: err });
+      ControllerLogger.logError('Approval Flow update', err, req, res);
       next(err);
     }
   }
@@ -124,13 +162,19 @@ export class ApprovalFlowController {
      const { oldUserId, newUserId } = req.body;
 
     if (!oldUserId || !newUserId) {
+      ControllerLogger.logValidationError('User replacement', 'Both oldUserId and newUserId are required', req, res);
       return res.status(400).json({ message: 'Both oldUserId and newUserId are required' });
     }
 
     try {
       await this.approvalFlowService.replaceUserInApprovalSystem(oldUserId, newUserId);
+      
+      // Log successful user replacement
+      ControllerLogger.logSuccess('User replaced in Approval Flow', `${oldUserId} -> ${newUserId}`, req, res);
+      
       return res.status(200).json({ message: 'User references replaced successfully.' });
     } catch (error) {
+      ControllerLogger.logError('User replacement in Approval Flow', error, req, res);
       console.error('Error replacing user:', error);
       return res.status(500).json({ message: 'Internal server error', error });
     }

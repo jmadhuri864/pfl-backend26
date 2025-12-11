@@ -14,7 +14,7 @@ import { TYPES } from '../types';
 import { CustomerDeliveryChallanService } from '../services/customerDeliveryChallan.service';
 import { Request, Response, NextFunction } from 'express';
 import AppError from '../utils/appError';
-import logger from '../utils/logger';
+import { ControllerLogger } from '../utils/controllerLogger';
 import {
   deserializeUser,
   requireUser,
@@ -37,10 +37,8 @@ export class CustomerDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log('in controller',req.body);
       if (req.file) {
         const imageUrl = (req.file as any).location;
-        console.log('imageurl is ', imageUrl);
         if (imageUrl) {
           req.body.anyAttachment = imageUrl;
         }
@@ -48,28 +46,26 @@ export class CustomerDeliveryChallanController {
 
       const requestedBy = res.locals.user.id;
 
-      logger.info('Received request to create customer delivery challan');
       const challan = await this.customerDeliveryChallanService.create(
         req.body,
         requestedBy
       );
-      console.log(challan);
+      
       if (!challan) {
-        logger.warn('Customer delivery challan creation failed');
+        ControllerLogger.logOperationFailed('Create', 'Customer Delivery Challan', 'Creation failed', req, res);
         return next(
           new AppError(400, 'Customer delivery challan could not be created'),
         );
       }
 
-      logger.info('Customer delivery challan created successfully');
+      ControllerLogger.logSuccess('Customer Delivery Challan created', challan.id, req, res);
       res.status(201).json({
         status: 'success',
         message: 'Customer delivery challan created successfully',
         data: challan,
       });
     } catch (err) {
-      console.log(err);
-      logger.error('Error creating challan', { error: err });
+      ControllerLogger.logError('Create Customer Delivery Challan', err, req, res);
       next(err);
     }
   }
@@ -77,27 +73,25 @@ export class CustomerDeliveryChallanController {
   @httpGet('/update/:id')
   public async getChallanById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      console.log("in update get by id controller")
-      logger.info(`Fetching customer delivery challan with ID: ${id}`);
       const challan = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanforUpdate(id);
 
       if (!challan) {
-        logger.warn(`Customer delivery challan with ID: ${id} not found`);
+        ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
         return next(new AppError(404, 'Customer delivery challan not found'));
       }
 
-      logger.info(`Fetched challan with ID: ${id} successfully`);
+      ControllerLogger.logView('Customer Delivery Challan (for update)', id, req, res);
       res.status(200).json({
         status: 'success',
         data: challan.data,
       });
     } catch (err) {
-      console.log(err)
-      logger.error('Error fetching challan by ID', { error: err });
+      ControllerLogger.logError('Get Customer Delivery Challan for update', err, req, res);
       next(err);
     }
   }
@@ -105,27 +99,25 @@ export class CustomerDeliveryChallanController {
    @httpGet('/view/:id')
   public async getChallanByIdforView(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      console.log("in update get by id controller")
-      logger.info(`Fetching customer delivery challan with ID: ${id}`);
       const challan = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanForView(id);
 
       if (!challan) {
-        logger.warn(`Customer delivery challan with ID: ${id} not found`);
+        ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
         return next(new AppError(404, 'Customer delivery challan not found'));
       }
 
-      logger.info(`Fetched challan with ID: ${id} successfully`);
+      ControllerLogger.logView('Customer Delivery Challan', id, req, res);
       res.status(200).json({
         status: 'success',
         data: challan.data,
       });
     } catch (err) {
-      console.log(err)
-      logger.error('Error fetching challan by ID', { error: err });
+      ControllerLogger.logError('Get Customer Delivery Challan for view', err, req, res);
       next(err);
     }
   }
@@ -144,13 +136,12 @@ export class CustomerDeliveryChallanController {
         limit: limit ? Number(limit) : undefined,
        // searchFields: ['deliveryChallanId'],
         filters: {},
-        sort: (sort as string) || undefined, // Adjust this line to match your sorting requirements
+        sort: (sort as string) || undefined,
         search: (search as string) || '',
       };
 
       const userId = res.locals.user.id;
 
-      logger.info('Fetching all customer delivery challans');
       const challans =
         await this.customerDeliveryChallanService.getAllCustomerDeliveryChallans(
           queryOptions,
@@ -158,11 +149,11 @@ export class CustomerDeliveryChallanController {
         );
 
       if (!challans || challans.length === 0) {
-        logger.warn('No customer delivery challans found');
+        ControllerLogger.logOperationFailed('Get All', 'Customer Delivery Challans', 'No records found', req, res);
         return next(new AppError(404, 'No customer delivery challans found'));
       }
     
-
+      ControllerLogger.logGetAllRecords('Customer Delivery Challans', req, res);
       res.status(200).json({
         status: 'success',
           data: challans.data,
@@ -172,7 +163,7 @@ export class CustomerDeliveryChallanController {
     })}
       
     catch (err) {
-      logger.error('Error fetching all challans', { error: err });
+      ControllerLogger.logError('Get All Customer Delivery Challans', err, req, res);
       next(err);
     }
   }
@@ -185,18 +176,13 @@ export class CustomerDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Updating challan with ID: ${id}`);
       const updatedBy = res.locals.updatedBy;
 
       if(req.file){
-      
         const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
        if (imageUrl) {
-         
         req.body.anyAttachment = imageUrl;
        }
-   
      }
       const challan = await this.customerDeliveryChallanService.update(id, {
         ...req.body,
@@ -204,19 +190,19 @@ export class CustomerDeliveryChallanController {
       });
 
       if (!challan) {
-        logger.warn(`Challan with ID: ${id} not found or could not be updated`);
+        ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
         return next(
           new AppError(404, 'Challan not found or could not be updated'),
         );
       }
 
-      logger.info(`Challan with ID: ${id} updated successfully`);
+      ControllerLogger.logSuccess('Customer Delivery Challan updated', id, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Customer delivery challan updated successfully',
       });
     } catch (err) {
-      logger.error('Error updating challan', { error: err });
+      ControllerLogger.logError('Update Customer Delivery Challan', err, req, res);
       next(err);
     }
   }
@@ -230,23 +216,69 @@ export class CustomerDeliveryChallanController {
     try {
       const id = req.query.id as string;
 
-      logger.info(`Deleting challan with ID: ${id}`);
       const result = await this.customerDeliveryChallanService.delete(id);
 
       if (!result) {
-        logger.warn(`Challan with ID: ${id} not found or could not be deleted`);
+        ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
         return next(
           new AppError(404, 'Challan not found or could not be deleted'),
         );
       }
 
-      logger.info(`Challan with ID: ${id} deleted successfully`);
+      ControllerLogger.logSuccess('Customer Delivery Challan deleted', id, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Customer delivery challan deleted successfully',
       });
     } catch (err) {
-      logger.error('Error deleting challan', { error: err });
+      ControllerLogger.logError('Delete Customer Delivery Challan', err, req, res);
+      next(err);
+    }
+  }
+
+  @httpPost('/update-returns/:id')
+  public async updateChallanWithReturns(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      await this.customerDeliveryChallanService.updateDeliveryChallanProductsWithReturns(id);
+
+      ControllerLogger.logSuccess('Delivery Challan updated with returns', id, req, res);
+      res.status(200).json({
+        status: 'success',
+        message: 'Delivery challan updated with return data successfully',
+      });
+    } catch (err) {
+      ControllerLogger.logError('Update Delivery Challan with returns', err, req, res);
+      next(err);
+    }
+  }
+
+  @httpGet('/net-amounts/:id')
+  public async getChallanWithNetAmounts(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const challan = await this.customerDeliveryChallanService.getDeliveryChallanWithNetAmounts(id);
+
+      if (!challan) {
+        ControllerLogger.logNotFound('Delivery Challan', id, req, res);
+        return next(new AppError(404, 'Delivery challan not found'));
+      }
+
+      ControllerLogger.logView('Delivery Challan with net amounts', id, req, res);
+      res.status(200).json({
+        status: 'success',
+        data: challan,
+      });
+    } catch (err) {
+      ControllerLogger.logError('Get Delivery Challan with net amounts', err, req, res);
       next(err);
     }
   }

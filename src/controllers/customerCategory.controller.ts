@@ -3,7 +3,7 @@ import {
   controller,
   httpGet,
   httpPost,
-  httpPut,
+  
   httpDelete,
   requestBody,
   requestParam,
@@ -17,10 +17,11 @@ import { TYPES } from "../types";
 import { CustomerCategoryService } from "../services/customerCategory.service";
 import AppError from "../utils/appError"; // Assuming you have a custom error class
 import { CustomerCategory } from "../entities/customerCategory.entity";
-import { uploadNone } from "../middleware/multerConfig";
+
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-import logger from "../utils/logger";
+
 import { PaginationOptions } from "../utils/pagination";
+import { ControllerLogger } from "../utils/controllerLogger";
 
 @controller("/customerCategory",deserializeUser,requireUser)
 export class CustomerCategoryController {
@@ -35,33 +36,40 @@ export class CustomerCategoryController {
     @response() res: Response, 
     @next() next: NextFunction) {
     try {
-      logger.info("Fetching all customer categories");
-       const { page, limit, search, sort,customerCategoryId} = req.query;
+      const { page, limit, search, sort } = req.query;
                 
-            
-            const queryOptions: PaginationOptions = {
-              page: page ? Number(page) : undefined,  
-              limit: limit ? Number(limit) : undefined,
-             // searchFields: ['customerCategory.id'],
-              filters: {},
-              sort: sort as string || undefined, // Adjust this line to match your sorting requirements
-              search: search as string|| '',
-            };
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : undefined,  
+        limit: limit ? Number(limit) : undefined,
+        filters: {},
+        sort: sort as string || undefined,
+        search: search as string|| '',
+      };
+      
       const categories = await this.customerCategoryService.getAll(queryOptions);
-      if (!categories.data.length) {
-        logger.warn("No customer categories found");
-        return next(new AppError(404, "No customer categories found"));
+      
+      if (!categories || !categories.data || categories.data.length === 0) {
+        return res.status(200).json({
+          status: "success",
+          data: [],
+          allRecords: 0,
+          totalPages: 0,
+          page: queryOptions.page || 1,
+        });
       }
-      logger.info("Fetched all customer categories", { count: categories.data.length });
+      
+      // Log successful retrieval with specific message
+      ControllerLogger.logGetAllRecords('Customer Category', req, res);
+      
       res.status(200).json({
         status: "success",
         data: categories.data,
-        allRecords:  categories.meta.total,
-        totalPages:  categories.meta.pages,     
-        page:  categories.meta.page,
+        allRecords: categories.meta.total,
+        totalPages: categories.meta.pages,     
+        page: categories.meta.page,
       });
     } catch (err) {
-      logger.error("Error fetching customer categories", { error: err });
+      ControllerLogger.logError('Customer Category retrieval', err, req, res);
       next(err);
     }
   }
@@ -69,23 +77,27 @@ export class CustomerCategoryController {
   @httpGet("/:id")
   public async getById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      logger.info("Fetching customer category by ID", { id });
       const category = await this.customerCategoryService.getById(id);
+      
       if (!category) {
-        logger.warn("Customer category not found", { id });
+        ControllerLogger.logNotFound('Customer Category', id, req, res);
         return next(new AppError(404, "Customer category not found"));
       }
-      logger.info("Fetched customer category by ID", { id });
+      
+      // Log successful view
+      ControllerLogger.logView('Customer Category', id, req, res);
+      
       res.status(200).json({
         status: "success",
         data: category,
       });
     } catch (err) {
-      logger.error("Error fetching customer category by ID", { id, error: err });
+      ControllerLogger.logError('Customer Category view', err, req, res);
       next(err);
     }
   }
@@ -93,20 +105,30 @@ export class CustomerCategoryController {
   @httpPost("/")
   public async create(
     @requestBody() categoryData: Partial<CustomerCategory>,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      logger.info("Creating a new customer category")
       const category = await this.customerCategoryService.create(categoryData);
-      logger.info("Created new customer category");
+      
+      if (!category) {
+        ControllerLogger.logOperationFailed('Create', 'Customer Category', 'could not be created', req, res);
+        return res.status(400).json({
+          status: "error",
+          message: "Customer Category could not be created",
+        });
+      }
+      
+      // Log successful creation
+      ControllerLogger.logSuccess('Customer Category created', (category as any)?.id || 'unknown', req, res);
+      
       res.status(201).json({
         status: "success",
-        //data: category,
         message: "Customer Category created successfully",
       });
     } catch (err) {
-      logger.error("Error creating customer category", {  error: err });
+      ControllerLogger.logError('Customer Category creation', err, req, res);
       next(err);
     }
   }
@@ -115,31 +137,34 @@ export class CustomerCategoryController {
   public async update(
     @requestParam("id") id: string,
     @requestBody() categoryData: Partial<CustomerCategory>,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      logger.info("updating customer category")
-      const updatedBy=res.locals.updatedBy
+      const updatedBy = res.locals.updatedBy;
       const category = await this.customerCategoryService.update(
         id,
         categoryData,
         updatedBy
       );
+      
       if (!category) {
-        logger.warn("Customer category not found or update failed", { id });
+        ControllerLogger.logOperationFailed('Update', 'Customer Category', 'not found or could not be updated', req, res);
         return next(
           new AppError(404, "Customer category not found or update failed")
         );
       }
-      logger.info("Updated customer category");
+      
+      // Log successful update
+      ControllerLogger.logSuccess('Customer Category updated', id, req, res);
+      
       res.status(200).json({
         status: "success",
-        // data: category,
         message: "Customer Category updated successfully",
       });
     } catch (err) {
-      logger.error("Error updating customer category", {  error: err });
+      ControllerLogger.logError('Customer Category update', err, req, res);
       next(err);
     }
   }
@@ -147,23 +172,27 @@ export class CustomerCategoryController {
   @httpDelete("/:id")
   public async delete(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      logger.info("deleting the customer category")
-      const success = await this.customerCategoryService.deleteCustomerCategory(id)
+      const success = await this.customerCategoryService.deleteCustomerCategory(id);
+      
       if (!success) {
-        logger.warn("Customer Category not found for delete", { id });
+        ControllerLogger.logOperationFailed('Delete', 'Customer Category', 'not found or could not be deleted', req, res);
         return res.status(404).json({ message: 'Customer Category not found' });
       }
-      logger.info("Deleted customer category", { id });
+      
+      // Log successful deletion
+      ControllerLogger.logSuccess('Customer Category deleted', id, req, res);
+     
       res.status(200).json({
         status: "success",
         message: "Customer Category deleted successfully",
       });
     } catch (err) {
-      logger.error("Error deleting customer category", { id, error: err });
+      ControllerLogger.logError('Customer Category deletion', err, req, res);
       next(err);
     }
   }

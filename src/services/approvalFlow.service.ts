@@ -108,14 +108,15 @@ export class ApprovalFlowService {
     //   ...sixthApprover,
     // });
 
-    const approvalLevel = await this.approvalLevelRepository.save({
-  firstApprover,
-  secondApprover,
-  thirdApprover,
-  fourthApprover,
-  fifthApprover,
-  sixthApprover,
-});
+    const approvalLevel = this.approvalLevelRepository.create();
+    if (firstApprover) approvalLevel.firstApprover = firstApprover;
+    if (secondApprover) approvalLevel.secondApprover = secondApprover;
+    if (thirdApprover) approvalLevel.thirdApprover = thirdApprover;
+    if (fourthApprover) approvalLevel.fourthApprover = fourthApprover;
+    if (fifthApprover) approvalLevel.fifthApprover = fifthApprover;
+    if (sixthApprover) approvalLevel.sixthApprover = sixthApprover;
+    
+    const savedApprovalLevel = await this.approvalLevelRepository.save(approvalLevel);
 
 
     // console.log('Approval level', approvalLevel.firstApprover);
@@ -134,13 +135,13 @@ export class ApprovalFlowService {
     });
     console.log("Finalizers: ",finalizerBlock);
     
-    const approvalFlow = this.approvalFlowRepository.create({
-      creator: creator, // Ensure this is a User entity object
-      type: type as any, // Cast to the correct enum type if needed, e.g. type as DocumentTypeEnum
-      verifiers,
-      approvers: approvalLevel,
-      finalizers: finalizerBlock,
-    });
+    const approvalFlow = this.approvalFlowRepository.create();
+    approvalFlow.creator = creator;
+    approvalFlow.type = type as any;
+    approvalFlow.verifiers = verifiers;
+    approvalFlow.approvers = savedApprovalLevel;
+    approvalFlow.finalizers = finalizerBlock;
+    
     console.log('Approval flow', approvalFlow);
 
     return await this.approvalFlowRepository.save(approvalFlow);

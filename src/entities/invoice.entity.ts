@@ -1,6 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne } from "typeorm";
 import Model from "./model.entity";
-
 import { DeliveryChallanPurchase } from "./deliveryChallan.entity";
 import { Branches } from "./branches.entity";
 import { format } from "date-fns-tz";
@@ -22,9 +21,7 @@ export class Invoice extends Model {
   @Column({ type: 'enum', enum: ['proforma', 'final'], default: 'proforma' })
   type: string;
 
-
-
-   @ManyToOne(() => Branches, {
+  @ManyToOne(() => Branches, {
       nullable: true,
       onDelete: "SET NULL",
       cascade: true,
@@ -34,6 +31,9 @@ export class Invoice extends Model {
 
   @Column({  nullable: false }) 
   pdfData: string;
+
+  @Column('decimal', { precision: 20, scale: 4, nullable: true })
+  totalAmount: number;
 
   @CreateDateColumn({ type :'date' ,transformer: {
     to: (value: Date) => value, 

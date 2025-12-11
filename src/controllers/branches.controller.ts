@@ -3,7 +3,7 @@ import {
   controller,
   httpPost,
   httpGet,
-  httpPut,
+  
   httpDelete,
   request,
   requestParam,
@@ -15,19 +15,17 @@ import { TYPES } from '../types';
 import { BranchType } from '../entities/branches.entity';
 import { NextFunction, Request, Response } from 'express';
 import AppError from '../utils/appError';
-import {
-  CreateBranchBodySchema,
-  UpdateBranchBodySchema,
-} from '../schemas/branch.schema';
+
 import { BranchessService } from '../services/branches.service';
-import { uploadNone } from '../middleware/multerConfig';
+
 import {
   captureUser,
   deserializeUser,
   requireUser,
 } from '../middleware/deserializeUser';
-import logger from '../utils/logger';
+
 import { PaginationOptions } from '../utils/pagination';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/location-branches', deserializeUser, requireUser)
 export class BranchessController {
@@ -44,23 +42,25 @@ export class BranchessController {
   ) {
     try {
       const branchType = req.params.branchType as BranchType;
-      logger.info(`Received request to create branch of type: ${branchType}`);
+      
 
       const branchData = req.body;
       branchData.type = branchType;
 
       const branch = await this.branchesService.createBranch(branchData);
       if (!branch) {
-        logger.warn('Branch creation failed');
+        ControllerLogger.logOperationFailed('Create', 'Branch', 'could not be created', req, res);
         return next(new AppError(400, 'Branch could not be created'));
       }
-      logger.info(`${branch.type} created successfully`);
+      
+      // Log successful creation
+      ControllerLogger.logSuccess(`${branch.type} created`, branch.id, req, res);
       res.status(201).json({
         status: 'success',
         message: `${branch.type} created successfully`,
       });
     } catch (err) {
-      logger.error('Error creating branch', { error: err });
+      ControllerLogger.logError('Branch creation', err, req, res);
       next(err);
     }
   }
@@ -74,20 +74,21 @@ export class BranchessController {
     try {
       const id = req.params.id as string;
 
-      logger.info(`Received request to get branch with ID: ${id}`);
+      
       const branch = await this.branchesService.getBranchByIdAndType(id);
       if (!branch) {
-        logger.warn(`Branch with ID: ${id}  not found`);
+        ControllerLogger.logNotFound('Branch', id, req, res);
         return next(new AppError(404, 'Branch not found'));
       }
-      logger.info(`Fetched branch with ID: ${id} successfully`);
-
+      
+      // Log successful view
+      ControllerLogger.logView('Branch', id, req, res);
       res.status(200).json({
         status: 'success',
         data: branch,
       });
     } catch (err) {
-      logger.error('Error fetching branch', { error: err });
+      ControllerLogger.logError('Branch view', err, req, res);
       next(err);
     }
   }
@@ -112,19 +113,20 @@ console.log("serach data is ",search)
         search: (search as string) || '',
       };
       console.log(queryOptions.search);
-      logger.info(
-        `Received request to fetch all branches of type: ${branchType}`,
-      );
+     
       const branch = await this.branchesService.getAllByBranchType(
         branchType,
         queryOptions,
       );
       console.log(branch);
       if (!branch) {
-        logger.warn(`No branches found for type: ${branchType}`);
+        ControllerLogger.logNotFound('Branch', branchType, req, res);
         return next(new AppError(404, 'Branch not found'));
       }
-      logger.info(`Fetched all branches of type: ${branchType} successfully`);
+      
+      // Log successful data retrieval
+      ControllerLogger.logGetAllRecords('Branch', req, res);
+      
       res.status(200).json({
         status: 'success',
         data: branch.data,
@@ -133,34 +135,37 @@ console.log("serach data is ",search)
         page: branch.meta.page,
       });
     } catch (err) {
-      logger.error('Error fetching branches', { error: err });
+      ControllerLogger.logError('Branch retrieval', err, req, res);
       console.log(err);
       next(err);
     }
   }
   @httpGet('/filterData/filter/all')
   public async getAllFilterBranch(
+    @request() req:Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info(`Received request to fetch all branches`);
+     
 
       const branches =
         await this.branchesService.getAllByFilterDataBranchType();
 
       if (!branches || branches.length === 0) {
-        logger.warn(`No branches found`);
+        ControllerLogger.logNotFound('Branches', 'filter data', req, res);
         return next(new AppError(404, 'Branches not found'));
       }
 
-      logger.info(`Fetched all branches successfully`);
+      // Log successful data retrieval
+      ControllerLogger.logGetAllRecords('Branch', req, res);
+    
       res.status(200).json({
         status: 'success',
         data: branches,
       });
     } catch (err) {
-      logger.error('Error fetching branches', { error: err });
+      ControllerLogger.logError('Branch filter retrieval', err, req, res);
       next(err);
     }
   }
@@ -176,9 +181,7 @@ console.log("serach data is ",search)
     try {
       console.log(branchType);
       console.log(id);
-      logger.info(
-        `Received request to update branch with ID: ${id} and type: ${branchType}`,
-      );
+     
 
       const updatedBy = res.locals.updatedBy;
       const updateData = req.body;
@@ -190,21 +193,22 @@ console.log("serach data is ",search)
         updatedBy,
       );
       if (!branch) {
-        logger.warn(
-          `Branch with ID: ${id} and type: ${branchType} not found or could not be updated`,
-        );
+        ControllerLogger.logOperationFailed('Update', 'Branch', 'not found or could not be updated', req, res);
         return next(
           new AppError(404, 'Branch not found or could not be updated'),
         );
       }
-      logger.info(`${branch.type} with ID: ${id} updated successfully`);
+      
+      // Log successful update
+      ControllerLogger.logSuccess('Branch updated', id, req, res);
+      
       res.status(200).json({
         status: 'success',
         message: `${branch.type} data updated successfully`,
       });
     } catch (err) {
+      ControllerLogger.logError('Branch update', err, req, res);
       console.log(err);
-      logger.error('Error updating branch', { error: err });
       next(err);
     }
   }
@@ -218,29 +222,25 @@ console.log("serach data is ",search)
     try {
       const id = req.query.id as string;
       const branchType = req.query.branchType as BranchType;
-      logger.info(
-        `Received request to delete branch with ID: ${id} and type: ${branchType}`,
-      );
+      
       const result = await this.branchesService.deleteBranch(id, branchType);
 
       if (!result) {
-        logger.warn(
-          `Branch with ID: ${id} and type: ${branchType} not found or could not be deleted`,
-        );
+        ControllerLogger.logOperationFailed('Delete', 'Branch', 'not found or could not be deleted', req, res);
         return next(
           new AppError(404, 'Branch not found or could not be deleted'),
         );
       }
 
-      logger.info(
-        `Branch with ID: ${id} and type: ${branchType} deleted successfully`,
-      );
+      // Log successful deletion
+      ControllerLogger.logSuccess('Branch deleted', id, req, res);
+      
       res.status(200).json({
         status: 'success',
         message: `${branchType} deleted successfully`,
       });
     } catch (err) {
-      logger.error('Error deleting branch', { error: err });
+      ControllerLogger.logError('Branch deletion', err, req, res);
       next(err);
     }
   }

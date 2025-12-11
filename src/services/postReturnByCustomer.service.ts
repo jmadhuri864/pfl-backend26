@@ -10,6 +10,7 @@ import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentTypeEnum } from '../entities/docuemnt.entity';
+import { UserLogger } from '../utils/logger';
 import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
@@ -57,284 +58,150 @@ export class PostReturnByCustomerService {
   ) {}
 
   //TODO: Create
-//   async createReturn(returnData: any, requestedBy: any): Promise<any> {
-//     if (!returnData.deliveryChallanNo) {
-//       throw new Error('Delivery Challan number is required');
-//     }
 
-//     const deliveryChallan = await this.deliveryChallanRepository.findOne({
-//       where: {
-//         id: returnData.deliveryChallanNo,
-//       },
-//       relations: [
-//         'deliveryChallanProducts',
-//         'deliveryChallanProducts.productName',
-//       ],
-//     });
+async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any> {
 
-//     if (!deliveryChallan) {
-//       throw new Error('Delivery Challan not found');
-//     }
-
-//     //   await this.deliveryChallanProductRepository.save(product);
-//     // }
-//  // 3. Normalize variants input
-//     let variantIds: string[] = [];
-//     if (Array.isArray(returnData.variants)) {
-//       variantIds = returnData.variants;
-//     } else if (returnData.variants) {
-//       variantIds = [returnData.variants];
-//     }
-    
-//     // 4. Fetch variants
-//     const variants = await this.productVarientsRepository.find({
-//       where: { id: In(variantIds) },
-//       relations: ['product'],
-//     });
-//      // 5. Extract product IDs
-//     const productIds = variants.map(v => v.product?.id).filter(Boolean);
-//     // Create the PostReturnByCustomer entity
-//     const newReturn = this.postReturnByCustomerRepository.create({
-//       ...returnData,
-//         variants: variants.map(v => ({ id: v.id })),
-//       products: productIds.map(id => ({ id })),
-//     });
-
-//     //TODO: Check approval flow is exit or not for logged user
-
-//     const approvalFlowExit =
-//       this.approvalFlowService.findApprovalFlowForLoggedUser(
-//         requestedBy,
-//         'return-by-customer',
-//       );
-
-//     if (!approvalFlowExit) {
-//       throw new Error('Approval flow not found');
-//     }
-
-//     // Save Delivery Challan & Post Return
-//     await this.deliveryChallanRepository.save(deliveryChallan);
-//     const savedNewReturn = await this.postReturnByCustomerRepository.save(
-//       newReturn,
-//     );
-//     const savedreturn1 = Array.isArray(savedNewReturn)
-//       ? savedNewReturn[0]
-//       : savedNewReturn;
-//     const document = await this.documentbService.createDocument({
-//       type: DocumentTypeEnum.RETURN_BY_CUSTOMER,
-//       // totalAmt: rfpaData.totalAmt,
-//       docDef: DocDefEnum.SALE,
-//       status: DocumentStatus.HOLD,
-//       remarks: 'Document auto-created with RBC',
-//       lastActionBy: { id: requestedBy },
-//       document_type_id: Array.isArray(savedNewReturn)
-//         ? (savedNewReturn[0] as PostReturnByCustomer)?.id
-//         : (savedNewReturn as PostReturnByCustomer).id,
-//     });
-
-//     await this.documentbService.startApprovalFlow(document.id);
-
-//     for (const product of deliveryChallan.deliveryChallanProducts) {
-//       //console.log('Product ID:', product);
-
-//       for (const item of savedreturn1.returnedProducts) {
-//   const {
-//     unitPrice,
-//     productName,
-//     returnedNetWt,
-//     returnedQtyAmt,
-//     variant, // make sure ReturnedProducts entity has relation with ProductVarient
-//   } = item;
-
-//   const productId = typeof productName === 'object' ? productName.id : productName;
-//   const variantId = typeof variant === 'object' ? variant.id : variant;
-
-//   let productVariant = await this.productVarientsRepository.findOne({
-//     where: { id: variantId },
-//     relations: ['product'],
-//   });
-
-//  if (!productVariant) {
-//   const product = await this.productRepository.findOne({ where: { id: productId } });
-//   if (!product) throw new Error('Product not found');
-
-//    const existingStock = await this.inventoryStockRepository.findOne({
-//     where: {
-//       companyName: { id: savedreturn1.companyName.id },
-//       location: { id: savedreturn1.location.id },
-//       product: { id: product.id },
-//       varients: { id: productVariant.id },
-//     },
-//     relations: ['product', 'varients', 'location', 'companyName'],
-//   });
-
-//   const returnedNetWt1 = Number(returnedNetWt ?? 0);
-//   const returnedQtyAmt1 = Number(returnedQtyAmt ?? 0);
-
-//   if (existingStock) {
-//     existingStock.onHandQty = Number(existingStock.onHandQty ?? 0) + returnedNetWt1;
-//     existingStock.amount = Number(existingStock.amount ?? 0) + returnedQtyAmt1;
-
-//     await this.inventoryStockRepository.save(existingStock);
-//   } else {
-//     const newStock = this.inventoryStockRepository.create({
-//       companyName: { id: savedreturn1.companyName.id },
-//       location: { id: savedreturn1.location.id },
-//       product: { id: product.id },
-//       varients: { id: productVariant.id },
-//       onHandQty: returnedNetWt1,
-//       amount: returnedQtyAmt1,
-//     });
-
-//     await this.inventoryStockRepository.save(newStock);
-//   }
-
-// }
-//     }
-  
-//   }
-// }
-
-async createReturn(returnData: any, requestedBy: any): Promise<any> {
+  // 1️⃣ Validate required input
   if (!returnData.deliveryChallanNo) {
     throw new Error('Delivery Challan number is required');
   }
-
+returnData.isChanged=true;
+  // 2️⃣ Fetch challan
   const deliveryChallan = await this.deliveryChallanRepository.findOne({
     where: { id: returnData.deliveryChallanNo },
-    relations: ['deliveryChallanProducts', 'deliveryChallanProducts.productName'],
+    relations: ['deliveryChallanProducts', 'deliveryChallanProducts.variant'],
   });
 
   if (!deliveryChallan) {
     throw new Error('Delivery Challan not found');
   }
 
-  // Normalize variants
+  // 3️⃣ Normalize variants input
   let variantIds: string[] = [];
+
   if (Array.isArray(returnData.variants)) {
     variantIds = returnData.variants;
   } else if (returnData.variants) {
     variantIds = [returnData.variants];
   }
 
-  // Fetch variants
+  // 4️⃣ Fetch variant entities
   const variants = await this.productVarientsRepository.find({
     where: { id: In(variantIds) },
     relations: ['product'],
   });
 
-  // Extract product IDs
+  // 5️⃣ Extract product IDs
   const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
-  // Create PostReturnByCustomer entity
+  // 6️⃣ Create return entity
   const newReturn = this.postReturnByCustomerRepository.create({
     ...returnData,
     variants: variants.map(v => ({ id: v.id })),
     products: productIds.map(id => ({ id })),
   });
 
-  // // Check approval flow
-  // const approvalFlowExit =
-  //   await this.approvalFlowService.findApprovalFlowForLoggedUser(
-  //     requestedBy,
-  //     'return-by-customer',
-  //   );
-
-  // if (!approvalFlowExit) {
-  //   throw new Error('Approval flow not found');
-  // }
-
-  // Save Delivery Challan & Post Return
+  // 7️⃣ Save challan & mark as returned
+  deliveryChallan.isReturned = true;
   await this.deliveryChallanRepository.save(deliveryChallan);
-  const savedNewReturn = await this.postReturnByCustomerRepository.save(newReturn);
 
+  // 8️⃣ Save return record
+  const savedNewReturn = await this.postReturnByCustomerRepository.save(newReturn);
   const savedReturnEntity = Array.isArray(savedNewReturn)
     ? savedNewReturn[0]
     : savedNewReturn;
 
-  // Create document
+  // 9️⃣ Create approval document
   const document = await this.documentbService.createDocument({
     type: DocumentTypeEnum.RETURN_BY_CUSTOMER,
-    docDef: DocDefEnum.OPERATION,  // ✅ FIXED: Changed from SALE to OPERATION
+    docDef: DocDefEnum.OPERATION,
     status: DocumentStatus.HOLD,
     remarks: 'Document auto-created with RBC',
     lastActionBy: { id: requestedBy },
     document_type_id: savedReturnEntity.id,
   });
 
+  // 🔟 Start approval flow
   await this.documentbService.startApprovalFlow(document.id);
 
-  // ✅ Update inventory stock based on returned products
-  for (const item of savedReturnEntity.returnedProducts || []) {
-    const {
-      unitPrice,
-      productName,
-      returnedNetWt,
-      returnedQtyAmt,
-      variant,
-    } = item;
+  // 1️⃣1️⃣ Update original challan product rows with returned & rejected qty
+  await this.updateDeliveryChallanItemsWithReturns(
+    returnData.deliveryChallanNo,
+    savedReturnEntity.returnedProducts
+  );
 
-    const productId = typeof productName === 'object' ? productName.id : productName;
-    const variantId = typeof variant === 'object' ? variant.id : variant;
+  // 1️⃣2️⃣ Log the creation
+  UserLogger.logRfpaCreated(savedReturnEntity.id, requestedBy, clientIp);
 
-    // Ensure product exists
-    const product = await this.productRepository.findOne({ where: { id: productId } });
-    if (!product) throw new Error(`Product not found: ${productId}`);
-
-    // Ensure variant exists
-    let productVariant = null;
-    if (variantId) {
-      productVariant = await this.productVarientsRepository.findOne({
-        where: { id: variantId },
-        relations: ['product'],
-      });
-    }
-
-    const returnedNetWtVal = Number(returnedNetWt ?? 0);
-    const returnedQtyAmtVal = Number(returnedQtyAmt ?? 0);
-
-    // Find existing stock
-    const existingStock = await this.inventoryStockRepository.findOne({
-      where: {
-        companyName: { id: savedReturnEntity.companyName.id },
-        location: { id: savedReturnEntity.location.id },
-        product: { id: product.id },
-        ...(productVariant ? { varients: { id: productVariant.id } } : {}),
-      },
-      relations: ['product', 'varients', 'location', 'companyName'],
-    });
-
-    if (existingStock) {
-      existingStock.onHandQty = Number(existingStock.onHandQty ?? 0) + returnedNetWtVal;
-      existingStock.amount = Number(existingStock.amount ?? 0) + returnedQtyAmtVal;
-      await this.inventoryStockRepository.save(existingStock);
-    } else {
-      const newStock = this.inventoryStockRepository.create({
-        companyName: { id: savedReturnEntity.companyName.id },
-        location: { id: savedReturnEntity.location.id },
-        product: { id: product.id },
-        varients: productVariant ? { id: productVariant.id } : undefined,
-        onHandQty: returnedNetWtVal,
-        amount: returnedQtyAmtVal,
-      });
-      await this.inventoryStockRepository.save(newStock);
-    }
-  }
-
-  // ✅ NEW: Mark the linked Delivery Challan as returned
-  if (returnData.deliveryChallanNo) {
-    const deliveryChallan = await this.deliveryChallanRepository.findOne({
-      where: { id: returnData.deliveryChallanNo }
-    });
-
-    if (deliveryChallan && !deliveryChallan.isReturned) {
-      deliveryChallan.isReturned = true;
-      await this.deliveryChallanRepository.save(deliveryChallan);
-      console.log(`✅ DC ${deliveryChallan.challanNo} marked as returned (isReturned = true)`);
-    }
-  }
-
+  // 1️⃣3️⃣ Return final saved entity
   return savedReturnEntity;
+}
+
+/**
+ * Update delivery challan items with return data
+ * This updates the returnedQty, rejectedQty, and acceptedQty fields
+ */
+private async updateDeliveryChallanItemsWithReturns(
+  deliveryChallanId: string,
+  returnedProducts: any[]
+): Promise<void> {
+  const deliveryChallan = await this.deliveryChallanRepository.findOne({
+    where: { id: deliveryChallanId },
+    relations: [
+      'deliveryChallanProducts',
+      'deliveryChallanProducts.productName',
+      'deliveryChallanProducts.variant',
+    ],
+  });
+
+  if (!deliveryChallan) {
+    console.warn(`Delivery challan ${deliveryChallanId} not found for return update`);
+    return;
+  }
+
+  // Reset all return/reject quantities first for this challan
+  for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
+    dcProduct.returnedQty = 0;
+    dcProduct.rejectedQty = 0;
+    dcProduct.acceptedQty = Number(dcProduct.quantity || 0);
+  }
+
+  // Update each delivery challan product with return data
+  for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
+    // Find matching returned products
+    const matchingReturns = returnedProducts.filter(rp => {
+      const rpProductId = typeof rp.productName === 'object' ? rp.productName.id : rp.productName;
+      const rpVariantId = typeof rp.variant === 'object' ? rp.variant?.id : rp.variant;
+      
+      return (
+        rpProductId === dcProduct.productName?.id &&
+        (rpVariantId === dcProduct.variant?.id || (!rpVariantId && !dcProduct.variant))
+      );
+    });
+
+    if (matchingReturns.length > 0) {
+      // Aggregate return values
+      const totalReturnedQty = matchingReturns.reduce(
+        (sum, rp) => sum + Number(rp.returnedQty || 0), 0
+      );
+      const totalRejectedQty = matchingReturns.reduce(
+        (sum, rp) => sum + Number(rp.rejectedQty || 0), 0
+      );
+
+      // Update the delivery challan product
+      dcProduct.returnedQty = totalReturnedQty;
+      dcProduct.rejectedQty = totalRejectedQty;
+      
+      // Calculate accepted quantity (original quantity - returned - rejected)
+      const originalQty = Number(dcProduct.quantity || 0);
+      dcProduct.acceptedQty = originalQty - totalReturnedQty - totalRejectedQty;
+
+      console.log(`✅ Updated DC product ${dcProduct.productName?.name}: ${totalReturnedQty} returned, ${totalRejectedQty} rejected`);
+    }
+
+    // Save the updated product
+    await this.deliveryChallanProductRepository.save(dcProduct);
+  }
 }
 
 
@@ -437,59 +304,9 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
       },
     };
 
-    // let queryBuilder= await this.postReturnByCustomerRepository.createQueryBuilder('postReturn')
-    //     .leftJoinAndSelect('postReturn.companyName', 'company')
-    //     .leftJoinAndSelect('postReturn.deliveryChallanNo','deliveryChallanNo')
-    //     .leftJoinAndSelect('postReturn.proformaInvNo','proformaInvNo')
 
-    //     .leftJoinAndSelect('postReturn.returnedProducts', 'returnedProduct')
-    //     .leftJoinAndSelect('returnedProduct.productName', 'product')
-    //     .leftJoinAndSelect('returnedProduct.returnedUOM', 'returnedUOM')
-    //     .orderBy('postReturn.createdAt','DESC')
-    //     const result = await buildQuery(queryBuilder, queryOptions, 'postReturn');
 
-    //   const formattedResponse = result.data.map(postReturn => {
-    //     const rawDate = postReturn.createdAt;
-    //     const { createdDate, createdTime } = formatDateTime(rawDate);
-    //     const  date= formatDateTime(postReturn.date);
-    //     return {
-    //       id: postReturn.id, // Post Return ID
-    //       companyName: postReturn.companyName.name || null,
-    //       date: date.createdDate,
-    //       createdTime,
-    //       createdDate,
-    //       deliveryChallanNo: postReturn.deliveryChallanNo?.challanNo || null,
-    //       proformaInvNo: postReturn.proformaInvNo?.invoiceNo || null,
-    //       remark: postReturn.remark,
 
-    //       returnedProducts: postReturn.returnedProducts.map(returnedProduct => ({
-    //         productName: returnedProduct.productName?.name || null,
-    //         returnedUOM: returnedProduct.returnedUOM?.unit || null,
-    //         amount: returnedProduct.amount,
-    //         netWeight: returnedProduct.netWeight,
-    //         packingMaterialWeight: returnedProduct.packingMaterialWeight,
-    //         grossWeight: returnedProduct.grossWeight,
-    //         unitPrice: returnedProduct.unitPrice,
-    //         quantity: returnedProduct.quantity
-    //       }))
-    //     };
-    //   });
-    //   formattedResponse.forEach(postReturn => {
-    //     console.log(postReturn.returnedProducts.map(returnedProduct => ({
-    //       productName: returnedProduct.productName || null,
-    //       returnedUOM: returnedProduct.returnedUOM || null,
-    //       amount: returnedProduct.amount,
-    //       netWeight: returnedProduct.netWeight,
-    //       packingMaterialWeight: returnedProduct.packingMaterialWeight,
-    //       grossWeight: returnedProduct.grossWeight,
-    //       unitPrice: returnedProduct.unitPrice,
-    //       quantity: returnedProduct.quantity
-    //     })));
-    //   });
-    //   return {
-    //     data: formattedResponse,
-    //     meta: result.meta
-    // };
   }
 
   async getByIdPostReturnByCustomerforView(docid: string): Promise<any> {
@@ -548,16 +365,7 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
       returnedProducts: result.returnedProducts.map((returnedProduct) => ({
         productName: returnedProduct.productName?.name,
         variant:returnedProduct.variant?.variantName,
-        //  ? {
-        //   id: returnedProduct.productName.id,
-        //   productName: returnedProduct.productName?.name
-        // } : null,
-        // size: returnedProduct.size,
-        // variety: returnedProduct.variety,
-        // origin: returnedProduct.origin,
         saleUoM: returnedProduct.saleUoM?.unit || null,
-        // rejectedUoM: returnedProduct.rejectedUoM?.unit || null,
-        // returnedUOM: returnedProduct.returnedUOM?.unit || null,
         returnedQty: returnedProduct.returnedQty,
         returnedQtyAmt: returnedProduct.returnedQtyAmt,
         rejectedQty: returnedProduct.rejectedQty,
@@ -634,16 +442,7 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
       returnedProducts: result.returnedProducts.map((returnedProduct) => ({
         productName: returnedProduct.productName?.id,
         variant:returnedProduct.variant?.id,
-        //  ? {
-        //   id: returnedProduct.productName.id,
-        //   productName: returnedProduct.productName?.name
-        // } : null,
-        // size: returnedProduct.size,
-        // variety: returnedProduct.variety,
-        // origin: returnedProduct.origin,
         saleUoM: returnedProduct.saleUoM?.id || null,
-        // rejectedUoM: returnedProduct.rejectedUoM?.id || null,
-        // returnedUOM: returnedProduct.returnedUOM?.id || null,
         returnedQty: returnedProduct.returnedQty,
         returnedQtyAmt: returnedProduct.returnedQtyAmt,
         rejectedQty: returnedProduct.rejectedQty,
@@ -706,16 +505,7 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
 
       returnedProducts: result.returnedProducts.map((returnedProduct) => ({
         productName: returnedProduct.productName?.name,
-        //  ? {
-        //   id: returnedProduct.productName.id,
-        //   productName: returnedProduct.productName?.name
-        // } : null,
-        // size: returnedProduct.size,
-        // variety: returnedProduct.variety,
-        // origin: returnedProduct.origin,
         saleUoM: returnedProduct.saleUoM?.unit || null,
-        // rejectedUoM: returnedProduct.rejectedUoM?.unit || null,
-        // returnedUOM: returnedProduct.returnedUOM?.unit || null,
         returnedQty: returnedProduct.returnedQty,
         returnedQtyAmt: returnedProduct.returnedQtyAmt,
         rejectedQty: returnedProduct.rejectedQty,
@@ -735,6 +525,7 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
     id: string,
     returnData: any,
     updatedBy: string,
+    clientIp?: string,
   ): Promise<any> {
     const postReturn = await this.postReturnByCustomerRepository.findOne({
       where: { id },
@@ -773,15 +564,86 @@ async createReturn(returnData: any, requestedBy: any): Promise<any> {
       postReturn,
     );
 
-    // Log changes
-    await this.auditLogService.logChange(
-      'PostReturnByCustomer',
-      id,
-      oldData,
-      updatedPostReturn,
-      updatedBy,
-    );
+    // Update delivery challan items with new return/reject quantities
+    if (postReturn.deliveryChallanNo?.id) {
+      await this.updateDeliveryChallanItemsWithReturns(
+        postReturn.deliveryChallanNo.id,
+        updatedPostReturn.returnedProducts
+      );
+    }
+
+    // Log the update
+    UserLogger.logRfpaUpdated(id, updatedBy, clientIp);
 
     return updatedPostReturn;
+  }
+
+  // Helper method to extract user ID consistently
+  private extractUserId(user: any): string {
+    if (typeof user === 'string') {
+      return user;
+    }
+    if (user && typeof user === 'object') {
+      return user.id || user.userId || 'System';
+    }
+    return 'System';
+  }
+
+  // Admin functionality: Get audit logs for a specific user
+  async getAuditLogsForUser(
+    userId: string,
+    options?: {
+      entityName?: string;
+      startDate?: Date;
+      endDate?: Date;
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<any> {
+    if (options?.entityName && options?.startDate && options?.endDate) {
+      // Filter by entity and date range
+      return this.auditLogService.getLogsByUserAndDateRange(
+        userId,
+        options.startDate,
+        options.endDate
+      );
+    } else if (options?.entityName) {
+      // Filter by entity type
+      return this.auditLogService.getLogsByUserAndEntity(userId, options.entityName);
+    } else if (options?.page && options?.limit) {
+      // Paginated results
+      return this.auditLogService.getLogsByUserWithPagination(
+        userId,
+        options.page,
+        options.limit
+      );
+    } else {
+      // All logs for user
+      return this.auditLogService.getLogsByUser(userId);
+    }
+  }
+
+  // Admin functionality: Get comprehensive user activity report
+  async getUserActivityReport(userId: string): Promise<any> {
+    return this.auditLogService.getUserActivityReport(userId);
+  }
+
+  // Admin functionality: Get all users who have made changes to PostReturnByCustomer
+  async getUsersWithReturnChanges(): Promise<{ userId: string; changeCount: number }[]> {
+    const allLogs = await this.auditLogService.getAllLogs();
+    
+    // Filter logs for PostReturnByCustomer entity
+    const returnLogs = allLogs.filter(log => log.entityName === 'PostReturnByCustomer');
+    
+    // Group by user and count changes
+    const userChanges: Record<string, number> = {};
+    returnLogs.forEach(log => {
+      userChanges[log.updatedBy] = (userChanges[log.updatedBy] || 0) + 1;
+    });
+
+    return Object.entries(userChanges).map(([userId, changeCount]) => ({
+      userId,
+      changeCount
+    })).sort((a, b) => b.changeCount - a.changeCount); // Sort by most active users
   }
 }

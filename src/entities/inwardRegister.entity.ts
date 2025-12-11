@@ -11,6 +11,11 @@ import { Company } from './company.entity';
 import { format, toZonedTime } from 'date-fns-tz';
 import { User } from './user.entity';
 
+export enum InwardType {
+  Purchase = 'purchase',
+  Transferred = 'transferred',
+  ReturnedByCustomer = 'returned-by-customer',
+}
 @Entity('inward_register')
 export class InwardRegister extends Model {
   @ManyToOne(() => GRN, { nullable: true, onDelete: 'SET NULL' })
@@ -22,8 +27,14 @@ export class InwardRegister extends Model {
   })
   @JoinColumn({ name: 'delivery_challan_id' })
   deliveryChallanNo: DeliveryChallanPurchase;
-  @Column({ nullable: true })
-  inwardType: string;
+ 
+
+  @Column({
+    type: 'enum',
+    nullable: true,
+    enum: InwardType,
+  })
+  inwardType: InwardType;
 
 
   @ManyToOne(() => Company, {

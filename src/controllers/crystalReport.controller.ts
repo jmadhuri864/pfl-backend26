@@ -13,7 +13,7 @@ import { Request, Response, NextFunction } from 'express';
 import { TYPES } from '../types';
 import { CrystalReportService, ProcurementReportFilters } from '../services/crystalReport.service';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
-import logger from '../utils/logger';
+
 import AppError from '../utils/appError';
 import * as ExcelJS from 'exceljs';
 import { format } from 'date-fns';
@@ -46,10 +46,7 @@ export class CrystalReportController {
 
       const reportData = await this.crystalReportService.generateProcurementReport(filters);
       
-      logger.info('Detailed procurement report generated successfully', {
-        recordCount: reportData.length,
-        filters
-      });
+     
 
       res.status(200).json({
         status: 'success',
@@ -61,7 +58,7 @@ export class CrystalReportController {
         }
       });
     } catch (error) {
-      logger.error('Error generating detailed procurement report:', error);
+     
       next(new AppError(500, 'Failed to generate procurement report'));
     }
   }
@@ -87,7 +84,7 @@ export class CrystalReportController {
 
       const summaryData = await this.crystalReportService.generateProcurementSummary(filters);
       
-      logger.info('Procurement summary report generated successfully');
+      
 
       res.status(200).json({
         status: 'success',
@@ -98,7 +95,7 @@ export class CrystalReportController {
         }
       });
     } catch (error) {
-      logger.error('Error generating procurement summary:', error);
+      
       next(new AppError(500, 'Failed to generate procurement summary'));
     }
   }
@@ -124,9 +121,7 @@ export class CrystalReportController {
 
       const reportData = await this.crystalReportService.generateVendorWiseProcurementReport(filters);
       
-      logger.info('Vendor-wise procurement report generated successfully', {
-        recordCount: reportData.length
-      });
+      
 
       res.status(200).json({
         status: 'success',
@@ -138,7 +133,7 @@ export class CrystalReportController {
         }
       });
     } catch (error) {
-      logger.error('Error generating vendor-wise procurement report:', error);
+      
       next(new AppError(500, 'Failed to generate vendor-wise procurement report'));
     }
   }
@@ -164,9 +159,7 @@ export class CrystalReportController {
 
       const reportData = await this.crystalReportService.generateProductWiseProcurementReport(filters);
       
-      logger.info('Product-wise procurement report generated successfully', {
-        recordCount: reportData.length
-      });
+      
 
       res.status(200).json({
         status: 'success',
@@ -178,7 +171,7 @@ export class CrystalReportController {
         }
       });
     } catch (error) {
-      logger.error('Error generating product-wise procurement report:', error);
+     
       next(new AppError(500, 'Failed to generate product-wise procurement report'));
     }
   }
@@ -271,13 +264,10 @@ export class CrystalReportController {
       await workbook.xlsx.write(res);
       res.end();
 
-      logger.info('Procurement report exported to Excel successfully', {
-        recordCount: reportData.length,
-        fileName
-      });
+     ;
 
     } catch (error) {
-      logger.error('Error exporting procurement report to Excel:', error);
+     
       next(new AppError(500, 'Failed to export procurement report to Excel'));
     }
   }
@@ -305,7 +295,7 @@ export class CrystalReportController {
         data: filterOptions
       });
     } catch (error) {
-      logger.error('Error fetching procurement report filters:', error);
+     
       next(new AppError(500, 'Failed to fetch report filters'));
     }
   }
