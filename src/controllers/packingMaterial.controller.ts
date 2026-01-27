@@ -16,12 +16,16 @@ import { TYPES } from '../types';
 import { PackingMaterialService } from '../services/packingMaterial.service';
 import AppError from '../utils/appError';
 import { PaginationOptions } from '../utils/pagination';
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/packingMaterial', deserializeUser, requireUser)
 export class PackingMaterialController {
   constructor(
     @inject(TYPES.PackingMaterialService)
     private packingMaterialService: PackingMaterialService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
   @httpGet('/')
   public async getAllPackingMaterial(
@@ -43,6 +47,17 @@ export class PackingMaterialController {
       };
       const materials = await this.packingMaterialService.getAll(queryOptions);
 
+      ControllerLogger.logList("Packing Material", req, res);
+
+      // Send notification for packing material list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Packing Material records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         data: materials.formatResponse,
@@ -53,6 +68,7 @@ export class PackingMaterialController {
     } catch (err) {
       logger.error('Error fetching packing materials', { error: err });
       console.log(err);
+      ControllerLogger.logError('Packing Material list retrieval', err, req, res);
       next(err);
     }
   }
@@ -76,6 +92,18 @@ export class PackingMaterialController {
         return next(new AppError(404, 'No materials found'));
       }
       logger.info('materials saved successfully');
+      
+      ControllerLogger.logSuccess('Packing Material created', materials.id, req, res);
+
+      // Send notification for packing material creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Packing Material created successfully: ${materials.id}`,
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: 'success',
       });
@@ -84,6 +112,7 @@ export class PackingMaterialController {
       logger.error('Error occurred while fetching all materials', {
         error: err,
       });
+      ControllerLogger.logError('Packing Material creation', err, req, res);
       next(err);
     }
   }
@@ -91,6 +120,7 @@ export class PackingMaterialController {
   @httpGet('/:id')
   public async getPackingMaterialId(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -103,6 +133,17 @@ export class PackingMaterialController {
       }
       logger.info('Material details retrieved successfully', { material });
 
+      ControllerLogger.logView("Packing Material", id, req, res);
+
+      // Send notification for packing material view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Packing Material viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         data: material,
@@ -112,6 +153,7 @@ export class PackingMaterialController {
         materiald: id,
         error: err,
       });
+      ControllerLogger.logError('Packing Material view', err, req, res);
       next(err);
     }
   }
@@ -147,6 +189,17 @@ export class PackingMaterialController {
         );
       }
 
+      ControllerLogger.logSuccess('Packing Material updated', id, req, res);
+
+      // Send notification for packing material update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Packing Material updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Packing Material updated successfully',
@@ -155,6 +208,7 @@ export class PackingMaterialController {
     } catch (err) {
       logger.error('Error updating Packing Material', { id, error: err });
       console.log(err);
+      ControllerLogger.logError('Packing Material update', err, req, res);
       next(err);
     }
   }
@@ -172,6 +226,17 @@ export class PackingMaterialController {
         return next(new AppError(404, 'Packing Material not found'));
       }
 
+      ControllerLogger.logList("Packing Material Partial", req, res);
+
+      // Send notification for packing material partial list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Packing Material partial list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Packing materials fetched successfully',
@@ -179,6 +244,7 @@ export class PackingMaterialController {
       });
     } catch (err) {
       logger.error('Error fetching packing materials', { error: err });
+      ControllerLogger.logError('Packing Material partial list retrieval', err, req, res);
       next(err);
     }
   }

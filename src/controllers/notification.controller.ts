@@ -2,7 +2,7 @@ import { controller, httpGet, httpPost, request, response } from "inversify-expr
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { inject } from "inversify";
 import { TYPES } from "../types";
-import { Server } from "socket.io";
+
 import { Request, Response } from "express";
 import { NotificationService } from "../services/notification.service";
 
@@ -10,7 +10,8 @@ import { NotificationService } from "../services/notification.service";
 
 @controller('/notification', deserializeUser, requireUser)
 export class NotificationController {
-  constructor(@inject(TYPES.SocketIoServerOne) private io: Server,
+  constructor(
+    //@inject(TYPES.SocketIoServerOne) private io: Server,
   @inject(TYPES.NotificationService)
   private readonly notificationService: NotificationService,
 ) {}

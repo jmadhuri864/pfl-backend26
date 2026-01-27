@@ -27,8 +27,8 @@ import { ControllerLogger } from '../utils/controllerLogger';
 export class AqrController {
   constructor(
     @inject(TYPES.AqrService) private aqrService: AqrService,
-    // @inject(TYPES.NotificationService)
-    // private notificationService: NotificationService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpPost('/')
@@ -48,6 +48,19 @@ console.log(aqrData)
         return next(new AppError(400, 'AQR not created'));
       }
       console.log('created aqr in controller ', createdAqr);
+
+      // 🔔 Send notification for AQR creation
+      try {
+        const userId = res.locals.user.id;
+        const aqrId = createdAqr.aqrId || createdAqr.id;
+        await this.notificationService.createNoti(
+          `AQR ${aqrId} created successfully and submitted for approval`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('AQR created', createdAqr.id, req, res);
       
 
@@ -106,6 +119,16 @@ console.log(aqrData)
             page: queryOptions.page,
           });
         }
+
+        // 🔔 Send notification for accessing recycle bin
+        try {
+          await this.notificationService.createNoti(
+            `Accessed AQR recycle bin (${aqrs.data.length} items)`,
+            userId
+          );
+        } catch (notifError) {
+          console.log('Notification error:', notifError);
+        }
         
         // Log successful retrieval with specific message
         ControllerLogger.logGetAllRecords('AQR', req, res);
@@ -141,6 +164,18 @@ console.log(aqrData)
         throw new AppError(404, "AQR not found");
       }
 
+      // 🔔 Send notification for AQR access
+      try {
+        const userId = res.locals.user.id;
+        const aqrId = aqr.aqrId || id;
+        await this.notificationService.createNoti(
+          `Viewed AQR ${aqrId} details`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       // Log successful view
       ControllerLogger.logView('AQR', id, req, res);
 
@@ -166,6 +201,18 @@ console.log(aqrData)
       if (!aqr) {
         ControllerLogger.logNotFound('AQR', id, req, res);
         throw new AppError(404, "AQR not found");
+      }
+
+      // 🔔 Send notification for AQR edit access
+      try {
+        const userId = res.locals.user.id;
+        const aqrId = aqr.aqrId || id;
+        await this.notificationService.createNoti(
+          `Opened AQR ${aqrId} for editing`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
       }
       
       // Log successful view for update
@@ -206,6 +253,18 @@ console.log(aqrData)
         throw new AppError(404, 'AQR not found or could not be updated');
       }
 
+      // 🔔 Send notification for AQR update
+      try {
+        const userId = res.locals.user.id;
+        const aqrId = updatedAqr.aqrId || id;
+        await this.notificationService.createNoti(
+          `AQR ${aqrId} updated successfully`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       //logger.info('AQR updated successfully', { aqrId: id });
 
       // Log successful update
@@ -239,6 +298,17 @@ console.log(aqrData)
         throw new AppError(404, 'AQR not found or could not be deleted');
       }
 
+      // 🔔 Send notification for AQR deletion
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `AQR ${id} deleted successfully`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       //logger.info('AQR deleted successfully', { aqrId: id });
       
       // Log successful deletion
@@ -266,6 +336,17 @@ console.log(aqrData)
       if (!aqr) {
         ControllerLogger.logNotFound('AQR', search, req, res);
         throw new AppError(404, 'AQR not found');
+      }
+
+      // 🔔 Send notification for AQR search
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Searched for AQR: "${search}" - ${Array.isArray(aqr) ? aqr.length : 1} result(s) found`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
       }
       
       // Log successful search
@@ -327,6 +408,16 @@ console.log(aqrData)
             page: queryOptions.page,
           });
         }
+
+        // 🔔 Send notification for accessing AQR list
+        try {
+          await this.notificationService.createNoti(
+            `Accessed AQR list (${aqrs.data.length} items found)`,
+            userId
+          );
+        } catch (notifError) {
+          console.log('Notification error:', notifError);
+        }
     
         logger.info(`Total AQR fetched: ${aqrs.data.length}`);
         
@@ -370,6 +461,17 @@ console.log(aqrData)
           status: 'fail',
           message: 'You do not have permission to view this AQR',
         });
+      }
+
+      // 🔔 Send notification for AQR view access
+      try {
+        const aqrId = aqr.aqrId || docid;
+        await this.notificationService.createNoti(
+          `Viewed AQR ${aqrId} for review`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
       }
       
       // Log successful view
@@ -415,6 +517,18 @@ try {
 
       const result = await this.aqrService.filterAqrs(page, limit, filters);
 
+      // 🔔 Send notification for AQR filtering
+      try {
+        const userId = res.locals.user.id;
+        const filterCount = Object.keys(filters).length;
+        await this.notificationService.createNoti(
+          `Applied ${filterCount} filter(s) to AQR list - ${result.data?.length || 0} results found`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       res.json({
         success: true,
         ...result,
@@ -438,6 +552,18 @@ try {
         return next(new AppError(400, 'An array of AQR IDs is required'));
       }
       const result = await this.aqrService.deleteMultipleAqrs(ids);
+
+      // 🔔 Send notification for bulk AQR deletion
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Bulk delete operation completed: ${result.success} AQRs deleted successfully, ${result.failed} failed`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       res.status(200).json({
         message: result.message,
         success: result.success,

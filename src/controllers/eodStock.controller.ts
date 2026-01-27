@@ -200,6 +200,18 @@ export class EodStockController {
         });
       }
 
+      // 🔔 Send notification for get all EOD stocks
+      try {
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${stocks.meta.total} EOD stock reports`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all EOD stocks notification error:', notifError);
+      }
+
       ControllerLogger.logGetAllRecords('EOD Stocks', req, res);
       return res.status(200).json({
         status: 'success',
@@ -237,6 +249,19 @@ export class EodStockController {
         return next(
           new AppError(404, 'Stock report not found or could not be updated'),
         );
+      }
+
+      // 🔔 Send notification for EOD stock update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `EOD stock report with ID ${id} updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('EOD stock update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('EOD Stock updated', id, req, res);
@@ -322,6 +347,19 @@ export class EodStockController {
             'EOD Stock report not found or could not be deleted',
           ),
         );
+      }
+
+      // 🔔 Send notification for EOD stock deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `EOD stock report with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('EOD stock deletion notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('EOD Stock deleted', id, req, res);

@@ -27,6 +27,8 @@ import { uploads } from '../middleware/muterConfigCSV';
 import { PaginationOptions } from '../utils/pagination';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { upload } from '../middleware/multerConfig';
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from '../services/notification.service';
 
  @controller('/products', deserializeUser, requireUser)
 export class ProductController {
@@ -34,6 +36,8 @@ export class ProductController {
     @inject(TYPES.ProductService) private productService: ProductService,
     @inject(TYPES.PdfGeneratorService)
             private readonly pdfGeneratorService: PdfGeneratorService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
 
   ) {}
 
@@ -57,6 +61,17 @@ export class ProductController {
       logger.info('Fetching all products');
       const products = await this.productService.getAll(queryOptions);
       logger.info(`Fetched ${products.length} products successfully`);
+      ControllerLogger.logList('Product', req, res);
+
+      // Send notification for product list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Product records list accessed successfully',
+          userId
+        );
+      }
+
       res
         .status(200)
         .json({
@@ -68,6 +83,7 @@ export class ProductController {
         });
     } catch (err) {
       logger.error('Error fetching all products', { error: err });
+      ControllerLogger.logError('Product list retrieval', err, req, res);
       next(err);
     }
   }
@@ -188,6 +204,7 @@ export class ProductController {
   @httpGet('/:id')
   public async getById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -196,12 +213,25 @@ export class ProductController {
       const product = await this.productService.getById(id);
       if (!product) {
         logger.warn(`Product with ID not found`);
+        ControllerLogger.logError('Product view', new AppError(404, 'Product not found'), req, res);
         return next(new AppError(404, 'Product not found'));
       }
       logger.info(`Product with ID fetched successfully`);
+      ControllerLogger.logView('Product', id, req, res);
+
+      // Send notification for product view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({ status: 'success', data: product });
     } catch (err) {
       logger.error(`Error fetching product with ID`, { error: err });
+      ControllerLogger.logError('Product view', err, req, res);
       next(err);
     }
   }
@@ -249,6 +279,17 @@ export class ProductController {
       const product = await this.productService.create(productData);
       console.log('successfully created');
       logger.info('Product created successfully');
+      ControllerLogger.logSuccess('Product created', product.id, req, res);
+
+      // Send notification for product creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product created successfully: ${product.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: 'success',
         message: 'Product created successfully',
@@ -258,6 +299,7 @@ export class ProductController {
     } catch (err) {
       logger.error('Error creating product', { error: err });
       console.log(err);
+      ControllerLogger.logError('Product creation', err, req, res);
       next(err);
     }
   }
@@ -335,8 +377,20 @@ export class ProductController {
       );
       if (!product) {
         logger.warn(`Product with ID not found or update failed`);
+        ControllerLogger.logError('Product update', new AppError(404, 'Product not found or update failed'), req, res);
         return next(new AppError(404, 'Product not found or update failed'));
       }
+      ControllerLogger.logSuccess('Product updated', id, req, res);
+
+      // Send notification for product update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Product updated successfully',
@@ -345,6 +399,7 @@ export class ProductController {
     } catch (err) {
       logger.error(`Error updating product with ID: ${id}`, { error: err });
       console.log(err);
+      ControllerLogger.logError('Product update', err, req, res);
       next(err);
     }
   }
@@ -381,6 +436,7 @@ export class ProductController {
   @httpDelete('/:id')
   public async delete(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -389,15 +445,28 @@ export class ProductController {
       const success = await this.productService.delete(id);
       if (!success) {
         logger.warn(`Product with ID: ${id} not found`);
+        ControllerLogger.logError('Product deletion', new AppError(404, 'Product not found'), req, res);
         return next(new AppError(404, 'Product not found'));
       }
       logger.info(`Product with ID: ${id} deleted successfully`);
+      ControllerLogger.logSuccess('Product deleted', id, req, res);
+
+      // Send notification for product deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Product deleted successfully',
       });
     } catch (err) {
       logger.error(`Error deleting product with ID: ${id}`, { error: err });
+      ControllerLogger.logError('Product deletion', err, req, res);
       next(err);
     }
   }

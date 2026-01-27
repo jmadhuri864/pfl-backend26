@@ -3,7 +3,7 @@ import { TYPES } from '../types';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { SSEService } from './sse.service';
 import { UserService } from '../services/user.service';
-import { userSocketMap } from '../utils/socketIo';
+
 
 @injectable()
 export class NotificationService {
@@ -47,7 +47,7 @@ export class NotificationService {
     // console.log('Date:', formattedDate);
     // console.log('Time:', formattedTime);
 
-    const socketId = userSocketMap.get(userId.toString());
+    //const socketId = userSocketMap.get(userId.toString());
     // Prepare notification data for SSE
     const notificationData = {
       type: 'notification',

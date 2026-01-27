@@ -13,6 +13,7 @@ import { inject } from 'inversify';
 import { TYPES } from '../types';
 import { ProductVarientService } from '../services/productVarient.service';
 import { NextFunction, Response, Request } from 'express';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/productVarient', deserializeUser, requireUser)
 export class ProductVarientController {
@@ -42,10 +43,12 @@ export class ProductVarientController {
         queryOptions,
       );
       if (!productVarient) {
+        ControllerLogger.logError('Product Varient list retrieval', new Error('product varient not found'), req, res);
         return res
           .status(404)
           .json({ status: 'fail', message: 'product varient not found' });
       }
+      ControllerLogger.logList('Product Varient', req, res);
       res
         .status(200)
         .json({
@@ -56,6 +59,7 @@ export class ProductVarientController {
           page: productVarient.meta.page,
         });
     } catch (err) {
+      ControllerLogger.logError('Product Varient list retrieval', err, req, res);
       next(err);
     }
   }
@@ -72,12 +76,15 @@ export class ProductVarientController {
         varientId,
       );
       if (!productVarient) {
+        ControllerLogger.logError('Product Varient view', new Error('product varient not found'), req, res);
         return res
           .status(404)
           .json({ status: 'fail', message: 'product varient not found' });
       }
+      ControllerLogger.logView('Product Varient', varientId, req, res);
       res.status(200).json({ status: 'success', data: productVarient });
     } catch (err) {
+      ControllerLogger.logError('Product Varient view', err, req, res);
       next(err);
     }
   }
@@ -93,12 +100,15 @@ export class ProductVarientController {
       const productVarient =
         await this.productVarientService.getVarientByProductId(productId);
       if (!productVarient) {
+        ControllerLogger.logError('Product Varient by Product view', new Error('Product varient not found'), req, res);
         return res
           .status(404)
           .json({ status: 'fail', message: 'Product varient not found' });
       }
+      ControllerLogger.logView('Product Varient by Product', productId, req, res);
       res.status(200).json({ status: 'success', data: productVarient });
     } catch (err) {
+      ControllerLogger.logError('Product Varient by Product view', err, req, res);
       next(err);
     }
   }

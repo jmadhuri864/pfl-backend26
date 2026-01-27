@@ -6,10 +6,15 @@ import { PaymentRequestService } from "../services/paymentRequest.service";
 import { NextFunction,Response,Request } from "express";
 import { uploadAny, uploadNone } from "../middleware/multerConfig";
 import logger from "../utils/logger";
+import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 
 @controller("/paymentRequest",deserializeUser, requireUser)
 export class PaymentRequestController {
-  constructor(@inject(TYPES.PaymentRequestService) private paymentRequestService: PaymentRequestService) {}
+  constructor(
+    @inject(TYPES.PaymentRequestService) private paymentRequestService: PaymentRequestService,
+    @inject(TYPES.NotificationService) private notificationService: NotificationService
+  ) {}
 
   @httpGet("/")
   public async getAllPaymentRequests(
@@ -30,12 +35,25 @@ export class PaymentRequestController {
       }
   
       logger.info("Successfully fetched all payment requests", { count: paymentRequests.length });
+      
+      ControllerLogger.logList("Payment Request", req, res);
+
+      // Send notification for payment request list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Payment Request records list accessed successfully',
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: "success",
         data: paymentRequests,
       });
     } catch (err) {
       logger.error("Error fetching all payment requests", { err });
+      ControllerLogger.logError('Payment Request list retrieval', err, req, res);
       next(err);
     }
   }
@@ -57,12 +75,25 @@ public async getPaymentRequestById(
       return res.status(404).json({ status: "fail", message: "Payment Request not found" });
     }
     logger.info("Successfully fetched payment request", { id });
+    
+    ControllerLogger.logView("Payment Request", id, req, res);
+
+    // Send notification for payment request view
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Payment Request viewed: ${id}`,
+        userId
+      );
+    }
+    
     res.status(200).json({
       status: "success",
       data: paymentRequest,
     });
   } catch (err) {
     logger.error("Error fetching payment request by ID", { error: err });
+    ControllerLogger.logError('Payment Request view', err, req, res);
     next(err);
   }
 }
@@ -82,6 +113,18 @@ public async createPaymentRequest(
     logger.info("Creating a new payment request", { id });
     const newPaymentRequest = await this.paymentRequestService.createPaymentRequest(paymentRequestData,id);
     logger.info("Payment request created successfully");
+    
+    ControllerLogger.logSuccess('Payment Request created', newPaymentRequest.id, req, res);
+
+    // Send notification for payment request creation
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Payment Request created successfully: ${newPaymentRequest.id}`,
+        userId
+      );
+    }
+    
     res.status(201).json({
       status: "success",
       message: 'Payment Request created successfully',
@@ -89,6 +132,7 @@ public async createPaymentRequest(
     });
   } catch (err) {
     logger.error("Error creating payment request", {  error: err });
+    ControllerLogger.logError('Payment Request creation', err, req, res);
     next(err);
   }
 }
@@ -112,12 +156,25 @@ public async updatePaymentRequest(
       return res.status(404).json({ status: "fail", message: "Payment Request not found" });
     }
     logger.info("Payment request updated successfully", { id });
+    
+    ControllerLogger.logSuccess('Payment Request updated', id, req, res);
+
+    // Send notification for payment request update
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Payment Request updated successfully: ${id}`,
+        userId
+      );
+    }
+    
     res.status(200).json({
       status: "success",
       data: updatedPaymentRequest,
     });
   } catch (err) {
     logger.error("Error updating payment request", { error: err });
+    ControllerLogger.logError('Payment Request update', err, req, res);
     next(err);
   }
 }
@@ -134,11 +191,24 @@ public async deletePaymentRequest(
     logger.info("Deleting payment request", { id });
     await this.paymentRequestService.deletePaymentRequest(id);
     logger.info("Payment request deleted successfully", { id });
+    
+    ControllerLogger.logSuccess('Payment Request deleted', id, req, res);
+
+    // Send notification for payment request deletion
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Payment Request deleted successfully: ${id}`,
+        userId
+      );
+    }
+    
     res.status(200).json({ 
       status: "success", 
       message: "Payment Request deleted successfully" });
   } catch (err) {
     logger.error("Error deleting payment request", {error: err });
+    ControllerLogger.logError('Payment Request deletion', err, req, res);
     next(err);
   }
 }

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { VendorService } from "../services/vendor.service";
+import { NotificationService } from "../services/notification.service";
 import {
   controller,
   httpGet,
@@ -20,6 +21,7 @@ import { UpdateVendor } from "../schemas/vendor.schema";
 
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import logger from "../utils/logger";
+import { ControllerLogger } from "../utils/controllerLogger";
 import { upload, uploadNone } from "../middleware/multerConfig";
 import { uploadFileMultiple } from "../middleware/multiFileWithAWS";
 import { PaginationOptions } from "../utils/pagination";
@@ -31,12 +33,15 @@ import { Status } from "../utils/status.enum";
 export class VendorController {
   constructor(
     @inject(TYPES.VendorService)
-    private vendorService: VendorService
+    private vendorService: VendorService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   @httpGet("/:id")
   public async getVendorById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -46,11 +51,23 @@ export class VendorController {
       if (!vendor) {
         return next(new AppError(404, "Vendor not found"));
       }
+      ControllerLogger.logView('Vendor', id, req, res);
+
+      // Send notification for vendor view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor view', error, req, res);
       next(error);
     }
   }
@@ -152,6 +169,17 @@ public async getAllVendors(
     //const subcategoryId = req.query.search as string; // Extract subcategoryId from query
     const vendors = await this.vendorService.getAllVendors1(queryOptions); // Correct method name
     console .log(vendors);
+
+    // Send notification for vendor list access
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        'Vendor records list accessed successfully',
+        userId
+      );
+    }
+
+    ControllerLogger.logList('Vendor', req, res);
     res.status(200).json({
       status: "success",
       data: vendors.data,
@@ -323,6 +351,17 @@ console.log(req.body)
       }
       
       //console.log(newVendor)
+      ControllerLogger.logSuccess('Vendor created', newVendor.id, req, res);
+
+      // Send notification for vendor creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor created successfully: ${newVendor.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         data: newVendor.id,
@@ -330,6 +369,7 @@ console.log(req.body)
       });
     } catch (err) {
       console.log(err);
+      ControllerLogger.logError('Vendor creation', err, req, res);
       next(err);
     }
   }
@@ -424,6 +464,17 @@ console.log(req.body)
         return next(new AppError(404, "Vendor not found or update failed"));
       }
       logger.info("Vendor updated successfully", { vendorId: id });
+
+      // Send notification for vendor update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor updated successfully: ${id}`,
+          userId
+        );
+      }
+
+      ControllerLogger.logSuccess('Vendor updated', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vendor updated successfully",
@@ -463,10 +514,22 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
       }
       const result = await this.vendorService.deleteVendor(id);
       if (!result) {
+        ControllerLogger.logError('Vendor deletion', new AppError(404, "Vendor not found or could not be deleted"), req, res);
         return next(
           new AppError(404, "Vendor not found or could not be deleted")
         );
       }
+
+      // Send notification for vendor deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor deleted successfully: ${id}`,
+          userId
+        );
+      }
+
+      ControllerLogger.logSuccess('Vendor deleted', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vendor deleted successfully",

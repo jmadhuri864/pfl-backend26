@@ -2,6 +2,10 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { RfpaRepository } from '../repositories/rfpa.repository';
 import { RFPA } from '../entities/rfpa.entity';
+import { RFPAProduct } from '../entities/rfpaProduct.entity';
+import { Product } from '../entities/product.entity';
+import { ProductVarient } from '../entities/productVarient.entity';
+import { UOM } from '../entities/uom.entity';
 import { DeepPartial, In, LessThan, MoreThanOrEqual, SelectQueryBuilder } from 'typeorm';
 import { UOMRepository } from '../repositories/uom.repository';
 import { ProductRepository } from '../repositories/product.repository';
@@ -745,54 +749,78 @@ async getRFQByIdForUpdate(id: string) {
 
 async createRfpa(rfpaData: any): Promise<any> {
   try {
-    // // 1. Check approval flow for logged user
-    // const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(
-    //   rfpaData.requestedBy,
-    //   'rfpa',
-    // );
-    // if (!approvalFlowExit) {
-    //   throw new Error('Approval flow not found');
-    // }
-
-    // 2. Generate RFPA ID
+    // Generate RFPA ID
     const rfpaId = await this.generateRFPAId();
 
-    // 3. Normalize variants input
-    let variantIds: string[] = [];
-    if (Array.isArray(rfpaData.variants)) {
-      variantIds = rfpaData.variants;
-    } else if (rfpaData.variants) {
-      variantIds = [rfpaData.variants];
-    }
-    
-    // 4. Fetch variants
-    const variants = await this.productVarientsRepository.find({
-      where: { id: In(variantIds) },
-      relations: ['product'],
-    });
+    // Helper function to extract ID from object or return the value directly
+    const extractId = (value: any) => {
+      if (!value) return null;
+      if (typeof value === 'string') return value;
+      if (typeof value === 'object' && value.id) return value.id;
+      return null;
+    };
 
-    // 5. Extract product IDs
-    const productIds = variants.map(v => v.product?.id).filter(Boolean);
+    // Determine if selectedParty is vendor or farmer based on source
+    const selectedVendorId = rfpaData.source === 'vendor' ? extractId(rfpaData.selectedParty || rfpaData.selectedVendor) : null;
+    const selectedFarmerId = rfpaData.source === 'farmer' ? extractId(rfpaData.selectedParty || rfpaData.selectedFarmer) : null;
 
-    // 6. Create RFPA entity
+    // Create RFPA entity with plain ID values (TypeORM will handle the relationships)
     const rfpaEntity = this.rfpaRepository.create({
-      ...rfpaData,
       rfpaId,
-      createdAt: new Date(),
-      variants: variants.map(v => ({ id: v.id })),
-      products: productIds.map(id => ({ id })),
-    });
+      requestingDepartment: rfpaData.requestingDepartment,
+      companyName: extractId(rfpaData.companyName),
+      purchaseLocation: extractId(rfpaData.purchaseLocation),
+      purchaseForSalesLocation: extractId(rfpaData.purchaseForSalesLocation),
+      otherPurchaseLoc: rfpaData.otherPurchaseLoc,
+      otherPurchaseForSalesLoc: rfpaData.otherPurchaseForSalesLoc,
+      deliveryReceivingPerson: rfpaData.deliveryReceivingPerson,
+      packingInstruction: rfpaData.packingInstruction,
+      selectedVendor: selectedVendorId,
+      selectedFarmer: selectedFarmerId,
+      specialReq: rfpaData.specialReq,
+      source: rfpaData.source,
+      paymentInfo: extractId(rfpaData.paymentInfo),
+      remark: rfpaData.remark,
+    } as any) as unknown as RFPA;
 
-    const savedRfpa = await this.rfpaRepository.save(rfpaEntity);
+    // Create RFPA products if provided
+    if (rfpaData.rfpaProducts && Array.isArray(rfpaData.rfpaProducts)) {
+      rfpaEntity.rfpaProducts = rfpaData.rfpaProducts.map((product: any) => {
+        const rfpaProduct = new RFPAProduct();
+        rfpaProduct.productName = extractId(product.productName) as any;
+        rfpaProduct.variant = extractId(product.variant) as any;
+        rfpaProduct.grade = product.grade;
+        rfpaProduct.quantity = product.quantity;
+        rfpaProduct.uom = extractId(product.uom) as any;
+        rfpaProduct.unitPrice = product.unitPrice;
+        rfpaProduct.count = product.count;
+        rfpaProduct.size = product.size;
+        rfpaProduct.origin = product.origin;
+        rfpaProduct.variety = product.variety;
+        rfpaProduct.amount = product.amount;
+        rfpaProduct.purchaseDate = product.purchaseDate;
+        rfpaProduct.expectedHarvestDate = product.expectedHarvestDate;
+        rfpaProduct.dispatchDate = product.dispatchDate;
+        rfpaProduct.deliveryDate = product.deliveryDate;
+        rfpaProduct.deliveryLocation = product.deliveryLocation;
+        return rfpaProduct;
+      });
+    }
 
-    // 7. Create document & start approval flow
+    // Save RFPA with products in one transaction (cascade will save products automatically)
+    const savedRfpaResult = await this.rfpaRepository.save(rfpaEntity);
+    
+    // Handle both single entity and array return types
+    const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
+
+    // Create document & start approval flow
     const document = await this.documentbService.createDocument({
       type: DocumentTypeEnum.RFPA,
       docDef: DocDefEnum.PROCUREMENT,
       status: DocumentStatus.HOLD,
       remarks: 'Document auto-created with RFPA',
-      lastActionBy: { id: rfpaData.requestedBy },
-      document_type_id: Array.isArray(savedRfpa) ? (savedRfpa[0] as RFPA)?.id : (savedRfpa as RFPA).id,
+      lastActionBy: { id: rfpaData.requestedBy } as any,
+      document_type_id: savedRfpa.id,
     });
 
     await this.documentbService.startApprovalFlow(document.id);
@@ -952,7 +980,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
       const rd = doc.relatedData || {};
       return {
        
-      id:doc.relatedData.id,
+      id: doc.relatedData?.id || null,
       documentId: doc.id,
       overAllStatus: doc.status,
       createdBy: doc.lastActionBy?.firstName || null,
@@ -1362,7 +1390,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
       const rd = doc.relatedData || {};
       return {
         
-      id:doc.relatedData.id,
+      id: doc.relatedData?.id || null,
       documentId: doc.id,
       overAllStatus: doc.status,
       createdBy: doc.lastActionBy?.firstName || null,

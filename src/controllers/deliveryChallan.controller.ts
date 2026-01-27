@@ -24,13 +24,15 @@ import { uploadFile } from "../middleware/uploadwithAWS";
 import ExcelJS from "exceljs";
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PaginationOptions } from '../utils/pagination';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/deliveryChallan', deserializeUser, requireUser)
 export class DeliveryChallanController {
   private s3Client: S3Client;
   private bucketName: string;
   constructor(
-    @inject(TYPES.DeliveryChallanService) private deliveryChallanService: DeliveryChallanService
+    @inject(TYPES.DeliveryChallanService) private deliveryChallanService: DeliveryChallanService,
+    @inject(TYPES.NotificationService) private notificationService: NotificationService,
   ) {this.s3Client = new S3Client({
     credentials: {
       accessKeyId: process.env.ACCESS_KEY!,
@@ -69,6 +71,20 @@ public async createDeliveryChallan(
       {
         return next(new Error('Delivery Challan not found'))
       }
+      
+      // 🔔 Send notification for delivery challan creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Delivery Challan "${deliveryChallan.challanNo}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan creation notification error:', notifError);
+      }
+      
       console.log("saved delivery challan",deliveryChallan?.id);
       logger.info(`Delivery Challan created successfully`);
       res.status(201).json({
@@ -108,6 +124,20 @@ next(err); // Unhandled errors
               search: search as string|| '',
             };
       const deliveryChallans = await this.deliveryChallanService.getAllDeliveryChallans(queryOptions);
+      
+      // 🔔 Send notification for get all delivery challans
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${deliveryChallans.meta.total} delivery challans`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all delivery challans notification error:', notifError);
+      }
+      
       logger.info('Successfully fetched all Delivery Challans');
       res.status(200).json({
         status: 'success',
@@ -155,7 +185,21 @@ next(err); // Unhandled errors
         logger.warn(`Delivery Challan with ID  not found`);
         return next(new Error('Delivery Challan not found'));
       }
-      logger.info(`Delivery Challan created successfully`);
+      
+      // 🔔 Send notification for delivery challan view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed delivery challan "${deliveryChallan.challanNo}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan view notification error:', notifError);
+      }
+      
+      logger.info(`Delivery Challan retrieved successfully`);
       res.status(200).json({
         status: 'success',
         data: deliveryChallan,
@@ -195,6 +239,20 @@ next(err); // Unhandled errors
       if (!updatedChallan) {
         return next(new Error('Delivery Challan not found or could not be updated'));
       }
+      
+      // 🔔 Send notification for delivery challan update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Delivery challan "${updatedChallan.challanNo}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan update notification error:', notifError);
+      }
+      
       logger.info(`Delivery Challan updated successfully`);
       res.status(200).json({
         status: 'success',
@@ -221,6 +279,20 @@ next(err); // Unhandled errors
       logger.warn("Delivery Challan not found for delete", { id });
       return res.status(404).json({ message: 'Delivery Challan not found' });
     }
+    
+      // 🔔 Send notification for delivery challan deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Delivery challan with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan deletion notification error:', notifError);
+      }
+    
       logger.info(`Delivery Challan deleted successfully`);
       res.status(204).json({
         status: 'success',

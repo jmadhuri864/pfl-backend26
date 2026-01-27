@@ -49,9 +49,7 @@ import { ProductService } from "./services/product.service";
 import { AddressRepository } from "./repositories/address.repository";
 import { AddressService } from "./services/address.service";
 import { VendorCategoryService } from "./services/vendorCategory.service";
-import { RoleService } from "./services/role.service";
-import { RoleRepository } from "./repositories/role.repository";
-import { RoleController } from "./controllers/role.controller";
+
 
 import { DriverController } from "./controllers/drivers.controller";
 import { DriverRepository } from "./repositories/driver.repository";
@@ -117,7 +115,7 @@ import { DealSlip } from "./entities/dealSlip.entity";
 import { DealSlipRepository } from "./repositories/dealSlip.repository";
 import { DealSlipService } from "./services/dealSlip.service";
 import { DealSlipController } from "./controllers/dealSlip.controller";
-import { Role } from "./entities/role.entity";
+
 import { UOM } from "./entities/uom.entity";
 import { Product } from "./entities/product.entity";
 import { GRN } from "./entities/grn.entity";
@@ -172,7 +170,7 @@ import { AuditLogController } from "./controllers/auditLog.controller";
 import { SystemLog} from "./entities/userSystemInfo.entity";
 import { UserSystemInfoRepository } from "./repositories/userSystemInfo.repository";
 
-import { Server } from "socket.io";
+// import { Server } from "socket.io";
 import { NotificationController } from "./controllers/notification.controller";
 import { RequestsRepository } from "./repositories/requests.repository";
 import { Requests } from "./entities/request.entity";
@@ -236,7 +234,7 @@ import { DumpProduct } from "./entities/dumpProduct.entity";
 
 import { SecondSaleProduct } from "./entities/secondSaleProduct.entity";
 import { SecondSaleProductRepository } from "./repositories/secondSaleProduct.repository";
-import { SourceController } from "./controllers/sourcefandv.controller";
+
 
 
 import { SaleOrder } from "./entities/saleOrder.entity";
@@ -258,7 +256,7 @@ import { CompanyController } from "./controllers/company.controller";
 import { CompanyService } from "./services/company.service";
 import { Customer } from "./entities/customer.entity";
 import { ProcurmentDashController } from "./controllers/procurmentDashboard.controller";
-import { ProcurmentDashService } from "./services/procurmentDashbord.service";
+import { ProcurmentDashService } from "./services/procurmentDashbord.service"
 import { ManagementDashService } from "./services/managementDashboard.service";
 import { ManagementDashController } from "./controllers/managementDashboard.controller";
 import { ReturnedProducts } from "./entities/returnProduct.entity";
@@ -299,7 +297,7 @@ import { OtherDeliveryChallanRepository } from "./repositories/otherDeliveryChal
 import { OtherDeliveryChallanService } from "./services/otherDeliveryChallan.service";
 import { OtherDeliveryChallanController } from "./controllers/otherDeliveryChallan.controller";
 import { ReportingManagersRepository } from "./repositories/reportingmanager.repository";
-import { ReportingManagers } from "./entities/reportingRelationship.entity";
+
 import { ApprovalFlowRepository } from "./repositories/approvalFlow.repository";
 import { ApprovalFlow } from "./entities/approvalFlow.entity";
 import { ApprovalFlowService } from "./services/approvalFlow.service";
@@ -319,7 +317,7 @@ import { DocumentApprove } from "./entities/documentApproval.entity";
 import { DocumentApprovalFlow } from "./entities/documentApproveBy.entity";
 import { DocDoubleApproverService } from "./services/docDoubleApprover.service";
 import { DocSingalApproverService } from "./services/DocSingalApproverService.service";
-import { Server as SocketIOServer} from "socket.io";
+
 import { AdminDashboardController } from "./controllers/adminDashboard.controller";
 import { AdminDashboardService } from "./services/dashboard/admin/adminDashboardService.service";
 import { InwardProduct } from "./entities/inwardProduct.entity";
@@ -345,10 +343,10 @@ const container = new Container();
 // Bind to the container
 //container.bind<Server>(TYPES.SocketIoServer).toConstantValue(io);
 // Define a helper function for repository binding
-// Initialize Socket.IO server
-const io = new SocketIOServer();
-// Bind to the container
-container.bind<SocketIOServer>(TYPES.SocketIoServerOne).toConstantValue(io);
+// // Initialize Socket.IO server
+// const io = new SocketIOServer();
+// // Bind to the container
+// container.bind<SocketIOServer>(TYPES.SocketIoServerOne).toConstantValue(io);
 
 container.bind<DataSource>(TYPES.DataSource).toConstantValue(AppDataSource);
 
@@ -597,14 +595,7 @@ container
   .to(ProductController);
 
 
-  //--------------------------role------------------------------
-
-container.bind<RoleService>(TYPES.RoleService).to(RoleService);
-container.bind<RoleRepository>(TYPES.RoleRepository).toDynamicValue((context) => {
-  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
-  return dataSource.getRepository(Role).extend(RoleRepository);
-}).inRequestScope(); // or .singletonScope() depending on your scope requirements
-container.bind<RoleController>(TYPES.RoleController).to(RoleController).inSingletonScope();
+ 
 
 //-------------------------driver------------------------------
 container.bind<DriversService>(TYPES.DriversService).to(DriversService);
@@ -946,10 +937,7 @@ container.bind<EodRepository>(TYPES.EodRepository).toDynamicValue((context) => {
 container.bind<EodStockService>(TYPES.EodStockService).to(EodStockService).inSingletonScope();
 container.bind<EodStockController>(TYPES.EodStockController).to(EodStockController).inSingletonScope();
 //reportingManager
-container.bind<ReportingManagersRepository>(TYPES.ReportingManagersRepository).toDynamicValue((context) => {
-  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
-  return dataSource.getRepository(ReportingManagers).extend(ReportingManagersRepository);
-}).inRequestScope(); // or .singletonScope() depending on your scope requirements
+
 //vehicle dispatch 
 container.bind<VehicleDispatchRepository>(TYPES.VehicleDispatchRepository).toDynamicValue((context) => {
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
@@ -989,7 +977,7 @@ container.bind<SecondSaleProductRepository >(TYPES.SecondSaleProductRepository )
 
 
 
-container.bind<SourceController>(TYPES.SourceController).to(SourceController).inSingletonScope();
+
 
 
 
@@ -1233,10 +1221,35 @@ import { UserActivityLog } from "./entities/userActivityLog.entity";
 import { UserActivityLogRepository } from "./repositories/userActivityLog.repository";
 import { UserActivityLogService } from "./services/userActivityLog.service";
 import { UserActivityLogController } from "./controllers/userActivityLog.controller";
+//import { LogCleanupService } from "./services/lo";
 import { WorkflowHierarchy } from "./entities/workflowClosure.entity";
 import { WorkflowHierarchyRepository } from "./repositories/WorkflowHierarchy.repository";
 import { WorkflowHierarchyService } from "./services/workFlowHierarchy.service";
 import { WorkflowHierarchyController } from "./controllers/WorkflowHierarchy.controller";
+import { ProcurementTargetRepository } from "./repositories/procurementTarget.repository";
+import { ProcurementTarget } from "./entities/procurmentTarget.entity";
+import { ProcurementTargetService } from "./services/procurementTarget.service";
+import { ProcurementTargetController } from "./controllers/procurementTarget.controller";
+import { SalesTarget } from "./entities/salesTarget.entity";
+import { SalesTargetRepository } from "./repositories/salesTarget.repository";
+import { SalesTargetService } from "./services/salesTarget.service";
+import { SalesTargetController } from "./controllers/salesTarget.controller";
+import { SalesTargetProduct } from "./entities/salesTargetProduct.entity";
+import { SalesTargetWeekRepository } from "./repositories/salesTargetWeek.repository";
+import { SalesTargetProductRepository } from "./repositories/salesTargetProduct.repository";
+import { SalesTargetWeek } from "./entities/salesTargetWeek.entity";
+import { SalesAchievementRepository } from "./repositories/salesAchievement.repository";
+import { SalesAchievement } from "./entities/salesachivement.entity";
+//import { DashboardService } from "./services/dash;
+import { DashboardController } from "./controllers/dashboard.controller";
+import { ProcurementTargetProduct } from "./entities/procurementTargetProduct.entity";
+import { ProcurementTargetProductRepository } from "./repositories/procurmentTargetProduct.repository";
+import { ProcurementTargetWeek } from "./entities/procurementTargetWeek.entity";
+import { ProcurementTargetWeekRepository } from "./repositories/procurmentTargetWeek.repository";
+import { ProcurementTargetAchievementRepository } from "./repositories/procurmentAchievement.repository";
+import { ProcurementAchievement } from "./entities/procurementAchievement.entity";
+// import { RegistrationReportService } from "./services/registrationReport.service";
+// import { RegistrationReportController } from "./controllers/registrationReport.controller";
 
 container
   .bind<UserActivityLogRepository>(TYPES.UserActivityLogRepository)
@@ -1252,6 +1265,11 @@ container
   .to(UserActivityLogService)
   .inSingletonScope();
 
+// container
+//   .bind<LogCleanupService>(TYPES.LogCleanupService)
+//   .to(LogCleanupService)
+//   .inSingletonScope();
+
 container
   .bind<UserActivityLogController>(TYPES.UserActivityLogController)
   .to(UserActivityLogController)
@@ -1264,5 +1282,51 @@ container
 }).inRequestScope(); 
 container.bind< WorkflowHierarchyService>(TYPES.WorkflowHierarchyService ).to( WorkflowHierarchyService ).inSingletonScope();
 container.bind<WorkflowHierarchyController>(TYPES.WorkflowHierarchyController).to(WorkflowHierarchyController).inSingletonScope();
+
+//procurmentTarget
+  container.bind<ProcurementTargetRepository>(TYPES.ProcurementTargetRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(ProcurementTarget).extend(ProcurementTargetRepository);
+}).inRequestScope(); 
+container.bind<ProcurementTargetService>(TYPES.ProcurementTargetService).to(ProcurementTargetService).inSingletonScope();
+container.bind<ProcurementTargetController>(TYPES.ProcurementTargetController).to(ProcurementTargetController).inSingletonScope();
+container.bind<ProcurementTargetProductRepository>(TYPES.ProcurementTargetProductRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(ProcurementTargetProduct).extend(ProcurementTargetProductRepository);
+}).inRequestScope();
+container.bind<ProcurementTargetWeekRepository>(TYPES.ProcurementTargetWeekRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(ProcurementTargetWeek).extend(ProcurementTargetWeekRepository);
+}).inRequestScope();
+container.bind<ProcurementTargetAchievementRepository>(TYPES.ProcurementTargetAchievementRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(ProcurementAchievement).extend(ProcurementTargetAchievementRepository);
+}).inRequestScope();
+//salesTarget
+  container.bind<SalesTargetRepository>(TYPES.SalesTargetRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(SalesTarget).extend(SalesTargetRepository);
+}).inRequestScope(); 
+container.bind<SalesTargetService>(TYPES.SalesTargetService).to(SalesTargetService).inSingletonScope();
+container.bind<SalesTargetController>(TYPES.SalesTargetController).to(SalesTargetController).inSingletonScope();
+  container.bind<SalesTargetProductRepository>(TYPES.SalesTargetProductRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(SalesTargetProduct).extend(SalesTargetProductRepository);
+}).inRequestScope(); 
+ container.bind<SalesTargetWeekRepository>(TYPES.SalesTargetWeekRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(SalesTargetWeek).extend(SalesTargetWeekRepository);
+}).inRequestScope();
+ container.bind<SalesAchievementRepository>(TYPES.SalesAchievementRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(SalesAchievement).extend(SalesAchievementRepository);
+}).inRequestScope();
+
+// //dashboard
+// container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
+// container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
+// //registration report
+// container.bind<RegistrationReportService>(TYPES.RegistrationReportService).to(RegistrationReportService).inSingletonScope();
+// container.bind<RegistrationReportController>(TYPES.RegistrationReportController).to(RegistrationReportController).inSingletonScope();
 
 export { container };

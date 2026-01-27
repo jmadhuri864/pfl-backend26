@@ -26,12 +26,15 @@ import {
 
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/location-branches', deserializeUser, requireUser)
 export class BranchessController {
   constructor(
     @inject(TYPES.BranchessService)
     private branchesService: BranchessService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpPost('/:branchType')
@@ -51,6 +54,19 @@ export class BranchessController {
       if (!branch) {
         ControllerLogger.logOperationFailed('Create', 'Branch', 'could not be created', req, res);
         return next(new AppError(400, 'Branch could not be created'));
+      }
+      
+      // 🔔 Send notification for branch creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `${branch.type} "${branch.name}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Branch creation notification error:', notifError);
       }
       
       // Log successful creation
@@ -79,6 +95,19 @@ export class BranchessController {
       if (!branch) {
         ControllerLogger.logNotFound('Branch', id, req, res);
         return next(new AppError(404, 'Branch not found'));
+      }
+      
+      // 🔔 Send notification for branch view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed ${branch.type} "${branch.name}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Branch view notification error:', notifError);
       }
       
       // Log successful view
@@ -124,6 +153,19 @@ console.log("serach data is ",search)
         return next(new AppError(404, 'Branch not found'));
       }
       
+      // 🔔 Send notification for get all branches
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${branch.meta.total} ${branchType} records`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all branches notification error:', notifError);
+      }
+      
       // Log successful data retrieval
       ControllerLogger.logGetAllRecords('Branch', req, res);
       
@@ -155,6 +197,19 @@ console.log("serach data is ",search)
       if (!branches || branches.length === 0) {
         ControllerLogger.logNotFound('Branches', 'filter data', req, res);
         return next(new AppError(404, 'Branches not found'));
+      }
+
+      // 🔔 Send notification for filter data retrieval
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${branches.length} branches filter data`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Filter branches notification error:', notifError);
       }
 
       // Log successful data retrieval
@@ -199,6 +254,19 @@ console.log("serach data is ",search)
         );
       }
       
+      // 🔔 Send notification for branch update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `${branch.type} "${branch.name}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Branch update notification error:', notifError);
+      }
+      
       // Log successful update
       ControllerLogger.logSuccess('Branch updated', id, req, res);
       
@@ -230,6 +298,19 @@ console.log("serach data is ",search)
         return next(
           new AppError(404, 'Branch not found or could not be deleted'),
         );
+      }
+
+      // 🔔 Send notification for branch deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `${branchType} with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Branch deletion notification error:', notifError);
       }
 
       // Log successful deletion

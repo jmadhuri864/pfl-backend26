@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { DataSource } from "typeorm";
 import { VendorSubcategoryRepository } from "../repositories/vendorSubcategory.repository";
@@ -8,7 +9,6 @@ import { VendorCategoryRepository } from "../repositories/vendorCategory.reposit
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
-// import { paginateQuery } from "../utils/pagination";
 
 @injectable()
 export class VendorSubcategoryService {

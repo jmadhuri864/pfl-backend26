@@ -9,10 +9,10 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { TYPES } from '../types';
 import { SSEService } from '../services/sse.service';
-import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import logger from '../utils/logger';
+import { getUserIdFromToken } from '../utils/helperSSE';
 
-@controller('/sse', deserializeUser, requireUser)
+@controller('/sse')
 export class SSEController {
   constructor(
     @inject(TYPES.SSEService) private sseService: SSEService
@@ -23,55 +23,48 @@ export class SSEController {
    * GET /sse/notifications
    */
   @httpGet('/notifications')
-  public streamNotifications(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      // Get user ID from authenticated user
-      const userId = res.locals.user?.id;
-      
-      if (!userId) {
-        logger.warn('SSE connection attempt without authentication');
-        return res.status(401).json({
-          status: 'error',
-          message: 'User not authenticated',
-        });
-      }
+public streamNotifications(
+  @request() req: Request,
+  @response() res: Response
+) {
+  // Set SSE headers first
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader("X-Accel-Buffering", "no"); 
 
-      // Generate unique client ID using timestamp
-      const clientId = `${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const token = req.query.token as string;
 
-      logger.info(`SSE connection request from user ${userId}, clientId: ${clientId}`);
-
-      // Add client to SSE service
-      this.sseService.addClient(userId, clientId, res);
-
-      logger.info(`User ${userId} successfully connected to SSE notifications`);
-
-      // Keep connection alive with heartbeat
-      const heartbeatInterval = setInterval(() => {
-        if (res.writableEnded) {
-          clearInterval(heartbeatInterval);
-          logger.info(`Heartbeat stopped for user ${userId}, connection ended`);
-          return;
-        }
-        this.sseService.sendHeartbeat();
-      }, 30000); // Send heartbeat every 30 seconds
-
-      // Clean up on connection close
-      req.on('close', () => {
-        clearInterval(heartbeatInterval);
-        this.sseService.removeClient(userId, clientId);
-        logger.info(`SSE connection closed for user ${userId}, clientId: ${clientId}`);
-      });
-
-    } catch (error) {
-      logger.error('Error in SSE stream:', error);
-      next(error);
-    }
+  if (!token) {
+    res.write(`event: error\ndata: Token missing\n\n`);
+    return res.end();
   }
+
+  const userId = getUserIdFromToken(token);
+  if (!userId) {
+    logger.warn("SSE unauthorized");
+    res.write(`event: error\ndata: Unauthorized\n\n`);
+    return res.end();
+  }
+
+  const clientId = `${userId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  logger.info(`SSE connected: ${userId} (${clientId})`);
+
+  this.sseService.addClient(userId, clientId, res);
+
+  // heartbeat every 30 sec
+  const heartbeat: NodeJS.Timeout = setInterval(() => {
+    if (res.writableEnded) return clearInterval(heartbeat);
+    this.sseService.sendHeartbeat();
+  }, 30000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    this.sseService.removeClient(userId, clientId);
+    logger.info(`SSE closed: ${userId} (${clientId})`);
+  });
+}
+
 
   /**
    * Get SSE connection status

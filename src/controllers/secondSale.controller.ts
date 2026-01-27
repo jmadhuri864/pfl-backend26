@@ -23,6 +23,7 @@ import { NotificationService } from '../services/notification.service';
 import logger from '../utils/logger';
 import { uploadAny, uploadNone } from '../middleware/multerConfig';
 import { PaginationOptions } from '../utils/pagination';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/secondSales', deserializeUser, requireUser)
 export class SecondSaleController {
@@ -58,6 +59,7 @@ export class SecondSaleController {
       console.log('after creating', secondSale);
       if (!secondSale) {
         logger.error('Failed to create second sale', { secondSaleData });
+        ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
         return next(new AppError(400, 'Second sale could not be created'));
       }
 
@@ -71,6 +73,7 @@ export class SecondSaleController {
         res.locals.user.id,
       );
 
+      ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
       res.status(201).json({
         status: 'success',
         message: 'Second sale created successfully',
@@ -79,6 +82,7 @@ export class SecondSaleController {
     } catch (err) {
       console.log(err);
       logger.error('Error occurred while creating second sale', { error: err });
+      ControllerLogger.logError('Second Sale creation', err, req, res);
       next(err);
     }
   }
@@ -87,6 +91,7 @@ export class SecondSaleController {
   @httpGet('/:id')
   public async getSecondSaleById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -95,6 +100,7 @@ export class SecondSaleController {
       const secondSale = await this.secondSaleService.getSecondSaleById(id);
       if (!secondSale) {
         logger.warn('Second sale not found', { secondSaleId: id });
+        ControllerLogger.logError('Second Sale view', new AppError(404, 'Second sale not found'), req, res);
         return next(new AppError(404, 'Second sale not found'));
       }
       logger.info('Second sale details retrieved successfully', { secondSale });
@@ -105,6 +111,7 @@ export class SecondSaleController {
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('Second Sale', id, req, res);
       res.status(200).json({
         status: 'success',
         data: secondSale,
@@ -114,6 +121,7 @@ export class SecondSaleController {
         secondSaleId: id,
         error: err,
       });
+      ControllerLogger.logError('Second Sale view', err, req, res);
       next(err);
     }
   }
@@ -121,6 +129,7 @@ export class SecondSaleController {
   @httpGet('/:id/view')
   public async getSecondSaleByIdForView(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -131,6 +140,7 @@ export class SecondSaleController {
       );
       if (!secondSale) {
         logger.warn('Second sale not found', { secondSaleId: id });
+        ControllerLogger.logError('Second Sale view', new AppError(404, 'Second sale not found'), req, res);
         return next(new AppError(404, 'Second sale not found'));
       }
       logger.info('Second sale details retrieved successfully', { secondSale });
@@ -141,6 +151,7 @@ export class SecondSaleController {
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('Second Sale (for view)', id, req, res);
       res.status(200).json({
         status: 'success',
         data: secondSale,
@@ -150,6 +161,7 @@ export class SecondSaleController {
         secondSaleId: id,
         error: err,
       });
+      ControllerLogger.logError('Second Sale view', err, req, res);
       next(err);
     }
   }
@@ -157,6 +169,7 @@ export class SecondSaleController {
   @httpGet('/:id/update')
   public async getSecondSaleByIdForUpdate(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -166,6 +179,7 @@ export class SecondSaleController {
         await this.secondSaleService.getSecondSaleByIdForUpdate(id);
       if (!secondSale) {
         logger.warn('Second sale not found', { secondSaleId: id });
+        ControllerLogger.logError('Second Sale retrieval for update', new AppError(404, 'Second sale not found'), req, res);
         return next(new AppError(404, 'Second sale not found'));
       }
       logger.info('Second sale details retrieved successfully', { secondSale });
@@ -176,6 +190,7 @@ export class SecondSaleController {
         res.locals.user.id,
       );
 
+      ControllerLogger.logView('Second Sale (for update)', id, req, res);
       res.status(200).json({
         status: 'success',
         data: secondSale,
@@ -185,6 +200,7 @@ export class SecondSaleController {
         secondSaleId: id,
         error: err,
       });
+      ControllerLogger.logError('Second Sale retrieval for update', err, req, res);
       next(err);
     }
   }
@@ -218,10 +234,18 @@ export class SecondSaleController {
       );
       if (!secondSales) {
         logger.error('No second sales found');
+        ControllerLogger.logError('Second Sale list retrieval', new AppError(404, 'No second sales found'), req, res);
         return next(new AppError(404, 'No second sales found'));
       }
       logger.info('Second sales retrieved successfully');
 
+      // Send notification for second sale list access
+      await this.notificationService.createNoti(
+        'Second Sale records list accessed successfully',
+        userId
+      );
+
+      ControllerLogger.logList('Second Sale', req, res);
       res.status(200).json({
         status: 'success',
         data: secondSales.data,
@@ -233,6 +257,7 @@ export class SecondSaleController {
       logger.error('Error occurred while fetching all second sales', {
         error: err,
       });
+      ControllerLogger.logError('Second Sale list retrieval', err, req, res);
       next(err);
     }
   }
@@ -258,6 +283,7 @@ export class SecondSaleController {
         logger.warn('Second sale not found or could not be updated', {
           secondSaleId: id,
         });
+        ControllerLogger.logError('Second Sale update', new AppError(404, 'Second sale not found or could not be updated'), req, res);
         return next(
           new AppError(404, 'Second sale not found or could not be updated'),
         );
@@ -271,6 +297,7 @@ export class SecondSaleController {
         res.locals.user.id,
       );
 
+      ControllerLogger.logSuccess('Second Sale updated', id, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Second sale updated successfully',
@@ -281,6 +308,7 @@ export class SecondSaleController {
         secondSaleId: id,
         error: err,
       });
+      ControllerLogger.logError('Second Sale update', err, req, res);
       next(err);
     }
   }
@@ -289,20 +317,34 @@ export class SecondSaleController {
   @httpDelete('/:id')
   public async deleteSecondSale(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       if (!id) {
         logger.warn('Role ID not provided');
+        ControllerLogger.logError('Second Sale deletion', new AppError(400, 'Role ID is required'), req, res);
         return next(new AppError(400, 'Role ID is required'));
       }
       const result = await this.secondSaleService.deleteSecondSale(id);
       if (!result) {
+        ControllerLogger.logError('Second Sale deletion', new AppError(404, 'Second sale not found or could not be deleted'), req, res);
         return next(
           new AppError(404, 'Second sale not found or could not be deleted'),
         );
       }
+      ControllerLogger.logSuccess('Second Sale deleted', id, req, res);
+
+      // Send notification for second sale deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Second Sale deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Second Sale deleted successfully',
@@ -312,6 +354,7 @@ export class SecondSaleController {
         secondSaleId: id,
         error: err,
       });
+      ControllerLogger.logError('Second Sale deletion', err, req, res);
       next(err);
     }
   }
@@ -324,9 +367,21 @@ export class SecondSaleController {
         try {
           const { ids } = req.body;
           if (!Array.isArray(ids) || ids.length === 0) {
+            ControllerLogger.logError('Second Sale multiple deletion', new AppError(400, 'An array of Second Sale IDs is required'), req, res);
             return next(new AppError(400, 'An array of Second Sale IDs is required'));
           }
           const result = await this.secondSaleService.deleteMultipleSecondSale(ids);
+          ControllerLogger.logSuccess('Second Sale multiple deletion', `${ids.length} records`, req, res);
+
+          // Send notification for multiple second sale deletion
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Multiple Second Sales deleted successfully: ${ids.length} records`,
+              userId
+            );
+          }
+
           res.status(200).json({
             message: result.message,
             success: result.success,
@@ -335,6 +390,7 @@ export class SecondSaleController {
         }
           catch (error) {
           logger.error('Error deleting multiple Second Sale', { error });
+          ControllerLogger.logError('Second Sale multiple deletion', error, req, res);
           next(error);
         }
       }

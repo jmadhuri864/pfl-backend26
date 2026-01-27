@@ -16,18 +16,22 @@ import { inject } from "inversify";
 
 import AppError from "../utils/appError";
 import { VendorSubcategoryService } from "../services/vendorSubcategory.service";
+import { NotificationService } from "../services/notification.service";
 
 import { TYPES } from "../types";
 import { uploadAny, uploadNone } from "../middleware/multerConfig";
 import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import { ControllerLogger } from "../utils/controllerLogger";
 import { PaginationOptions } from "../utils/pagination";
 
 @controller("/vendor-subcategories", deserializeUser, requireUser)
 export class VendorSubcategoryController {
   constructor(
     @inject(TYPES.VendorSubcategoryService)
-    private subcategoryService: VendorSubcategoryService
+    private subcategoryService: VendorSubcategoryService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   @httpPost("/")
@@ -45,11 +49,23 @@ if(!subcategory) {
     return next(new AppError(400, "Subcategory not created"));
   }
 
+    ControllerLogger.logSuccess('Vendor subcategory created', subcategory.id, req, res);
+
+    // Send notification for vendor subcategory creation
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Vendor Subcategory created successfully: ${subcategory.id}`,
+        userId
+      );
+    }
+
     res.status(201).json({
       status: "success",
       message: `Vendor subcategory created successfully`,
     });
   } catch (err) {
+    ControllerLogger.logError('Vendor subcategory creation', err, req, res);
     next(err);
   }
 }
@@ -79,6 +95,17 @@ public async getAllSubcategories(
       return next(new AppError(404, "Subcategories not found"));
     }
 
+    ControllerLogger.logList('Vendor subcategories', req, res);
+
+    // Send notification for vendor subcategories list access
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        'Vendor Subcategory records list accessed successfully',
+        userId
+      );
+    }
+
     res.status(200).json({
       status: "success",
       data: subcategories.data,
@@ -88,6 +115,7 @@ public async getAllSubcategories(
      
     });
   } catch (err) {
+    ControllerLogger.logError('Vendor subcategories retrieval', err, req, res);
     next(err);
   }
 }
@@ -108,11 +136,13 @@ public async getAllSubcategories1(
     //   return next(new AppError(404, "Subcategories not found"));
     // }
 
+    ControllerLogger.logList('Vendor subcategories by category', req, res);
     res.status(200).json({
       status: "success",
       data: subcategories,
     });
   } catch (err) {
+    ControllerLogger.logError('Vendor subcategories by category retrieval', err, req, res);
     next(err);
   }
 }
@@ -120,6 +150,7 @@ public async getAllSubcategories1(
   @httpGet("/:id")
   public async getSubcategoryById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -128,11 +159,23 @@ public async getAllSubcategories1(
       if (!subcategory) {
         return next(new AppError(404, "Subcategory not found"));
       }
+      ControllerLogger.logView('Vendor subcategory', id, req, res);
+
+      // Send notification for vendor subcategory view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Subcategory viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: subcategory,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor subcategory view', err, req, res);
       next(err);
     }
   }
@@ -141,6 +184,7 @@ public async getAllSubcategories1(
   public async updateSubcategory(
     @requestParam("id") id: string,
     @requestBody() body: { name?: string; category?: string },
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -154,12 +198,24 @@ public async getAllSubcategories1(
       if (!updatedSubcategory) {
         return next(new AppError(404, "Subcategory not found"));
       }
+      ControllerLogger.logSuccess('Vendor subcategory updated', id, req, res);
+
+      // Send notification for vendor subcategory update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Subcategory updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         //data: updatedSubcategory,
         message: `Vendor subcategory updated successfully`,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor subcategory update', err, req, res);
       next(err);
     }
   }
@@ -167,6 +223,7 @@ public async getAllSubcategories1(
   @httpDelete("/:id")
   public async deleteSubcategory(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -179,11 +236,23 @@ public async getAllSubcategories1(
       if (!success) {
         return next(new AppError(404, "Subcategory not found"));
       }
+      ControllerLogger.logSuccess('Vendor subcategory deleted', id, req, res);
+
+      // Send notification for vendor subcategory deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Subcategory deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: `Vendor subcategory deleted successfully`,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor subcategory deletion', err, req, res);
       next(err);
     }
   }

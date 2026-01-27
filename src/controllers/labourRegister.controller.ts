@@ -15,15 +15,19 @@ import {
   import { NextFunction, Request, Response } from "express";
   import AppError from "../utils/appError";
   import logger from "../utils/logger";
+  import { ControllerLogger } from '../utils/controllerLogger';
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { uploadAny } from "../middleware/multerConfig";
 import { PaginationOptions } from "../utils/pagination";
+import { NotificationService } from "../services/notification.service";
   
   @controller("/tempLabour",deserializeUser,requireUser)
   export class LaborRegisterController {
     constructor(
       @inject(TYPES.LaborRegisterService)
-      private readonly laborRegisterService: LaborRegisterService
+      private readonly laborRegisterService: LaborRegisterService,
+      @inject(TYPES.NotificationService)
+      private readonly notificationService: NotificationService
     ) {}
   
     /**
@@ -41,6 +45,16 @@ import { PaginationOptions } from "../utils/pagination";
   console.log(laborData)
         const labor = await this.laborRegisterService.createLabor(laborData);
         logger.info("Laborer created successfully", { laborId: labor.id });
+        ControllerLogger.logSuccess('Labour Register created', labor.id, req, res);
+
+        // Send notification for labour register creation
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Labour Register record created successfully: ${labor.id}`,
+            userId
+          );
+        }
   
         res.status(201).json({
           status: "success",
@@ -49,6 +63,7 @@ import { PaginationOptions } from "../utils/pagination";
         });
       } catch (error) {
         logger.error("Error occurred while creating laborer", { error });
+        ControllerLogger.logError('Labour Register creation', error, req, res);
         next(error);
       }
     }
@@ -57,7 +72,7 @@ import { PaginationOptions } from "../utils/pagination";
      * Get All laborers 
      */
     @httpGet("/")
-    public async findAllLaborers(req: Request, res: Response, next: NextFunction): Promise<void> {
+    public async findAllLaborers(@request() req: Request, @response() res: Response, @next() next: NextFunction): Promise<void> {
       try {
         logger.info("Fetching laborer details");
         const { page, limit, search, sort,labourId} = req.query;
@@ -77,6 +92,17 @@ import { PaginationOptions } from "../utils/pagination";
          logger.warn("Laborers not found");
           return next(new AppError(404, "Laborers not found"));
         }
+
+        ControllerLogger.logList('Labour Register', req, res);
+
+        // Send notification for labour register list access
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            'Labour Register records list accessed successfully',
+            userId
+          );
+        }
   
         res.status(200).json({
           status: "success",
@@ -87,6 +113,7 @@ import { PaginationOptions } from "../utils/pagination";
         });
       } catch (error) {
        logger.error("Error occurred while fetching laborer details", { error });
+       ControllerLogger.logError('Labour Register list retrieval', error, req, res);
         next(new AppError(500, "An error occurred while fetching laborer details"));
       }
     }
@@ -106,6 +133,15 @@ import { PaginationOptions } from "../utils/pagination";
         if (!labor) {
           logger.warn("Laborer not found", { laborId: id });
           return next(new AppError(404, "Laborer not found"));
+        }
+
+        // Send notification for labour register view
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Labour Register record viewed: ${id}`,
+            userId
+          );
         }
   
         res.status(200).json({
@@ -138,6 +174,15 @@ import { PaginationOptions } from "../utils/pagination";
           logger.warn("Laborer not found or could not be updated", { laborId: id });
           return next(new AppError(404, "Laborer not found or could not be updated"));
         }
+
+        // Send notification for labour register update
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Labour Register record updated successfully: ${id}`,
+            userId
+          );
+        }
   
         logger.info("Laborer updated successfully", { labor });
         res.status(200).json({
@@ -166,6 +211,16 @@ import { PaginationOptions } from "../utils/pagination";
         if (!result) {
           return next(new AppError(404, "Labor not found or could not be deleted"));
         }
+
+        // Send notification for labour register deletion
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Labour Register record deleted successfully: ${id}`,
+            userId
+          );
+        }
+
   //res.status(204).send();
   res.status(200).json({
     status: "success",

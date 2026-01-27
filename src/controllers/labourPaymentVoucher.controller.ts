@@ -11,11 +11,14 @@ import { upload } from "../middleware/multerConfig";
 import { uploadFile } from "../middleware/uploadwithAWS";
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from "../services/notification.service";
 
 @controller("/lpvoucher", deserializeUser, requireUser)
 export class LabourPaymentVoucherController {
   constructor(
-    @inject(TYPES.LabourPaymentVoucherService) private lpVoucherService: LabourPaymentVoucherService
+    @inject(TYPES.LabourPaymentVoucherService) private lpVoucherService: LabourPaymentVoucherService,
+    @inject(TYPES.NotificationService) private notificationService: NotificationService
   ) {}
 
   // Get all Labour Payment Vouchers
@@ -39,6 +42,16 @@ export class LabourPaymentVoucherController {
       };
       const vouchers = await this.lpVoucherService.getLPVouchers(queryOptions, userId);
       logger.info(`Fetched ${vouchers.length} vouchers successfully`);
+      ControllerLogger.logList('Labour Payment Voucher', req, res);
+
+      // Send notification for labour payment voucher list access
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Labour Payment Voucher records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: vouchers.data,
@@ -48,6 +61,7 @@ export class LabourPaymentVoucherController {
       });
     } catch (err) {
       logger.error("Error fetching Labour Payment Vouchers", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher list retrieval', err, req, res);
       next(err);
     }
   }
@@ -69,12 +83,24 @@ export class LabourPaymentVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Fetched voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Labour Payment Voucher', id, req, res);
+
+      // Send notification for labour payment voucher view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Payment Voucher viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching Labour Payment Voucher by ID", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher view', err, req, res);
       next(err);
     }
   }
@@ -97,12 +123,15 @@ export class LabourPaymentVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Fetched voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Labour Payment Voucher (View)', id, req, res);
+
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching Labour Payment Voucher by ID", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher view', err, req, res);
       next(err);
     }
   }
@@ -123,12 +152,15 @@ export class LabourPaymentVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Fetched voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Labour Payment Voucher (Update)', id, req, res);
+
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching Labour Payment Voucher by ID", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher view for update', err, req, res);
       next(err);
     }
   }
@@ -161,6 +193,17 @@ export class LabourPaymentVoucherController {
       const newVoucher = await this.lpVoucherService.createLPVoucher(voucherData);
       console.log(newVoucher);
       logger.info("Labour Payment Voucher created successfully");
+      ControllerLogger.logSuccess('Labour Payment Voucher created', newVoucher[0].id, req, res);
+
+      // Send notification for labour payment voucher creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Payment Voucher created successfully: ${newVoucher[0].id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         message: 'Labour Payment Voucher created successfully',
@@ -168,6 +211,7 @@ export class LabourPaymentVoucherController {
       });
     } catch (err) {
       logger.error("Error creating Labour Payment Voucher", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher creation', err, req, res);
       next(err);
     }
   }
@@ -208,12 +252,24 @@ export class LabourPaymentVoucherController {
            message: "Voucher not found" });
       }
       logger.info(`Labour Payment Voucher with ID: ${id} updated successfully`);
+      ControllerLogger.logSuccess('Labour Payment Voucher updated', id, req, res);
+
+      // Send notification for labour payment voucher update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Payment Voucher updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         //data: updatedVoucher,
       });
     } catch (err) {
       logger.error("Error updating Labour Payment Voucher", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher update', err, req, res);
       next(err);
     }
   }
@@ -230,11 +286,23 @@ export class LabourPaymentVoucherController {
       const { id } = req.params;
       await this.lpVoucherService.deleteLPVoucher(id);
       logger.info(`Labour Payment Voucher with ID: ${id} deleted successfully`);
+      ControllerLogger.logSuccess('Labour Payment Voucher deleted', id, req, res);
+
+      // Send notification for labour payment voucher deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Payment Voucher deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({ 
         status: "success", 
         message: "Voucher deleted successfully" });
     } catch (err) {
       logger.error("Error deleting Labour Payment Voucher", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher deletion', err, req, res);
       next(err);
     }
   }
@@ -259,6 +327,8 @@ export class LabourPaymentVoucherController {
       };
       const vouchers = await this.lpVoucherService.getLPRecycleBinVouchers(queryOptions, userId);
       logger.info(`Fetched ${vouchers.length} vouchers successfully`);
+      ControllerLogger.logList('Labour Payment Voucher Recycle Bin', req, res);
+
       res.status(200).json({
         status: "success",
         data: vouchers.data,
@@ -268,6 +338,7 @@ export class LabourPaymentVoucherController {
       });
     } catch (err) {
       logger.error("Error fetching Labour Payment Vouchers", { error: err });
+      ControllerLogger.logError('Labour Payment Voucher recycle bin retrieval', err, req, res);
       next(err);
     }
   }
@@ -285,6 +356,8 @@ export class LabourPaymentVoucherController {
             return next(new AppError(400, 'An array of AQR IDs is required'));
           }
           const result = await this.lpVoucherService.deleteMultipleLPVoucher(ids);
+          ControllerLogger.logSuccess(`${ids.length} Labour Payment Vouchers deleted`, ids.join(', '), req, res);
+
           res.status(200).json({
             message: result.message,
             success: result.success,
@@ -293,6 +366,7 @@ export class LabourPaymentVoucherController {
         }
           catch (error) {
           logger.error('Error deleting multiple LPVoucher', { error });
+          ControllerLogger.logError('Multiple Labour Payment Vouchers deletion', error, req, res);
           next(error);
         }
       }

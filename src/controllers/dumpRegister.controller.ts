@@ -76,6 +76,19 @@ export class DumpRegisterController {
         return next(new AppError(404, "Dump register not found"));
       }
 
+      // 🔔 Send notification for dump register view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed dump register with ID ${id} details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Dump register view notification error:', notifError);
+      }
+
       ControllerLogger.logView('Dump Register', id, req, res);
       res.status(200).json({
         status: "success",
@@ -215,6 +228,19 @@ export class DumpRegisterController {
         return next(new AppError(404, "No dump registers found"));
       }
 
+      // 🔔 Send notification for get all dump registers
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${dumpRegisters.meta.total} dump registers`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all dump registers notification error:', notifError);
+      }
+
       ControllerLogger.logGetAllRecords('Dump Registers', req, res);
       res.status(200).json({
         status: "success",
@@ -276,6 +302,19 @@ export class DumpRegisterController {
       if (!result) {
         ControllerLogger.logNotFound('Dump Register', id, req, res);
         return next(new AppError(404, "Dump register not found or could not be deleted"));
+      }
+
+      // 🔔 Send notification for dump register deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Dump register with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Dump register deletion notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Dump Register deleted', id, req, res);
@@ -474,6 +513,19 @@ export class DumpRegisterController {
       }
       
       const result = await this.dumpRegisterService.deleteMultipleDumpRegisters(ids);
+      
+      // 🔔 Send notification for multiple dump registers deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `${ids.length} dump registers deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Multiple dump registers deletion notification error:', notifError);
+      }
       
       ControllerLogger.logSuccess('Multiple Dump Registers deleted', `${ids.length} items`, req, res);
       res.status(200).json({

@@ -22,12 +22,15 @@ import {
 } from '../middleware/deserializeUser';
 import { PaginationOptions } from '../utils/pagination';
 import { uploadFile } from '../middleware/uploadwithAWS';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/customer-delivery-challan', deserializeUser, requireUser)
 export class CustomerDeliveryChallanController {
   constructor(
     @inject(TYPES.CustomerDeliveryChallanService)
     private customerDeliveryChallanService: CustomerDeliveryChallanService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpPost('/',uploadFile.single('anyAttachment'))
@@ -58,6 +61,19 @@ export class CustomerDeliveryChallanController {
         );
       }
 
+      // 🔔 Send notification for customer delivery challan creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer delivery challan "${challan.challanNo}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer delivery challan creation notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('Customer Delivery Challan created', challan.id, req, res);
       res.status(201).json({
         status: 'success',
@@ -83,6 +99,20 @@ export class CustomerDeliveryChallanController {
       if (!challan) {
         ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
         return next(new AppError(404, 'Customer delivery challan not found'));
+      }
+
+      // 🔔 Send notification for customer delivery challan update view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const challanNo = challan.data?.challanNo || 'Challan';
+          await this.notificationService.createNoti(
+            `customer delivery challan "${challanNo}" for editing`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer delivery challan update view notification error:', notifError);
       }
 
       ControllerLogger.logView('Customer Delivery Challan (for update)', id, req, res);
@@ -111,6 +141,20 @@ export class CustomerDeliveryChallanController {
         return next(new AppError(404, 'Customer delivery challan not found'));
       }
 
+      // 🔔 Send notification for customer delivery challan view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const challanNo = challan.data?.challanNo || 'Challan';
+          await this.notificationService.createNoti(
+            `Viewed customer delivery challan "${challanNo}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer delivery challan view notification error:', notifError);
+      }
+
       ControllerLogger.logView('Customer Delivery Challan', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -130,7 +174,7 @@ export class CustomerDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      const { page, limit, search, sort, deliveryChallanId } = req.query;
+      const { page, limit, search, sort } = req.query;
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
         limit: limit ? Number(limit) : undefined,
@@ -151,6 +195,19 @@ export class CustomerDeliveryChallanController {
       if (!challans || challans.length === 0) {
         ControllerLogger.logOperationFailed('Get All', 'Customer Delivery Challans', 'No records found', req, res);
         return next(new AppError(404, 'No customer delivery challans found'));
+      }
+    
+      // 🔔 Send notification for get all customer delivery challans
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${challans.meta.total} customer delivery challans`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all customer delivery challans notification error:', notifError);
       }
     
       ControllerLogger.logGetAllRecords('Customer Delivery Challans', req, res);
@@ -196,6 +253,19 @@ export class CustomerDeliveryChallanController {
         );
       }
 
+      // 🔔 Send notification for customer delivery challan update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer delivery challan with ID ${id} updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer delivery challan update notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('Customer Delivery Challan updated', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -225,6 +295,19 @@ export class CustomerDeliveryChallanController {
         );
       }
 
+      // 🔔 Send notification for customer delivery challan deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer delivery challan with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer delivery challan deletion notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('Customer Delivery Challan deleted', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -245,6 +328,19 @@ export class CustomerDeliveryChallanController {
   ) {
     try {
       await this.customerDeliveryChallanService.updateDeliveryChallanProductsWithReturns(id);
+
+      // 🔔 Send notification for delivery challan returns update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Delivery challan with ID ${id} updated with return data`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan returns update notification error:', notifError);
+      }
 
       ControllerLogger.logSuccess('Delivery Challan updated with returns', id, req, res);
       res.status(200).json({
@@ -270,6 +366,19 @@ export class CustomerDeliveryChallanController {
       if (!challan) {
         ControllerLogger.logNotFound('Delivery Challan', id, req, res);
         return next(new AppError(404, 'Delivery challan not found'));
+      }
+
+      // 🔔 Send notification for delivery challan net amounts view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed delivery challan with ID ${id} net amounts`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delivery challan net amounts view notification error:', notifError);
       }
 
       ControllerLogger.logView('Delivery Challan with net amounts', id, req, res);

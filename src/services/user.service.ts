@@ -33,6 +33,7 @@ import { Company } from '../entities/company.entity';
 import { Branches } from '../entities/branches.entity';
 import { DocumentDefinition, DocumentTypeEnum } from '../entities/documentdef.entity';
 import { DocumentPermission } from '../entities/permission.entity';
+import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
 
 interface Tokens {
   access_token: string;
@@ -56,6 +57,8 @@ export class UserService {
 
     @inject(TYPES.CompanyRepository)
     private readonly companyRepository: CompanyRepository,
+    @inject(TYPES.WorkflowHierarchyRepository)
+    private readonly workflowHierarchyRepository: WorkflowHierarchyRepository,
   ) {
     this.addressRepository = this.dataSource.getRepository(
       Address,
@@ -601,32 +604,34 @@ isAddressSame:user.isAddressSame,
   // }
 
   async filterUser(options: PaginationOptions): Promise<any> {
-  const queryBuilder = this.userRepository
-    .createQueryBuilder('user')
-    .select([
-      'user.id',
-      'user.firstName',
-      'user.middleName',
-      'user.lastName',
-      'user.employeeId',
-    ])
-    //.where('user.status = :status', { status: 'ACTIVE' }) // optional filter
-    .orderBy('user.firstName', 'ASC');
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.firstName',
+        'user.middleName',
+        'user.lastName',
+        'user.employeeId',
+        'user.roles'
+      ])
+      //.where('user.status = :status', { status: 'ACTIVE' }) // optional filter
+      .orderBy('user.firstName', 'ASC');
 
-  const result = await buildQuery(queryBuilder, options, 'user');
+    const result = await buildQuery(queryBuilder, options, 'user');
 
-  // Format the data after fetching
-  const formattedUsers = result.data.map((user) => ({
-    id: user.id,
-    fullName: `${user.firstName} ${user.middleName || ''} ${user.lastName}`.trim(),
-    employeeId: user.employeeId,
-  }));
+    // Format the data after fetching
+    const formattedUsers = result.data.map((user) => ({
+      id: user.id,
+      fullName: `${user.firstName} ${user.middleName || ''} ${user.lastName}`.trim(),
+      employeeId: user.employeeId,
+      roles: user.roles || []
+    }));
 
-  return {
-    ...result,
-    data: formattedUsers,
-  };
-}
+    return {
+      ...result,
+      data: formattedUsers,
+    };
+  }
 
 
   async findUserByIdentifier(uid: string): Promise<User | null> {
@@ -823,7 +828,7 @@ isAddressSame:user.isAddressSame,
           joiningDate: joiningDate,//row.joiningDate /*? new Date(row.joiningDate) : null*/,
           workEmail: row.workEmail,
           department: row.department,
-          companyName: company,
+          companyName: company ? [company] : [],
           residentialAddress,
           permanentAddress,
           joiningLocation,
@@ -831,7 +836,7 @@ isAddressSame:user.isAddressSame,
           accessLocation,
           employeeId: employeeId,
           tempPlainPassword: this.generateRandomPassword(),
-        });
+        } as any);
 
         const savedUser = await transactionalEntityManager.save(user);
 
@@ -855,7 +860,7 @@ isAddressSame:user.isAddressSame,
             canEdit: !!row.permissions.canEdit,
             canDelete: !!row.permissions.canDelete,
             canDownload: !!row.permissions.canDownload
-          });
+          } as any);
 
           await transactionalEntityManager.save(permission);
         }
@@ -866,4 +871,34 @@ isAddressSame:user.isAddressSame,
 
     return results;
   }
+
+  async getWorkflowHierarchy(employeeId: string): Promise<any> {
+    // Query to get all workflow hierarchy relationships for the given employee
+    // This will return all subordinates with their depth levels (1, 2, 3, etc.)
+    const hierarchyData = await this.workflowHierarchyRepository
+      .createQueryBuilder('wh')
+      .leftJoinAndSelect('wh.descendant', 'descendant')
+      .where('wh.ancestor_id = :employeeId', { employeeId })
+      .andWhere('wh.depth > 0') // Exclude self-reference (depth = 0)
+      .orderBy('wh.depth', 'ASC')
+      .addOrderBy('descendant.firstName', 'ASC')
+      .getMany();
+
+    if (!hierarchyData || hierarchyData.length === 0) {
+      return [];
+    }
+
+    // Format the response to match filterUser format
+    const formattedHierarchy = hierarchyData.map((item) => ({
+      id: item.descendant.id,
+      fullName: `${item.descendant.firstName} ${item.descendant.middleName || ''} ${item.descendant.lastName}`.trim(),
+      employeeId: item.descendant.employeeId,
+      roles: item.descendant.roles || []
+    }));
+
+    return formattedHierarchy;
+  }
+
+
+  
 }

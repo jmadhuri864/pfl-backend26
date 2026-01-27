@@ -17,11 +17,13 @@ import AppError from "../utils/appError";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { uploadNone } from "../middleware/multerConfig";
 import { PaginationOptions } from "../utils/pagination";
+import { NotificationService } from "../services/notification.service";
 
 @controller("/labors",deserializeUser,requireUser)
 export class LaborController {
   constructor(
-    @inject(TYPES.LaborService) private readonly laborService: LaborService
+    @inject(TYPES.LaborService) private readonly laborService: LaborService,
+    @inject(TYPES.NotificationService) private readonly notificationService: NotificationService
   ) {}
   @httpPost("/")
   public async createLabor(
@@ -40,6 +42,16 @@ export class LaborController {
       }
 
       logger.info("Labor record created successfully", { laborId: labor.id });
+      
+      // Send notification for labor creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labor record created successfully: ${labor.id}`,
+          userId
+        );
+      }
+      
       res.status(201).json({
         status: "success",
         message: "Labor record created successfully",
@@ -62,6 +74,15 @@ export class LaborController {
       const labor = await this.laborService.getLaborById(id);
       if (!labor) {
         return next(new AppError(404, "Labor record not found"));
+      }
+
+      // Send notification for labor view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labor record viewed: ${id}`,
+          userId
+        );
       }
 
       res.status(200).json({
@@ -94,6 +115,16 @@ export class LaborController {
               search: search as string|| '',
             };
       const labors = await this.laborService.getAllLabors(queryOptions);
+      
+      // Send notification for labor list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Labor records list accessed successfully',
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: "success",
         data: labors.data,
@@ -128,6 +159,15 @@ export class LaborController {
         );
       }
 
+      // Send notification for labor update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labor record updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "Labor record updated successfully",
@@ -155,6 +195,15 @@ export class LaborController {
       if (!deletedLabor) {
         return next(
           new AppError(404, "Labor record not found or could not be deleted")
+        );
+      }
+
+      // Send notification for labor deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labor record deleted successfully: ${id}`,
+          userId
         );
       }
 

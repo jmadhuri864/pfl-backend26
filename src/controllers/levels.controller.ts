@@ -6,12 +6,16 @@ import { LevelsService } from "../services/levels.service";
 import { NextFunction ,Request,Response} from "express";
 import logger from "../utils/logger";
 import AppError from "../utils/appError";
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from "../services/notification.service";
 
 @controller('/levels',deserializeUser,requireUser)
 export class  LevelsController {
     constructor(
         @inject(TYPES.LevelsService) 
-        private levelsService: LevelsService
+        private levelsService: LevelsService,
+        @inject(TYPES.NotificationService)
+        private notificationService: NotificationService
       ) {}
     
       @httpPost("/")
@@ -32,6 +36,17 @@ export class  LevelsController {
           // }
     
           logger.info("Level created successfully", { levelId: level.id });
+          ControllerLogger.logSuccess('Level created', level.id, req, res);
+
+          // Send notification for level creation
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Level created successfully: ${level.id}`,
+              userId
+            );
+          }
+
           res.status(201).json({
             status: "success",
             message: "Level created successfully",
@@ -40,6 +55,7 @@ export class  LevelsController {
         } catch (err) {
           console.log(err)
           logger.error("Error occurred while creating level", { error: err });
+          ControllerLogger.logError('Level creation', err, req, res);
           next(err);
         }
       }
@@ -62,6 +78,17 @@ export class  LevelsController {
           }
     
           logger.info("Level updated successfully", { levelId: id });
+          ControllerLogger.logSuccess('Level updated', id, req, res);
+
+          // Send notification for level update
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Level updated successfully: ${id}`,
+              userId
+            );
+          }
+
           res.status(200).json({
             status: "success",
             message: "Level updated successfully",
@@ -69,6 +96,7 @@ export class  LevelsController {
           });
         } catch (err) {
           logger.error("Error occurred while updating level", { levelId: id, error: err });
+          ControllerLogger.logError('Level update', err, req, res);
           next(err);
         }
       }
@@ -76,6 +104,7 @@ export class  LevelsController {
       @httpDelete("/:id")
       public async deleteLevel(
         @requestParam("id") id: string,
+        @request() req: Request,
         @response() res: Response, 
         @next() next: NextFunction
       ) {
@@ -84,19 +113,33 @@ export class  LevelsController {
            if (!levels) {
                    return next(new AppError(404, "Level not found or could not be deleted"));
                  }
+
+                 ControllerLogger.logSuccess('Level deleted', id, req, res);
+
+                 // Send notification for level deletion
+                 const userId = res.locals.user?.id;
+                 if (userId) {
+                   await this.notificationService.createNoti(
+                     `Level deleted successfully: ${id}`,
+                     userId
+                   );
+                 }
+
                  res.status(200).json({ 
                   status: "success", 
                   message: "Level deleted successfully" });
           //res.status(204).send();
         } catch (err) {
           logger.error("Error occurred while deleting level", { levelId: id, error: err });
+          ControllerLogger.logError('Level deletion', err, req, res);
           next(err);
         }
       }
     
       @httpGet("/:id")
       public async getLevelById(
-        @requestParam("id") id: string, 
+        @requestParam("id") id: string,
+        @request() req: Request, 
         @response() res: Response, 
         @next() next: NextFunction
       ) {
@@ -108,6 +151,17 @@ export class  LevelsController {
             logger.warn("Level not found", { levelId: id });
             return next(new AppError(404, "Level not found"));
           }
+
+          ControllerLogger.logView('Level', id, req, res);
+
+          // Send notification for level view
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Level viewed: ${id}`,
+              userId
+            );
+          }
     
           res.status(200).json({
             status: "success",
@@ -115,12 +169,14 @@ export class  LevelsController {
           });
         } catch (err) {
           logger.error("Error occurred while fetching level", { levelId: id, error: err });
+          ControllerLogger.logError('Level view', err, req, res);
           next(err);
         }
       }
     
       @httpGet("/")
       public async getAllLevels(
+        @request() req: Request,
         @response() res: Response, 
         @next() next: NextFunction
       ) {
@@ -132,6 +188,17 @@ export class  LevelsController {
             logger.error("No levels found");
             return next(new AppError(404, "No levels found"));
           }
+
+          ControllerLogger.logList('Level', req, res);
+
+          // Send notification for levels list access
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              'Levels list accessed successfully',
+              userId
+            );
+          }
     
           res.status(200).json({
             status: "success",
@@ -139,6 +206,7 @@ export class  LevelsController {
           });
         } catch (err) {
           logger.error("Error occurred while fetching all levels", { error: err });
+          ControllerLogger.logError('Level list retrieval', err, req, res);
           next(err);
         }
       }

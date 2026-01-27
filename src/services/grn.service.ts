@@ -86,8 +86,8 @@ export class GrnService {
     private readonly auditLogService: AuditLogService,
     @inject(TYPES.UserRepository)
     private readonly userRepository: UserRepository,
-    @inject(TYPES.ReportingManagersRepository)
-    private readonly reportingManagerRepository: ReportingManagersRepository,
+    // @inject(TYPES.ReportingManagersRepository)
+    // private readonly reportingManagerRepository: ReportingManagersRepository,
     @inject(TYPES.LevelsRepository)
     private readonly levelsRepository: LevelsRepository,
     @inject(TYPES.RequestsRepository)

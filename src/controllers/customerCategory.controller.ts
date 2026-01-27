@@ -22,12 +22,15 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 
 @controller("/customerCategory",deserializeUser,requireUser)
 export class CustomerCategoryController {
   constructor(
     @inject(TYPES.CustomerCategoryService)
-    private customerCategoryService: CustomerCategoryService
+    private customerCategoryService: CustomerCategoryService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpGet("/")
@@ -56,6 +59,19 @@ export class CustomerCategoryController {
           totalPages: 0,
           page: queryOptions.page || 1,
         });
+      }
+      
+      // 🔔 Send notification for get all customer categories
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${categories.meta.total} customer categories`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all customer categories notification error:', notifError);
       }
       
       // Log successful retrieval with specific message
@@ -89,6 +105,19 @@ export class CustomerCategoryController {
         return next(new AppError(404, "Customer category not found"));
       }
       
+      // 🔔 Send notification for customer category view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed customer category "${category.name}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer category view notification error:', notifError);
+      }
+      
       // Log successful view
       ControllerLogger.logView('Customer Category', id, req, res);
       
@@ -118,6 +147,20 @@ export class CustomerCategoryController {
           status: "error",
           message: "Customer Category could not be created",
         });
+      }
+      
+      // 🔔 Send notification for customer category creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const categoryName = categoryData.name || 'New Category';
+          await this.notificationService.createNoti(
+            `Customer category "${categoryName}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer category creation notification error:', notifError);
       }
       
       // Log successful creation
@@ -156,6 +199,20 @@ export class CustomerCategoryController {
         );
       }
       
+      // 🔔 Send notification for customer category update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const categoryName = categoryData.name || category.name || 'Category';
+          await this.notificationService.createNoti(
+            `Customer category "${categoryName}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer category update notification error:', notifError);
+      }
+      
       // Log successful update
       ControllerLogger.logSuccess('Customer Category updated', id, req, res);
       
@@ -182,6 +239,19 @@ export class CustomerCategoryController {
       if (!success) {
         ControllerLogger.logOperationFailed('Delete', 'Customer Category', 'not found or could not be deleted', req, res);
         return res.status(404).json({ message: 'Customer Category not found' });
+      }
+      
+      // 🔔 Send notification for customer category deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer category with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer category deletion notification error:', notifError);
       }
       
       // Log successful deletion

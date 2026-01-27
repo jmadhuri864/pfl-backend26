@@ -14,7 +14,8 @@ import { TYPES } from "../types";
 import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
-import { uploadNone } from "../middleware/multerConfig"; // if needed for file upload
+import { uploadNone } from "../middleware/multerConfig";
+import { ControllerLogger } from "../utils/controllerLogger"; // if needed for file upload
 import { VehicleDispatchService } from "../services/vehicleDispatch.service";
 import { NotificationService } from "../services/notification.service";
 import { deserialize } from "v8";
@@ -74,12 +75,16 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
         vehicleDispatchId: vehicleDispatch.id,
       });
 
-      // // Trigger a notification
-      // await this.notificationService.createNoti(
-      //   `New vehicle dispatch created: ${vehicleDispatch.id}`,
-      //   res.locals.user.id
-      // );
+      // Send notification for vehicle dispatch creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vehicle Dispatch created successfully: ${vehicleDispatch.id}`,
+          userId
+        );
+      }
 
+      ControllerLogger.logSuccess('Vehicle Dispatch created', vehicleDispatch.id, req, res);
       res.status(201).json({
         status: "success",
         message: "Vehicle Dispatch created successfully",
@@ -90,6 +95,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
         error: err,
       });
       console.log(err)
+      ControllerLogger.logError('Vehicle Dispatch creation', err, req, res);
       next(err);
     }
   }
@@ -208,6 +214,16 @@ try {
         vehicleDispatch,
       });
 
+      // Send notification for vehicle dispatch view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vehicle Dispatch viewed: ${id}`,
+          userId
+        );
+      }
+
+      ControllerLogger.logView('Vehicle Dispatch', id, req, res);
       res.status(200).json({
         status: "success",
         data: vehicleDispatch,
@@ -294,11 +310,16 @@ try {
       }
       logger.info("Vehicle Dispatch updated successfully", { updatedDispatch });
 
-      await this.notificationService.createNoti(
-        `Vehicle dispatch updated for ID: ${updatedDispatch.id}`,
-        res.locals.user.id
-      );
+      // Send notification for vehicle dispatch update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vehicle Dispatch updated successfully: ${updatedDispatch.id}`,
+          userId
+        );
+      }
 
+      ControllerLogger.logSuccess('Vehicle Dispatch updated', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vehicle Dispatch updated successfully",
@@ -326,11 +347,22 @@ try {
       //res.status(204).send(); // No content
 
       if (!result) {
+              ControllerLogger.logError('Vehicle Dispatch deletion', new AppError(404, "Vehicle Dispatch not found or could not be deleted"), req, res);
               return next(
                 new AppError(404, "Vehicle Dispatch not found or could not be deleted")
               );
             }
 
+      // Send notification for vehicle dispatch deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vehicle Dispatch deleted successfully: ${id}`,
+          userId
+        );
+      }
+
+      ControllerLogger.logSuccess('Vehicle Dispatch deleted', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vehicle Dispatch has been deleted",
@@ -394,6 +426,15 @@ try {
     
       //  logger.info(Total Vehical Dispatch fetched: ${vehicalDispatch.data.length});
     
+        // Send notification for vehicle dispatch list access
+        if (userId) {
+          await this.notificationService.createNoti(
+            'Vehicle Dispatch records list accessed successfully',
+            userId
+          );
+        }
+
+        ControllerLogger.logList('Vehicle Dispatch', req, res);
         res.status(200).json({
           status: 'success',
           data: vehicalDispatch.data,
@@ -458,6 +499,17 @@ try {
           return next(new AppError(400, 'An array of Vehicle Dispatch IDs is required'));
         }
         const result = await this.vehicleDispatchService.deleteMultipleVehicleDispatch(ids);
+
+        // Send notification for multiple vehicle dispatch deletion
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Multiple Vehicle Dispatches deleted successfully: ${ids.length} records`,
+            userId
+          );
+        }
+
+        ControllerLogger.logSuccess('Vehicle Dispatch multiple deletion', `${ids.length} records`, req, res);
         res.status(200).json({
           message: result.message,
           success: result.success,

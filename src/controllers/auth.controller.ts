@@ -4,7 +4,6 @@ import { UserService } from '../services/user.service';
 import AppError from '../utils/appError';
 import { signJwt, verifyJwt } from '../utils/jwt';
 import { inject } from 'inversify';
-import jwt from 'jsonwebtoken';
 import {
   controller,
   httpPost,
@@ -13,15 +12,12 @@ import {
   next,
 } from 'inversify-express-utils';
 import { TYPES } from '../types';
-import { User } from '../entities/user.entity';
 import logger from '../utils/logger';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { UserSystemInfoRepository } from '../repositories/userSystemInfo.repository';
 import { AppDataSource } from '../utils/data-source';
 import { BlacklistedToken } from '../entities/blacklistedToken.entity';
 import { NotificationService } from '../services/notification.service';
-import { is } from 'useragent';
-import { Department } from '../utils/status.enum';
 import { UserRepository } from '../repositories/user.repository';
 import { ActiveSessionRepository } from '../repositories/activeSession.repository';
 
@@ -86,6 +82,9 @@ export class AuthController {
       });
 
       if (blacklistedToken) {
+        // 🔔 Log security event for blacklisted token usage
+        logger.warn(`Attempt to use blacklisted refresh token from IP: ${req.ip}`);
+        
         return next(
           new AppError(401, 'You need to re-authenticate. Please log in.'),
         );
@@ -97,6 +96,10 @@ export class AuthController {
       );
       if (!decoded) {
         logger.warn('Invalid refresh token provided');
+        
+        // 🔔 Log security event for invalid token
+        logger.warn(`Invalid refresh token attempt from IP: ${req.ip}`);
+        
         return next(
           new AppError(403, 'You need to re-authenticate. Please log in.'),
         );
@@ -104,7 +107,11 @@ export class AuthController {
 
       const user = await this.userService.findUserById(decoded.sub);
       if (!user) {
-        logger.warn(`User not found for ID`);
+        logger.warn(`User not found for refresh token`);
+        
+        // 🔔 Log security event for token with non-existent user
+        logger.warn(`Refresh token for non-existent user from IP: ${req.ip}`);
+        
         return next(
           new AppError(403, 'You need to re-authenticate. Please log in.'),
         );
@@ -120,6 +127,16 @@ export class AuthController {
         httpOnly: false,
       });
       logger.info('Access token refreshed successfully', { userId: user.id });
+
+      // 🔔 Simple session refresh notification
+      try {
+        await this.notificationService.createNoti(
+          `Session refreshed`,
+          user.id
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
 
       res.status(200).json({
         status: 'success',
@@ -150,20 +167,32 @@ export class AuthController {
       }
 
       const trimmedPassword = password.trim();
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uid);
-      const isPhoneNumber = /^[+\d][\d\s]+$/.test(uid);
-      const isUsername = !isEmail && !isPhoneNumber;
 
       const user = await this.userService.findUserByIdentifier(uid);
       console.log(user);
 
       if (!user) {
         logger.error('User not found during login', { uid });
-        throw new AppError(404, 'Please check your email or phone number.');
+        
+        // 🔔 Log failed login attempt (no notification since user not found)
+        logger.warn(`Failed login attempt for non-existent user: ${uid} from IP: ${req.ip}`);
+        
+        throw new AppError(404, 'Username or email is incorrect');
       }
 
       if (user.status === 'INACTIVE') {
         logger.error('User is inactive during login', { uid });
+        
+        // 🔔 Send notification for inactive account login attempt
+        try {
+          await this.notificationService.createNoti(
+            `Invalid password and email`,
+            user.id
+          );
+        } catch (notifError) {
+          console.log('Inactive account notification error:', notifError);
+        }
+        
         throw new AppError(
           403,
           'Your account is inactive. Please contact administrator.',
@@ -178,8 +207,19 @@ export class AuthController {
       await this.userRepository.save(user);
       if (!isPasswordMatch) {
         logger.warn('Invalid password during login', { uid });
+        
+        // 🔔 Send notification for failed password attempt
+        try {
+          await this.notificationService.createNoti(
+            `Wrong password`,
+            user.id
+          );
+        } catch (notifError) {
+          console.log('Failed password notification error:', notifError);
+        }
+        
         ControllerLogger.logAuth('User login', req, res, false);
-        throw new AppError(401, 'Password is incorrect. Please try again.');
+        throw new AppError(401, 'Wrong password');
       }
 
       const permissions = user.permissions.map((permission) => ({
@@ -255,12 +295,15 @@ export class AuthController {
         httpOnly: false,
       });
 
-      const message = `Welcome back, ${user.firstName}! You have successfully logged in.`;
-      console.log(message, user.id);
-      setTimeout(async () => {
-        await this.notificationService.createNoti(message, user.id);
-      }, 3000); // 1.5 seconds
-      //await this.notificationService.createNoti(message, user.id);
+      // 🔔 Simple login success notification
+      try {
+        await this.notificationService.createNoti(
+          `Login successfully`,
+          user.id
+        );
+      } catch (notifError) {
+        console.log('Login notification error:', notifError);
+      }
 
       // Log successful login
       ControllerLogger.logAuth('User login', req, res, true);
@@ -406,6 +449,18 @@ export class AuthController {
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
       logger.info('User logged out successfully');
+
+      // 🔔 Simple logout notification
+      try {
+        if (user) {
+          await this.notificationService.createNoti(
+            `Logout successfully`,
+            user.id
+          );
+        }
+      } catch (notifError) {
+        console.log('Logout notification error:', notifError);
+      }
 
       // Log successful logout
       ControllerLogger.logAuth('User logout', req, res, true);

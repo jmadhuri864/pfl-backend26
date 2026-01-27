@@ -16,12 +16,16 @@ import { SaleOrderService } from "../services/saleOrder.service";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 
 @controller('/saleOrders',deserializeUser,requireUser)
 export class SaleOrderController {
   constructor(
     @inject(TYPES.SaleOrderService)
-    private saleOrderService: SaleOrderService
+    private saleOrderService: SaleOrderService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   @httpPost("/")
@@ -35,6 +39,17 @@ export class SaleOrderController {
       const saleOrderData = req.body;
       const saleOrder = await this.saleOrderService.createSaleOrder(saleOrderData);
 
+      ControllerLogger.logSuccess('Sale Order created', saleOrder.id, req, res);
+
+      // Send notification for sale order creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Sale Order created successfully: ${saleOrder.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         message: "Sale order created successfully",
@@ -42,6 +57,7 @@ export class SaleOrderController {
       });
     } catch (err) {
       logger.error("Error occurred while creating sale order", { error: err });
+      ControllerLogger.logError('Sale Order creation', err, req, res);
       next(err);
     }
   }
@@ -49,6 +65,7 @@ export class SaleOrderController {
   @httpGet("/:id")
   public async getSaleOrderById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -58,7 +75,19 @@ export class SaleOrderController {
 
       if (!saleOrder) {
         logger.warn("Sale order not found", { saleOrderId: id });
+        ControllerLogger.logError('Sale Order view', new AppError(404, "Sale order not found"), req, res);
         return next(new AppError(404, "Sale order not found"));
+      }
+
+      ControllerLogger.logView('Sale Order', id, req, res);
+
+      // Send notification for sale order view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Sale Order viewed: ${id}`,
+          userId
+        );
       }
 
       res.status(200).json({
@@ -67,6 +96,7 @@ export class SaleOrderController {
       });
     } catch (err) {
       logger.error("Error occurred while fetching sale order", { error: err });
+      ControllerLogger.logError('Sale Order view', err, req, res);
       next(err);
     }
   }
@@ -81,12 +111,24 @@ export class SaleOrderController {
       logger.info("Fetching all sale orders");
       const saleOrders = await this.saleOrderService.getAllSaleOrders();
 
+      ControllerLogger.logList('Sale Order', req, res);
+
+      // Send notification for sale order list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Sale Order records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: saleOrders,
       });
     } catch (err) {
       logger.error("Error occurred while fetching all sale orders", { error: err });
+      ControllerLogger.logError('Sale Order list retrieval', err, req, res);
       next(err);
     }
   }
@@ -107,7 +149,19 @@ export class SaleOrderController {
 
       if (!updatedSaleOrder) {
         logger.warn("Sale order not found or could not be updated", { saleOrderId: id });
+        ControllerLogger.logError('Sale Order update', new AppError(404, "Sale order not found or could not be updated"), req, res);
         return next(new AppError(404, "Sale order not found or could not be updated"));
+      }
+
+      ControllerLogger.logSuccess('Sale Order updated', id, req, res);
+
+      // Send notification for sale order update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Sale Order updated successfully: ${id}`,
+          userId
+        );
       }
 
       res.status(200).json({
@@ -117,6 +171,7 @@ export class SaleOrderController {
       });
     } catch (err) {
       logger.error("Error occurred while updating sale order", { error: err });
+      ControllerLogger.logError('Sale Order update', err, req, res);
       next(err);
     }
   }
@@ -124,6 +179,7 @@ export class SaleOrderController {
   @httpDelete("/:id")
   public async deleteSaleOrder(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -131,12 +187,24 @@ export class SaleOrderController {
       logger.info("Deleting sale order", { saleOrderId: id });
       await this.saleOrderService.deleteSaleOrder(id);
 
+      ControllerLogger.logSuccess('Sale Order deleted', id, req, res);
+
+      // Send notification for sale order deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Sale Order deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "Sale order deleted successfully",
       });
     } catch (err) {
       logger.error("Error occurred while deleting sale order", { error: err });
+      ControllerLogger.logError('Sale Order deletion', err, req, res);
       next(err);
     }
   }

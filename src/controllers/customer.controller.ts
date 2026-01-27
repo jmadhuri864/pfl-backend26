@@ -22,12 +22,15 @@ import { uploadFileMultiple } from '../middleware/multiFileWithAWS';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { generateIncrementalCode } from '../utils/codeGeneration';
 import { Status } from '../utils/status.enum';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/customers', deserializeUser, requireUser)
 export class CustomerController {
   constructor(
     @inject(TYPES.CustomerService)
     private customerService: CustomerService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpPost(
@@ -134,6 +137,20 @@ customerData.customerCode = await generateIncrementalCode('customer')
         });
       }
       
+      // 🔔 Send notification for customer creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customerData.organisationName || 'New Customer';
+          await this.notificationService.createNoti(
+            `Customer "${customerName}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer creation notification error:', notifError);
+      }
+      
       // Log successful creation
       const customerId = Array.isArray(customer) ? (customer[0] as any)?.id : (customer as any)?.id;
       ControllerLogger.logSuccess('Customer created', customerId || 'unknown', req, res);
@@ -205,6 +222,19 @@ async approveCustomer(
       return res.status(404).json({ message: "Customer not found or could not be approved" });
     }
     
+    // 🔔 Send notification for customer approval
+    try {
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Customer approved with status: ${status}`,
+          userId
+        );
+      }
+    } catch (notifError) {
+      console.log('Customer approval notification error:', notifError);
+    }
+    
     // Log successful approval
     ControllerLogger.logSuccess('Customer approved', customerId, req, res);
     
@@ -246,6 +276,19 @@ async approveCustomer(
         });
       }
 
+      // 🔔 Send notification for get all customers
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${customers.meta.total} customers`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all customers notification error:', notifError);
+      }
+
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Customer', req, res);
 
@@ -279,6 +322,19 @@ async approveCustomer(
         });
       }
       
+      // 🔔 Send notification for customer names retrieval
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${customers.length} customer names`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer names notification error:', notifError);
+      }
+      
       // Log successful retrieval
       ControllerLogger.logGetAllRecords('Customer', req, res);
 
@@ -305,6 +361,20 @@ async approveCustomer(
       if (!customer) {
         ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
+      }
+      
+      // 🔔 Send notification for customer partial view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customer.customer?.organisationName || 'Customer';
+          await this.notificationService.createNoti(
+            `Viewed partial details of "${customerName}"`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer partial view notification error:', notifError);
       }
       
       // Log successful view
@@ -334,6 +404,20 @@ async approveCustomer(
       if (!customer) {
         ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
+      }
+      
+      // 🔔 Send notification for customer view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customer?.organisationName || 'Customer';
+          await this.notificationService.createNoti(
+            `Viewed details of "${customerName}"`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer view notification error:', notifError);
       }
       
       // Log successful view
@@ -366,6 +450,20 @@ async approveCustomer(
         throw new AppError(404, 'Customer not found');
       }
       
+      // 🔔 Send notification for customer view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customer?.organisationName || 'Customer';
+          await this.notificationService.createNoti(
+            `Viewed full details of "${customerName}"`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer view notification error:', notifError);
+      }
+      
       // Log successful view
       ControllerLogger.logView('Customer', id, req, res);
 
@@ -395,6 +493,20 @@ async approveCustomer(
       if (!customer) {
         ControllerLogger.logNotFound('Customer', id, req, res);
         throw new AppError(404, 'Customer not found');
+      }
+      
+      // 🔔 Send notification for customer update view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customer?.organisationName || 'Customer';
+          await this.notificationService.createNoti(
+            `Opened "${customerName}" for editing`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer update view notification error:', notifError);
       }
       
       // Log successful view for update
@@ -509,6 +621,20 @@ async approveCustomer(
         return res.status(404).json({ message: 'Customer not found' });
       }
       
+      // 🔔 Send notification for customer update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const customerName = customerData.organisationName || updatedCustomer?.organisationName || 'Customer';
+          await this.notificationService.createNoti(
+            `Customer "${customerName}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer update notification error:', notifError);
+      }
+      
       // Log successful update
       ControllerLogger.logSuccess('Customer updated', id, req, res);
       
@@ -539,6 +665,19 @@ async approveCustomer(
         return res.status(404).json({ message: 'Customer not found' });
       }
       
+      // 🔔 Send notification for customer deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer deletion notification error:', notifError);
+      }
+      
       // Log successful deletion
       ControllerLogger.logSuccess('Customer deleted', id, req, res);
      
@@ -551,13 +690,26 @@ async approveCustomer(
     }
   }
   @httpPost("/upload/customerdata", upload.single('file'))
-    public uploadFile(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
+    public async uploadFile(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
             if (!req.file) {
                 ControllerLogger.logValidationError('Customer file upload', 'No file uploaded', req, res);
                 return res.status(400).send("No file uploaded");
             }
             try {
                 this.customerService.upload(req.file.path);
+                
+                // 🔔 Send notification for file upload
+                try {
+                  const userId = res.locals.user?.id;
+                  if (userId) {
+                    await this.notificationService.createNoti(
+                      `Customer data file "${req.file.filename}" uploaded successfully`,
+                      userId
+                    );
+                  }
+                } catch (notifError) {
+                  console.log('Customer file upload notification error:', notifError);
+                }
                 
                 // Log successful upload
                 ControllerLogger.logSuccess('Customer file uploaded', req.file.filename || 'unknown', req, res);
@@ -569,11 +721,4 @@ async approveCustomer(
                 return res.status(500).send("Error uploading file");
             }
         }
-}
-function validateDate(date: string | null): Date | null {
-  if (!date || date.trim() === '') {
-    return null;
-  }
-  const parsedDate = new Date(date);
-  return isNaN(parsedDate.getTime()) ? null : parsedDate;
 }

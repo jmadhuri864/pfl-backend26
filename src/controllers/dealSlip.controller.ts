@@ -7,13 +7,16 @@ import AppError from "../utils/appError";
 import { captureUser, deserializeUser, requireUser} from "../middleware/deserializeUser";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 
 @controller('/dealSlip', deserializeUser, requireUser)
 export class DealSlipController {
   
   constructor(
     @inject(TYPES.DealSlipService)
-    private dealSlipService: DealSlipService
+    private dealSlipService: DealSlipService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpGet('/recyclebin')
@@ -122,6 +125,19 @@ export class DealSlipController {
         });
       }
 
+      // 🔔 Send notification for get all deal slips
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${dealSlips.meta.total} deal slips`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all deal slips notification error:', notifError);
+      }
+
       ControllerLogger.logGetAllRecords('Deal Slips', req, res);
       res.status(200).json({
         status: 'success',
@@ -149,6 +165,19 @@ export class DealSlipController {
       if (!dealSlip) {
         ControllerLogger.logNotFound('Deal Slip', id, req, res);
         return next(new AppError(404, "Deal Slip not found"));
+      }
+      
+      // 🔔 Send notification for deal slip view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed deal slip "${dealSlip.dealSlipNo}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Deal slip view notification error:', notifError);
       }
       
       ControllerLogger.logView('Deal Slip', id, req, res);
@@ -206,6 +235,19 @@ export class DealSlipController {
       
       const dealSlip = await this.dealSlipService.createDealSlip(dealData);
       
+      // 🔔 Send notification for deal slip creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Deal slip "${dealSlip.dealSlipNo}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Deal slip creation notification error:', notifError);
+      }
+      
       ControllerLogger.logSuccess('Deal Slip created', dealSlip.id, req, res);
       res.status(200).json({
         status: "success",
@@ -238,6 +280,19 @@ export class DealSlipController {
         return next(new AppError(404, "Deal Slip not found"));
       }
       
+      // 🔔 Send notification for deal slip update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Deal slip "${updatedDealSlip.dealSlipNo}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Deal slip update notification error:', notifError);
+      }
+      
       ControllerLogger.logSuccess('Deal Slip updated', dealSlipId, req, res);
       res.status(200).json({
         status: "success",
@@ -265,6 +320,19 @@ export class DealSlipController {
       if (!result) {
         ControllerLogger.logOperationFailed('Approve', 'Deal Slip', 'Cannot be approved', req, res);
         return next(new AppError(404, "Deal Slip not found or cannot be approved"));
+      }
+      
+      // 🔔 Send notification for deal slip approval
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Deal slip approved with status: ${approvalStatus}`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Deal slip approval notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Deal Slip approved', dealSlipId, req, res);
@@ -316,6 +384,19 @@ export class DealSlipController {
       if (!success) {
         ControllerLogger.logNotFound('Deal Slip', id, req, res);
         return res.status(404).json({ message: 'Deal Slip not found' });
+      }
+      
+      // 🔔 Send notification for deal slip deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Deal slip with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Deal slip deletion notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Deal Slip deleted', id, req, res);

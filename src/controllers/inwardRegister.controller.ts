@@ -15,17 +15,21 @@ import { TYPES } from '../types';
 import { InwardRegisterService } from '../services/inwardRegister.service';
 import AppError from '../utils/appError';
 import logger from '../utils/logger';
+import { ControllerLogger } from '../utils/controllerLogger';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { uploadNone } from '../middleware/multerConfig';
 import { Source } from '../utils/status.enum';
 import { error } from 'console';
 import { PaginationOptions } from '../utils/pagination';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/inwardRegister', deserializeUser, requireUser)
 export class InwardRegisterController {
   constructor(
     @inject(TYPES.InwardRegisterService)
     private inwardRegisterService: InwardRegisterService,
+    @inject(TYPES.NotificationService)
+    private readonly notificationService: NotificationService,
   ) {}
 
   @httpPost('/')
@@ -61,6 +65,17 @@ export class InwardRegisterController {
         logger.warn('Inward register not created', { data });
         return next(new AppError(400, 'Inward register not created'));
       }
+      ControllerLogger.logSuccess('Inward Register created', inwardRegister.id, req, res);
+
+      // Send notification for inward register creation
+      const currentUserId = res.locals.user?.id;
+      if (currentUserId) {
+        await this.notificationService.createNoti(
+          `Inward register created successfully: ${inwardRegister.id}`,
+          currentUserId
+        );
+      }
+
       res.status(201).json({
         status: 'success',
         message: 'Inward register created successfully',
@@ -69,6 +84,7 @@ export class InwardRegisterController {
     } catch (err) {
       logger.error('Error creating inward register', { error: err });
       console.log(err);
+      ControllerLogger.logError('Inward Register creation', err, req, res);
       next(err);
     }
   }
@@ -124,6 +140,15 @@ export class InwardRegisterController {
       }
   
     //  logger.info(Total InwardRegister fetched: ${inwardRegisters.data.length});
+      ControllerLogger.logList('Inward Register Recycle Bin', req, res);
+      
+      // Send notification for recycle bin access
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Inward register recycle bin accessed',
+          userId
+        );
+      }
   
       res.status(200).json({
         status: 'success',
@@ -134,6 +159,7 @@ export class InwardRegisterController {
       });
     } catch (error) {
       console.error('Error fetching InwardRegister:', error);
+      ControllerLogger.logError('Inward Register recycle bin retrieval', error, req, res);
       next(error);
     }
   }
@@ -222,6 +248,15 @@ try {
         logger.warn('Inward register not found', { id });
         return next(
           new AppError(404, `Inward register with ID ${id} not found`),
+        );
+      }
+
+      // Send notification for inward register view
+      const currentUserId = res.locals.user?.id;
+      if (currentUserId) {
+        await this.notificationService.createNoti(
+          `Inward register viewed: ${id}`,
+          currentUserId
         );
       }
 
@@ -333,6 +368,15 @@ try {
         );
       }
 
+      // Send notification for inward register update
+      const currentUserId = res.locals.user?.id;
+      if (currentUserId) {
+        await this.notificationService.createNoti(
+          `Inward register updated successfully: ${id}`,
+          currentUserId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Inward register updated successfully',
@@ -354,6 +398,16 @@ try {
     try {
       // Call the service to delete the inward register
       await this.inwardRegisterService.deleteInwardRegister(id);
+      
+      // Send notification for inward register deletion
+      const currentUserId = res.locals.user?.id;
+      if (currentUserId) {
+        await this.notificationService.createNoti(
+          `Inward register deleted: ${id}`,
+          currentUserId
+        );
+      }
+      
       res
         .status(200)
         .json({ message: `InwardRegister with ID ${id} has been deleted.` });
@@ -433,6 +487,14 @@ try {
       }
   
     //  logger.info(Total InwardRegister fetched: ${inwardRegisters.data.length});
+      
+      // Send notification for inward register list access
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Inward register list accessed successfully',
+          userId
+        );
+      }
   
       res.status(200).json({
         status: 'success',

@@ -14,6 +14,7 @@ export enum ActivityAction {
   EXPORT = 'EXPORT',
   PRINT = 'PRINT',
   DOWNLOAD = 'DOWNLOAD',
+  ERROR = 'ERROR',
 }
 
 export enum ActivityModule {
@@ -28,9 +29,17 @@ export enum ActivityModule {
   REPORT = 'REPORT',
   SETTINGS = 'SETTINGS',
   DASHBOARD = 'DASHBOARD',
+  OTHER_DELIVERY_CHALLAN = 'OTHER_DELIVERY_CHALLAN',
   MULTI_CASH_VOUCHER = 'MULTI_CASH_VOUCHER',
   LABOUR_PAYMENT = 'LABOUR_PAYMENT',
+  LABOUR_REGISTER = 'LABOUR_REGISTER',
+  LABOUR_ATTENDANCE = 'LABOUR_ATTENDANCE',
   TRANSPORT_PAYMENT = 'TRANSPORT_PAYMENT',
+  OFFICE = 'OFFICE',
+  LEVELS = 'LEVELS',
+  INWARD_REGISTER = 'INWARD_REGISTER',
+  INVENTORY = 'INVENTORY',
+  VOUCHER = 'VOUCHER',
   OTHER = 'OTHER',
 }
 
@@ -93,7 +102,7 @@ export class UserActivityLog extends Model {
   statusCode: number;
 
   @Column({ type: 'int', nullable: true })
-  responseTime: number; // in milliseconds
+  responseTime: number; 
 
   @Column({ type: 'boolean', default: false })
   isError: boolean;

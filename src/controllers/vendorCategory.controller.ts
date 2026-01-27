@@ -15,12 +15,14 @@ import {
 } from "inversify-express-utils";
 import { inject } from "inversify";
 import { VendorCategoryService } from "../services/vendorCategory.service";
+import { NotificationService } from "../services/notification.service";
 import { VendorCategory } from "../entities/vendorCategory.entity";
 import AppError from "../utils/appError";
 import { TYPES } from "../types";
 import { uploadAny, uploadNone } from "../middleware/multerConfig";
 import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
+import { ControllerLogger } from "../utils/controllerLogger";
 import { validate } from "../middleware/validate";
 import { createVendorCategorySchema, deleteVendorCategorySchema, getAllVendorCategoriesSchema, getVendorCategoryByIdSchema, updateVendorCategorySchema } from "../schemas/vendorCategory.schema";
 import { PaginationOptions } from "../utils/pagination";
@@ -30,7 +32,9 @@ import { PaginationOptions } from "../utils/pagination";
 export class VendorCategoryController {
   constructor(
     @inject(TYPES.VendorCategoryService)
-    private vendorCategoryService: VendorCategoryService
+    private vendorCategoryService: VendorCategoryService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   @httpPost("/", validate(createVendorCategorySchema))
@@ -53,6 +57,17 @@ export class VendorCategoryController {
         return next(new AppError(400, "Category not created"));
       }
   
+      ControllerLogger.logSuccess('Vendor category created', category.id, req, res);
+
+      // Send notification for vendor category creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Category created successfully: ${category.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         message: `Vendor category created successfully`,
@@ -60,6 +75,7 @@ export class VendorCategoryController {
       });
     } catch (err) {
       console.log(err);
+      ControllerLogger.logError('Vendor category creation', err, req, res);
       next(err);
     }
   }
@@ -87,6 +103,17 @@ export class VendorCategoryController {
         return next(new AppError(404, "No categories found"));
       }
 
+      ControllerLogger.logList('Vendor categories', req, res);
+
+      // Send notification for vendor categories list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Vendor Category records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: categories.data,
@@ -95,6 +122,7 @@ export class VendorCategoryController {
         page: categories.meta.page,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor categories retrieval', err, req, res);
       next(err);
     }
   }
@@ -102,6 +130,7 @@ export class VendorCategoryController {
   @httpGet("/:id",validate(getVendorCategoryByIdSchema))
   public async getCategoryById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -111,11 +140,23 @@ export class VendorCategoryController {
         return next(new AppError(404, "Category not found"));
       }
 
+      ControllerLogger.logView('Vendor category', id, req, res);
+
+      // Send notification for vendor category view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Category viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: category,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor category view', err, req, res);
       next(err);
     }
   }
@@ -142,11 +183,23 @@ public async updateCategory(
       return next(new AppError(404, "Category not found or update failed"));
     }
 
+    ControllerLogger.logSuccess('Vendor category updated', id, req, res);
+
+    // Send notification for vendor category update
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Vendor Category updated successfully: ${id}`,
+        userId
+      );
+    }
+
     res.status(200).json({
       status: "success",
       message: "Vendor category updated successfully",
     });
   } catch (err) {
+    ControllerLogger.logError('Vendor category update', err, req, res);
     next(err);
   }
 }
@@ -155,6 +208,7 @@ public async updateCategory(
   @httpDelete("/:id",validate(deleteVendorCategorySchema))
   public async deleteCategory(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -167,11 +221,23 @@ public async updateCategory(
       if (!success) {
         return next(new AppError(404, "Vendor Category not found"));
       }
+      ControllerLogger.logSuccess('Vendor category deleted', id, req, res);
+
+      // Send notification for vendor category deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Vendor Category deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: `Vendor category  deleted successfully`,
       });
     } catch (err) {
+      ControllerLogger.logError('Vendor category deletion', err, req, res);
       next(err);
     }
   }

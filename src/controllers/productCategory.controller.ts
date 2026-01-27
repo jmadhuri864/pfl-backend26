@@ -19,12 +19,16 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 import { uploadNone } from "../middleware/multerConfig";
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
+import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 
 @controller("/productCategory", deserializeUser, requireUser)
 export class ProductCategoryController {
   constructor(
     @inject(TYPES.ProductCategoryService)
-    private productCategoryService: ProductCategoryService
+    private productCategoryService: ProductCategoryService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   // Get all product categories
@@ -51,9 +55,21 @@ export class ProductCategoryController {
       const categories = await this.productCategoryService.getAll(queryOptions);
       if (!categories.data.length) {
         logger.warn("No product categories found");
+        ControllerLogger.logError('Product Category list retrieval', new AppError(404, "No product categories found"), req, res);
         return next(new AppError(404, "No product categories found"));
       }
       logger.info("Successfully fetched product categories", { count: categories.length });
+      ControllerLogger.logList('Product Category', req, res);
+
+      // Send notification for product category list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Product Category records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({ status: "success",
          data: categories.data ,
          allRecords: categories.meta.total,
@@ -63,6 +79,7 @@ export class ProductCategoryController {
     } catch (err) {
       logger.error("Error fetching product categories", { error: err });
       console.log(err)
+      ControllerLogger.logError('Product Category list retrieval', err, req, res);
       next(err);
     }
   }
@@ -71,6 +88,7 @@ export class ProductCategoryController {
   @httpGet("/:id")
   public async getById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -79,12 +97,25 @@ export class ProductCategoryController {
       const category = await this.productCategoryService.getById(id);
       if (!category) {
         logger.warn("Product category not found", { id });
+        ControllerLogger.logError('Product Category view', new AppError(404, "Product category not found"), req, res);
         return next(new AppError(404, "Product category not found"));
       }
       logger.info("Successfully fetched product category", { id });
+      ControllerLogger.logView('Product Category', id, req, res);
+
+      // Send notification for product category view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product Category viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({ status: "success", data: category });
     } catch (err) {
       logger.error("Error fetching product category by ID", {  error: err });
+      ControllerLogger.logError('Product Category view', err, req, res);
       next(err);
     }
   }
@@ -100,6 +131,17 @@ export class ProductCategoryController {
       console.log(req.body)
       const category = await this.productCategoryService.create(req.body);
       logger.info("Product category created successfully", { category });
+      ControllerLogger.logSuccess('Product Category created', category.id, req, res);
+
+      // Send notification for product category creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product Category created successfully: ${category.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         message: "Product category created successfully",
@@ -107,6 +149,7 @@ export class ProductCategoryController {
       });
     } catch (err) {
       logger.error("Error creating product category", { error: err});
+      ControllerLogger.logError('Product Category creation', err, req, res);
       next(err);
     }
   }
@@ -116,6 +159,7 @@ export class ProductCategoryController {
   public async update(
     @requestParam("id") id: string,
     @requestBody() categoryData: any,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -126,9 +170,21 @@ export class ProductCategoryController {
       const category = await this.productCategoryService.update(id, categoryData,updatedBy);
       if (!category) {
         logger.warn("Product category not found or update failed", { id });
+        ControllerLogger.logError('Product Category update', new AppError(404, "Product category not found or update failed"), req, res);
         return next(new AppError(404, "Product category not found or update failed"));
       }
       logger.info("Product category updated successfully", { id });
+      ControllerLogger.logSuccess('Product Category updated', id, req, res);
+
+      // Send notification for product category update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Product Category updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "Product category updated successfully",
@@ -136,6 +192,7 @@ export class ProductCategoryController {
       });
     } catch (err) {
       logger.error("Error updating product category", { id, error: err });
+      ControllerLogger.logError('Product Category update', err, req, res);
       next(err);
     }
   }
@@ -144,6 +201,7 @@ export class ProductCategoryController {
   @httpDelete("/:id")
   public async delete(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {logger.info("Deleting product category", { id });
@@ -151,16 +209,29 @@ export class ProductCategoryController {
       const success = await this.productCategoryService.delete(id);
       if (!success) {
         logger.info("Product category deleted successfully", { id });
+        ControllerLogger.logSuccess('Product Category deleted', id, req, res);
+
+        // Send notification for product category deletion
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Product Category deleted successfully: ${id}`,
+            userId
+          );
+        }
+
         res.status(200).json({
           status: "success",
           message: "Product category deleted successfully",
         });
       } else {
         logger.warn("Product category not found", { id });
+        ControllerLogger.logError('Product Category deletion', new AppError(404, "Product category not found"), req, res);
         return next(new AppError(404, "Product category not found"));
       }
     } catch (err) {
       logger.error("Error deleting product category", { id, error: err });
+      ControllerLogger.logError('Product Category deletion', err, req, res);
       next(err);
     }
   }

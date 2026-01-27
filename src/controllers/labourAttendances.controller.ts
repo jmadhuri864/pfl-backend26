@@ -20,6 +20,8 @@ import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { uploadAny, uploadNone } from "../middleware/multerConfig";
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from "../services/notification.service";
 
 @controller("/laborAttendances" ,deserializeUser,requireUser)
 export class LaborAttendancesController {
@@ -27,7 +29,9 @@ export class LaborAttendancesController {
     @inject(TYPES.LaborAttendancesService)
     private laborAttendancesService: LaborAttendancesService,
     @inject(TYPES.AuditLogService)
-    private auditLogService: AuditLogService
+    private auditLogService: AuditLogService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService
   ) {}
 
   @httpGet("/")
@@ -49,6 +53,17 @@ export class LaborAttendancesController {
                     search: search as string|| '',
                   };
       const attendances = await this.laborAttendancesService.getAllAttendances(queryOptions);
+      ControllerLogger.logList('Labour Attendance', req, res);
+
+      // Send notification for labour attendance list access
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Labour Attendance records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: attendances.data,
@@ -57,6 +72,7 @@ export class LaborAttendancesController {
         page: attendances.meta.page,
       });
     } catch (error) {
+      ControllerLogger.logError('Labour Attendance list retrieval', error, req, res);
       next(error);
     };
   }
@@ -64,6 +80,7 @@ export class LaborAttendancesController {
   @httpGet("/:id")
   public async getAttendanceById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -72,11 +89,23 @@ export class LaborAttendancesController {
       if (!attendance) {
         return next(new AppError(404, "Attendance not found"));
       }
+      ControllerLogger.logView('Labour Attendance', id, req, res);
+
+      // Send notification for labour attendance view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Attendance record viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         data: attendance,
       });
     } catch (error) {
+      ControllerLogger.logError('Labour Attendance view', error, req, res);
       next(error);
     }
   }
@@ -101,6 +130,17 @@ export class LaborAttendancesController {
     }
       const attendance = await this.laborAttendancesService.createAttendance(attendanceData);
       logger.info("Labor record created successfully", { attendanceDataId: attendanceData.id });
+      ControllerLogger.logSuccess('Labour Attendance created', attendance.id, req, res);
+
+      // Send notification for labour attendance creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Attendance record created successfully: ${attendance.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: "success",
         message: "Attendance created successfully",
@@ -108,6 +148,7 @@ export class LaborAttendancesController {
       });
     } catch (error) {
       console.log(error)
+      ControllerLogger.logError('Labour Attendance creation', error, req, res);
       next(error);
     }
   }
@@ -129,12 +170,24 @@ export class LaborAttendancesController {
       if (!updatedAttendance) {
         return next(new AppError(404, "Attendance not found or could not be updated"));
       }
+      ControllerLogger.logSuccess('Labour Attendance updated', id, req, res);
+
+      // Send notification for labour attendance update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Attendance record updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "Attendance updated successfully",
         data: updatedAttendance,
       });
     } catch (error) {
+      ControllerLogger.logError('Labour Attendance update', error, req, res);
       next(error);
     }
   }
@@ -142,6 +195,7 @@ export class LaborAttendancesController {
   @httpDelete("/:id")
   public async deleteAttendance(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -154,12 +208,24 @@ export class LaborAttendancesController {
               );
             }
       //res.status(204).send();
+      ControllerLogger.logSuccess('Labour Attendance deleted', id, req, res);
+
+      // Send notification for labour attendance deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Labour Attendance record deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "Labor record deleted successfully",
         //data: updatedLabor,
       });
     } catch (error) {
+      ControllerLogger.logError('Labour Attendance deletion', error, req, res);
       next(error);
     }
   }

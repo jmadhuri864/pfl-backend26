@@ -17,12 +17,15 @@ import AppError from "../utils/appError";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { PaginationOptions } from "../utils/pagination";
+import { NotificationService } from "../services/notification.service";
 
 @controller("/customerType",deserializeUser,requireUser)
 export class CustomerTypeController {
   constructor(
     @inject(TYPES.CustomerTypeService)
-    private customerTypeService: CustomerTypeService
+    private customerTypeService: CustomerTypeService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpGet("/")
@@ -47,6 +50,19 @@ export class CustomerTypeController {
       if (!customerTypes.data.length) {
         ControllerLogger.logOperationFailed('Get All', 'Customer Types', 'No records found', req, res);
         return next(new AppError(204, "No customer types found"));
+      }
+     
+      // 🔔 Send notification for get all customer types
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${customerTypes.meta.total} customer types`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all customer types notification error:', notifError);
       }
      
       ControllerLogger.logGetAllRecords('Customer Types', req, res);
@@ -78,6 +94,19 @@ export class CustomerTypeController {
         return next(new AppError(404, "Customer type not found"));
       }
      
+      // 🔔 Send notification for customer type view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed customer type "${customerType.name}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer type view notification error:', notifError);
+      }
+     
       ControllerLogger.logView('Customer Type', id, req, res);
       res.status(200).json({
         status: "success",
@@ -104,6 +133,19 @@ export class CustomerTypeController {
       }
       
       const customerType = await this.customerTypeService.createCustomerType(name);
+
+      // 🔔 Send notification for customer type creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer type "${name}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer type creation notification error:', notifError);
+      }
 
       ControllerLogger.logSuccess('Customer Type created', customerType.id, req, res);
       res.status(201).json({
@@ -138,6 +180,19 @@ export class CustomerTypeController {
         );
       }
 
+      // 🔔 Send notification for customer type update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer type "${name || updatedCustomerType.name}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer type update notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('Customer Type updated', id, req, res);
       res.status(200).json({
         status: "success",
@@ -163,6 +218,19 @@ export class CustomerTypeController {
       if (!success) {
         ControllerLogger.logNotFound('Customer Type', id, req, res);
         return res.status(404).json({ message: 'Customer Type not found' });
+      }
+    
+      // 🔔 Send notification for customer type deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer type with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Customer type deletion notification error:', notifError);
       }
     
       ControllerLogger.logSuccess('Customer Type deleted', id, req, res);

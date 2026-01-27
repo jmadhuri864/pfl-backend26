@@ -89,7 +89,7 @@ export class GrnController {
         description,
         metadata: options?.metadata,
         changes: options?.changes,
-        ipAddress: req.ip || req.socket.remoteAddress,
+        ipAddress: req.ip ||'',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
         httpMethod: req.method,
@@ -243,7 +243,7 @@ export class GrnController {
             source: newGrn.source,
             purchaseLocation: newGrn.purchaseLocation,
           },
-          ipAddress: req.ip || req.socket.remoteAddress,
+          ipAddress: req.ip || '',
           userAgent: req.get('user-agent'),
           endpoint: req.originalUrl,
           httpMethod: req.method,
@@ -311,6 +311,16 @@ export class GrnController {
         
         return next(new AppError(404, 'No GRNs found'));
       }
+
+      // 🔔 Send notification for accessing recycle bin
+      try {
+        await this.notificationService.createNoti(
+          `Accessed GRN recycle bin (${grns.data.length} items)`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
       
       ControllerLogger.logList('GRN Recycle Bin', req, res);
 
@@ -368,6 +378,16 @@ export class GrnController {
       }
       
       
+      // � Soend notification for accessing main GRN list
+      try {
+        await this.notificationService.createNoti(
+          `Accessed GRN list (${grns.data.length} items found)`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       // 📊 Log activity
       await this.logUserActivity(req, res, ActivityAction.VIEW,
         `Viewed all GRNs (${grns.data.length} items)`,
@@ -667,6 +687,17 @@ export class GrnController {
       if (!grns || grns.length === 0) {
         return next(new AppError(404, 'No GRNs found'));
       }
+
+      // 🔔 Send notification for accessing GRN numbers
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Retrieved all GRN numbers (${grns.length} items)`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
      
       ControllerLogger.logList('GRN Numbers', req, res);
 
@@ -885,6 +916,18 @@ export class GrnController {
       if (!grnDetails) {
         return next(new AppError(404, 'GRN details not found'));
       }
+
+      // 🔔 Send notification for accessing GRN details
+      try {
+        const userId = res.locals.user.id;
+        const grnNo = grnDetails.grnNo || id;
+        await this.notificationService.createNoti(
+          `Viewed detailed information for GRN ${grnNo}`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
       
       ControllerLogger.logView('GRN Details', id, req, res);
 
@@ -954,6 +997,18 @@ export class GrnController {
   ) {
     try {
       const grns = await this.documentbService.getAllHoldGrnDocuments();
+
+      // 🔔 Send notification for accessing hold GRNs
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Accessed hold GRNs (${grns.length} items)`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       ControllerLogger.logList('Hold GRNs', req, res);
       res.status(200).json({ status: 'success', data: grns });
     } catch (error) {
@@ -967,6 +1022,18 @@ export class GrnController {
   async getAllGrn(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
     try {
       const resutl = await this.grnRepository.find();
+
+      // 🔔 Send notification for accessing all GRNs
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Retrieved all GRNs from database (${resutl.length} items)`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
       ControllerLogger.logList('All GRNs', req, res);
       res.status(200).json({ status: 'success', data: resutl });
     } catch (error) {

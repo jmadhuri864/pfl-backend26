@@ -7,12 +7,15 @@ import { TYPES } from '../types';
 import AppError from '../utils/appError';
 import { driverSchema, UpdateDriverInput } from '../schemas/drivers.schema';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
+import { NotificationService } from '../services/notification.service';
 
 @controller('/drivers',deserializeUser,requireUser)
 export class DriverController {
   constructor(
     @inject(TYPES.DriversService)
-    private driversService: DriversService
+    private driversService: DriversService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   @httpGet('/')
@@ -26,6 +29,20 @@ export class DriverController {
       if (!driver) {
         return next(new AppError(404, 'Driver not found'));
       }
+      
+      // 🔔 Send notification for get all drivers
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${driver.length} drivers`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all drivers notification error:', notifError);
+      }
+      
       res.status(200).json({
         status: 'success',
         data: driver,
@@ -44,6 +61,21 @@ export class DriverController {
   ): Promise<void> {
     try {
       const driver = await this.driversService.createDriver(driverData);
+      
+      // 🔔 Send notification for driver creation
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const driverName = driverData.name || 'New Driver';
+          await this.notificationService.createNoti(
+            `Driver "${driverName}" created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Driver creation notification error:', notifError);
+      }
+      
       res.status(201).json({
         status: 'success',
         message: 'Driver created successfully',
@@ -66,6 +98,20 @@ export class DriverController {
       if (!driver) {
         return next(new AppError(404, 'Driver not found'));
       }
+      
+      // 🔔 Send notification for driver view
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Viewed driver "${driver.name}" details`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Driver view notification error:', notifError);
+      }
+      
       res.status(200).json({
         status: 'success',
         data: driver,
@@ -92,6 +138,21 @@ export class DriverController {
       if (!updatedDriver) {
         return next(new AppError(404, 'Driver not found or update failed'));
       }
+      
+      // 🔔 Send notification for driver update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          const driverName = parsedData.name || updatedDriver.name || 'Driver';
+          await this.notificationService.createNoti(
+            `Driver "${driverName}" updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Driver update notification error:', notifError);
+      }
+      
       res.status(200).json({
         status: 'success',
         message: 'Driver updated successfully',
@@ -116,6 +177,20 @@ export class DriverController {
       }
 
       await this.driversService.deleteDriver(id);
+      
+      // 🔔 Send notification for driver deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Driver "${driver.name}" deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Driver deletion notification error:', notifError);
+      }
+      
       res.status(200).json({
         status: 'success',
         message: 'Driver deleted successfully',

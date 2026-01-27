@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, Unique } from "typeorm";
 import Model from "./model.entity";
 import { User } from "./user.entity";
 
@@ -21,6 +21,7 @@ export enum DepartmentEnum {
 
 
 @Entity("workflow_hierarchy")
+// @Unique(["department", "ancestor", "descendant", "depth"]) // TODO: Uncomment after running cleanDuplicateWorkflowHierarchy script
 export class WorkflowHierarchy extends Model
  {
     

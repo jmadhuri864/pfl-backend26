@@ -1,11 +1,23 @@
 import { Request, Response } from 'express';
 import { UserLogger } from './logger';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { container } from '../inversify.config';
+import { TYPES } from '../types';
 
 /**
  * Controller logging utility to standardize logging across all controllers
+ * Now integrated with database logging for frontend access
  */
 export class ControllerLogger {
   
+  /**
+   * Get activity log service instance
+   */
+  private static getActivityLogService(): UserActivityLogService {
+    return container.get<UserActivityLogService>(TYPES.UserActivityLogService);
+  }
+
   /**
    * Extract IP address from request
    */
@@ -21,12 +33,88 @@ export class ControllerLogger {
   }
 
   /**
+   * Determine module from request path
+   */
+  private static getModuleFromPath(req: Request): ActivityModule {
+    const path = req.path.toLowerCase();
+    
+    if (path.includes('grn')) return ActivityModule.GRN;
+    if (path.includes('rfpa')) return ActivityModule.RFPA;
+    if (path.includes('delivery-challan') || path.includes('other-delivery-challan')) return ActivityModule.OTHER_DELIVERY_CHALLAN;
+    if (path.includes('invoice')) return ActivityModule.INVOICE;
+    if (path.includes('office') || path.includes('location')) return ActivityModule.OFFICE;
+    if (path.includes('labourpaymentvoucher') || path.includes('lpvoucher')) return ActivityModule.LABOUR_PAYMENT;
+    if (path.includes('labourattendances') || path.includes('laborattendances')) return ActivityModule.LABOUR_ATTENDANCE;
+    if (path.includes('templabour') || path.includes('labourregister')) return ActivityModule.LABOUR_REGISTER;
+    if (path.includes('inward')) return ActivityModule.INWARD_REGISTER;
+    if (path.includes('inventory') || path.includes('stock')) return ActivityModule.INVENTORY;
+    if (path.includes('multicashvoucher')) return ActivityModule.MULTI_CASH_VOUCHER;
+    if (path.includes('levels')) return ActivityModule.LEVELS;
+    if (path.includes('voucher')) return ActivityModule.VOUCHER;
+    if (path.includes('user')) return ActivityModule.USER;
+    
+    return ActivityModule.OTHER;
+  }
+
+  /**
+   * Log to both file and database
+   */
+  private static async logToDatabase(
+    action: ActivityAction,
+    description: string,
+    req: Request,
+    res: Response,
+    entityId?: string,
+    isError: boolean = false,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      const user = this.getUser(res);
+      if (!user || !user.id) return; // Skip if no user context
+
+      const activityLogService = this.getActivityLogService();
+      const module = this.getModuleFromPath(req);
+
+      await activityLogService.logActivity({
+        userId: user.id,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.email,
+        action,
+        module,
+        entityId,
+        description,
+        ipAddress: this.getClientIp(req),
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: res.statusCode,
+        isError,
+        errorMessage,
+      });
+    } catch (error) {
+      // Don't throw - logging should not break the main operation
+      console.error('Failed to log to database:', error);
+    }
+  }
+
+  /**
    * Log successful operations with IP
    */
   static logSuccess(operation: string, entityId: string, req: Request, res: Response) {
     const user = this.getUser(res);
     const ip = this.getClientIp(req);
-    UserLogger.infoWithIp(`${operation} successfully with ID: ${entityId}`, user, ip);
+    const description = `${operation} successfully with ID: ${entityId}`;
+    
+    // Log to file
+    UserLogger.infoWithIp(description, user, ip);
+    
+    // Determine action based on operation
+    let action = ActivityAction.CREATE;
+    if (operation.toLowerCase().includes('updated')) action = ActivityAction.UPDATE;
+    else if (operation.toLowerCase().includes('deleted')) action = ActivityAction.DELETE;
+    else if (operation.toLowerCase().includes('viewed')) action = ActivityAction.VIEW;
+    
+    // Log to database
+    this.logToDatabase(action, description, req, res, entityId);
   }
 
   /**
@@ -35,7 +123,13 @@ export class ControllerLogger {
   static logView(entityName: string, entityId: string, req: Request, res: Response) {
     const user = this.getUser(res);
     const ip = this.getClientIp(req);
-    UserLogger.infoWithIp(`${entityName} viewed successfully with ID: ${entityId}`, user, ip);
+    const description = `${entityName} viewed successfully with ID: ${entityId}`;
+    
+    // Log to file
+    UserLogger.infoWithIp(description, user, ip);
+    
+    // Log to database
+    this.logToDatabase(ActivityAction.VIEW, description, req, res, entityId);
   }
 
   /**
@@ -44,7 +138,13 @@ export class ControllerLogger {
   static logList(entityName: string, req: Request, res: Response) {
     const user = this.getUser(res);
     const ip = this.getClientIp(req);
-    UserLogger.infoWithIp(`${entityName} list retrieved successfully`, user, ip);
+    const description = `${entityName} list retrieved successfully`;
+    
+    // Log to file
+    UserLogger.infoWithIp(description, user, ip);
+    
+    // Log to database
+    this.logToDatabase(ActivityAction.VIEW, description, req, res);
   }
 
   /**
@@ -63,7 +163,13 @@ export class ControllerLogger {
   static logError(operation: string, error: any, req: Request, res: Response) {
     const user = this.getUser(res);
     const ip = this.getClientIp(req);
-    UserLogger.errorWithIp(`${operation} failed: ${error.message}`, user, ip, error);
+    const description = `${operation} failed: ${error.message}`;
+    
+    // Log to file
+    UserLogger.errorWithIp(description, user, ip, error);
+    
+    // Log to database
+    this.logToDatabase(ActivityAction.ERROR, description, req, res, undefined, true, error.message);
   }
 
   /**

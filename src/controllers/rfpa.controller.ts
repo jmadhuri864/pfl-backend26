@@ -12,7 +12,7 @@ import {
   httpDelete,
 } from 'inversify-express-utils';
 import { TYPES } from '../types';
-import { RfpaService } from '../services/rfpa.service';
+import { RfpaService } from "../services/rfpa.service";
 import { NextFunction, Request, Response } from 'express';
 import AppError from '../utils/appError';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
@@ -21,6 +21,7 @@ import logger from '../utils/logger';
 import { PaginationOptions } from '../utils/pagination';
 import { checkPermission } from '../middleware/checkPermission';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from '../services/notification.service';
 
 
 @controller('/rfpa', deserializeUser, requireUser)
@@ -28,6 +29,8 @@ export class RfpaController {
   constructor(
     @inject(TYPES.RfpaService)
     private readonly rfpaService: RfpaService,
+    @inject(TYPES.NotificationService)
+    private notificationService: NotificationService,
    
   ) {}
 
@@ -115,9 +118,21 @@ export class RfpaController {
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
+        ControllerLogger.logError('RFPA view', new AppError(404, 'RFPA not found'), req, res);
         throw new AppError(404, 'RFPA not found');
       }
       logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+      ControllerLogger.logView('RFPA (for view)', rfpaId, req, res);
+
+      // Send notification for RFPA view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `RFPA viewed: ${rfpaId}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         data: rfpa,
@@ -126,6 +141,7 @@ export class RfpaController {
     } catch (error) {
       console.log(error);
       logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+      ControllerLogger.logError('RFPA view', error, req, res);
       next(error);
     }
   }
@@ -184,8 +200,7 @@ public async getRecycleBinRfpa(
 
     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
 
-    // Log successful retrieval with specific message
-    ControllerLogger.logRfpaData(req, res);
+   
 
     res.status(200).json({
       status: 'success',
@@ -212,9 +227,11 @@ public async getRecycleBinRfpa(
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
+        ControllerLogger.logError('RFPA retrieval for update', new AppError(404, 'RFPA not found'), req, res);
         throw new AppError(404, 'RFPA not found');
       }
       logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+      ControllerLogger.logView('RFPA (for update)', rfpaId, req, res);
       res.status(200).json({
         status: 'success',
         data: rfpa,
@@ -223,6 +240,7 @@ public async getRecycleBinRfpa(
     } catch (error) {
       console.log(error);
       logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+      ControllerLogger.logError('RFPA retrieval for update', error, req, res);
       next(error);
     }
   }
@@ -243,6 +261,7 @@ public async getRecycleBinRfpa(
 
       if (!rfpaData) {
         logger.warn('Invalid RFPA data');
+        ControllerLogger.logError('RFPA creation', new AppError(400, 'RFPA could not be created, no data provided'), req, res);
         return next(
           new AppError(400, 'RFPA could not be created, no data provided'),
         );
@@ -255,6 +274,7 @@ public async getRecycleBinRfpa(
       if (rfpaData.source === Source.VENDOR) {
         if (!rfpaData.selectedParty) {
           logger.warn('Vendor source selected, but no vendor provided');
+          ControllerLogger.logError('RFPA creation', new AppError(400, 'Vendor must be provided when the source is vendor'), req, res);
           return next(
             new AppError(
               400,
@@ -266,6 +286,7 @@ public async getRecycleBinRfpa(
       } else if (rfpaData.source === Source.FARMER) {
         if (!rfpaData.selectedParty) {
           logger.warn('Farmer source selected, but no farmer provided');
+          ControllerLogger.logError('RFPA creation', new AppError(400, 'Farmer must be provided when the source is farmer'), req, res);
           return next(
             new AppError(
               400,
@@ -276,6 +297,7 @@ public async getRecycleBinRfpa(
         rfpaData.selectedFarmer = { id: rfpaData.selectedParty };
       } else {
         logger.warn('Invalid source provided');
+        ControllerLogger.logError('RFPA creation', new AppError(400, 'Invalid source: Either vendor or farmer must be provided'), req, res);
         return next(
           new AppError(
             400,
@@ -287,6 +309,17 @@ public async getRecycleBinRfpa(
       const newRfpa = await this.rfpaService.createRfpa(rfpaData);
       logger.info('RFPA created successfully: %o', newRfpa);
 
+      ControllerLogger.logSuccess('RFPA created', newRfpa.id, req, res);
+
+      // Send notification for RFPA creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `RFPA created successfully: ${newRfpa.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: 'success',
         message: 'RFPA created successfully',
@@ -294,6 +327,7 @@ public async getRecycleBinRfpa(
       });
     } catch (error) {
       logger.error('Error creating RFPA:', error);
+      ControllerLogger.logError('RFPA creation', error, req, res);
       next(error);
     }
   }
@@ -321,9 +355,21 @@ public async getRecycleBinRfpa(
       console.log(updatedRfpa);
       if (!updatedRfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
+        ControllerLogger.logError('RFPA update', new AppError(404, 'RFPA not found'), req, res);
         return next(new AppError(404, 'RFPA not found'));
       }
       logger.info(`RFPA with ID ${rfpaId} updated successfully`);
+      ControllerLogger.logSuccess('RFPA updated', rfpaId, req, res);
+
+      // Send notification for RFPA update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `RFPA updated successfully: ${rfpaId}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         //data: updatedRfpa,
@@ -332,6 +378,7 @@ public async getRecycleBinRfpa(
     } catch (error) {
       console.log(error);
       logger.error(`Error updating RFPA with ID ${rfpaId}:`, error);
+      ControllerLogger.logError('RFPA update', error, req, res);
       next(error);
     }
   }
@@ -397,6 +444,7 @@ public async getRecycleBinRfpa(
   }
   @httpGet('/rfpanumbers/getAllRfpaNo')
   public async getAllRFPANumbers(
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -406,15 +454,18 @@ public async getRecycleBinRfpa(
       const rfpas = await this.rfpaService.getAllRFPANumbers();
       if (!rfpas || rfpas.length === 0) {
         logger.warn('No RFPA numbers found');
+        ControllerLogger.logError('RFPA numbers retrieval', new AppError(404, 'No RFPAs found'), req, res);
         return next(new AppError(404, 'No RFPAs found'));
       }
       logger.info(`Found ${rfpas.length} RFPA numbers`);
+      ControllerLogger.logList('RFPA Numbers', req, res);
       res.status(200).json({
         status: 'success',
         data: rfpas,
       });
     } catch (error) {
       logger.error('Error fetching RFPA numbers:', error);
+      ControllerLogger.logError('RFPA numbers retrieval', error, req, res);
       next(error);
     }
   }
@@ -430,19 +481,33 @@ public async getRecycleBinRfpa(
       const { id } = req.params;
       if (!id) {
         logger.warn('RFPA ID not provided');
+        ControllerLogger.logError('RFPA deletion', new AppError(400, 'RFPA ID is required'), req, res);
         return next(new AppError(400, 'RFPA ID is required'));
       }
       const success = await this.rfpaService.deleteRfpa(id);
       if (!success) {
         logger.warn('No RFPA numbers found');
+        ControllerLogger.logError('RFPA deletion', new AppError(404, 'No RFPAs found'), req, res);
         return next(new AppError(404, 'No RFPAs found'));
       }
+      ControllerLogger.logSuccess('RFPA deleted', id, req, res);
+
+      // Send notification for RFPA deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `RFPA deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'RFPA deleted Successfully',
       });
     } catch (error) {
       logger.error('Error to Delete rfpa');
+      ControllerLogger.logError('RFPA deletion', error, req, res);
       next(error);
     }
   }
@@ -647,7 +712,7 @@ public async getAllRfpa(
       rfpaId
     } = req.query;
 
-    const userId = res.locals.user.id;
+    const userId = res.locals.user?.id;
 
     const filters: any = {};
     // if (selectedVendor) filters.selectedVendor = selectedVendor;
@@ -680,8 +745,13 @@ public async getAllRfpa(
 
     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
 
-    // Log successful retrieval with specific message
-    ControllerLogger.logRfpaData(req, res);
+   
+    if (userId) {
+      await this.notificationService.createNoti(
+        'RFPA records list accessed successfully',
+        userId
+      );
+    }
 
     res.status(200).json({
       status: 'success',
@@ -702,6 +772,7 @@ public async getAllRfpa(
   @httpGet('/view/:docid')
   public async getRfpaByIdForView(
     @requestParam('docid') docid: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -714,6 +785,7 @@ public async getAllRfpa(
       const rfpa = await this.rfpaService.getRfpaByIdForView(docid,userId);
       console.log(rfpa);
       if (!rfpa) {
+        ControllerLogger.logError('RFPA view', new Error('You do not have permission to view this RFPA'), req, res);
         return res.status(403).json({
         status: 'fail',
         message: 'You do not have permission to view this RFPA',
@@ -726,6 +798,7 @@ public async getAllRfpa(
       // Send a notification when the user logs in successfully
       // const message = Welcome back! You have successfully logged in.;
       // await this.notificationService.createNoti(message, requestedBy);
+      ControllerLogger.logView('RFPA (document view)', docid, req, res);
       res.status(200).json({
         status: 'success',
         data: rfpa,
@@ -733,6 +806,7 @@ public async getAllRfpa(
     } catch (error) {
       console.log(error);
       logger.error('Error fetching RFPA by ID:', error);
+      ControllerLogger.logError('RFPA view', error, req, res);
       next(error);
     }
   }
@@ -786,16 +860,19 @@ try {
       const { ids } = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         logger.warn('RFPA IDs not provided or invalid');
+        ControllerLogger.logError('RFPA multiple deletion', new AppError(400, 'An array of RFPA IDs is required'), req, res);
         return next(new AppError(400, 'An array of RFPA IDs is required'));
       }
       const result = await this.rfpaService.deleteMultipleRFPA(ids);
       
+      ControllerLogger.logSuccess('RFPA multiple deletion', `${ids.length} records`, req, res);
       res.status(200).json({
         message: result.message,
       });
 
     } catch (error) {
       logger.error('Error deleting multiple RFPAs:', error);
+      ControllerLogger.logError('RFPA multiple deletion', error, req, res);
       next(error);
     }
   }

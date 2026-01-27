@@ -4,6 +4,7 @@ import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { inject } from "inversify";
 import { TYPES } from "../types";
 import { UserReportService } from "../services/userreport.service";
+import { ControllerLogger } from "../utils/controllerLogger";
 
  @controller("/userreport" , deserializeUser, requireUser)
 export class UserReportController {
@@ -19,6 +20,7 @@ export class UserReportController {
       if (startDate) filters.startDate = startDate;
       if (endDate) filters.endDate = endDate;
       const data = await this.userReportService.countofregisteredusers(filters);
+      ControllerLogger.logList('User counts report', req, res);
       return res.status(200).json({
         //success: true,
         message: 'User counts fetched successfully',
@@ -26,6 +28,7 @@ export class UserReportController {
       });
     } catch (error: any) {
       console.error('Error fetching user counts:', error);
+      ControllerLogger.logError('User counts report', error, req, res);
       return res.status(500).json({
         success: false,
         message: 'Failed to fetch user counts',

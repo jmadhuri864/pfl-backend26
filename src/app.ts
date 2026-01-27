@@ -5,7 +5,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import { InversifyExpressServer } from 'inversify-express-utils';
 import { container } from './inversify.config';
 import dotenv from 'dotenv';
-import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 
@@ -25,15 +24,31 @@ import AppError from './utils/appError';
 import { apiLogger, errorLogger } from './middleware/apiLogger';
 import './cron/cronJob';
 import { seedDocumentDefDatabase } from './seed/documentSeed';
-
+//import { LogCleanupService } from './services/logCleanup.service';
+import { TYPES } from './types';
+// Import LogCleanupController to ensure it's registered
+import './controllers/logCleanup.controller';
 
 dotenv.config();
+/* ───────────── Allowed Origins ───────────── */
+const allowedOrigins = [
+  "*",
+  "http://192.168.1.60:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://192.168.1.36:5173/",
+   "http://192.168.1.36:5173",
+  "https://d721a561c2dc.ngrok-free.app",
+  "http://localhost:3000",
+  "http://localhost:8004",
+  "http://192.168.1.82:3000"
+];
 
 // process.on('unhandledRejection', (reason, promise) => {
 //   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 //   process.exit(1);
 // });
-process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+process.on('unhandledRejection', (reason: any) => {
   logger.error('Unhandled Promise Rejection:', {
     reason,
     stack: reason?.stack || '',
@@ -59,26 +74,83 @@ const startServer = async () => {
     await seedDatabase();
     await seedDocumentDefDatabase();
 
+    // // Initialize automatic log cleanup service
+    // const logCleanupService = container.get<LogCleanupService>(TYPES.LogCleanupService);
+    // logCleanupService.startAutomaticCleanup();
+    // logger.info('Automatic log cleanup service initialized');
 
     //await seedPackingMaterials(AppDataSource);
 
     const inversifyServer = new InversifyExpressServer(container);
 
     inversifyServer.setConfig((app) => {
+      // Remove any existing CORS headers first
+      app.use((req, res, next) => {
+        res.removeHeader("Access-Control-Allow-Origin");
+        res.removeHeader("Access-Control-Allow-Credentials");
+        res.removeHeader("Access-Control-Allow-Headers");
+        res.removeHeader("Access-Control-Allow-Methods");
+        next();
+      });
+
       app.use(express.json());
-      app.use(helmet());
+      
+      // Configure helmet to not interfere with CORS
+      app.use(helmet({
+        crossOriginResourcePolicy: false, // Disable CORP
+        crossOriginEmbedderPolicy: false, // Disable COEP
+      }));
+      
       app.use(compression());
-      app.use(
-        cors({
-          origin: '*',
-          methods: (process.env.CORS_METHODS || 'GET,POST,PATCH,DELETE,OPTIONS,PUT').split(','),
-          allowedHeaders: [
-            'Content-Type',
-            'Authorization',
-            'ngrok-skip-browser-warning'
-          ],
-        }),
-      );
+
+      // Main CORS handler - MUST be before any other middleware that might set headers
+      app.use((req, res, next) => {
+        const origin = req.headers.origin as string || '*';
+        console.log('🔍 CORS Handler - Origin:', origin);
+        console.log('🔍 CORS Handler - Method:', req.method);
+        console.log('🔍 CORS Handler - Path:', req.path);
+        
+        if (origin && allowedOrigins.includes(origin)) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
+          res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
+          console.log('✅ CORS - Set origin to:', origin);
+        } else {
+          console.log('❌ CORS - Origin not in allowed list:', origin);
+          console.log('🔍 CORS - Allowed origins:', allowedOrigins);
+        }
+
+        // Handle preflight requests
+        if (req.method === "OPTIONS") {
+          console.log('🔍 Handling OPTIONS preflight for:', req.path);
+          return res.status(204).end();
+        }
+        
+        next();
+      });
+
+      // SSE-specific middleware
+      app.use("/sse", (req, res, next) => {
+        const origin = req.headers.origin as string;
+        console.log('🔍 SSE Middleware - Origin:', origin);
+        
+        // Ensure CORS headers are set for SSE
+        if (origin && allowedOrigins.includes(origin)) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+          res.setHeader("Access-Control-Allow-Credentials", "true");
+          console.log('✅ SSE - Set origin to:', origin);
+        }
+
+        // SSE-specific headers
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        
+        console.log('🔍 SSE Final Headers:', res.getHeaders());
+        next();
+      });
 
       app.use(pagination);
       app.use(captureUserInfo);
@@ -90,7 +162,7 @@ const startServer = async () => {
       // Add API logging middleware (should be after user middleware)
       app.use(apiLogger);
 
-      app.get('/', (req: Request, res: Response) => {
+      app.get('/', (_req: Request, res: Response) => {
         logger.info('Request received');
         res.send('Hello World!');
       });
@@ -99,7 +171,7 @@ const startServer = async () => {
     inversifyServer.setErrorConfig((app) => {
       // Add error logging middleware
       app.use(errorLogger);
-      
+
       app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         if (err instanceof AppError) {
           logger.error(`AppError: ${err.message}`, {
@@ -122,12 +194,12 @@ const startServer = async () => {
 
     const app = inversifyServer.build();
 
-    const port = process.env.PORT || 8003;
+    const port = process.env.PORT || 3000;
     app.listen(port, () => {
-      
-    console.log(`🚀 Server started on port ${port}`);
-  console.log(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
-    console.log(`🧪 SSE test: http://localhost:${port}/sse/test`);
+
+      console.log(`🚀 Server started on port ${port}`);
+      console.log(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
+      console.log(`🧪 SSE test: http://localhost:${port}/sse/test`);
     });
 
     process.on('SIGINT', () => {
@@ -135,6 +207,7 @@ const startServer = async () => {
       process.exit(0);
     });
   } catch (error) {
+    console.log(error)
     logger.error('Error starting the server:', error);
     process.exit(1);
   }

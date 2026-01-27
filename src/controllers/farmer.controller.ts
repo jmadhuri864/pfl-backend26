@@ -113,6 +113,19 @@ export class FarmerController {
 
       const approvedFarmer = await this.farmerService.approveFarmer(farmerId, adminUser, status);
       
+      // 🔔 Send notification for farmer approval
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Farmer approved with status: ${status}`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Farmer approval notification error:', notifError);
+      }
+      
       ControllerLogger.logSuccess('Farmer approved', farmerId, req, res);
       return res.status(200).json({ message: "Farmer approved successfully", farmer: approvedFarmer });
     } catch (error: any) {
@@ -284,6 +297,19 @@ export class FarmerController {
       if (!farmers) {
         ControllerLogger.logOperationFailed('Get All', 'Farmers', 'No records found', req, res);
         return next(new AppError(404, 'No farmers found'));
+      }
+      
+      // 🔔 Send notification for get all farmers
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Retrieved ${farmers.meta.total} farmers`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Get all farmers notification error:', notifError);
       }
       
       ControllerLogger.logGetAllRecords('Farmers', req, res);
@@ -481,6 +507,19 @@ export class FarmerController {
         return next(
           new AppError(404, 'Farmer not found or could not be deleted'),
         );
+      }
+
+      // 🔔 Send notification for farmer deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Farmer with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Farmer deletion notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Farmer deleted', id, req, res);

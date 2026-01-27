@@ -13,6 +13,7 @@ import { ProductVarientsService } from '../services/varients.service';
 import { NextFunction, Request, Response } from 'express';
 import logger from '../utils/logger';
 import AppError from '../utils/appError';
+import { ControllerLogger } from '../utils/controllerLogger';
 import { PaginationOptions } from '../utils/pagination';
 
 @controller('/varients', deserializeUser, requireUser)
@@ -50,6 +51,7 @@ export class VarientsController {
         throw new AppError(400, 'No variants were created');
       }
 
+      ControllerLogger.logSuccess('Variants created', `${newVariants.length} variants`, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Variants created successfully',
@@ -57,6 +59,7 @@ export class VarientsController {
       });
     } catch (error) {
       logger.error(`Error creating variants:`, error);
+      ControllerLogger.logError('Variants creation', error, req, res);
       next(error);
     }
   }

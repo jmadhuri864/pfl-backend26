@@ -1,17 +1,14 @@
 // src/types.ts
 const TYPES = {
   //SocketIoServer: Symbol.for("SocketIoServer"),
-  SocketIoServerOne: Symbol.for("SocketIoServerOne"),
+  // SocketIoServerOne: Symbol.for("SocketIoServerOne"),
   //--------User-----------
   UserController: Symbol.for("UserController"),
   UserService: Symbol.for("UserService"),
   UserRepository: Symbol.for("UserRepository"),
   AuthController: Symbol.for("AuthController"),
 
-  //-----------------------role -----------------------
-  RoleService: Symbol.for("RoleService"),
-  RoleRepository: Symbol.for("RoleRepository"),
-  RoleController: Symbol.for("RoleController"),
+  
   //--------VendorCategory----------
   VendorCategoryService: Symbol.for("VendorCategoryService"),
   VendorCategoryRepository: Symbol.for("VendorCategoryRepository"),
@@ -305,8 +302,7 @@ DumpProductRepository:Symbol.for("DumpProductRepository"),
   SecondSaleProductRepository : Symbol.for("SecondSaleProductRepository"),
   //----------------daily inward summary ---------------------
 
-  //-------------------source--------------------
-  SourceController: Symbol.for("SourceController"),
+ 
 
   
   //sale order
@@ -364,11 +360,6 @@ DocumentPermissionController:Symbol.for("DocumentPermissionController"),
  DocumentbRepository:Symbol.for("DocumentbRepository"),
  DocumentbService:Symbol.for("DocumentbService"),
  DocumentbController:Symbol.for("DocumentbController"),
-
-
-  //reportingmanager
-ReportingManagersRepository:Symbol.for("ReportingManagersRepository"),
-
 ApprovalFlowService:Symbol.for("ApprovalFlowService"),
 ApprovalFlowRepository:Symbol.for("ApprovalFlowRepository"),
 ApprovalFlowController:Symbol.for("ApprovalFlowController"),
@@ -420,10 +411,32 @@ TestController: Symbol.for("TestController"),
 UserActivityLogRepository: Symbol.for("UserActivityLogRepository"),
 UserActivityLogService: Symbol.for("UserActivityLogService"),
 UserActivityLogController: Symbol.for("UserActivityLogController"),
+LogCleanupService: Symbol.for("LogCleanupService"),
 //workflowhirarchy
 WorkflowHierarchyController:Symbol.for("WorkflowHierarchyController"),
   WorkflowHierarchyService:Symbol.for("WorkflowHierarchyService"),
-  WorkflowHierarchyRepository:Symbol.for("WorkflowHierarchyRepository")
+  WorkflowHierarchyRepository:Symbol.for("WorkflowHierarchyRepository"),
+  //procurment target
+  ProcurementTargetController:Symbol.for("ProcurementTargetController"),
+  ProcurementTargetService:Symbol.for("ProcurementTargetService"),
+  ProcurementTargetRepository:Symbol.for("ProcurementTargetRepository"),
+  ProcurementTargetWeekRepository:Symbol.for("ProcurementTargetWeekRepository"),
+  ProcurementTargetAchievementRepository:Symbol.for("ProcurementTargetAchievementRepository"),
+  ProcurementTargetProductRepository:Symbol.for("ProcurementTargetProductRepository"),
+  //sales target
+  SalesTargetRepository:Symbol.for("SalesTargetRepository"),
+  SalesTargetService:Symbol.for("SalesTargetService"),
+  SalesTargetController:Symbol.for("SalesTargetController"),
+  SalesTargetProductRepository:Symbol.for("SalesTargetProductRepository"),
+  SalesTargetWeekRepository:Symbol.for("SalesTargetWeekRepository"),
+  SalesAchievementRepository:Symbol.for("SalesAchievementRepository"),
+  //dashboard
+  DashboardService:Symbol.for("DashboardService"),
+  DashboardController:Symbol.for("DashboardController"),
+  //registration report
+  RegistrationReportController:Symbol.for("RegistrationReportController"),
+  RegistrationReportService:Symbol.for("RegistrationReportService")
+
 
 };
 

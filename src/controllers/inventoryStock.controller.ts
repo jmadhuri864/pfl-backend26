@@ -7,6 +7,8 @@ import { NextFunction,Request,Response } from "express";
 
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
+import { ControllerLogger } from '../utils/controllerLogger';
+import { NotificationService } from '../services/notification.service';
 
 
 
@@ -17,6 +19,8 @@ export class InventoryStockController {
     constructor(
         @inject(TYPES.InventoryStockService)
         private readonly inventoryStockService: InventoryStockService,
+        @inject(TYPES.NotificationService)
+        private notificationService: NotificationService,
       ) {}
 
       @httpGet("/")
@@ -46,6 +50,16 @@ export class InventoryStockController {
             return next(new AppError(404, "No Inventory Stock found"));
           }
     
+          ControllerLogger.logList('Inventory Stock', req, res);
+          
+          // Send notification for inventory stock access
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              'Inventory stock list accessed successfully',
+              userId
+            );
+          }
          
           res.status(200).json({
             status: "success",
@@ -55,7 +69,7 @@ export class InventoryStockController {
             page: stocks.meta.page,
           });
         } catch (error) {
-         
+          ControllerLogger.logError('Inventory Stock list retrieval', error, req, res);
           next(error);
         }
       }
@@ -63,6 +77,7 @@ export class InventoryStockController {
       @httpGet("/:id")
       public async getInventoryStockById(
         @requestParam("id") id: string,
+        @request() req: Request,
         @response() res: Response,
         @next() next: NextFunction
       ) {
@@ -74,13 +89,23 @@ export class InventoryStockController {
             return next(new AppError(404, "Inventory Stock not found"));
           }
     
+          ControllerLogger.logView('Inventory Stock', id, req, res);
+          
+          // Send notification for inventory stock view
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Inventory stock item viewed: ${id}`,
+              userId
+            );
+          }
          
           res.status(200).json({
             status: "success",
             data: stock,
           });
         } catch (error) {
-         
+          ControllerLogger.logError('Inventory Stock view', error, req, res);
           next(error);
         }
       }
@@ -113,6 +138,16 @@ export class InventoryStockController {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
+        ControllerLogger.logList('Inventory Stock (Search)', req, res);
+        
+        // Send notification for inventory stock search
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            'Inventory stock search performed successfully',
+            userId
+          );
+        }
        
         return res.status(200).json({
           status: "success",
@@ -120,7 +155,7 @@ export class InventoryStockController {
         });
     
       } catch (error) {
-        
+        ControllerLogger.logError('Inventory Stock search', error, req, res);
         next(error);
       }
     }
@@ -145,6 +180,7 @@ export class InventoryStockController {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
     
+        ControllerLogger.logList('Inventory Stock (Filter)', req, res);
       
         return res.status(200).json({
           status: "success",
@@ -153,7 +189,7 @@ export class InventoryStockController {
     
       } catch (error) {
         console.log(error)
-        
+        ControllerLogger.logError('Inventory Stock filter', error, req, res);
         next(error);
       }
     }

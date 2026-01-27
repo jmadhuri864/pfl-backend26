@@ -7,17 +7,20 @@ import { TYPES } from '../types';
 import { NextFunction } from 'express';
 import AppError from '../utils/appError'; // Custom error handling middleware
 import { TPVoucherService } from '../services/transportPaymentV.service';
+import { NotificationService } from '../services/notification.service';
 import { captureUser, deserializeUser, requireUser } from '../middleware/deserializeUser';
 
 import { upload, uploadNone } from "../middleware/multerConfig";
 import logger from '../utils/logger';
 import { uploadFile } from '../middleware/uploadwithAWS';
 import { PaginationOptions } from '../utils/pagination';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/tpvoucher', deserializeUser, requireUser)
 export class TPVoucherController {
   constructor(
-    @inject(TYPES.TPVoucherService) private tpVoucherService: TPVoucherService
+    @inject(TYPES.TPVoucherService) private tpVoucherService: TPVoucherService,
+    @inject(TYPES.NotificationService) private notificationService: NotificationService
   ) {}
 
   @httpPost('/',uploadFile.array('anyAttachment', 5))
@@ -52,9 +55,21 @@ export class TPVoucherController {
       const createdVoucher = await this.tpVoucherService.createTPVoucher(tpVoucherData);
       if (!createdVoucher) {
         logger.error('TPVoucher creation failed');
+        ControllerLogger.logError('Transport Payment Voucher creation', new AppError(400, "TPVoucher could not be created"), req, res);
         return next(new AppError(400, "TPVoucher could not be created"));
       }
       logger.info('TPVoucher created successfully', { voucherId: createdVoucher.id });
+      ControllerLogger.logSuccess('Transport Payment Voucher created', createdVoucher.id, req, res);
+
+      // Send notification for transport payment voucher creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Transport Payment Voucher created successfully: ${createdVoucher.id}`,
+          userId
+        );
+      }
+
       res.status(201).json({
         status: 'success',
         message: 'Transport Payment Voucher created successfully',
@@ -63,6 +78,7 @@ export class TPVoucherController {
     } catch (error) {
       logger.error('Error creating TPVoucher', { error });
       console.log(error);
+      ControllerLogger.logError('Transport Payment Voucher creation', error, req, res);
       next(error);
     }
   }
@@ -90,6 +106,16 @@ export class TPVoucherController {
       //   return next(new AppError(404, 'No Transport Payment Vouchers found'));
       // }
       logger.info('Fetched all Transport Payment Vouchers successfully');
+      ControllerLogger.logList('Transport Payment Voucher', req, res);
+
+      // Send notification for transport payment voucher list access
+      if (userId) {
+        await this.notificationService.createNoti(
+          'Transport Payment Voucher records list accessed successfully',
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         data: vouchers.data,
@@ -99,6 +125,7 @@ export class TPVoucherController {
       });
     } catch (error) {
       logger.error('Error fetching all TPVouchers', { error });
+      ControllerLogger.logError('Transport Payment Voucher list retrieval', error, req, res);
       next(error);
     }
   }
@@ -126,6 +153,7 @@ export class TPVoucherController {
       //   return next(new AppError(404, 'No Transport Payment Vouchers found'));
       // }
       logger.info('Fetched all Transport Payment Vouchers successfully');
+      ControllerLogger.logList('Transport Payment Voucher Recycle Bin', req, res);
       res.status(200).json({
         status: 'success',
         data: vouchers.data,
@@ -135,12 +163,14 @@ export class TPVoucherController {
       });
     } catch (error) {
       logger.error('Error fetching all TPVouchers', { error });
+      ControllerLogger.logError('Transport Payment Voucher recycle bin retrieval', error, req, res);
       next(error);
     }
   }
   @httpGet('/:id')
   public async getTPVoucherById(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -149,15 +179,28 @@ export class TPVoucherController {
       const voucher = await this.tpVoucherService.getTPVoucherById(id);
       if (!voucher) {
         logger.warn(`TPVoucher with id ${id} not found`);
+        ControllerLogger.logError('Transport Payment Voucher view', new AppError(404, 'Transport Payment Voucher not found'), req, res);
         return next(new AppError(404, 'Transport Payment Voucher not found'));
       }
       logger.info(`Fetched Transport Payment Voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Transport Payment Voucher', id, req, res);
+
+      // Send notification for transport payment voucher view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Transport Payment Voucher viewed: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         data: voucher,
       });
     } catch (error) {
       logger.error('Error fetching TPVoucher by id', { error, id });
+      ControllerLogger.logError('Transport Payment Voucher view', error, req, res);
       next(error);
     }
   }
@@ -165,6 +208,7 @@ export class TPVoucherController {
   @httpGet('/:id/view')
   public async getTPVoucherByIdForView(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -173,15 +217,18 @@ export class TPVoucherController {
       const voucher = await this.tpVoucherService.getTPVoucherByIdForView(id);
       if (!voucher) {
         logger.warn(`TPVoucher with id ${id} not found`);
+        ControllerLogger.logError('Transport Payment Voucher view', new AppError(404, 'Transport Payment Voucher not found'), req, res);
         return next(new AppError(404, 'Transport Payment Voucher not found'));
       }
       logger.info(`Fetched Transport Payment Voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Transport Payment Voucher (for view)', id, req, res);
       res.status(200).json({
         status: 'success',
         data: voucher,
       });
     } catch (error) {
       logger.error('Error fetching TPVoucher by id', { error, id });
+      ControllerLogger.logError('Transport Payment Voucher view', error, req, res);
       next(error);
     }
   }
@@ -189,6 +236,7 @@ export class TPVoucherController {
   @httpGet('/:id/update')
   public async getTPVoucherByIdForUpdate(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -197,15 +245,18 @@ export class TPVoucherController {
       const voucher = await this.tpVoucherService.getTPVoucherByIdForUpdate(id);
       if (!voucher) {
         logger.warn(`TPVoucher with id ${id} not found`);
+        ControllerLogger.logError('Transport Payment Voucher retrieval for update', new AppError(404, 'Transport Payment Voucher not found'), req, res);
         return next(new AppError(404, 'Transport Payment Voucher not found'));
       }
       logger.info(`Fetched Transport Payment Voucher with ID: ${id} successfully`);
+      ControllerLogger.logView('Transport Payment Voucher (for update)', id, req, res);
       res.status(200).json({
         status: 'success',
         data: voucher,
       });
     } catch (error) {
       logger.error('Error fetching TPVoucher by id', { error, id });
+      ControllerLogger.logError('Transport Payment Voucher retrieval for update', error, req, res);
       next(error);
     }
   }
@@ -237,9 +288,21 @@ export class TPVoucherController {
       const updatedVoucher = await this.tpVoucherService.updateTPVoucher(id, updateData,updatedBy);
       if (!updatedVoucher) {
         logger.warn(`TPVoucher with id ${id} not found for update`);
+        ControllerLogger.logError('Transport Payment Voucher update', new AppError(404, 'Transport Payment Voucher not found for update'), req, res);
         return next(new AppError(404, 'Transport Payment Voucher not found for update'));
       }
       logger.info(`TPVoucher with id ${id} updated successfully`);
+      ControllerLogger.logSuccess('Transport Payment Voucher updated', id, req, res);
+
+      // Send notification for transport payment voucher update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Transport Payment Voucher updated successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: 'success',
         // data: updatedVoucher,
@@ -247,6 +310,7 @@ export class TPVoucherController {
       });
     } catch (error) {
       logger.error('Error updating TPVoucher', { error });
+      ControllerLogger.logError('Transport Payment Voucher update', error, req, res);
       next(error);
     }
   }
@@ -254,21 +318,35 @@ export class TPVoucherController {
   @httpDelete('/:id')
   public async deleteTPVoucher(
     @requestParam('id') id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       if (!id) {
         logger.warn("TPVoucher ID not provided");
+        ControllerLogger.logError('Transport Payment Voucher deletion', new AppError(400, "TPVoucher ID is required"), req, res);
         return next(new AppError(400, "TPVoucher ID is required"));
       }
       logger.info(`Received request to delete TPVoucher with id: ${id}`);
       const success = await this.tpVoucherService.deleteTPVoucher(id);
       if (!success) {
         logger.warn("TPVoucher ID not provided");
+        ControllerLogger.logError('Transport Payment Voucher deletion', new AppError(400, "TPVoucher ID is required"), req, res);
         return next(new AppError(400, "TPVoucher ID is required"));
       }
       logger.info(`TPVoucher with id ${id} deleted successfully`);
+      ControllerLogger.logSuccess('Transport Payment Voucher deleted', id, req, res);
+
+      // Send notification for transport payment voucher deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Transport Payment Voucher deleted successfully: ${id}`,
+          userId
+        );
+      }
+
       res.status(200).json({
         status: "success",
         message: "TPVoucher deleted successfully"
@@ -276,6 +354,7 @@ export class TPVoucherController {
       //res.status(200).send("Deleted successfully"); // No content
     } catch (error) {
       logger.error('Error deleting TPVoucher', { error });
+      ControllerLogger.logError('Transport Payment Voucher deletion', error, req, res);
       next(error);
     }
   }
@@ -289,9 +368,21 @@ export class TPVoucherController {
         try {
           const { ids } = req.body;
           if (!Array.isArray(ids) || ids.length === 0) {
+            ControllerLogger.logError('Transport Payment Voucher multiple deletion', new AppError(400, 'An array of Transport Payment Voucher IDs is required'), req, res);
             return next(new AppError(400, 'An array of Transport Payment Voucher IDs is required'));
           }
           const result = await this.tpVoucherService.deleteMultipleTransportPaymentVoucher(ids);
+          ControllerLogger.logSuccess('Transport Payment Voucher multiple deletion', `${ids.length} records`, req, res);
+
+          // Send notification for multiple transport payment voucher deletion
+          const userId = res.locals.user?.id;
+          if (userId) {
+            await this.notificationService.createNoti(
+              `Multiple Transport Payment Vouchers deleted successfully: ${ids.length} records`,
+              userId
+            );
+          }
+
           res.status(200).json({
             message: result.message,
             success: result.success,
@@ -300,6 +391,7 @@ export class TPVoucherController {
         }
           catch (error) {
           logger.error('Error deleting multiple Transport Payment Voucher', { error });
+          ControllerLogger.logError('Transport Payment Voucher multiple deletion', error, req, res);
           next(error);
         }
       }

@@ -11,10 +11,15 @@ import { upload } from "../middleware/multerConfig";
 import { uploadFile } from "../middleware/uploadwithAWS";
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
+import { ControllerLogger } from "../utils/controllerLogger";
+import { NotificationService } from "../services/notification.service";
 //,deserializeUser, requireUser
 @controller("/pmpvoucher",deserializeUser, requireUser)
 export class PMPVoucherController {
-  constructor(@inject(TYPES.PMPVoucherService) private pmpVoucherService: PMPVoucherService) {}
+  constructor(
+    @inject(TYPES.PMPVoucherService) private pmpVoucherService: PMPVoucherService,
+    @inject(TYPES.NotificationService) private notificationService: NotificationService
+  ) {}
 
   // Get all vouchers
   @httpGet("/")
@@ -37,6 +42,18 @@ export class PMPVoucherController {
       };
       const vouchers = await this.pmpVoucherService.getAllVouchers(queryOptions, userId);
       logger.info("Vouchers fetched successfully", { vouchers });
+      
+      ControllerLogger.logList("PMP Voucher", req, res);
+
+      // Send notification for PMP voucher list access
+     
+      if (userId) {
+        await this.notificationService.createNoti(
+          'PMP Voucher records list accessed successfully',
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: "success",
         data: vouchers.data,
@@ -47,6 +64,7 @@ export class PMPVoucherController {
     } catch (err: any) {
       logger.error("Error fetching vouchers", { error: err });
       console.log(err)
+      ControllerLogger.logError('PMP Voucher list retrieval', err, req, res);
       next(err);
     }
   }
@@ -72,6 +90,9 @@ export class PMPVoucherController {
       console.log("vouchers",vouchers.data);
       
       logger.info("Vouchers fetched successfully", { vouchers });
+      
+      ControllerLogger.logList("PMP Voucher Recycle Bin", req, res);
+      
       res.status(200).json({
         status: "success",
         data: vouchers.data,
@@ -82,6 +103,7 @@ export class PMPVoucherController {
     } catch (err: any) {
       logger.error("Error fetching vouchers", { error: err });
       console.log(err)
+      ControllerLogger.logError('PMP Voucher recycle bin retrieval', err, req, res);
       next(err);
     }
   }
@@ -101,12 +123,25 @@ export class PMPVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Voucher with ID: ${id} fetched successfully`);
+      
+      ControllerLogger.logView("PMP Voucher", id, req, res);
+
+      // Send notification for PMP voucher view
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `PMP Voucher viewed: ${id}`,
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching voucher by ID", { error: err });
+      ControllerLogger.logError('PMP Voucher view', err, req, res);
       next(err);
     }
   }
@@ -127,12 +162,16 @@ export class PMPVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Voucher with ID: ${id} fetched successfully`);
+      
+      ControllerLogger.logView("PMP Voucher", id, req, res);
+      
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching voucher by ID", { error: err });
+      ControllerLogger.logError('PMP Voucher view', err, req, res);
       next(err);
     }
   }
@@ -152,12 +191,16 @@ export class PMPVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Voucher with ID: ${id} fetched successfully`);
+      
+      ControllerLogger.logView("PMP Voucher (for update)", id, req, res);
+      
       res.status(200).json({
         status: "success",
         data: voucher,
       });
     } catch (err) {
       logger.error("Error fetching voucher by ID", { error: err });
+      ControllerLogger.logError('PMP Voucher retrieval for update', err, req, res);
       next(err);
     }
   }
@@ -193,6 +236,18 @@ export class PMPVoucherController {
       const newVoucher = await this.pmpVoucherService.createVoucher(voucherData);
       console.log(newVoucher)
       logger.info("New voucher created successfully");
+      
+      ControllerLogger.logSuccess('PMP Voucher created', newVoucher.id, req, res);
+
+      // Send notification for PMP voucher creation
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `PMP Voucher created successfully: ${newVoucher.id}`,
+          userId
+        );
+      }
+      
       res.status(201).json({
         status: "success",
         message: 'Packing Material Payment Voucher created successfully',
@@ -201,6 +256,7 @@ export class PMPVoucherController {
     } catch (err) {
       logger.error("Error creating voucher", { error: err });
       console.log(err)
+      ControllerLogger.logError('PMP Voucher creation', err, req, res);
       next(err);
     }
   }
@@ -245,12 +301,25 @@ export class PMPVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Voucher with ID: ${id} updated successfully`);
+      
+      ControllerLogger.logSuccess('PMP Voucher updated', id, req, res);
+
+      // Send notification for PMP voucher update
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `PMP Voucher updated successfully: ${id}`,
+          userId
+        );
+      }
+      
       res.status(200).json({
         status: "success",
         data: updatedVoucher,
       });
     } catch (err) {
       logger.error("Error updating voucher", { error: err });
+      ControllerLogger.logError('PMP Voucher update', err, req, res);
       next(err);
     }
   }
@@ -272,11 +341,24 @@ export class PMPVoucherController {
         return res.status(404).json({ status: "fail", message: "Voucher not found" });
       }
       logger.info(`Voucher with ID: ${id} deleted successfully`);
+      
+      ControllerLogger.logSuccess('PMP Voucher deleted', id, req, res);
+
+      // Send notification for PMP voucher deletion
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `PMP Voucher deleted successfully: ${id}`,
+          userId
+        );
+      }
+      
       res.status(200).json({ 
         status: "success",
          message: "Voucher deleted successfully" });
     } catch (err) {
       logger.error("Error deleting voucher", { error: err });
+      ControllerLogger.logError('PMP Voucher deletion', err, req, res);
       next(err);
     }
   }
@@ -292,6 +374,9 @@ export class PMPVoucherController {
             return next(new AppError(400, 'An array of AQR IDs is required'));
           }
           const result = await this.pmpVoucherService.deleteMultiplePMPVoucher(ids);
+          
+          ControllerLogger.logSuccess('Multiple PMP Vouchers deleted', `${ids.length} items`, req, res);
+          
           res.status(200).json({
             message: result.message,
             success: result.success,
@@ -300,6 +385,7 @@ export class PMPVoucherController {
         }
           catch (error) {
           logger.error('Error deleting  PMPVoucher', { error });
+          ControllerLogger.logError('Multiple PMP Voucher deletion', error, req, res);
           next(error);
         }
       }

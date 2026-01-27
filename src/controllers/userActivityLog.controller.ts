@@ -16,6 +16,7 @@ import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import AppError from '../utils/appError';
 import logger from '../utils/logger';
+import { ControllerLogger } from '../utils/controllerLogger';
 
 @controller('/user-activity-logs', deserializeUser, requireUser)
 export class UserActivityLogController {
@@ -60,6 +61,8 @@ export class UserActivityLogController {
         Number(limit),
       );
 
+      ControllerLogger.logList('User Activity Logs', req, res);
+
       res.status(200).json({
         status: 'success',
         data: result.data,
@@ -72,6 +75,7 @@ export class UserActivityLogController {
       });
     } catch (error) {
       logger.error('Error fetching user activity logs:', error);
+      ControllerLogger.logError('User Activity Logs retrieval', error, req, res);
       next(error);
     }
   }
@@ -301,6 +305,132 @@ export class UserActivityLogController {
   }
 
   /**
+   * Get current user's activity logs (for frontend dashboard)
+   * GET /user-activity-logs/my-activities
+   */
+  @httpGet('/my-activities')
+  public async getMyActivityLogs(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ): Promise<void> {
+    try {
+      const currentUserId = res.locals.user.id;
+      const {
+        page = 1,
+        limit = 20,
+        action,
+        module,
+        startDate,
+        endDate,
+        isError,
+      } = req.query;
+
+      const filters: ActivityLogFilters = {};
+      if (action) filters.action = action as ActivityAction;
+      if (module) filters.module = module as ActivityModule;
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+      if (isError !== undefined) filters.isError = isError === 'true';
+
+      const result = await this.activityLogService.getUserActivityLogs(
+        currentUserId,
+        filters,
+        Number(page),
+        Number(limit),
+      );
+
+      ControllerLogger.logList('My Activity Logs', req, res);
+
+      res.status(200).json({
+        status: 'success',
+        data: result.data,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: result.total,
+          pages: result.pages,
+        },
+      });
+    } catch (error) {
+      logger.error('Error fetching my activity logs:', error);
+      ControllerLogger.logError('My Activity Logs retrieval', error, req, res);
+      next(error);
+    }
+  }
+
+  /**
+   * Get activity feed for dashboard (recent activities across modules)
+   * GET /user-activity-logs/activity-feed
+   */
+  @httpGet('/activity-feed')
+  public async getActivityFeed(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ): Promise<void> {
+    try {
+      const currentUserId = res.locals.user.id;
+      const { limit = 50 } = req.query;
+
+      // Get recent activities for current user
+      const filters: ActivityLogFilters = {
+        userId: currentUserId,
+      };
+
+      const result = await this.activityLogService.getAllActivityLogs(
+        filters,
+        1,
+        Number(limit),
+      );
+
+      ControllerLogger.logList('Activity Feed', req, res);
+
+      res.status(200).json({
+        status: 'success',
+        data: result.data,
+        total: result.total,
+      });
+    } catch (error) {
+      logger.error('Error fetching activity feed:', error);
+      ControllerLogger.logError('Activity Feed retrieval', error, req, res);
+      next(error);
+    }
+  }
+
+  /**
+   * Get activity statistics for dashboard
+   * GET /user-activity-logs/stats
+   */
+  @httpGet('/stats')
+  public async getActivityStats(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ): Promise<void> {
+    try {
+      const currentUserId = res.locals.user.id;
+      const { days = 30 } = req.query;
+
+      const summary = await this.activityLogService.getUserActivitySummary(
+        currentUserId,
+        Number(days),
+      );
+
+      ControllerLogger.logView('Activity Statistics', currentUserId, req, res);
+
+      res.status(200).json({
+        status: 'success',
+        data: summary,
+      });
+    } catch (error) {
+      logger.error('Error fetching activity stats:', error);
+      ControllerLogger.logError('Activity Statistics retrieval', error, req, res);
+      next(error);
+    }
+  }
+
+  /**
    * Delete old logs (Admin only)
    * DELETE /user-activity-logs/cleanup
    */
@@ -317,11 +447,13 @@ export class UserActivityLogController {
         return next(new AppError(403, 'Access denied. SuperAdmin only.'));
       }
 
-      const { daysToKeep = 90 } = req.query;
+      const { daysToKeep = 180 } = req.query;
 
       const deletedCount = await this.activityLogService.deleteOldLogs(
         Number(daysToKeep),
       );
+
+      ControllerLogger.logSuccess('Old activity logs deleted', deletedCount.toString(), req, res);
 
       res.status(200).json({
         status: 'success',
@@ -330,6 +462,7 @@ export class UserActivityLogController {
       });
     } catch (error) {
       logger.error('Error deleting old logs:', error);
+      ControllerLogger.logError('Old logs cleanup', error, req, res);
       next(error);
     }
   }
