@@ -19,12 +19,14 @@ import { DeliveryChallanService } from '../services/deliveryChallan.service';
 import { captureUser, deserializeUser, requireUser } from '../middleware/deserializeUser';
 import AppError from '../utils/appError';
 import logger from '../utils/logger';
-import { upload } from '../middleware/multerConfig';
-import { uploadFile } from "../middleware/uploadwithAWS";
+
 import ExcelJS from "exceljs";
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { PaginationOptions } from '../utils/pagination';
 import { NotificationService } from '../services/notification.service';
+import { uploadSingle } from '../middleware/uploadsingle.middleware';
+import { upload, uploadAttachments } from '../middleware/upload.middleware';
+import { setAttachmentUrls } from '../utils/fileUploadHelper';
 
 @controller('/deliveryChallan', deserializeUser, requireUser)
 export class DeliveryChallanController {
@@ -43,7 +45,7 @@ export class DeliveryChallanController {
   this.bucketName = process.env.BUCKET_NAME!;}
 
  
-   @httpPost('/',uploadFile.single('anyAttachment'))
+   @httpPost('/', uploadAttachments)
 public async createDeliveryChallan(
     @requestBody() Data: any,
     @request() req: Request<{}, {}>,
@@ -53,16 +55,9 @@ public async createDeliveryChallan(
     try {
       console.log(req.body)
       logger.info('Starting to create a new Delivery Challan');
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        Data.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(Data, req.files as any[]);
 
       
       Data.requestedBy=res.locals.user.id;
@@ -211,7 +206,7 @@ next(err); // Unhandled errors
     }
   }
 
-  @httpPatch('/:id',uploadFile.single('anyAttachment'),captureUser)
+  @httpPatch('/:id', uploadAttachments, captureUser)
   public async updateDeliveryChallan(
     @requestParam('id') id: string,
     @request() req: Request<{}, {}>,
@@ -224,16 +219,9 @@ next(err); // Unhandled errors
       const updatedBy = res.locals.updatedBy;
       
       const Data=req.body
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        Data.anyAttachment= imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(Data, req.files as any[]);
      
       const updatedChallan = await this.deliveryChallanService.updateDeliveryChallan(id, Data,updatedBy);
       if (!updatedChallan) {

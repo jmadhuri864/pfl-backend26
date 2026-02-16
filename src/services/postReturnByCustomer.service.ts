@@ -142,67 +142,81 @@ returnData.isChanged=true;
  * This updates the returnedQty, rejectedQty, and acceptedQty fields
  */
 private async updateDeliveryChallanItemsWithReturns(
-  deliveryChallanId: string,
-  returnedProducts: any[]
-): Promise<void> {
-  const deliveryChallan = await this.deliveryChallanRepository.findOne({
-    where: { id: deliveryChallanId },
-    relations: [
-      'deliveryChallanProducts',
-      'deliveryChallanProducts.productName',
-      'deliveryChallanProducts.variant',
-    ],
-  });
-
-  if (!deliveryChallan) {
-    console.warn(`Delivery challan ${deliveryChallanId} not found for return update`);
-    return;
-  }
-
-  // Reset all return/reject quantities first for this challan
-  for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
-    dcProduct.returnedQty = 0;
-    dcProduct.rejectedQty = 0;
-    dcProduct.acceptedQty = Number(dcProduct.quantity || 0);
-  }
-
-  // Update each delivery challan product with return data
-  for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
-    // Find matching returned products
-    const matchingReturns = returnedProducts.filter(rp => {
-      const rpProductId = typeof rp.productName === 'object' ? rp.productName.id : rp.productName;
-      const rpVariantId = typeof rp.variant === 'object' ? rp.variant?.id : rp.variant;
-      
-      return (
-        rpProductId === dcProduct.productName?.id &&
-        (rpVariantId === dcProduct.variant?.id || (!rpVariantId && !dcProduct.variant))
-      );
+    deliveryChallanId: string,
+    returnedProducts: any[]
+  ): Promise<void> {
+    const deliveryChallan = await this.deliveryChallanRepository.findOne({
+      where: { id: deliveryChallanId },
+      relations: [
+        'deliveryChallanProducts',
+        'deliveryChallanProducts.productName',
+        'deliveryChallanProducts.variant',
+      ],
     });
 
-    if (matchingReturns.length > 0) {
-      // Aggregate return values
-      const totalReturnedQty = matchingReturns.reduce(
-        (sum, rp) => sum + Number(rp.returnedQty || 0), 0
-      );
-      const totalRejectedQty = matchingReturns.reduce(
-        (sum, rp) => sum + Number(rp.rejectedQty || 0), 0
-      );
-
-      // Update the delivery challan product
-      dcProduct.returnedQty = totalReturnedQty;
-      dcProduct.rejectedQty = totalRejectedQty;
-      
-      // Calculate accepted quantity (original quantity - returned - rejected)
-      const originalQty = Number(dcProduct.quantity || 0);
-      dcProduct.acceptedQty = originalQty - totalReturnedQty - totalRejectedQty;
-
-      console.log(`✅ Updated DC product ${dcProduct.productName?.name}: ${totalReturnedQty} returned, ${totalRejectedQty} rejected`);
+    if (!deliveryChallan) {
+      console.warn(`Delivery challan ${deliveryChallanId} not found for return update`);
+      return;
     }
 
-    // Save the updated product
-    await this.deliveryChallanProductRepository.save(dcProduct);
+    // Fetch ALL returns for this delivery challan (not just the current one)
+    const allReturns = await this.postReturnByCustomerRepository.find({
+      where: { deliveryChallanNo: { id: deliveryChallanId } },
+      relations: [
+        'returnedProducts',
+        'returnedProducts.productName',
+        'returnedProducts.variant',
+      ],
+    });
+
+    // Flatten all returned products from all returns
+    const allReturnedProducts = allReturns.flatMap(ret => ret.returnedProducts || []);
+
+    // Reset all return/reject quantities first for this challan
+    for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
+      dcProduct.returnedQty = 0;
+      dcProduct.rejectedQty = 0;
+      dcProduct.acceptedQty = Number(dcProduct.quantity || 0);
+    }
+
+    // Update each delivery challan product with aggregated return data
+    for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
+      // Find ALL matching returned products across all returns
+      const matchingReturns = allReturnedProducts.filter(rp => {
+        const rpProductId = typeof rp.productName === 'object' ? rp.productName.id : rp.productName;
+        const rpVariantId = typeof rp.variant === 'object' ? rp.variant?.id : rp.variant;
+
+        return (
+          rpProductId === dcProduct.productName?.id &&
+          (rpVariantId === dcProduct.variant?.id || (!rpVariantId && !dcProduct.variant))
+        );
+      });
+
+      if (matchingReturns.length > 0) {
+        // Aggregate return values from ALL returns
+        const totalReturnedQty = matchingReturns.reduce(
+          (sum, rp) => sum + Number(rp.returnedQty || 0), 0
+        );
+        const totalRejectedQty = matchingReturns.reduce(
+          (sum, rp) => sum + Number(rp.rejectedQty || 0), 0
+        );
+
+        // Update the delivery challan product
+        dcProduct.returnedQty = totalReturnedQty;
+        dcProduct.rejectedQty = totalRejectedQty;
+
+        // Calculate accepted quantity (original quantity - returned - rejected)
+        const originalQty = Number(dcProduct.quantity || 0);
+        dcProduct.acceptedQty = originalQty - totalReturnedQty - totalRejectedQty;
+
+        console.log(`✅ Updated DC product ${dcProduct.productName?.name}: ${totalReturnedQty} returned, ${totalRejectedQty} rejected, ${dcProduct.acceptedQty} accepted`);
+      }
+
+      // Save the updated product
+      await this.deliveryChallanProductRepository.save(dcProduct);
+    }
   }
-}
+
 
 
   //TODO: Get all RBC

@@ -406,7 +406,7 @@ public async gettingStocksaccessLocation(
     @next() next: NextFunction
   ){
     try{
-      const {company, location, startDate, endDate, page, limit, search, sort} = req.query;
+      const {company, location, page, limit, search, sort} = req.query;
 
       const queryOptions = {
         page: page ? parseInt(page as string) : 1,
@@ -418,8 +418,7 @@ public async gettingStocksaccessLocation(
         queryOptions,
         company as string,
         location as string,
-        startDate as string,
-        endDate as string
+        search as string
       );
 
      
@@ -444,7 +443,7 @@ public async gettingStocksaccessLocation(
     @next() next: NextFunction
   ){
     try{
-      const {company, location, product, startDate, endDate, page, limit, search, sort} = req.query;
+      const {company, location, product, page, limit, search, sort} = req.query;
 
       const queryOptions = {
         page: page ? parseInt(page as string) : undefined,
@@ -457,9 +456,7 @@ public async gettingStocksaccessLocation(
         queryOptions,
         company as string,
         location as string,
-        product as string,
-        startDate as string,
-        endDate as string
+        product as string
       );
 
      

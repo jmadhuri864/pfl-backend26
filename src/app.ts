@@ -36,12 +36,15 @@ const allowedOrigins = [
   "http://192.168.1.60:5173",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://192.168.1.39:5173",
   "http://192.168.1.36:5173/",
    "http://192.168.1.36:5173",
+   "http://192.168.1.36:5173/",
   "https://d721a561c2dc.ngrok-free.app",
   "http://localhost:3000",
   "http://localhost:8004",
-  "http://192.168.1.82:3000"
+  "http://192.168.1.82:3000",
+  "https://prime-fresh-erp.vercel.app/"
 ];
 
 // process.on('unhandledRejection', (reason, promise) => {
@@ -105,17 +108,18 @@ const startServer = async () => {
 
       // Main CORS handler - MUST be before any other middleware that might set headers
       app.use((req, res, next) => {
-        const origin = req.headers.origin as string || '*';
+        const origin = req.headers.origin as string|| '*';
         console.log('🔍 CORS Handler - Origin:', origin);
         console.log('🔍 CORS Handler - Method:', req.method);
         console.log('🔍 CORS Handler - Path:', req.path);
         
-        if (origin && allowedOrigins.includes(origin)) {
-          res.setHeader("Access-Control-Allow-Origin", origin);
+        // Allow all origins if '*' is in allowedOrigins, otherwise check specific origins
+        if (allowedOrigins.includes("*") || (origin && allowedOrigins.includes(origin))) {
+          res.setHeader("Access-Control-Allow-Origin", origin || "*");
           res.setHeader("Access-Control-Allow-Credentials", "true");
           res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
           res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
-          console.log('✅ CORS - Set origin to:', origin);
+          console.log('✅ CORS - Set origin to:', origin || "*");
         } else {
           console.log('❌ CORS - Origin not in allowed list:', origin);
           console.log('🔍 CORS - Allowed origins:', allowedOrigins);

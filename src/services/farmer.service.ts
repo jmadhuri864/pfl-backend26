@@ -3,10 +3,12 @@ import * as XLSX from 'xlsx';
 import { Farmer } from '../entities/farmer.entity';
 import { FarmerRepository } from '../repositories/farmer.repository';
 import { TYPES } from '../types';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { s3 } from '../middleware/spaces.config';
 
 import { Crop } from '../entities/crop.entity';
+import { Product } from '../entities/product.entity';
 import fs from 'fs';
-import csv from 'csv-parser';
 import { CropRepository } from '../repositories/crop.repository';
 
 import { Address } from '../entities/address.entity';
@@ -18,8 +20,10 @@ import { AppDataSource } from '../utils/data-source';
 import { parseExcelDate } from '../utils/excelParser';
 import { UserRepository } from '../repositories/user.repository';
 import { Role } from '../entities/user.entity';
+import { User } from '../entities/user.entity';
 import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
+import { CreateBranchBodySchema } from '../schemas/branch.schema';
 
 @injectable()
 export class FarmerService {
@@ -356,16 +360,21 @@ export class FarmerService {
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+       .leftJoinAndSelect('farmer.createdBy', 'createdBy')
       .leftJoinAndSelect('farmer.crops', 'crops')
       .leftJoinAndSelect('crops.crop', 'crop')
       .where('farmer.id = :id', { id })
       .getOne();
 
     if (!farmer) return null;
-
+const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     return {
       id: farmer.id,
       farmerfName:farmer.farmerfName ||  null,
+      createdBy: farmer.createdBy
+        ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
+        : null,
+
       farmermName:farmer.farmermName || null ,
       farmerlName:farmer.farmerlName || null,
       gender:farmer.gender,
@@ -379,8 +388,10 @@ export class FarmerService {
     cultivationArea: farmer.cultivationArea,
     sevenTwelveNo: farmer.sevenTwelveNo,
     sevenTwelveCopy: farmer.sevenTwelveCopy,
+    createdDate,
+    createdTime,
 
-      //fullName: farmer.farmerfName + ' ' + farmer.farmermName + ' ' + farmer.farmerlName,
+      
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
@@ -429,12 +440,13 @@ export class FarmerService {
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
       .leftJoinAndSelect('farmer.crops', 'crops')
+       .leftJoinAndSelect('farmer.createdBy', 'createdBy')
       .leftJoinAndSelect('crops.crop', 'crop')
       .where('farmer.id = :id', { id })
       .getOne();
 
     if (!farmer) return null;
-
+  const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     return {
       id: farmer.id,
       farmerfName:farmer.farmerfName ||  null,
@@ -451,11 +463,19 @@ export class FarmerService {
     cultivationArea: farmer.cultivationArea,
     sevenTwelveNo: farmer.sevenTwelveNo,
     sevenTwelveCopy: farmer.sevenTwelveCopy,
+ createdDate,
+    createdTime,
+          createdBy: farmer.createdBy
+        ? farmer.createdBy.id
+        : null,
+
       //fullName: farmer.farmerfName + ' ' + farmer.farmermName + ' ' + farmer.farmerlName,
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
       farmerCode: farmer.farmerCode,
+     farmerPhoto: farmer.farmerPhoto,
+     farmPhoto:farmer.farmPhoto,
       residensialAddress: farmer.residensialAddress.id
         ? {
             id: farmer.residensialAddress.id,
@@ -928,276 +948,314 @@ export class FarmerService {
     console.log(`Farmer with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
-  async createFarmerwithExcel(farmerData: any): Promise<any> {
-    console.log('in create farmer');
-    const workbook = XLSX.readFile(farmerData);
-    const sheetNames = workbook.SheetNames;
-    console.log('Sheet names found:', sheetNames);
-
-    const farmerRepository = AppDataSource.getRepository(Farmer);
-
-    for (const sheetName of sheetNames) {
-      const worksheet = workbook.Sheets[sheetName];
-      console.log('Processing sheet:', sheetName);
-
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1,
-        defval: null,
-      });
-
-      if (jsonData.length < 2) {
-        console.warn('Sheet does not have enough rows:', sheetName);
-        continue;
+  async createFarmerwithExcel(fileUrl: string): Promise<any> {
+    try {
+      console.log('in create farmer with Excel, fileUrl:', fileUrl);
+      
+      // First, download the file from DigitalOcean Spaces
+      let fileBuffer: Buffer;
+      
+      if (fileUrl.startsWith('https://')) {
+        // Extract the key from the URL
+        const urlParts = fileUrl.split('/');
+        const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
+        console.log('Downloading file from Spaces with key:', key);
+        
+        // Download file from Spaces
+        fileBuffer = await this.getExcelFromSpaces(key);
+      } else {
+        // If it's already a local path or key, try to get it from Spaces
+        fileBuffer = await this.getExcelFromSpaces(fileUrl);
       }
+      
+      // Read the Excel file from buffer instead of file path
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const sheetNames = workbook.SheetNames;
+      console.log('Sheet names found:', sheetNames);
 
-      const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
-        h ? String(h).trim() : `UNKNOWN`,
-      );
-      console.log('Headers found:', headers);
+      const farmerRepository = AppDataSource.getRepository(Farmer);
+      const productRepository = AppDataSource.getRepository(Product);
+      const userRepository = AppDataSource.getRepository(User);
 
-      const dataRows = jsonData.slice(1); // Skip header row
+      for (const sheetName of sheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        console.log('Processing sheet:', sheetName);
 
-      for (const rowUntyped of dataRows) {
-        if (!Array.isArray(rowUntyped) || rowUntyped.length === 0) continue;
-
-        const rowData: Record<string, any> = {};
-        headers.forEach((header, index) => {
-          rowData[header] = rowUntyped[index];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: null,
         });
 
-        console.log('Mapped Row:', rowData);
-
-        if (!rowData['First Name'] || !rowData['Primary Mobile No']) {
-          console.warn('Skipping incomplete row:', rowData);
+        if (jsonData.length < 2) {
+          console.warn('Sheet does not have enough rows:', sheetName);
           continue;
         }
 
-        let sequenceNumber = await farmerRepository.count();
-        const farmerCode = `FARM${new Date().getFullYear()}${String(
-          ++sequenceNumber,
-        ).padStart(4, '0')}`;
+        const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
+          h ? String(h).trim() : `UNKNOWN`,
+        );
+        console.log('Headers found:', headers);
 
-        const farmer = new Farmer();
-        farmer.farmerfName = rowData['First Name'];
-        farmer.farmermName = rowData['Middl Name'] || rowData['MiddleName']; // support both spellings
-        farmer.farmerlName = rowData['Last Name'];
-        farmer.primaryMobileNo = rowData['Primary Mobile No'];
-        farmer.secondaryMobileNo = rowData['Secondary Mobile No'];
-        farmer.email = rowData['Email'];
-        farmer.gender = rowData['Gender'];
+        const dataRows = jsonData.slice(1); // Skip header row
 
-        // ---- Fix for DOB ----
-        console.log('Raw DOB value:', rowData['Date Of Birth']);
+        for (const rowUntyped of dataRows) {
+          if (!Array.isArray(rowUntyped) || rowUntyped.length === 0) continue;
 
-        if (rowData['Date Of Birth']) {
-          const dob = parseExcelDate(rowData['Date Of Birth']);
-          farmer.dob = dob || null;
-        }
+          const rowData: Record<string, any> = {};
+          headers.forEach((header, index) => {
+            rowData[header] = rowUntyped[index];
+          });
 
-        farmer.landHoldingStatus = rowData['Land Holding'];
-        farmer.landStatus = rowData['Land Status'];
-        farmer.totalLandArea = rowData['Total Land Area'];
-        farmer.cultivationArea = rowData['Cultivation Area'];
-        farmer.farmerCode = farmerCode;
-        farmer.farmerGrading = rowData['Farmer Grading'];
-        farmer.sevenTwelveCopy = rowData['Seven Twelve Copy'];
-        farmer.sevenTwelveNo = rowData['Seven Twelve No'];
-        farmer.idProofCopy = rowData['Id Proof Copy'];
-        farmer.idProofNo = rowData['Id Proof  No'];
+          console.log('Mapped Row:', rowData);
 
-        if (rowData['Date Of Visit']) {
-          farmer.dateOfVisit = new Date(rowData['Date Of Visit']);
-        }
-
-        farmer.howDoYouSell = rowData['How Do You Sell'];
-        // farmer.registerBy = rowData['Register By'];
-
-        // if (rowData['Register Date']) {
-        //   const regDate = parseExcelDate(rowData['Register Date']);
-        //   farmer.registerDate = regDate || null;
-        // }
-
-        farmer.farmerPhoto = rowData['Farmer Photo'];
-        farmer.farmPhoto = rowData['Farm Photo'];
-
-        // Residential Address
-        const resAddress = new Address();
-        resAddress.address1 = rowData['Residensial Address1'];
-        resAddress.address2 = rowData['Residensial Address2'];
-        resAddress.location = rowData['Residensial Location'];
-        resAddress.city = rowData['Residensial City'];
-        resAddress.state = rowData['Residensial State'];
-        resAddress.pincode = rowData['Residensial Pincode'];
-        farmer.residensialAddress = resAddress;
-
-        // Farm Address
-        const farmAddress = new Address();
-        farmAddress.address1 = rowData['Farm Address1'];
-        farmAddress.address2 = rowData['Farm Address2'];
-        farmAddress.location = rowData['Farm Location'];
-        farmAddress.city = rowData['Farm City'];
-        farmAddress.state = rowData['Farm State'];
-        farmAddress.pincode = rowData['Farm Pincode'];
-        farmer.farmAddress = farmAddress;
-
-        // ---- Crops ----
-        farmer.crops = [];
-        let i = 1;
-        while (rowData[`Crop${i}.Crop`]) {
-          const crop = new Crop();
-          crop.crop = rowData[`Crop${i}.Crop`];
-          crop.variety = rowData[`Crop${i}.Variety`];
-          crop.noOfPlants = rowData[`Crop${i}.No_Of_Plants`];
-
-          if (rowData[`Crop${i}.Pruning_Date`]) {
-            const pruningDate = parseExcelDate(
-              rowData[`Crop${i}.Pruning_Date`],
-            );
-            crop.pruningDate = pruningDate || null;
-          }
-          if (rowData[`Crop${i}.Expected_Harvest_Date`]) {
-            const expectedHarvestDate = parseExcelDate(
-              rowData[`Crop${i}.Expected_Harvest_Date`],
-            );
-            crop.expectedHarvestDate = expectedHarvestDate || null;
+          if (!rowData['First Name'] || !rowData['Primary Mobile No']) {
+            console.warn('Skipping incomplete row:', rowData);
+            continue;
           }
 
-          crop.expectedQuantityInTonnes =
-            rowData[`Crop${i}.ExpectedQuantityInTonnes`];
+          let sequenceNumber = await farmerRepository.count();
+          const farmerCode = `FARM${new Date().getFullYear()}${String(
+            ++sequenceNumber,
+          ).padStart(4, '0')}`;
 
-          farmer.crops.push(crop);
-          i++;
+          const farmer = new Farmer();
+          farmer.farmerfName = rowData['First Name'];
+          farmer.farmermName = rowData['Middl Name'] || rowData['MiddleName']; // support both spellings
+          farmer.farmerlName = rowData['Last Name'];
+          farmer.primaryMobileNo = rowData['Primary Mobile No'];
+          farmer.secondaryMobileNo = rowData['Secondary Mobile No'];
+          farmer.email = rowData['Email'];
+          farmer.gender = rowData['Gender'];
+
+          // ---- Fix for DOB ----
+          console.log('Raw DOB value:', rowData['Date Of Birth']);
+
+          if (rowData['Date Of Birth']) {
+            const dob = parseExcelDate(rowData['Date Of Birth']);
+            if (dob) {
+              farmer.dob = new Date(dob);
+            }
+          }
+
+          farmer.landHoldingStatus = rowData['Land Holding'];
+          farmer.landStatus = rowData['Land Status'];
+          farmer.totalLandArea = rowData['Total Land Area'];
+          farmer.cultivationArea = rowData['Cultivation Area'];
+          farmer.farmerCode = farmerCode;
+          farmer.farmerGrading = rowData['Farmer Grading'];
+          farmer.sevenTwelveCopy = rowData['Seven Twelve Copy'];
+          farmer.sevenTwelveNo = rowData['Seven Twelve No'];
+          farmer.idProofCopy = rowData['Id Proof Copy'];
+          farmer.idProofNo = rowData['Id Proof  No'];
+
+          if (rowData['Date Of Visit']) {
+            farmer.dateOfVisit = new Date(rowData['Date Of Visit']);
+          }
+
+          farmer.howDoYouSell = rowData['How Do You Sell'];
+
+          farmer.farmerPhoto = rowData['Farmer Photo'];
+          farmer.farmPhoto = rowData['Farm Photo'];
+
+          // Handle createdBy field if provided in Excel
+          if (rowData['Created By']) {
+            console.log(`Looking up user for createdBy: ${rowData['Created By']}`);
+            
+            // Find user by name (case-insensitive search)
+            const createdByName = rowData['Created By'].trim();
+            const user = await userRepository
+              .createQueryBuilder('user')
+              .where('LOWER(CONCAT(user.firstName, \' \', user.lastName)) = LOWER(:name)', { name: createdByName })
+              .getOne();
+            
+            if (user) {
+              farmer.createdBy = user;
+              console.log(`✅ Found user: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
+            } else {
+              console.warn(`⚠️  User not found for createdBy: ${createdByName}`);
+              // Continue without setting createdBy - it's nullable
+            }
+          }
+
+          // Residential Address
+          const resAddress = new Address();
+          resAddress.address1 = rowData['Residensial Address1'];
+          resAddress.address2 = rowData['Residensial Address2'];
+          resAddress.location = rowData['Residensial Location'];
+          resAddress.city = rowData['Residensial City'];
+          resAddress.state = rowData['Residensial State'];
+          resAddress.pincode = rowData['Residensial Pincode'];
+          farmer.residensialAddress = resAddress;
+
+          // Farm Address
+          const farmAddress = new Address();
+          farmAddress.address1 = rowData['Farm Address1'];
+          farmAddress.address2 = rowData['Farm Address2'];
+          farmAddress.location = rowData['Farm Location'];
+          farmAddress.city = rowData['Farm City'];
+          farmAddress.state = rowData['Farm State'];
+          farmAddress.pincode = rowData['Farm Pincode'];
+          farmer.farmAddress = farmAddress;
+
+          // ---- Crops with Product Lookup ----
+          farmer.crops = [];
+          let i = 1;
+          while (rowData[`Crop${i}.Crop`]) {
+            const crop = new Crop();
+            
+            // 🔍 Look up Product by name instead of directly assigning string
+            const cropName = rowData[`Crop${i}.Crop`];
+            if (cropName) {
+              console.log(`Looking up product for crop: ${cropName}`);
+              
+              // Find product by name (case-insensitive search)
+              const product = await productRepository
+                .createQueryBuilder('product')
+                .where('LOWER(product.name) = LOWER(:name)', { name: cropName.trim() })
+                .getOne();
+              
+              if (product) {
+                crop.crop = product; // Assign the actual Product entity
+                console.log(`✅ Found product: ${product.name} (ID: ${product.id})`);
+              } else {
+                console.warn(`⚠️  Product not found for crop name: ${cropName}`);
+                console.warn(`   Available products can be checked in the Product master data`);
+                console.warn(`   Skipping this crop entry for farmer: ${farmer.farmerfName}`);
+                // Skip crops with unknown products
+                continue;
+              }
+            } else {
+              console.warn(`⚠️  Empty crop name found, skipping crop entry`);
+              continue;
+            }
+            
+            crop.variety = rowData[`Crop${i}.Variety`];
+            crop.noOfPlants = rowData[`Crop${i}.No_Of_Plants`];
+
+            if (rowData[`Crop${i}.Pruning_Date`]) {
+              const pruningDate = parseExcelDate(
+                rowData[`Crop${i}.Pruning_Date`],
+              );
+              if (pruningDate) {
+                crop.pruningDate = new Date(pruningDate);
+              }
+            }
+            if (rowData[`Crop${i}.Expected_Harvest_Date`]) {
+              const expectedHarvestDate = parseExcelDate(
+                rowData[`Crop${i}.Expected_Harvest_Date`],
+              );
+              if (expectedHarvestDate) {
+                crop.expectedHarvestDate = new Date(expectedHarvestDate);
+              }
+            }
+
+            crop.expectedQuantityInTonnes =
+              rowData[`Crop${i}.ExpectedQuantityInTonnes`];
+
+            farmer.crops.push(crop);
+            i++;
+          }
+
+          console.log('Saving farmer:', farmer.farmerfName);
+          const result = await farmerRepository.save(farmer);
+          console.log('Saved farmer with ID:', result.id);
         }
-
-        console.log('Saving farmer:', farmer.farmerfName);
-        const result = await farmerRepository.save(farmer);
-        console.log('Saved farmer with ID:', result.id);
       }
+
+      // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
+      await this.deleteFileFromSpaces(fileUrl);
+      
+    } catch (error) {
+      console.error('Error processing farmer upload:', error);
+      
+      // 🗑️ Still attempt to delete the file even if processing failed
+      try {
+        await this.deleteFileFromSpaces(fileUrl);
+      } catch (deleteError) {
+        console.error('Error deleting file after failed processing:', deleteError);
+      }
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Get Excel file from DigitalOcean Spaces
+   * @param key - Spaces key/path to the Excel file
+   * @returns Buffer containing the file data
+   */
+  private async getExcelFromSpaces(key: string): Promise<Buffer> {
+    try {
+      console.log('📂 Reading Excel file from Spaces:', key);
+
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const command = new GetObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      const response = await s3.send(command);
+
+      if (!response.Body) {
+        throw new Error('No file content found in Spaces response');
+      }
+
+      const bytes = await response.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(bytes);
+
+      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
+      return fileBuffer;
+    } catch (error) {
+      console.error('❌ Error reading Excel file from Spaces:', error);
+      throw new Error(`Failed to read Excel file: ${key}`);
+    }
+  }
+
+  /**
+   * Delete file from DigitalOcean Spaces
+   * @param fileUrl - The full URL or key of the file to delete
+   */
+  private async deleteFileFromSpaces(fileUrl: string): Promise<void> {
+    try {
+      // Extract the key from the full URL
+      // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
+      
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      await s3.send(deleteCommand);
+      console.log(`Successfully deleted file: ${key}`);
+    } catch (error) {
+      console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
+      // Don't throw error here to avoid breaking the main flow
     }
   }
 
   async getFarmerDetails(farmerId: string): Promise<Farmer | null> {
     const farmer = await this.farmerRepository
-      .createQueryBuilder('farmer')
-      .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-      .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+      .createQueryBuilder("farmer")
+      .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
+      .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
       .select([
-        'farmer.id',
-        'farmer.farmerCode',
-        'farmer.farmerfName',
-        'farmer.farmerlName',
-        'farmer.farmermName',
-        'farmer.primaryMobileNo',
-        'farmer.email',
-        'residensialAddress', // You can specify specific fields from the address if needed
-        'farmAddress', // Same for farmAddress
+        "farmer.id",
+        "farmer.farmerCode",
+        "farmer.farmerfName",
+        "farmer.farmerlName",
+        "farmer.farmermName",
+        "farmer.primaryMobileNo",
+        "farmer.email",
+        "residensialAddress", // You can specify specific fields from the address if needed
+        "farmAddress",        // Same for farmAddress
       ])
-      .where('farmer.id = :farmerId', { farmerId })
+      .where("farmer.id = :farmerId", { farmerId })
       .getOne();
 
     return farmer;
   }
-  async processCsv(filePath: string): Promise<void> {
-    const farmers: Farmer[] = [];
-    let sequenceNumber = await this.farmerRepository.count(); // Get current count
-
-    const splitFullName = (
-      fullName: string,
-    ): { firstName: string; middleName: string; lastName: string } => {
-      if (!fullName) return { firstName: '', middleName: '', lastName: '' };
-      const parts = fullName.trim().split(' ');
-      return {
-        firstName: parts[0] || '',
-        middleName: parts.length > 2 ? parts.slice(1, -1).join(' ') : '',
-        lastName: parts.length > 1 ? parts[parts.length - 1] : '',
-      };
-    };
-
-    await new Promise<void>((resolve, reject) => {
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on('data', async (row) => {
-          try {
-            console.log('CSV Row:', row); // Debugging: Print row data
-
-            const farmer = new Farmer();
-            const { firstName, middleName, lastName } = splitFullName(
-              row.fullName || '',
-            );
-            farmer.farmerfName = firstName;
-            farmer.farmermName = middleName;
-            farmer.farmerlName = lastName;
-            farmer.primaryMobileNo = row.primaryMobileNo;
-
-            // Creating farm address
-            const farmAddress = new Address();
-            farmAddress.address1 = row['farmAddress_address1'];
-            farmAddress.location = row['farmAddress_location'];
-            farmAddress.city = row['farmAddress_city'];
-            farmAddress.state = row['farmAddress_state'];
-            farmAddress.pincode = row['farmAddress_pincode'];
-
-            farmer.farmAddress = farmAddress;
-            farmer.totalLandArea = parseFloat(row.totalLandArea) || 0;
-
-            // Processing crops
-            farmer.crops = [];
-            let i = 0;
-            while (row[`crops[${i}].crop`]) {
-              const crop = new Crop();
-              crop.crop = row[`crops[${i}].crop`];
-              farmer.crops.push(crop);
-              i++;
-            }
-
-            // Generating Farmer Code
-            farmer.farmerCode = `FARM${new Date().getFullYear()}${String(
-              ++sequenceNumber,
-            ).padStart(4, '0')}`;
-            farmers.push(farmer);
-          } catch (err) {
-            console.error('Error processing row:', err);
-          }
-        })
-        .on('end', async () => {
-          try {
-            if (farmers.length === 0) {
-              console.log('No farmers found in CSV.');
-              resolve();
-              return;
-            }
-
-            console.log('Saving Farmers:', farmers.length);
-
-            // Using transaction for efficient inserts
-            await AppDataSource.transaction(
-              async (transactionalEntityManager) => {
-                for (const farmer of farmers) {
-                  farmer.farmAddress = await transactionalEntityManager.save(
-                    Address,
-                    farmer.farmAddress,
-                  );
-                }
-                await transactionalEntityManager.save(Farmer, farmers);
-              },
-            );
-
-            console.log('Farmers saved successfully.');
-            resolve();
-          } catch (error) {
-            console.error('Error saving farmers:', error);
-            reject(error);
-          }
-        })
-        .on('error', (error) => {
-          console.error('CSV Parsing Error:', error);
-          reject(error);
-        });
-    });
-
-    // Cleanup uploaded file
-    fs.unlink(filePath, (err) => {
-      if (err) console.error('Error deleting file:', err);
-    });
+    
   }
-}
+

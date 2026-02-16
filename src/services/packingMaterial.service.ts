@@ -41,10 +41,8 @@ export class PackingMaterialService {
       packagingMaterialWeight: material.packagingMaterialWeight,
       packagingMaterialDescription: material.packagingMaterialDescription,
       useFor: material.useFor,
-      uom: material.uom ? {
-        id:material.uom.id,
-        unit:material.uom.unit
-      }:null,
+      uom: material.uom.id,
+       
       containsQuantity: material.containsQuantity,
     };
     return formatResponse;

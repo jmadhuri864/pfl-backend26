@@ -16,7 +16,7 @@ export const AppDataSource = new DataSource({
   ...postgresConfig,
   type: 'postgres',
   synchronize: true,
-  logging: false,
+  //logging: true,  // Enable logging to see actual SQL queries
   
   // Connection pool optimization
   extra: {

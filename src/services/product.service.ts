@@ -354,11 +354,30 @@ export class ProductService {
       throw new Error(`Error fetching product: ${error}`);
     }
   }
-  async createProductWithExcel(filePath: string): Promise<any> {
-  console.log("In create product");
-  const workbook = XLSX.readFile(filePath);
-  const sheetNames = workbook.SheetNames;
-  console.log("Sheet names found:", sheetNames);
+  async createProductWithExcel(fileUrl: string): Promise<any> {
+    try {
+      console.log("In create product with Excel, fileUrl:", fileUrl);
+      
+      // First, download the file from DigitalOcean Spaces
+      let fileBuffer: Buffer;
+      
+      if (fileUrl.startsWith('https://')) {
+        // Extract the key from the URL
+        const urlParts = fileUrl.split('/');
+        const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
+        console.log('Downloading file from Spaces with key:', key);
+        
+        // Download file from Spaces
+        fileBuffer = await this.getExcelFromSpaces(key);
+      } else {
+        // If it's already a local path or key, try to get it from Spaces
+        fileBuffer = await this.getExcelFromSpaces(fileUrl);
+      }
+      
+      // Read the Excel file from buffer instead of file path
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const sheetNames = workbook.SheetNames;
+      console.log("Sheet names found:", sheetNames);
 
   const productRepository = AppDataSource.getRepository(Product);
   const uomRepository = AppDataSource.getRepository(UOM);
@@ -492,7 +511,142 @@ export class ProductService {
       console.log("Saved product with ID:", result.id);
     }
   }
+
+  // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
+  await this.deleteFileFromSpaces(fileUrl);
+  
+} catch (error) {
+  console.error('Error processing product upload:', error);
+  
+  // 🗑️ Still attempt to delete the file even if processing failed
+  try {
+    await this.deleteFileFromSpaces(fileUrl);
+  } catch (deleteError) {
+    console.error('Error deleting file after failed processing:', deleteError);
+  }
+  
+  throw error;
 }
+}
+
+  /**
+   * Get Excel file from DigitalOcean Spaces
+   * @param key - Spaces key/path to the Excel file
+   * @returns Buffer containing the file data
+   */
+  private async getExcelFromSpaces(key: string): Promise<Buffer> {
+    try {
+      console.log('📂 Reading Excel file from Spaces:', key);
+
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('../middleware/spaces.config');
+      const command = new GetObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      const response = await s3.send(command);
+
+      if (!response.Body) {
+        throw new Error('No file content found in Spaces response');
+      }
+
+      const bytes = await response.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(bytes);
+
+      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
+      return fileBuffer;
+    } catch (error) {
+      console.error('❌ Error reading Excel file from Spaces:', error);
+      throw new Error(`Failed to read Excel file: ${key}`);
+    }
+  }
+
+  /**
+   * Delete file from DigitalOcean Spaces
+   * @param fileUrl - The full URL or key of the file to delete
+   */
+  private async deleteFileFromSpaces(fileUrl: string): Promise<void> {
+    try {
+      // Extract the key from the full URL
+      // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
+      
+      const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('../middleware/spaces.config');
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      await s3.send(deleteCommand);
+      console.log(`Successfully deleted file: ${key}`);
+    } catch (error) {
+      console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
+      // Don't throw error here to avoid breaking the main flow
+    }
+  }
+
+  /**
+   * Get available product categories for reference when uploading product data
+   */
+  async getAvailableProductCategories(): Promise<{ id: string; name: string }[]> {
+    const categoryRepository = AppDataSource.getRepository(ProductCategory);
+    const categories = await categoryRepository
+      .createQueryBuilder('category')
+      .select(['category.id', 'category.name'])
+      .orderBy('category.name', 'ASC')
+      .getMany();
+    
+    return categories.map(category => ({
+      id: category.id,
+      name: category.name
+    }));
+  }
+
+  /**
+   * Get available product subcategories for reference when uploading product data
+   */
+  async getAvailableProductSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
+    const subcategoryRepository = AppDataSource.getRepository(ProductSubcategory);
+    const queryBuilder = subcategoryRepository
+      .createQueryBuilder('subcategory')
+      .leftJoinAndSelect('subcategory.category', 'category')
+      .select(['subcategory.id', 'subcategory.name', 'category.name'])
+      .orderBy('category.name', 'ASC')
+      .addOrderBy('subcategory.name', 'ASC');
+    
+    if (categoryId) {
+      queryBuilder.where('category.id = :categoryId', { categoryId });
+    }
+    
+    const subcategories = await queryBuilder.getMany();
+    
+    return subcategories.map(subcategory => ({
+      id: subcategory.id,
+      name: subcategory.name,
+      categoryName: subcategory.category?.name || 'Unknown'
+    }));
+  }
+
+  /**
+   * Get available UOMs for reference when uploading product data
+   */
+  async getAvailableUOMs(): Promise<{ id: string; unit: string; abbreviation: string }[]> {
+    const uomRepository = AppDataSource.getRepository(UOM);
+    const uoms = await uomRepository
+      .createQueryBuilder('uom')
+      .select(['uom.id', 'uom.unit', 'uom.abbreviation'])
+      .orderBy('uom.unit', 'ASC')
+      .getMany();
+    
+    return uoms.map(uom => ({
+      id: uom.id,
+      unit: uom.unit,
+      abbreviation: uom.abbreviation || ''
+    }));
+  }
 
   //   async update(id: string, productData: any, updatedBy: string): Promise<any> {
   //     const product = await this.productRepository.findOne({
@@ -960,96 +1114,7 @@ export class ProductService {
   //     fs.unlinkSync(filePath);
   //   }
 
-  async uploadProducts(filePath: string): Promise<void> {
-    const results: any[] = [];
-
-    const getOrCreate = async (repo: any, field: string, value: string) => {
-      let entity = await repo.findOne({ where: { [field]: value } });
-      if (!entity) {
-        entity = repo.create({ [field]: value });
-        await repo.save(entity);
-      }
-      return entity;
-    };
-
-    try {
-      const readStream = fs.createReadStream(filePath).pipe(csvParser());
-
-      for await (const row of readStream) {
-        const productName = row['Product Name'];
-        if (!productName) continue;
-
-        const classificationId = await getOrCreate(
-          this.classificationRepository,
-          'name',
-          row['Product Classification'],
-        );
-
-        const categoryName = row['Product Category'];
-        let categoryId = await this.categoryRepository.findOne({
-          where: {
-            name: categoryName,
-            productClassification: classificationId,
-          },
-        });
-
-        if (!categoryId) {
-          categoryId = this.categoryRepository.create({
-            name: categoryName,
-            productClassification: classificationId,
-          });
-          await this.categoryRepository.save(categoryId);
-        }
-
-        
-        const subcategoryName = row['Product Subcategory'];
-        let subcategoryId = await this.subcategoryRepository.findOne({
-          where: { name: subcategoryName, category: categoryId },
-        });
-
-        if (!subcategoryId) {
-          subcategoryId = this.subcategoryRepository.create({
-            name: subcategoryName,
-            category: categoryId,
-          });
-          await this.subcategoryRepository.save(subcategoryId);
-        }
-
-        const uomId = await getOrCreate(this.uomRepository, 'unit', row['UOM']); 
-
-        results.push({
-          name: productName,
-          classification: classificationId.id, 
-          category: categoryId.id, 
-          subcategory: subcategoryId.id,
-          uom: uomId.id,
-
-          count: row['Count']
-            ? row['Count'].split(',').map((c: string) => c.trim())
-            : null,
-          variety: row['Variety']
-            ? row['Variety'].split(',').map((v: string) => v.trim())
-            : null,
-          size: row['Size']
-            ? row['Size'].split(',').map((s: string) => s.trim())
-            : null,
-          productOrigin: row['Origin']
-            ? row['Origin'].split(',').map((o: string) => o.trim())
-            : null,
-          brand: row['Brand'] || null,
-        });
-      }
-
-      if (results.length > 0) {
-        await this.productRepository.save(results);
-      }
-    } catch (error) {
-      console.error('Error processing CSV:', error);
-      throw new Error('Failed to process CSV file');
-    } finally {
-      fs.unlinkSync(filePath);
-    }
-  }
+ 
   async getVarientsByProductId(id: string): Promise<any> {
     const product = await this.productRepository.findOne({
       where: { id },

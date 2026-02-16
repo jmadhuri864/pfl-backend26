@@ -166,7 +166,7 @@ console.log("User ID:", userId);
     try {
       console.log(postReturnData)
 
-      const requestedBy = res.locals.user; // Pass full user object
+      const requestedBy = res.locals.user.id; // Pass full user object
       const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
 
       const newPostReturn = await this.postReturnByCustomerService.createReturn(postReturnData, requestedBy, clientIp);

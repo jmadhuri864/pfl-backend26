@@ -146,6 +146,7 @@ if (input.departments && input.departments.length > 0) {
       .leftJoinAndSelect('user.joiningOffice', 'joiningOffice')
       .leftJoinAndSelect('user.currentWorkLocation', 'currentWorkLocation')
       .leftJoinAndSelect('user.currentOfficeLocation', 'currentOfficeLocation')
+      .leftJoinAndSelect('user.accessLocation','accessLocation')
 
       .leftJoinAndSelect('user.companyName', 'companyName')
 
@@ -185,7 +186,7 @@ if (input.departments && input.departments.length > 0) {
       employeeId: user.employeeId,
       status: user.status,
       password: user.tempPlainPassword,
-
+ accessLocation: user.accessLocation.map((location) => location.name),
       permanentAddress: mapAddress(user.permanentAddress),
       residentialAddress: mapAddress(user.residentialAddress),
       //currentLevel:user.currentLevel?.name,
@@ -538,49 +539,132 @@ isAddressSame:user.isAddressSame,
   //   return updatedUser;
   // }
   async updateUser(id: string, userData: any, updatedBy: string): Promise<any> {
-  const user = await this.userRepository.findOne({
-    where: { id },
-    relations: [
-      "permanentAddress",
-      "companyName",
-      "residentialAddress",
-      "permissions",
-      "permissions.documentDefinition",
-      "joiningLocation",
-      "joiningOffice",
-      "currentOfficeLocation",
-      "currentWorkLocation",
-      "accessLocation",
-    ],
-  });
+    console.log("Updating user with data:", userData);
+    
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: [
+        "permanentAddress",
+        "companyName",
+        "residentialAddress",
+        "permissions",
+        "permissions.documentDefinition",
+        "joiningLocation",
+        "joiningOffice",
+        "currentOfficeLocation",
+        "currentWorkLocation",
+        "accessLocation",
+      ],
+    });
 
-  if (!user) {
-    throw new AppError(404, "User not found");
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+
+    // Store original user for audit log
+    const originalUser = { ...user };
+
+    // Handle access locations
+    if (userData.accessLocation !== undefined) {
+      if (typeof userData.accessLocation === 'string') {
+        try {
+          userData.accessLocation = JSON.parse(userData.accessLocation);
+        } catch (e) {
+          console.warn("Failed to parse accessLocation string, treating as single ID");
+          userData.accessLocation = [userData.accessLocation];
+        }
+      }
+      
+      if (Array.isArray(userData.accessLocation) && userData.accessLocation.length > 0) {
+        const accessLocationEntities = await this.branchRepository.findBy({
+          id: In(userData.accessLocation),
+        });
+        user.accessLocation = accessLocationEntities;
+        console.log("Updated access locations:", accessLocationEntities.length);
+      } else {
+        user.accessLocation = [];
+        console.log("Cleared access locations");
+      }
+      delete userData.accessLocation;
+    }
+
+    // Handle company names
+    if (userData.companyName !== undefined) {
+      if (typeof userData.companyName === 'string') {
+        try {
+          userData.companyName = JSON.parse(userData.companyName);
+        } catch (e) {
+          console.warn("Failed to parse companyName string, treating as single ID");
+          userData.companyName = [userData.companyName];
+        }
+      }
+      
+      if (Array.isArray(userData.companyName) && userData.companyName.length > 0) {
+        const companyEntities = await this.companyRepository.findBy({
+          id: In(userData.companyName),
+        });
+        user.companyName = companyEntities;
+        console.log("Updated company names:", companyEntities.length);
+      } else {
+        user.companyName = [];
+        console.log("Cleared company names");
+      }
+      delete userData.companyName;
+    }
+
+    // Handle roles
+    if (userData.roles) {
+      let roles: Role[] = [Role.EMPLOYEE]; // always assign default EMPLOYEE role
+
+      if (Array.isArray(userData.roles) && userData.roles.length > 0) {
+        const validRoles = userData.roles.filter((r: string) =>
+          Object.values(Role).includes(r as Role)
+        ) as Role[];
+
+        // merge with default role, remove duplicates
+        roles = Array.from(new Set([...roles, ...validRoles]));
+      }
+
+      console.log("Setting user roles to:", roles);
+      user.roles = roles;
+      // Remove from userData to prevent overwriting
+      delete userData.roles;
+    }
+
+    // Handle date fields that might come as strings
+    if (userData.dateOfBirth && typeof userData.dateOfBirth === 'string') {
+      userData.dateOfBirth = new Date(userData.dateOfBirth);
+    }
+    if (userData.joiningDate && typeof userData.joiningDate === 'string') {
+      userData.joiningDate = new Date(userData.joiningDate);
+    }
+
+    // Handle null values for string fields
+    Object.keys(userData).forEach(key => {
+      if (userData[key] === 'null' || userData[key] === '') {
+        userData[key] = null;
+      }
+    });
+
+    // Update user with remaining userData
+    Object.assign(user, userData);
+
+    console.log("User before save:", user);
+
+    const updatedUser = await this.userRepository.save(user);
+
+    console.log("User after save:", updatedUser);
+
+    await this.auditLogService.logChange(
+      "User",
+      id,
+      originalUser,
+      updatedUser,
+      updatedBy
+    );
+
+    return updatedUser;
   }
-
-  // Nullify old OneToOne relations before replacing
-  user.joiningLocation = null;
-  user.joiningOffice = null;
-  user.currentWorkLocation = null;
-  user.currentOfficeLocation = null;
-
-  // Replace with new data (PUT = full update)
-  Object.assign(user, userData);
-
-  const originalUser = { ...user };
-
-  const updatedUser = await this.userRepository.save(user);
-
-  await this.auditLogService.logChange(
-    "User",
-    id,
-    originalUser,
-    updatedUser,
-    updatedBy
-  );
-
-  return updatedUser;
-}
 
   // async filteruser(queryOptions:PaginationOptions): Promise<any> {
   //   const user = await this.userRepository.find({
@@ -840,8 +924,39 @@ isAddressSame:user.isAddressSame,
 
         const savedUser = await transactionalEntityManager.save(user);
 
-        // Process Document Permissions
-        if (row.permissions && row.permissions.documentDefinition) {
+        // Process Document Permissions (Multiple permissions support)
+        if (row.permissions && Array.isArray(row.permissions)) {
+          for (const permissionData of row.permissions) {
+            if (permissionData.documentDefinition) {
+              let docDef = await documentDefRepo.findOne({ 
+                where: { name: permissionData.documentDefinition.name } 
+              });
+              
+              if (!docDef) {
+                docDef = documentDefRepo.create({
+                  name: permissionData.documentDefinition.name,
+                  uniqueKey: permissionData.documentDefinition.name.toLowerCase().replace(/\s/g, '_'),
+                  documentType: permissionData.documentDefinition.documentType as DocumentTypeEnum
+                });
+                docDef = await transactionalEntityManager.save(docDef);
+              }
+
+              const permission = permissionRepo.create({
+                employee: savedUser,
+                documentDefinition: docDef,
+                canCreate: !!permissionData.canCreate,
+                canView: !!permissionData.canView,
+                canEdit: !!permissionData.canEdit,
+                canDelete: !!permissionData.canDelete,
+                canDownload: !!permissionData.canDownload
+              } as any);
+
+              await transactionalEntityManager.save(permission);
+            }
+          }
+        }
+        // Backward compatibility: Handle single permission format
+        else if (row.permissions && row.permissions.documentDefinition) {
           let docDef = await documentDefRepo.findOne({ where: { name: row.permissions.documentDefinition.name } });
           if (!docDef) {
             docDef = documentDefRepo.create({

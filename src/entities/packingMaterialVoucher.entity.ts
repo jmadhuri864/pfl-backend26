@@ -76,8 +76,8 @@ import { Company } from './company.entity';
     @Column({nullable:true})
     kyc: boolean;
     
-    @Column({ name: 'any attachment', nullable: true })
-    anyAttachment: string;
+    @Column('simple-array', { nullable: true })
+    anyAttachment: string[] | null;
 
     @Column({
       type: 'enum',

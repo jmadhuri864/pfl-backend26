@@ -25,7 +25,7 @@ import { Source, CompanyName } from '../utils/status.enum';
 
 import logger from '../utils/logger';
 import { http } from 'winston';
-import { uploadFile } from '../middleware/uploadwithAWS';
+
 import ExcelJS from 'exceljs';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { NotificationService } from '../services/notification.service';
@@ -36,6 +36,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { uploadSingle } from '../middleware/uploadsingle.middleware';
 
 @controller('/grns', deserializeUser, requireUser)
 export class GrnController {
@@ -101,7 +102,7 @@ export class GrnController {
   }
 
   //TODO: Create GRN
-  @httpPost('/', uploadFile.single('billImage'))
+  @httpPost('/', uploadSingle.single('billImage'))
   public async createGrn(
     @request() req: Request<{}, {}, any>,
     @response() res: Response,
@@ -113,7 +114,7 @@ export class GrnController {
       console.log(grnData, 'grnData');
 
       if (req.file) {
-        const imageUrl = (req.file as any).location;
+        const imageUrl = req.file.path;
         console.log('imageurl is ', imageUrl);
         if (imageUrl) {
           grnData.billImage = imageUrl;
@@ -712,7 +713,7 @@ export class GrnController {
   }
 
   //TODO: Update GRN by Image(Billing)
-  @httpPut('/:id', uploadFile.single('billImage'), captureUser)
+  @httpPut('/:id', uploadSingle.single('billImage'), captureUser)
   public async updateGrn(
     @requestParam('id') id: string,
     @request() req: Request,
@@ -731,7 +732,7 @@ export class GrnController {
 
       // ✅ Handle uploaded image
       if (req.file) {
-        const imageUrl = (req.file as any).location;
+        const imageUrl = req.file.path;
         if (imageUrl) grnData.billImage = imageUrl;
       }
 

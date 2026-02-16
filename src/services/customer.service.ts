@@ -8,6 +8,8 @@ import { CustomerTypeService } from './customerType.service';
 import { AddressService } from './address.service';
 import AppError from '../utils/appError';
 import { TYPES } from '../types';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { s3 } from '../middleware/spaces.config';
 
 import { Address } from '../entities/address.entity';
 import { AuditLogService } from './auditLog.service';
@@ -53,18 +55,189 @@ export class CustomerService {
     this.addressService = addressService;
   }
 
-  public async create(customerData: any): Promise<Customer[]> {
+  public async create(customerData: any): Promise<Customer> {
     console.log('in the service', customerData);
 
-    const user = await this.userRepository.findOneBy({
-      id: customerData.createdBy,
+    return await this.dataSource.transaction(async (manager) => {
+      // Validate user exists
+      const user = await this.userRepository.findOneBy({
+        id: customerData.createdBy,
+      });
+      
+      if (!user) {
+        throw new AppError(404, 'User not found');
+      }
+
+      // Set status based on user role
+      if (user?.roles && user.roles.includes('admin' as Role)) {
+        customerData.status = 'approved';
+      } else {
+        customerData.status = 'pending';
+      }
+
+      // Generate customer code
+      customerData.customerCode = await generateIncrementalCode('customer');
+
+      // Create main customer entity
+      const customer = new Customer();
+      customer.organisationName = customerData.organisationName;
+      customer.customerImage = customerData.customerImage;
+      customer.organisationType = customerData.organisationType;
+      customer.otherType = customerData.otherType;
+      customer.primaryContactNo = customerData.primaryContactNo;
+      customer.secondaryContactNo = customerData.secondaryContactNo;
+      customer.emailPrimary = customerData.emailPrimary;
+      customer.emailSecondary = customerData.emailSecondary;
+      customer.customerCode = customerData.customerCode;
+      customer.status = customerData.status;
+      customer.createdBy = user;
+
+      // Handle customer category
+      if (customerData.customerCategory) {
+        const category = await manager.findOne(CustomerCategory, {
+          where: { id: customerData.customerCategory }
+        });
+        if (category) {
+          customer.customerCategory = category;
+        }
+      }
+
+      // Handle customer type
+      if (customerData.customerTypes) {
+        const type = await manager.findOne(CustomerType, {
+          where: { id: customerData.customerTypes }
+        });
+        if (type) {
+          customer.customerTypes = type;
+        }
+      }
+
+      // Create and save customer address
+      if (customerData.customerAddress) {
+        const address = new Address();
+        Object.assign(address, customerData.customerAddress);
+        const savedAddress = await manager.save(Address, address);
+        customer.customerAddress = savedAddress;
+      }
+
+      // Create and save bank details
+      if (customerData. bankDetails ) {
+        const bankData = customerData.bankDetails 
+        const bankDetails = new BankDetailsCust();
+        Object.assign(bankDetails, bankData);
+        
+        // Handle bank address if provided
+        if (bankData.bankAddress) {
+          const bankAddress = new Address();
+          Object.assign(bankAddress, bankData.bankAddress);
+          const savedBankAddress = await manager.save(Address, bankAddress);
+          bankDetails.bankAddress = savedBankAddress;
+        }
+        
+        const savedBankDetails = await manager.save(BankDetailsCust, bankDetails);
+        customer.bankDetails = savedBankDetails;
+      }
+
+      // Create and save statutory details
+      if (customerData.statutoryDetails) {
+        const statutory = new StatutoryDetails();
+        Object.assign(statutory, customerData.statutoryDetails);
+        const savedStatutory = await manager.save(StatutoryDetails, statutory);
+        customer.statutoryDetails = savedStatutory;
+      }
+
+      // Create and save billing details
+      if (customerData.billingDetails) {
+        const billing = new BillingDetailsCust();
+        Object.assign(billing, customerData.billingDetails);
+        
+        // Handle billing address if provided
+        if (customerData.billingDetails.billingAddress) {
+          const billingAddress = new Address();
+          Object.assign(billingAddress, customerData.billingDetails.billingAddress);
+          const savedBillingAddress = await manager.save(Address, billingAddress);
+          billing.billingAddress = savedBillingAddress;
+        }
+        
+        const savedBilling = await manager.save(BillingDetailsCust, billing);
+        customer.billingDetails = savedBilling;
+      }
+
+      // Create and save delivery details
+      if (customerData.deliveryDetails) {
+        const delivery = new DeliveryDetails();
+        Object.assign(delivery, customerData.deliveryDetails);
+        
+        // Handle delivery address if provided
+        if (customerData.deliveryDetails.deliveryAddress) {
+          const deliveryAddress = new Address();
+          Object.assign(deliveryAddress, customerData.deliveryDetails.deliveryAddress);
+          const savedDeliveryAddress = await manager.save(Address, deliveryAddress);
+          delivery.deliveryAddress = savedDeliveryAddress;
+        }
+        
+        const savedDelivery = await manager.save(DeliveryDetails, delivery);
+        customer.deliveryDetails = savedDelivery;
+      }
+
+      // Create and save payment terms
+      if (customerData.paymentTerms) {
+        const payment = new PaymentTerms();
+        Object.assign(payment, customerData.paymentTerms);
+        const savedPayment = await manager.save(PaymentTerms, payment);
+        customer.paymentTerms = savedPayment;
+      }
+
+      // Create and save office use only
+      if (customerData.officeUseOnly) {
+        const office = new OfficeUseOnly();
+        Object.assign(office, customerData.officeUseOnly);
+        const savedOffice = await manager.save(OfficeUseOnly, office);
+        customer.officeUseOnly = savedOffice;
+      }
+
+      // Create and save key mobile numbers
+      if (customerData.keyMobileNumbers) {
+        const keyMobile = new keyMobileNoData();
+        Object.assign(keyMobile, customerData.keyMobileNumbers);
+        
+        // Handle ref1 address if provided
+        if (customerData.keyMobileNumbers.ref1Address) {
+          const ref1Address = new Address();
+          Object.assign(ref1Address, customerData.keyMobileNumbers.ref1Address);
+          const savedRef1Address = await manager.save(Address, ref1Address);
+          keyMobile.ref1Address = savedRef1Address;
+        }
+        
+        // Handle ref2 address if provided
+        if (customerData.keyMobileNumbers.ref2Address) {
+          const ref2Address = new Address();
+          Object.assign(ref2Address, customerData.keyMobileNumbers.ref2Address);
+          const savedRef2Address = await manager.save(Address, ref2Address);
+          keyMobile.ref2Address = savedRef2Address;
+        }
+        
+        const savedKeyMobile = await manager.save(keyMobileNoData, keyMobile);
+        customer.keyMobileNumbers = savedKeyMobile;
+      }
+
+      // Save the main customer entity
+      const savedCustomer = await manager.save(Customer, customer);
+
+      // Create and save product specifications
+      if (customerData.productSpecification && Array.isArray(customerData.productSpecification)) {
+        for (const specData of customerData.productSpecification) {
+          const spec = new ProductSpecification();
+          Object.assign(spec, specData);
+          spec.customer = savedCustomer;
+          await manager.save(ProductSpecification, spec);
+        }
+      }
+
+      // Return customer without productSpecification to avoid circular reference
+      const { productSpecification, ...customerWithoutSpecs } = savedCustomer;
+      return customerWithoutSpecs as Customer;
     });
-    if (user?.roles && user.roles.includes('admin' as Role)) {
-      customerData.status = 'approved';
-    }
-    customerData.customerCode = await generateIncrementalCode('customer');
-    const cus = this.customerRepository.create(customerData);
-    return await this.customerRepository.save(cus);
   }
 
   async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
@@ -111,12 +284,11 @@ export class CustomerService {
 
     return {
       ...cust,
-      createdBy: cust.createdBy.firstName+' '+cust.createdBy.lastName,
-        // ? {
-        //     id: cust.createdBy.id,
-        //     name: cust.createdBy.username, // or fullName if available
-        //   }
-        // : null,
+      createdBy: cust.createdBy 
+        ? `${cust.createdBy.firstName} ${cust.createdBy.lastName}`
+        : 'Unknown User',
+      customerTypes: cust.customerTypes?.name || null,
+      
       createdDate,
       createdTime,
     };
@@ -186,8 +358,10 @@ export class CustomerService {
       customerImage: data.customerImage,
       organisationType: data.organisationType,
       otherType: data.otherType,
-      customerCategory: data.customerCategory.name,
-      createdBy: data.createdBy.firstName+' '+data.createdBy.lastName,
+      customerCategory: data.customerCategory?.name || 'Unknown Category',
+      createdBy: data.createdBy 
+        ? `${data.createdBy.firstName} ${data.createdBy.lastName}`
+        : 'Unknown User',
       createdTime: formatDateTime(data.createdAt).createdTime,
       createdDate: formatDateTime(data.createdAt).createdDate,
        customerCode: data.customerCode,
@@ -200,7 +374,7 @@ export class CustomerService {
       //     name: data.customerCategory.name,
       //   }
       // : null,
-      customerTypes: data.customerTypes.name,
+      customerTypes: data.customerTypes?.name || 'Unknown Type',
       // ? {
       //     id: data.customerTypes.id,
       //     name: data.customerTypes.name,
@@ -209,15 +383,15 @@ export class CustomerService {
       bankDetails: data.bankDetails
         ? {
             id: data.bankDetails.id,
-            accountHolderFName: data.bankDetails.accountHolderFName,
-            accountHolderMName: data.bankDetails.accountHolderMName,
-            accountHolderLName: data.bankDetails.accountHolderLName,
+       bankAccHolderFName: data.bankDetails.bankAccHolderFName,
+            bankAccHolderMName: data.bankDetails.bankAccHolderMName,
+            bankAccHolderLName: data.bankDetails.bankAccHolderLName,
             ifscCode: data.bankDetails.ifscCode,
             bankBranch: data.bankDetails.bankBranch,
             bankAccNo: data.bankDetails.bankAccNo,
             accType: data.bankDetails.accType,
             ifCancelledCheque: data.bankDetails.ifCancelledCheque,
-            notCancelledChequereason: data.bankDetails.notCancelledChequereason,
+            notCancelledChequeReason: data.bankDetails.notCancelledChequeReason,
             cancelledChequeCopy: data.bankDetails.cancelledChequeCopy,
             otherAccType: data.bankDetails.otherAccType,
             bankStatementCopy: data.bankDetails.bankStatementCopy,
@@ -454,6 +628,7 @@ export class CustomerService {
       relations: [
         'customerCategory',
         'customerTypes',
+        'createdBy', // Added missing relation
         'bankDetails',
         'bankDetails.bankAddress',
         'customerAddress',
@@ -480,13 +655,14 @@ export class CustomerService {
       customerImage: data.customerImage,
       organisationType: data.organisationType,
       otherType: data.otherType,
-      customerCategory: data.customerCategory.id,
+      customerCategory: data.customerCategory?.id || null,
       customerCode: data.customerCode,
       emailSecondary: data.emailSecondary,
        emailPrimary: data.emailPrimary,
        secondaryContactNo: data.secondaryContactNo,
        primaryContactNo: data.primaryContactNo,
-        createdBy: data.createdBy.firstName+' '+data.createdBy.lastName,
+        createdBy: data.createdBy.id,
+          
       createdTime: formatDateTime(data.createdAt).createdTime,
       createdDate: formatDateTime(data.createdAt).createdDate,
       // ? {
@@ -494,7 +670,7 @@ export class CustomerService {
       //     name: data.customerCategory.name,
       //   }
       // : null,
-      customerTypes: data.customerTypes.id,
+      customerTypes: data.customerTypes?.id || null,
       // ? {
       //     id: data.customerTypes.id,
       //     name: data.customerTypes.name,
@@ -503,15 +679,15 @@ export class CustomerService {
       bankDetails: data.bankDetails
         ? {
             id: data.bankDetails.id,
-            accountHolderFName: data.bankDetails.accountHolderFName,
-            accountHolderMName: data.bankDetails.accountHolderMName,
-            accountHolderLName: data.bankDetails.accountHolderLName,
+            bankAccHolderFName: data.bankDetails.bankAccHolderFName,
+            bankAccHolderMName: data.bankDetails.bankAccHolderMName,
+            bankAccHolderLName: data.bankDetails.bankAccHolderLName,
             ifscCode: data.bankDetails.ifscCode,
             bankBranch: data.bankDetails.bankBranch,
             bankAccNo: data.bankDetails.bankAccNo,
             accType: data.bankDetails.accType,
             ifCancelledCheque: data.bankDetails.ifCancelledCheque,
-            notCancelledChequereason: data.bankDetails.notCancelledChequereason,
+            notCancelledChequeReason: data.bankDetails.notCancelledChequeReason,
             cancelledChequeCopy: data.bankDetails.cancelledChequeCopy,
             otherAccType: data.bankDetails.otherAccType,
             bankStatementCopy: data.bankDetails.bankStatementCopy,
@@ -549,8 +725,8 @@ export class CustomerService {
             panCopy: data.statutoryDetails.panCopy,
             aadharCopy: data.statutoryDetails.aadharCopy,
             billBookCopy: data.statutoryDetails.billBookCopy,
-            certificationDetails: data.statutoryDetails.certificationsDetails,
-            otherCertification: data.statutoryDetails.otherCertifications,
+            certificationsDetails: data.statutoryDetails.certificationsDetails,
+            otherCertifications: data.statutoryDetails.otherCertifications,
             corpRegiDetails: data.statutoryDetails.corpRegiDetails,
             otherCorpRegiDetails: data.statutoryDetails.otherCorpRegiDetails,
             incorpoCertificateCopy:
@@ -847,6 +1023,7 @@ export class CustomerService {
     updatedBy: string,
   ): Promise<Customer | null> {
     console.log('in service', id), console.log('inservice', updateData);
+    
     const customer = await this.customerRepository.findOne({
       where: { id },
       relations: [
@@ -873,12 +1050,24 @@ export class CustomerService {
 
     const originalCustomer = { ...customer };
 
+    // Remove fields that should not be updated
+    const { 
+      createdBy, 
+      createdAt, 
+      id: updateId, 
+      createdDate,
+      createdTime,
+      ...safeUpdateData 
+    } = updateData;
+    
+    console.log('Safe update data (excluding system fields):', safeUpdateData);
+
     const updatedCustomer = this.customerRepository.merge(customer, {
-      ...updateData,
+      ...safeUpdateData,
       updatedBy,
     });
 
-    const updatedCustomer1 = await this.customerRepository.save(customer);
+    const updatedCustomer1 = await this.customerRepository.save(updatedCustomer);
 
     await this.auditLogService.logChange(
       'Customer',
@@ -888,7 +1077,7 @@ export class CustomerService {
       updatedBy,
     );
 
-    return updatedCustomer;
+    return updatedCustomer1;
   }
   public async getCustomersName(): Promise<
     { id: string; organisationName: string }[]
@@ -903,199 +1092,289 @@ export class CustomerService {
   }
   //TODO:upload customer excel file
   async upload(filePath: string): Promise<any> {
-    const workbook = XLSX.readFile(filePath);
-    console.log('Sheet Names:', workbook.SheetNames);
+    try {
+      // First, download the file from DigitalOcean Spaces
+      let fileBuffer: Buffer;
+      
+      if (filePath.startsWith('https://')) {
+        // Extract the key from the URL
+        const urlParts = filePath.split('/');
+        const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
+        console.log('Downloading file from Spaces with key:', key);
+        
+        // Download file from Spaces
+        fileBuffer = await this.getExcelFromSpaces(key);
+      } else {
+        // If it's already a local path or key, try to get it from Spaces
+        fileBuffer = await this.getExcelFromSpaces(filePath);
+      }
+      
+      // Read the Excel file from buffer instead of file path
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      console.log('Sheet Names:', workbook.SheetNames);
 
-    const sheetName = workbook.SheetNames[0];
-    console.log('Sheet Name:', sheetName); // Log the sheet name to verify
+      const sheetName = workbook.SheetNames[0];
+      console.log('Sheet Name:', sheetName); // Log the sheet name to verify
 
-    const worksheet = workbook.Sheets[sheetName];
-    // Show raw data array
-    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    console.log('Raw Data:', rawData);
+      const worksheet = workbook.Sheets[sheetName];
+      // Show raw data array
+      const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      console.log('Raw Data:', rawData);
 
-    const data: any = XLSX.utils.sheet_to_json(worksheet);
-    console.log('Data from Excel:', data); // Log the data to see its structure
+      const data: any = XLSX.utils.sheet_to_json(worksheet);
+      console.log('Data from Excel:', data); // Log the data to see its structure
 
-    // Validate the structure of the data
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error('Invalid or empty Excel data');
-    }
-    const customerRepo = this.dataSource.getRepository(Customer);
-    const categoryRepo = this.dataSource.getRepository(CustomerCategory);
-    const typeRepo = this.dataSource.getRepository(CustomerType);
+      // Validate the structure of the data
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('Invalid or empty Excel data');
+      }
+      const customerRepo = this.dataSource.getRepository(Customer);
+      const categoryRepo = this.dataSource.getRepository(CustomerCategory);
+      const typeRepo = this.dataSource.getRepository(CustomerType);
 
-    const savedCustomers = [];
+      const savedCustomers = [];
 
-    for (const row of data) {
-      console.log('Row keys:', Object.keys(row)); // Add this line
-      let category = null;
-      if (row.customerCategory) {
-        category = await categoryRepo.findOneBy({ name: row.customerCategory });
-        if (!category) {
-          category = categoryRepo.create({ name: row.customerCategory });
-          await categoryRepo.save(category);
+      for (const row of data) {
+        console.log('Row keys:', Object.keys(row)); // Add this line
+        let category = null;
+        if (row.customerCategory) {
+          category = await categoryRepo.findOneBy({ name: row.customerCategory });
+          if (!category) {
+            category = categoryRepo.create({ name: row.customerCategory });
+            await categoryRepo.save(category);
+          }
         }
+
+        let type = null;
+        if (row.customerType) {
+          type = await typeRepo.findOneBy({ name: row.customerType });
+          if (!type) {
+            type = typeRepo.create({ name: row.customerType });
+            await typeRepo.save(type);
+          }
+        }
+
+        let sequenceNumber = await customerRepo.count();
+        const customerCode = `CUST${new Date().getFullYear()}${String(
+          ++sequenceNumber,
+        ).padStart(4, '0')}`;
+
+        const officeUseOnly = OfficeUseOnly.create({
+          proposerBDName: row.proposerDBName,
+          pflCoordinator: row.pflCoordinator,
+          approvedBy: row.approvedBy,
+          relationshipManager: row.relationshipManager,
+          createdBy: row.createdBy,
+        });
+
+        const keyMobileData = keyMobileNoData.create({
+          accDeptFName: row.accDeptFName,
+          accDeptLName: row.accDeptLName,
+          accDeptMobileNo: row.accDeptMobileNo,
+          ownerFName: row.ownerFName,
+          ownerLName: row.ownerLName,
+          ownerMobileNo: row.ownerMobileNo,
+        });
+
+        const productSpecification = ProductSpecification.create({
+          articleName: row.articleName,
+          packingMaterialSpec: row.packingMaterialSpec,
+          parameters: row.parameters,
+          rejectionCriteria: row.rejectionCriteria,
+          comment: row.comment,
+          specifications: row.specifications,
+        });
+
+        const bankDetails = BankDetailsCust.create({
+          bankAccHolderFName: row.bankAccHolderFName,
+          bankAccHolderMName: row.bankAccHolderMName,
+          bankAccHolderLName: row.bankAccHolderLName,
+          bankName: row.bankName,
+          bankBranch: row.bankBranch,
+          bankAccNo: row.bankAccNo,
+          ifscCode: row.ifscCode,
+          accType: row.accType,
+          otherAccType: row.otherAccType,
+          //ifCancelledCheque: row.ifCancelledCheque,
+          // notCancelledChequereason: row.notCancelledChequeReason, // <-- property name must match entity
+          //cancelledChequeCopy: row.cancelledChequeCopy,
+          //bankStatementCopy: row.bankStatementCopy
+        });
+
+        const address = Address.create({
+          address1: row.address1,
+          address2: row.address2,
+          location: row.location,
+          city: row.city,
+          state: row.state,
+          pincode: row.pincode,
+        });
+
+        const statutoryDetails = StatutoryDetails.create({
+          panNo: row.panNo,
+          aadharNo: row.aadharNo,
+          // panCopy: row.panCopy,
+          //aadharCopy: row.aadharCopy,
+          gstn: row.gstn,
+          //billBookCopy: row.billBookCopy,
+          certificationsDetails: row.certificationsDetails,
+          otherCertifications: row.otherCertifications,
+          corpRegiDetails: row.corpRegiDetails,
+          otherCorpRegiDetails: row.otherCorpRegiDetails,
+          //incorpoCertificateCopy: row.incorpoCertificateCopy,
+          cinNo: row.cinNo,
+          //regiCertificateCopy: row.regiCertificateCopy
+        });
+
+        const billingDetails = BillingDetailsCust.create({
+          billingName: row.billingName,
+          contactPersonFName: row.contactPersonFName,
+          contactPersonMName: row.contactPersonMName,
+          contactPersonLName: row.contactPersonLName,
+          commonlyKnownAs: row.commonlyKnownAs,
+          primaryContactNo: row.primaryContactNo_billing,
+          secondaryContactNo: row.secondaryContactNo_billing,
+          emailPrimary: row.emailPrimary_billing,
+          emailSecondary: row.emailSecondary_billing,
+          //billingFormatCopy: row.billingFormatCopy,
+          //billingAddressProofCopy: row.billingAddressProofCopy
+        });
+
+        const deliveryDetails = DeliveryDetails.create({
+          //deliveryAddressProofCopy: row.deliveryAddressProofCopy,
+          deliveryTime: row.deliveryTime,
+          receivingPersonFName: row.receivingPersonFName,
+          receivingPersonMName: row.receivingPersonMName,
+          receivingPersonLName: row.receivingPersonLName,
+          primaryContactNo: row.primaryContactNo_delivery,
+          secondaryContactNo: row.secondaryContactNo_delivery,
+          emailPrimary: row.emailPrimary_delivery,
+          emailSecondary: row.emailSecondary_delivery,
+        });
+
+        const paymentTerms = PaymentTerms.create({
+          paymentMode: row.paymentMode,
+          otherPaymentMode: row.otherPaymentMode,
+          otherPaymentMade: row.otherPaymentMade,
+          paymentMade: row.paymentMade,
+          marginDeposit: row.marginDeposit,
+          rtv: row.rtv,
+          agreementExecuted: row.agreementExecuted,
+          lc: row.lc,
+          bg: row.bg,
+          securityDepoCheqNo: row.securityDepoCheqNo,
+          securityDepoAmt: row.securityDepoAmt,
+          IELinAmt: row.IELinAmt,
+          IELRecommendedBy: row.IELRecommendedBy,
+          IELRecommendedDate: row.IELRecommendedDate,
+          RELinAmt: row.RELinAmt,
+          RELRecommendedBy: row.RELRecommendedBy,
+          RELRecommendedDate: row.RELRecommendedDate,
+          reason: row.reason,
+          // docEvidenceCopy: row.docEvidenceCopy
+        });
+
+        const customerData = {
+          organisationName: row.organisationName,
+          organisationType: row.organisationType,
+          otherType: row.otherType,
+          customerCategory: category || undefined,
+          customerTypes: type || undefined,
+          customerCode: customerCode,
+          bankDetails: bankDetails,
+          customerAddress: address,
+          statutoryDetails: statutoryDetails,
+          billingDetails: billingDetails,
+          deliveryDetails: deliveryDetails,
+          paymentTerms: paymentTerms,
+          primaryContactNo: row.primaryContactNo,
+          secondaryContactNo: row.secondaryContactNo,
+          emailPrimary: row.emailPrimary,
+          emailSecondary: row.emailSecondary,
+          officeUseOnly: officeUseOnly,
+          keyMobileNumbers: keyMobileData,
+          productSpecification: [productSpecification],
+        };
+
+        const customer = customerRepo.create(customerData);
+
+        await customerRepo.save(customer);
+        savedCustomers.push(customer);
       }
 
-      let type = null;
-      if (row.customerType) {
-        type = await typeRepo.findOneBy({ name: row.customerType });
-        if (!type) {
-          type = typeRepo.create({ name: row.customerType });
-          await typeRepo.save(type);
-        }
+      // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
+      await this.deleteFileFromSpaces(filePath);
+      
+      return savedCustomers;
+    } catch (error) {
+      console.error('Error processing customer upload:', error);
+      
+      // 🗑️ Still attempt to delete the file even if processing failed
+      try {
+        await this.deleteFileFromSpaces(filePath);
+      } catch (deleteError) {
+        console.error('Error deleting file after failed processing:', deleteError);
       }
-
-      let sequenceNumber = await customerRepo.count();
-      const customerCode = `CUST${new Date().getFullYear()}${String(
-        ++sequenceNumber,
-      ).padStart(4, '0')}`;
-
-      const officeUseOnly = OfficeUseOnly.create({
-        proposerBDName: row.proposerDBName,
-        pflCoordinator: row.pflCoordinator,
-        approvedBy: row.approvedBy,
-        relationshipManager: row.relationshipManager,
-        createdBy: row.createdBy,
-      });
-
-      const keyMobileData = keyMobileNoData.create({
-        accDeptFName: row.accDeptFName,
-        accDeptLName: row.accDeptLName,
-        accDeptMobileNo: row.accDeptMobileNo,
-        ownerFName: row.ownerFName,
-        ownerLName: row.ownerLName,
-        ownerMobileNo: row.ownerMobileNo,
-      });
-
-      const productSpecification = ProductSpecification.create({
-        articleName: row.articleName,
-        packingMaterialSpec: row.packingMaterialSpec,
-        parameters: row.parameters,
-        rejectionCriteria: row.rejectionCriteria,
-        comment: row.comment,
-        specifications: row.specifications,
-      });
-
-      const bankDetails = BankDetailsCust.create({
-        accountHolderFName: row.accountHolderFName,
-        accountHolderMName: row.accountHolderMName,
-        accountHolderLName: row.accountHolderLName,
-        bankName: row.bankName,
-        bankBranch: row.bankBranch,
-        bankAccNo: row.bankAccNo,
-        ifscCode: row.ifscCode,
-        accType: row.accType,
-        otherAccType: row.otherAccType,
-        //ifCancelledCheque: row.ifCancelledCheque,
-        // notCancelledChequereason: row.notCancelledChequeReason, // <-- property name must match entity
-        //cancelledChequeCopy: row.cancelledChequeCopy,
-        //bankStatementCopy: row.bankStatementCopy
-      });
-
-      const address = Address.create({
-        address1: row.address1,
-        address2: row.address2,
-        location: row.location,
-        city: row.city,
-        state: row.state,
-        pincode: row.pincode,
-      });
-
-      const statutoryDetails = StatutoryDetails.create({
-        panNo: row.panNo,
-        aadharNo: row.aadharNo,
-        // panCopy: row.panCopy,
-        //aadharCopy: row.aadharCopy,
-        gstn: row.gstn,
-        //billBookCopy: row.billBookCopy,
-        certificationsDetails: row.certificationsDetails,
-        otherCertifications: row.otherCertifications,
-        corpRegiDetails: row.corpRegiDetails,
-        otherCorpRegiDetails: row.otherCorpRegiDetails,
-        //incorpoCertificateCopy: row.incorpoCertificateCopy,
-        cinNo: row.cinNo,
-        //regiCertificateCopy: row.regiCertificateCopy
-      });
-
-      const billingDetails = BillingDetailsCust.create({
-        billingName: row.billingName,
-        contactPersonFName: row.contactPersonFName,
-        contactPersonMName: row.contactPersonMName,
-        contactPersonLName: row.contactPersonLName,
-        commonlyKnownAs: row.commonlyKnownAs,
-        primaryContactNo: row.primaryContactNo_billing,
-        secondaryContactNo: row.secondaryContactNo_billing,
-        emailPrimary: row.emailPrimary_billing,
-        emailSecondary: row.emailSecondary_billing,
-        //billingFormatCopy: row.billingFormatCopy,
-        //billingAddressProofCopy: row.billingAddressProofCopy
-      });
-
-      const deliveryDetails = DeliveryDetails.create({
-        //deliveryAddressProofCopy: row.deliveryAddressProofCopy,
-        deliveryTime: row.deliveryTime,
-        receivingPersonFName: row.receivingPersonFName,
-        receivingPersonMName: row.receivingPersonMName,
-        receivingPersonLName: row.receivingPersonLName,
-        primaryContactNo: row.primaryContactNo_delivery,
-        secondaryContactNo: row.secondaryContactNo_delivery,
-        emailPrimary: row.emailPrimary_delivery,
-        emailSecondary: row.emailSecondary_delivery,
-      });
-
-      const paymentTerms = PaymentTerms.create({
-        paymentMode: row.paymentMode,
-        otherPaymentMode: row.otherPaymentMode,
-        otherPaymentMade: row.otherPaymentMade,
-        paymentMade: row.paymentMade,
-        marginDeposit: row.marginDeposit,
-        rtv: row.rtv,
-        agreementExecuted: row.agreementExecuted,
-        lc: row.lc,
-        bg: row.bg,
-        securityDepoCheqNo: row.securityDepoCheqNo,
-        securityDepoAmt: row.securityDepoAmt,
-        IELinAmt: row.IELinAmt,
-        IELRecommendedBy: row.IELRecommendedBy,
-        IELRecommendedDate: row.IELRecommendedDate,
-        RELinAmt: row.RELinAmt,
-        RELRecommendedBy: row.RELRecommendedBy,
-        RELRecommendedDate: row.RELRecommendedDate,
-        reason: row.reason,
-        // docEvidenceCopy: row.docEvidenceCopy
-      });
-
-      const customer = await customerRepo.create({
-        organisationName: row.organisationName, // Use the correct property name as defined in Customer entity
-
-        organisationType: row.organisationType,
-        otherType: row.otherType,
-        customerCategory: category,
-        customerTypes: type,
-        customerCode: customerCode,
-        bankDetailsCust: bankDetails,
-        customerAddress: address,
-        statutoryDetails: statutoryDetails,
-        billingDetails: billingDetails,
-        deliveryDetails: deliveryDetails,
-        paymentTerms: paymentTerms,
-        primaryContactNo: row.primaryContactNo,
-        secondaryContactNo: row.secondaryContactNo,
-        emailPrimary: row.emailPrimary,
-        emailSecondary: row.emailSecondary,
-        officeUseOnly: officeUseOnly,
-        keyMobileNumbers: keyMobileData,
-        productSpecification: productSpecification,
-        //deliveryChallan: row.deliveryChallan ? true : false
-      });
-
-      await customerRepo.save(customer);
-      savedCustomers.push(customer);
+      
+      throw error;
     }
-    return savedCustomers;
   }
+
+  /**
+   * Delete file from DigitalOcean Spaces
+   * @param fileUrl - The full URL or key of the file to delete
+   */
+  private async deleteFileFromSpaces(fileUrl: string): Promise<void> {
+    try {
+      // Extract the key from the full URL
+      // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
+      
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      await s3.send(deleteCommand);
+      console.log(`Successfully deleted file: ${key}`);
+    } catch (error) {
+      console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
+      // Don't throw error here to avoid breaking the main flow
+    }
+  }
+  /**
+   * Get Excel file from DigitalOcean Spaces
+   * @param key - Spaces key/path to the Excel file
+   * @returns Buffer containing the file data
+   */
+  private async getExcelFromSpaces(key: string): Promise<Buffer> {
+    try {
+      console.log('📂 Reading Excel file from Spaces:', key);
+
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const command = new GetObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      const response = await s3.send(command);
+
+      if (!response.Body) {
+        throw new Error('No file content found in Spaces response');
+      }
+
+      const bytes = await response.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(bytes);
+
+      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
+      return fileBuffer;
+    } catch (error) {
+      console.error('❌ Error reading Excel file from Spaces:', error);
+      throw new Error(`Failed to read Excel file: ${key}`);
+    }
+  }
+
    async approveCustomer(customerId: string, approverId: string,status:Status) {
       console.log('Approver ID:', approverId);
       const approver = await this.userRepository.findOne({

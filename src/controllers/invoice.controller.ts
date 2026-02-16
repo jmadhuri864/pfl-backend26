@@ -90,6 +90,7 @@ export class InvoiceController {
 @httpPost("/generate/final/:deliveryChallanId")
   async generatefinalInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      console.log("in final invoice controller")
         const { deliveryChallanId } = req.params;
         const invoiceType='final';
         const invoice = await this.invoiceService.generateFinalInvoice(deliveryChallanId,invoiceType);

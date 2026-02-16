@@ -21,8 +21,10 @@ import {
   captureUser,
 } from '../middleware/deserializeUser';
 import { PaginationOptions } from '../utils/pagination';
-import { uploadFile } from '../middleware/uploadwithAWS';
+
 import { NotificationService } from '../services/notification.service';
+import { upload, uploadAttachments } from '../middleware/upload.middleware';
+import { setAttachmentUrls } from '../utils/fileUploadHelper';
 
 @controller('/customer-delivery-challan', deserializeUser, requireUser)
 export class CustomerDeliveryChallanController {
@@ -33,25 +35,21 @@ export class CustomerDeliveryChallanController {
     private notificationService: NotificationService,
   ) {}
 
-  @httpPost('/',uploadFile.single('anyAttachment'))
+  @httpPost('/', uploadAttachments)
   public async createChallan(
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      if (req.file) {
-        const imageUrl = (req.file as any).location;
-        if (imageUrl) {
-          req.body.anyAttachment = imageUrl;
-        }
-      }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(req.body, req.files as any[]);
 
-      const requestedBy = res.locals.user.id;
+      req.body.createdBy = res.locals.user.id;
 
       const challan = await this.customerDeliveryChallanService.create(
         req.body,
-        requestedBy
+        req.body.createdBy
       );
       
       if (!challan) {
@@ -225,7 +223,7 @@ export class CustomerDeliveryChallanController {
     }
   }
 
-  @httpPatch('/:id', captureUser,uploadFile.single('anyAttachment'))
+  @httpPatch('/:id', captureUser, uploadAttachments)
   public async updateChallan(
     @requestParam('id') id: string,
     @request() req: Request,
@@ -235,12 +233,8 @@ export class CustomerDeliveryChallanController {
     try {
       const updatedBy = res.locals.updatedBy;
 
-      if(req.file){
-        const imageUrl = (req.file as any).location;
-       if (imageUrl) {
-        req.body.anyAttachment = imageUrl;
-       }
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(req.body, req.files as any[]);
       const challan = await this.customerDeliveryChallanService.update(id, {
         ...req.body,
         updatedBy,

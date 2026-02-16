@@ -3,8 +3,10 @@ import Model from "./model.entity";
 import { Aqr} from "./aqr.entity";
 
 enum QualityParameterType {
-    GOOD = "good",
-    BAD = "bad"
+     GOOD = "good",
+     BAD = "bad",
+    AVERAGE="average"
+
 }
 @Entity("aqr_parameter")
 export class AqrParameter extends Model {

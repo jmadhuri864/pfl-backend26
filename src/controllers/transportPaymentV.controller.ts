@@ -10,11 +10,13 @@ import { TPVoucherService } from '../services/transportPaymentV.service';
 import { NotificationService } from '../services/notification.service';
 import { captureUser, deserializeUser, requireUser } from '../middleware/deserializeUser';
 
-import { upload, uploadNone } from "../middleware/multerConfig";
+
 import logger from '../utils/logger';
-import { uploadFile } from '../middleware/uploadwithAWS';
+
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { upload, uploadAttachments } from '../middleware/upload.middleware';
+import { setAttachmentUrls } from '../utils/fileUploadHelper';
 
 @controller('/tpvoucher', deserializeUser, requireUser)
 export class TPVoucherController {
@@ -23,7 +25,7 @@ export class TPVoucherController {
     @inject(TYPES.NotificationService) private notificationService: NotificationService
   ) {}
 
-  @httpPost('/',uploadFile.array('anyAttachment', 5))
+  @httpPost('/', uploadAttachments)
   public async createTPVoucher(
     @requestBody() tpVoucherData: any,
     @request() req:Request,
@@ -33,20 +35,9 @@ export class TPVoucherController {
     try {
       console.log("in create transport payment voucher",tpVoucherData)
       logger.info('Received request to create TPVoucher');
-    //   if(req.file){
       
-    //     const imageUrl = (req.file as any).location;
-    //     console.log("imageurl is ",imageUrl)
-    //    if (imageUrl) {
-         
-    //     tpVoucherData.anyAttachment = imageUrl;
-    //    }
-   
-    //  }
-      if (req.files && Array.isArray(req.files)) {
-      const imageUrls = (req.files as Express.Multer.File[]).map(file => (file as any).location);
-      tpVoucherData.anyAttachment = imageUrls;
-    }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(tpVoucherData, req.files as any[]);
     
     
      
@@ -260,7 +251,7 @@ export class TPVoucherController {
       next(error);
     }
   }
-  @httpPatch('/:id',uploadFile.single('anyAttachment'),captureUser)
+  @httpPatch('/:id', captureUser, uploadAttachments)
   public async updateTPVoucher(
     @requestParam('id') id: string,
     @requestBody() updateData: any,
@@ -270,16 +261,9 @@ export class TPVoucherController {
   ) {
     try {
       logger.info(`Received request to update TPVoucher with id: ${id}`);
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        updateData.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(updateData, req.files as any[]);
      Object.keys(updateData).forEach((key) => {
       if (updateData[key] === "null") updateData[key] = null;
     });

@@ -17,7 +17,7 @@ import {
   import logger from "../utils/logger";
   import { ControllerLogger } from '../utils/controllerLogger';
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadAny } from "../middleware/multerConfig";
+
 import { PaginationOptions } from "../utils/pagination";
 import { NotificationService } from "../services/notification.service";
   
@@ -33,7 +33,7 @@ import { NotificationService } from "../services/notification.service";
     /**
      * Create a new laborer
      */
-    @httpPost("/",uploadAny)
+    @httpPost("/")
     public async createLabor(
       @request() req: Request<{}, {}, any>, 
       @response() res: Response, 
@@ -157,7 +157,7 @@ import { NotificationService } from "../services/notification.service";
     /**
      * Update a laborer
      */
-    @httpPatch("/:id",uploadAny)
+    @httpPatch("/:id")
     public async updateLabor(
       @requestParam("id") id: string,
       @request() req: Request<{}, {}, any>,

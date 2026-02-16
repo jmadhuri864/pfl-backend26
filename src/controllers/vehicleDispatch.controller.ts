@@ -223,7 +223,7 @@ try {
         );
       }
 
-      ControllerLogger.logView('Vehicle Dispatch', id, req, res);
+
       res.status(200).json({
         status: "success",
         data: vehicleDispatch,
@@ -237,47 +237,7 @@ try {
     }
   }
 
-  // @httpGet("/")
-  // public async getAllVehicleDispatches(
-  //   @response() res: Response,
-  //   @request() req:Request,
-  //   @next() next: NextFunction
-  // ) {
-  //   try {
-  //     logger.info("Fetching all vehicle dispatches");
-  //     const { page, limit, search, sort,} = req.query;
-    
-
-  //     const queryOptions: PaginationOptions = {
-  //       page: page ? Number(page) : undefined,  
-  //       limit: limit ? Number(limit) : undefined,
-  //       searchFields: ['vehicleDispatch.id'],
-  //       filters: {},
-  //       sort: sort as string || undefined, // Adjust this line to match your sorting requirements
-  //       search: search as string|| '',
-  //     };
-  //     const vehicleDispatches = await this.vehicleDispatchService.findAll(queryOptions);
-  //     if (!vehicleDispatches.data) {
-  //       logger.error("No vehicle dispatches found");
-  //       return next(new AppError(404, "No vehicle dispatches found"));
-  //     }
-  //     logger.info("Vehicle dispatches retrieved successfully");
-
-  //     res.status(200).json({
-  //       status: "success",
-  //       data: vehicleDispatches.data,
-  //       allRecords: vehicleDispatches.meta.total,
-  //       totalPages: vehicleDispatches.meta.pages,
-  //       page: vehicleDispatches.meta.page,
-  //     });
-  //   } catch (err) {
-  //     logger.error("Error occurred while fetching all vehicle dispatches", {
-  //       error: err,
-  //     });
-  //     next(err);
-  //   }
-  // }
-
+  
   @httpPatch("/:id")
   public async updateVehicleDispatch(
     @requestParam("id") id: string,
@@ -347,7 +307,7 @@ try {
       //res.status(204).send(); // No content
 
       if (!result) {
-              ControllerLogger.logError('Vehicle Dispatch deletion', new AppError(404, "Vehicle Dispatch not found or could not be deleted"), req, res);
+              
               return next(
                 new AppError(404, "Vehicle Dispatch not found or could not be deleted")
               );
@@ -362,7 +322,7 @@ try {
         );
       }
 
-      ControllerLogger.logSuccess('Vehicle Dispatch deleted', id, req, res);
+      
       res.status(200).json({
         status: "success",
         message: "Vehicle Dispatch has been deleted",

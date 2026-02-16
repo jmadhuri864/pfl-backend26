@@ -483,9 +483,9 @@ public async getAllVouchers(
       grnNo: voucher.grnNo?.grnNo || null,
       challanNo: voucher.challanNo?.challanNo || null,
       requestedBy:
-        voucher.requestedBy?.firstName +
+        voucher.requestedBy?.firstName||null +
           ' ' +
-          voucher.requestedBy?.middleName +
+          voucher.requestedBy?.middleName|| null+
           ' ' +
           voucher.requestedBy?.lastName || null,
       companyName: voucher.companyName?.name || null,

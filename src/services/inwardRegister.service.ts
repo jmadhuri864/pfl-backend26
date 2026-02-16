@@ -97,8 +97,21 @@ public async createInwardRegister(data: any): Promise<any> {
     for (const item of data.inwardProducts) {
       const { variant, quantity, unitPrice, netWeight, productName } = item;
 
+      // Validate required fields
+      if (!productName || !variant) {
+        console.warn(`Skipping item without product or variant:`, item);
+        continue;
+      }
+
+      // Ensure numeric values with defaults
+      const itemNetWeight = Number(netWeight) || 0;
+      const itemQuantity = Number(quantity) || 0;
+      const itemUnitPrice = Number(unitPrice) || 0;
+
       // Amount calculation
-      const amount = +(unitPrice * quantity).toFixed(2);
+      const amount = +(itemUnitPrice * itemQuantity).toFixed(2);
+
+      console.log(`Processing inward item: Product=${productName}, Variant=${variant}, NetWeight=${itemNetWeight}, Amount=${amount}`);
 
       // FIND existing stock for (company + product + variant + location)
       const existingStock = await this.inventoryStockRepository.findOne({
@@ -112,10 +125,13 @@ public async createInwardRegister(data: any): Promise<any> {
 
       if (existingStock) {
         // UPDATE inward stock movement
-        existingStock.inwardQty = +(existingStock.inwardQty + netWeight);
-        existingStock.inwardAmt = +(existingStock.inwardAmt + amount);
+        const currentInwardQty = Number(existingStock.inwardQty) || 0;
+        const currentInwardAmt = Number(existingStock.inwardAmt) || 0;
 
-        
+        existingStock.inwardQty = +(currentInwardQty + itemNetWeight).toFixed(2);
+        existingStock.inwardAmt = +(currentInwardAmt + amount).toFixed(2);
+
+        console.log(`✅ Updated existing stock: InwardQty=${existingStock.inwardQty}, InwardAmt=${existingStock.inwardAmt}`);
 
         await this.inventoryStockRepository.save(existingStock);
 
@@ -128,11 +144,11 @@ public async createInwardRegister(data: any): Promise<any> {
           variant: { id: variant },
 
           // Inward stock values
-          inwardQty: netWeight,
+          inwardQty: itemNetWeight,
           inwardAmt: amount,
-
-         
         });
+
+        console.log(`✅ Created new stock: InwardQty=${newStock.inwardQty}, InwardAmt=${newStock.inwardAmt}`);
 
         await this.inventoryStockRepository.save(newStock);
       }
@@ -620,7 +636,7 @@ async filterInwardRegisters(
 
     return transformedInwardRegister;
   }
-async getInwardidforupdate(id: string): Promise<any> {
+async getInwardidforupdate(id: string,userId:string): Promise<any> {
     console.log('in service', id);
 
     // Fetch the inward register with relations
@@ -1304,17 +1320,7 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
         throw new Error('inwardRegister not found');
       }
 
-      // let selectedPartyId: string | null = null;
-      // if (grn.source === 'vendor' && grn.selectedVendor) {
-      //   selectedPartyId = grn.selectedVendor.companyName;
-      // } else if (grn.source === 'farmer' && grn.selectedFarmer) {
-      //   selectedPartyId =
-      //     grn.selectedFarmer.farmerfName +
-      //     ' ' +
-      //     grn.selectedFarmer.farmermName +
-      //     ' ' +
-      //     grn.selectedFarmer.farmerlName;
-      // }
+     
       const rawDate = inwardRegister.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
       return {

@@ -24,12 +24,12 @@ import {
 import logger from '../utils/logger';
 import { uploadFile } from '../middleware/uploadwithAWS';
 import { uploads } from '../middleware/muterConfigCSV';
+import { uploadSingle } from '../middleware/uploadsingle.middleware';
+import { NotificationService } from '../services/notification.service';
 import { PaginationOptions } from '../utils/pagination';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { upload } from '../middleware/multerConfig';
-import { ControllerLogger } from '../utils/controllerLogger';
-import { NotificationService } from '../services/notification.service';
-
+import { ControllerLogger } from '../utils/controllerLogger'
  @controller('/products', deserializeUser, requireUser)
 export class ProductController {
   constructor(
@@ -257,7 +257,7 @@ export class ProductController {
     }
   }
 
-  @httpPost('/', uploadFile.single('image'))
+  @httpPost('/', uploadSingle.single('image'))
   public async create(
     @requestBody() productData: any,
     @request() req: Request,
@@ -315,7 +315,7 @@ export class ProductController {
   //   try {
   //     //console.log(productData);
   //     if (req.file) {
-  //       const imageUrl = (req.file as any).location;
+  //       const imageUrl = req.file.path;
   //       productData.image = imageUrl;
   //     }
   //     const updatedData = {
@@ -347,7 +347,7 @@ export class ProductController {
   //     next(err);
   //   }
   // }
-  @httpPut('/:id', uploadFile.single('image'), captureUser)
+  @httpPut('/:id', uploadSingle.single('image'), captureUser)
   public async update(
     @requestParam('id') id: string,
     @requestBody() productData: any,
@@ -404,7 +404,7 @@ export class ProductController {
     }
   }
 
-  @httpPost("/upload-product", uploads.single('file'))
+  @httpPost("/upload-product", uploadSingle.single('file'))
   public async uploadProductsExcel(
     @request() req: Request,
     @response() res: Response,
@@ -412,26 +412,91 @@ export class ProductController {
   ) {
     try {
       console.log('in upload excel controller');
-      let filepath: string = '';
-      if (req.file) {
-        
-        filepath = req.file.path;
-        console.log('File path is ', filepath);
+      
+      if (!req.file) {
+        ControllerLogger.logValidationError('Product Excel upload', 'No file uploaded', req, res);
+        return next(new AppError(400, 'No file uploaded'));
       }
-      //console.log(filepath)
-      if (!filepath) {
-        return next(new AppError(400, 'File path is required'));
+      
+      const fileUrl = (req.file as any).location;
+      console.log('File URL from Spaces:', fileUrl);
+      
+      if (!fileUrl) {
+        return next(new AppError(400, 'File URL is required'));
       }
-      const success = await this.productService.createProductWithExcel(filepath);
+      
+      const success = await this.productService.createProductWithExcel(fileUrl);
+      
+      // 🔔 Send notification for product Excel upload
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Product Excel file "${req.file.filename}" uploaded successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Product Excel upload notification error:', notifError);
+      }
+      
+      ControllerLogger.logSuccess('Product Excel uploaded', 'bulk', req, res);
       res.status(200).json({
-        message: 'Successfully uploaded product data from Excel',
+        status: 'success',
+        message: 'Product data uploaded successfully',
+        data: success,
       });
     } catch (err) {
+      ControllerLogger.logError('Product Excel upload', err, req, res);
       console.log(err);
       next(err);
     }
   }
-
+ @httpGet('/download/template')
+  public async downloadExcelTemplate(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const key = 'formats/Product_Template.xlsx';
+      
+      
+      
+      
+      const fileUrl = `https://${process.env.DO_SPACES_BUCKET}.sgp1.digitaloceanspaces.com/${key}`;
+      
+      
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `product template "${key.split('/').pop()}" accessed`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('product access notification error:', notifError);
+      }
+      
+      ControllerLogger.logList('Product Template URL Generated', req, res);
+      
+      // Return the URL in JSON response
+      res.status(200).json({
+        status: 'success',
+        message: 'Template URL generated successfully',
+        data: {
+          // templateUrl: fileUrl,
+          // fileName: key.split('/').pop(),
+          downloadUrl: fileUrl, // Alternative property name for clarity
+          //fileKey: key // Include the key for reference
+        }
+      });
+    } catch (error) {
+      ControllerLogger.logError('Generate product Template URL', error, req, res);
+      next(error);
+    }
+  }
 
   @httpDelete('/:id')
   public async delete(
@@ -486,33 +551,7 @@ export class ProductController {
 
   //   }
   // }
-  @httpPost('/uploadcsv', uploads.single('file'))
-  public async uploadProducts(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      console.log('in upload csv controller');
-      let filepath: string = '';
-      if (req.file) {
-        
-        filepath = req.file.path;
-        console.log('File path is ', filepath);
-      }
-      //console.log(filepath)
-      if (!filepath) {
-        return next(new AppError(400, 'File path is required'));
-      }
-      const success = await this.productService.uploadProducts(filepath);
-      res.status(200).json({
-        mesaaage: 'successfully product data uploaded',
-      });
-    } catch (err) {
-      console.log(err);
-      next(err);
-    }
-  }
+  
 
   
  

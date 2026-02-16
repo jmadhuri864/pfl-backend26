@@ -40,6 +40,7 @@ export class StatutoryDetails extends Model {
     nullable: true
   })
   certificationsDetails: CertificationType;
+  
 
   @Column({ name: 'statutory_details_any_other_certifications', nullable: true })
   otherCertifications: string;

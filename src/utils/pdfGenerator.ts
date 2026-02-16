@@ -1,169 +1,319 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+// ==================== DIGITALOCEAN SPACES STORAGE ====================
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import ejs from 'ejs';
 import { injectable } from 'inversify';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import { s3 } from '../middleware/spaces.config';
+
 @injectable()
 export class PdfGeneratorService {
-  private s3Client: S3Client;
   private bucketName: string;
 
-  // constructor() {
-  //   this.s3Client = new S3Client({
-  //     credentials: {
-  //       accessKeyId: process.env.ACCESS_KEY!,
-  //       secretAccessKey: process.env.ACCESS_SECRET!,
-  //     },
-  //     region: process.env.REGION!,
-  //   });
-  //   this.bucketName = process.env.BUCKET_NAME!;
-  // }
-
-   constructor() {
-    this.bucketName = process.env.BUCKET_NAME!;
-
-    this.s3Client = new S3Client({
-      region: process.env.REGION!,
-      credentials: {
-        accessKeyId: process.env.ACCESS_KEY!,
-        secretAccessKey: process.env.ACCESS_SECRET!,
-      },
-      forcePathStyle: true, // only needed if using MinIO/LocalStack
-    });
+  constructor() {
+    this.bucketName = process.env.DO_SPACES_BUCKET!;
+    console.log('✅ PDF Generator initialized with DigitalOcean Spaces');
+    console.log('🪣 Bucket:', this.bucketName);
   }
 
-  
- 
-  async generatePdfFromTemplate(templateName: string, data: any, s3Key: string): Promise<string> {
+  /**
+   * Generate PDF from EJS template and upload to DigitalOcean Spaces
+   * @param templateName - Name of the EJS template file (without .ejs extension)
+   * @param data - Data to pass to the template
+   * @param fileName - Desired filename (e.g., 'voucher_123.pdf')
+   * @returns DigitalOcean Spaces URL
+   */
+  async generatePdfFromTemplate(
+    templateName: string,
+    data: any,
+    fileName: string
+  ): Promise<string> {
     try {
-      console.log({data})
+      console.log('📄 Generating PDF from template:', templateName);
+      console.log('📊 Data:', data);
+
+      // Render HTML from EJS template
       const templatePath = path.join(__dirname, `../templates/${templateName}.ejs`);
-
-      
       const html = await ejs.renderFile(templatePath, { data });
+      console.log('✅ HTML rendered successfully');
 
+      // Generate PDF using Puppeteer
       const browser = await puppeteer.launch({
         headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
+          '--disable-gpu',
         ],
-        timeout: 60000
+        timeout: 60000,
       });
+
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdfBuffer = await page.pdf({ format: 'A4' });
       await browser.close();
 
-      const s3Params = {
+      console.log('✅ PDF generated, size:', pdfBuffer.length, 'bytes');
+
+      // Upload PDF to DigitalOcean Spaces
+      const timestamp = Date.now();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const spacesKey = `pdfs/${timestamp}_${safeFileName}`;
+
+      const uploadParams = {
         Bucket: this.bucketName,
-        Key: s3Key,
+        Key: spacesKey,
         Body: Buffer.from(pdfBuffer),
         ContentType: 'application/pdf',
+        ACL: 'public-read' as const, // Make file publicly accessible
       };
 
-      await this.s3Client.send(new PutObjectCommand(s3Params));
+      await s3.send(new PutObjectCommand(uploadParams));
+      console.log('💾 PDF uploaded to Spaces:', spacesKey);
 
-      return `https://${this.bucketName}.s3.${process.env.REGION}.amazonaws.com/${s3Key}`;
+      // Return public URL
+      const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${spacesKey}`;
+      return publicUrl;
     } catch (error) {
-      console.error('PDF generation/upload failed:', error);
-      throw new Error('Failed to generate or upload PDF');
+      console.error('❌ PDF generation failed:', error);
+      throw new Error('Failed to generate PDF');
     }
   }
-async getExcelFromS3(key: string): Promise<Buffer> {
-  this.s3Client.middlewareStack.remove("flexibleChecksumsMiddleware");
-    const command = new GetObjectCommand({
-      Bucket: process.env.BUCKET_NAME,
-      Key: key,
-       //ChecksumMode: "DISABLED",
-    });
-//console.log("cpommandddddd",command)
-    const response = await this.s3Client.send(command);
-//console.log("responssssse",response)
-    if (!response.Body) {
-      throw new Error("No file content found in S3 response");
-    }
 
-    // ✅ Directly convert to byte array
-    const bytes = await response.Body.transformToByteArray();
-
-    return Buffer.from(bytes);
-  }
-
-
-async generateInvoicePdf(data: any): Promise<string> {
+  /**
+   * Generate invoice PDF and upload to DigitalOcean Spaces
+   * @param data - Invoice data
+   * @returns DigitalOcean Spaces URL
+   */
+  async generateInvoicePdf(data: any): Promise<string> {
     try {
-      console.log('Starting PDF generation...');
-      
+      console.log('📄 Starting invoice PDF generation...');
+
       // Render HTML from EJS Template
       const templatePath = path.join(__dirname, '../templates/invoiceTemplate.ejs');
-      console.log('Template path:', templatePath);
-      
-      const html = await ejs.renderFile(templatePath, { data });
-      console.log('HTML rendered successfully');
+      console.log('📂 Template path:', templatePath);
 
-      // Generate PDF using Puppeteer with Windows-friendly settings
+      const html = await ejs.renderFile(templatePath, { data });
+      console.log('✅ Invoice HTML rendered successfully');
+
+      // Generate PDF using Puppeteer
       const browser = await puppeteer.launch({
         headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
+          '--disable-gpu',
         ],
-        timeout: 60000
+        timeout: 60000,
       });
+
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const pdfBuffer = Buffer.from(await page.pdf({ format: 'A4' }));
       await browser.close();
-      console.log('PDF generated successfully, size:', pdfBuffer.length);
 
-      const fileName = `invoices/invoice_${Date.now()}.pdf`;
+      console.log('✅ Invoice PDF generated, size:', pdfBuffer.length, 'bytes');
 
-      // Check if we should use S3 or local storage
-      if (this.bucketName && process.env.ACCESS_KEY && process.env.ACCESS_SECRET) {
-        try {
-          // Upload to S3
-          const s3Params = {
-            Bucket: this.bucketName,
-            Key: fileName,
-            Body: pdfBuffer,
-            ContentType: 'application/pdf',
-          };
+      // Upload PDF to DigitalOcean Spaces
+      const timestamp = Date.now();
+      const invoiceNo = data.invoiceNo || 'unknown';
+      const safeInvoiceNo = invoiceNo.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const spacesKey = `invoices/invoice_${safeInvoiceNo}_${timestamp}.pdf`;
 
-          console.log('Uploading to S3 with params:', { Bucket: s3Params.Bucket, Key: s3Params.Key });
-          await this.s3Client.send(new PutObjectCommand(s3Params));
-          console.log('Upload successful');
+      const uploadParams = {
+        Bucket: this.bucketName,
+        Key: spacesKey,
+        Body: pdfBuffer,
+        ContentType: 'application/pdf',
+        ACL: 'public-read' as const, // Make file publicly accessible
+      };
 
-          // Return the S3 file URL
-          return `https://${this.bucketName}.s3.${process.env.REGION}.amazonaws.com/${fileName}`;
-        } catch (s3Error) {
-          console.error('S3 upload failed, falling back to local storage:', s3Error);
-          // Fall through to local storage
+      await s3.send(new PutObjectCommand(uploadParams));
+      console.log('💾 Invoice PDF uploaded to Spaces:', spacesKey);
+
+      // Return public URL
+      const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${spacesKey}`;
+      return publicUrl;
+    } catch (error) {
+      console.error('❌ Error generating invoice PDF:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      throw error;
+    }
+  }
+
+  /**
+   * Get Excel file from DigitalOcean Spaces
+   * @param key - Spaces key/path to the Excel file
+   * @returns Buffer containing the file data
+   */
+  async getExcelFromSpaces(key: string): Promise<Buffer> {
+    try {
+      console.log('📂 Reading Excel file from Spaces:', key);
+
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const response = await s3.send(command);
+
+      if (!response.Body) {
+        throw new Error('No file content found in Spaces response');
+      }
+
+      const bytes = await response.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(bytes);
+
+      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
+      return fileBuffer;
+    } catch (error) {
+      console.error('❌ Error reading Excel file from Spaces:', error);
+      throw new Error(`Failed to read Excel file: ${key}`);
+    }
+  }
+
+  /**
+   * Alias for backward compatibility (if getExcelFromS3 is called)
+   */
+  async getExcelFromS3(key: string): Promise<Buffer> {
+    console.log('⚠️  getExcelFromS3 called - redirecting to Spaces');
+    return this.getExcelFromSpaces(key);
+  }
+
+  /**
+   * Delete a PDF file from DigitalOcean Spaces
+   * @param fileUrl - Full URL or key of the PDF file to delete
+   */
+  async deletePdf(fileUrl: string): Promise<void> {
+    try {
+      // Extract key from URL if full URL is provided
+      let key: string;
+      if (fileUrl.startsWith('https://')) {
+        const urlParts = fileUrl.split('/');
+        key = urlParts.slice(-2).join('/'); // Gets "pdfs/filename" or "invoices/filename"
+      } else {
+        key = fileUrl; // Assume it's already a key
+      }
+
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      await s3.send(deleteCommand);
+      console.log('🗑️  PDF deleted from Spaces:', key);
+    } catch (error) {
+      console.error('❌ Error deleting PDF from Spaces:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a PDF file exists in DigitalOcean Spaces
+   * @param fileUrl - Full URL or key of the PDF file
+   * @returns boolean
+   */
+  async pdfExists(fileUrl: string): Promise<boolean> {
+    try {
+      // Extract key from URL if full URL is provided
+      let key: string;
+      if (fileUrl.startsWith('https://')) {
+        const urlParts = fileUrl.split('/');
+        key = urlParts.slice(-2).join('/'); // Gets "pdfs/filename" or "invoices/filename"
+      } else {
+        key = fileUrl; // Assume it's already a key
+      }
+
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      await s3.send(command);
+      return true;
+    } catch (error: any) {
+      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      console.error('❌ Error checking PDF existence:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a signed URL for temporary access to a PDF (optional, for private files)
+   * @param key - Spaces key of the PDF file
+   * @param expiresIn - Expiration time in seconds (default: 1 hour)
+   * @returns Signed URL
+   */
+  async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    try {
+      // For public files, just return the public URL
+      // For private files, you would use getSignedUrl from @aws-sdk/s3-request-presigner
+      const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${key}`;
+      return publicUrl;
+    } catch (error) {
+      console.error('❌ Error generating signed URL:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all PDFs in a specific folder
+   * @param prefix - Folder prefix (e.g., 'pdfs/', 'invoices/')
+   * @returns Array of file keys
+   */
+  async listPdfs(prefix: string = ''): Promise<string[]> {
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: prefix,
+      });
+
+      const response = await s3.send(command);
+      const files = response.Contents?.map(obj => obj.Key!).filter(key => key.endsWith('.pdf')) || [];
+      
+      console.log(`📋 Found ${files.length} PDF files with prefix '${prefix}'`);
+      return files;
+    } catch (error) {
+      console.error('❌ Error listing PDFs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up old PDFs (optional utility method)
+   * @param olderThanDays - Delete PDFs older than this many days
+   * @param prefix - Folder prefix to clean (e.g., 'pdfs/', 'invoices/')
+   */
+  async cleanupOldPdfs(olderThanDays: number = 30, prefix: string = ''): Promise<number> {
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: prefix,
+      });
+
+      const response = await s3.send(command);
+      const files = response.Contents?.filter(obj => obj.Key?.endsWith('.pdf')) || [];
+      
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+      
+      let deletedCount = 0;
+      
+      for (const file of files) {
+        if (file.LastModified && file.LastModified < cutoffDate && file.Key) {
+          await this.deletePdf(file.Key);
+          deletedCount++;
         }
       }
-
-      // Fallback: Save locally
-      const fs = require('fs');
-      const localDir = path.join(__dirname, '../../uploads/invoices');
       
-      // Create directory if it doesn't exist
-      if (!fs.existsSync(localDir)) {
-        fs.mkdirSync(localDir, { recursive: true });
-      }
-
-      const localPath = path.join(localDir, `invoice_${Date.now()}.pdf`);
-      fs.writeFileSync(localPath, pdfBuffer);
-      console.log('PDF saved locally at:', localPath);
-
-      // Return local file path (you may want to serve this via express static)
-      return `/uploads/${fileName}`;
+      console.log(`🧹 Cleaned up ${deletedCount} old PDF files`);
+      return deletedCount;
     } catch (error) {
-      console.error('Error generating or uploading PDF:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('❌ Error cleaning up old PDFs:', error);
       throw error;
     }
   }

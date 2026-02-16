@@ -1269,7 +1269,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
   }
 
   //TODO: Get Document with Data
-  public async getAllDocumentByUserId(userId: string, documentType: string, queryOptions: PaginationOptions): Promise<any> {
+  public async getAllDocumentByUserId(userId: string, documentType: string, queryOptions: PaginationOptions, skipPagination: boolean = false): Promise<any> {
 
     //console.log("documentType", documentType);
 
@@ -1332,23 +1332,33 @@ function isWithinRange(min: number | string | null, max: number | string | null,
 
     queryBuilder.orderBy(sortField, sortOrder);
 
-    const page = queryOptions?.page || 1;
-    const limit = queryOptions?.limit || 10;
-    const skip = (page - 1) * limit;
-
-    queryBuilder.skip(skip).take(limit);
-
-    // Execute with count
+        // Execute with count
     const [data, total] = await queryBuilder.getManyAndCount();
 
+    // Apply pagination if not skipped and page/limit are provided
+    let paginatedData = data;
+    let currentPage = 1;
+    let currentLimit = total; // Default to all records if no pagination
+    
+    if (!skipPagination && queryOptions?.page && queryOptions?.limit) {
+      const page = queryOptions.page;
+      const limit = queryOptions.limit;
+      const skip = (page - 1) * limit;
+
+      paginatedData = data.slice(skip, skip + limit);
+      currentPage = page;
+      currentLimit = limit;
+    }
+
     return {
-      data,
+      data: paginatedData,
       meta: {
         total,
-        page,
-        pages: Math.ceil(total / limit),
+        page: currentPage,
+        pages: currentLimit ? Math.ceil(total / currentLimit) : 1,
       },
     };
+
 
     // Apply search/filter/sort/pagination
     // const { data: documents, meta } = await buildQuery(

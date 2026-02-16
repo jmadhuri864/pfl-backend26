@@ -22,11 +22,13 @@ import { UpdateVendor } from "../schemas/vendor.schema";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import logger from "../utils/logger";
 import { ControllerLogger } from "../utils/controllerLogger";
-import { upload, uploadNone } from "../middleware/multerConfig";
-import { uploadFileMultiple } from "../middleware/multiFileWithAWS";
+//import { upload, uploadNone } from "../middleware/multerConfig";
+
 import { PaginationOptions } from "../utils/pagination";
-import { uploads } from "../middleware/muterConfigCSV";
+//import { uploads } from "../middleware/muterConfigCSV";
 import { Status } from "../utils/status.enum";
+import { upload } from "../middleware/upload.middleware";
+import { uploadSingle } from "../middleware/uploadsingle.middleware";
 
 
 @controller("/vendors", deserializeUser, requireUser)
@@ -257,26 +259,12 @@ public async getVendorsWithId(
 }
 
 
-  // @httpGet("/filterVendor/all")
-  // public async getAllVendor(
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ) {
-  //   try {
-  //     const vendors = await this.vendorService.getAllVendorsbyfilter();
-  //     res.status(200).json({
-  //       status: "success",
-  //       data: vendors,
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // }
+  
 
 
   @httpPost(
     "/",
-    uploadFileMultiple.fields([
+    upload.fields([
       { name: "gstnCopy", maxCount: 1 },
       { name: "panCardCopy", maxCount: 1 },
       { name: "msmeCopy", maxCount: 1 },
@@ -299,46 +287,38 @@ console.log(req.body)
       const vendorData = req.body;
       vendorData.createdBy = res.locals.user.id;
       vendorData.registeredDate=new Date();
-      console.log(req.body);
-      //console.log(req.files)
-      // const files = req.files as {
-      //   gstnCopy?: Express.Multer.File[];
-      //   panCardCopy?: Express.Multer.File[];
-      //   msmeCopy?: Express.Multer.File[];
-      //   cancelledChequeCopy?: Express.Multer.File[];
-      // };
+      
+      // Parse listOfAllProducts if it's a string
+      if (vendorData.listOfAllProducts && typeof vendorData.listOfAllProducts === 'string') {
+        try {
+          vendorData.listOfAllProducts = JSON.parse(vendorData.listOfAllProducts);
+        } catch (error) {
+          console.log('Error parsing listOfAllProducts:', error);
+        }
+      }
+      
+      console.log("Parsed vendor data:", vendorData);
+      console.log("listOfAllProducts:", vendorData.listOfAllProducts);
+     
 
       const files = req.files as {
-        gstnCopy?: Express.MulterS3.File[];
-        panCardCopy?: Express.MulterS3.File[];
-        msmeCopy?: Express.MulterS3.File[];
-        cancelledChequeCopy?: Express.MulterS3.File[];
+        gstnCopy?: Express.Multer.File[];
+        panCardCopy?: Express.Multer.File[];
+        msmeCopy?: Express.Multer.File[];
+        cancelledChequeCopy?: Express.Multer.File[];
       };
       console.log(files)
 
-      // if (files?.gstnCopy) {
-      //   vendorData.gstnCopy = files.gstnCopy[0].path;
-      // }
-      // if (files?.panCardCopy) {
-      //   vendorData.panCardCopy = files.panCardCopy[0].path;
-      // }
-      // if (files?.msmeCopy) {
-      //   vendorData.msmeCopy = files.msmeCopy[0].path;
-      // }
-      // if (files?.cancelledChequeCopy) {
-      //   vendorData.cancelledChequeCopy = files.cancelledChequeCopy[0].path;
-      // }
-
-        // Assign S3 URLs to vendor data
-    if (files.gstnCopy) vendorData.gstnCopy= files.gstnCopy[0].location;
-    if (files.panCardCopy) vendorData.panCardCopy = files.panCardCopy[0].location;
-    if (files.msmeCopy) vendorData.msmeCopy = files.msmeCopy[0].location;
-    //if (files.cancelledChequeCopy) vendorData.bankDetailsVend.cancelledChequeCopy = files.cancelledChequeCopy[0].location;
+     
+    if (files.gstnCopy) vendorData.gstnCopy = (files.gstnCopy[0] as any).location;
+    if (files.panCardCopy) vendorData.panCardCopy = (files.panCardCopy[0] as any).location;
+    if (files.msmeCopy) vendorData.msmeCopy = (files.msmeCopy[0] as any).location;
+    //if (files.cancelledChequeCopy) vendorData.bankDetailsVend.cancelledChequeCopy = files.cancelledChequeCopy[0].path;
 
     
 
   if (files.cancelledChequeCopy) {
-      vendorData.vendorBankDetails.cancelledChequeCopy = files.cancelledChequeCopy[0].location;
+      vendorData.vendorBankDetails.cancelledChequeCopy = (files.cancelledChequeCopy[0] as any).location;
   }
     if (vendorData.dateOfIncorporation === 'null' || vendorData.dateOfIncorporation === '') {
       vendorData.dateOfIncorporation = null;
@@ -373,7 +353,7 @@ console.log(req.body)
       next(err);
     }
   }
-@httpPost("/upload-vendor", uploads.single("file"))
+@httpPost("/upload-vendor", uploadSingle.single("file"))
   public async uploadVendorExcel(
     @request() req: Request,
     @response() res: Response,
@@ -381,50 +361,42 @@ console.log(req.body)
   ) {
     try {
       if (!req.file) {
+        ControllerLogger.logValidationError('Vendor Excel upload', 'No file uploaded', req, res);
         return next(new AppError(400, "No file uploaded"));
       }
 
-      const filePath = req.file.path;
+      const filePath = (req.file as any).location;
+      console.log('Processing vendor Excel file from:', filePath);
+      
       const result = await this.vendorService.createVendorWithExcel(filePath);
+      
+      // 🔔 Send notification for vendor Excel upload
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Vendor Excel file "${req.file.filename}" uploaded successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Vendor Excel upload notification error:', notifError);
+      }
+      
+      ControllerLogger.logSuccess('Vendor Excel uploaded', 'bulk', req, res);
       res.status(200).json({
         status: "success",
-        message: "File processed successfully",
+        message: "Vendor data uploaded successfully",
         data: result,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor Excel upload', error, req, res);
       next(error);
     }
   }
-  // @httpPatch("/:id")
-  // public async updateVendor(
-  //   @requestParam("id") id: string,
-  //   @requestBody() vendordata: UpdateVendor,
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ) {
-  //   try {
-  //     const updateBy = res.locals.user.id;
-  //     const updatedVendor = await this.vendorService.updateVendor(
-  //       id,
-  //       vendordata,
-  //       updateBy
-  //     );
-  //     if (!updatedVendor) {
-  //       return next(new AppError(404, "Vendor not found or update failed"));
-  //     }
-  //     logger.info("Vendor updated successfully", { vendorId: id });
-  //     res.status(200).json({
-  //       status: "success",
-  //       message: "Vendor updated successfully",
-  //       data: updatedVendor, // Return updated vendor data
-  //     });
-  //   } catch (error) {
-  //     logger.error("Error updating vendor", { error: error });
-  //     next(error);
-  //   }
-  // }
+  
   @httpPut("/:id",
-      uploadFileMultiple.fields([
+      upload.fields([
       { name: "gstnCopy", maxCount: 1 },
       { name: "panCardCopy", maxCount: 1 },
       { name: "msmeCopy", maxCount: 1 },
@@ -446,12 +418,12 @@ console.log(req.body)
       console.log("vendorUpdateData",vendorUpdateData);
       
       if(req.files){
-      const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-      vendorUpdateData.gstnCopy = files.gstnCopy ? files.gstnCopy[0].location : vendorUpdateData.gstnCopy;
-      vendorUpdateData.panCardCopy = files.panCardCopy ? files.panCardCopy[0].location : vendorUpdateData.panCardCopy;
-      vendorUpdateData.msmeCopy = files.msmeCopy ? files.msmeCopy[0].location : vendorUpdateData.msmeCopy;
-      vendorUpdateData.cancelledChequeCopy = files.cancelledChequeCopy ? files.cancelledChequeCopy[0].location : vendorUpdateData.cancelledChequeCopy;
+      vendorUpdateData.gstnCopy = files.gstnCopy ? (files.gstnCopy[0] as any).location : vendorUpdateData.gstnCopy;
+      vendorUpdateData.panCardCopy = files.panCardCopy ? (files.panCardCopy[0] as any).location : vendorUpdateData.panCardCopy;
+      vendorUpdateData.msmeCopy = files.msmeCopy ? (files.msmeCopy[0] as any).location : vendorUpdateData.msmeCopy;
+      vendorUpdateData.cancelledChequeCopy = files.cancelledChequeCopy ? (files.cancelledChequeCopy[0] as any).location : vendorUpdateData.cancelledChequeCopy;
       }
       
       
@@ -514,7 +486,7 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
       }
       const result = await this.vendorService.deleteVendor(id);
       if (!result) {
-        ControllerLogger.logError('Vendor deletion', new AppError(404, "Vendor not found or could not be deleted"), req, res);
+       // ControllerLogger.logError('Vendor deletion', new AppError(404, "Vendor not found or could not be deleted"), req, res);
         return next(
           new AppError(404, "Vendor not found or could not be deleted")
         );
@@ -529,7 +501,7 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
         );
       }
 
-      ControllerLogger.logSuccess('Vendor deleted', id, req, res);
+      //ControllerLogger.logSuccess('Vendor deleted', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vendor deleted successfully",
@@ -539,25 +511,7 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
     }
   }
 
-  //   @httpGet("/filter/allvendors")
-  // public async filtergetAllVendors(
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ) {
-  //   console.log("Received request to filter vendors");
-  //   try {
-  //     const filterCriteria = req.query; // Capture query parameters
-  //     const vendors = await this.vendorService.getAllVendorsbyfilter();
-  //     res.status(200).json({
-  //       status: "success",
-  //       data: vendors,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching filtered vendors:", error);
-  //     next(error);
-  //   }
-  // }
+ 
   @httpGet("/filterData/:id")
   public async getFilterVendorById(
     @requestParam("id") id: string,
@@ -648,4 +602,50 @@ public async filterVendors(req: Request, res: Response, next: NextFunction) {
     }
   }
 
+  @httpGet('/download/template')
+  public async downloadExcelTemplate(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const key = 'formats/Vendor_Form.xlsx';
+      
+      
+      
+      
+      const fileUrl = `https://${process.env.DO_SPACES_BUCKET}.sgp1.digitaloceanspaces.com/${key}`;
+      
+      
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Vendor template "${key.split('/').pop()}" accessed`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Template access notification error:', notifError);
+      }
+      
+      ControllerLogger.logList('Vendor Template URL Generated', req, res);
+      
+      // Return the URL in JSON response
+      res.status(200).json({
+        status: 'success',
+        message: 'Template URL generated successfully',
+        data: {
+          // templateUrl: fileUrl,
+          // fileName: key.split('/').pop(),
+          downloadUrl: fileUrl, // Alternative property name for clarity
+          //fileKey: key // Include the key for reference
+        }
+      });
+    } catch (error) {
+      ControllerLogger.logError('Generate Vendor Template URL', error, req, res);
+      next(error);
+    }
+
+}
 }

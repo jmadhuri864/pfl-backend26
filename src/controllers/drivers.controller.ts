@@ -66,7 +66,7 @@ export class DriverController {
       try {
         const userId = res.locals.user?.id;
         if (userId) {
-          const driverName = driverData.name || 'New Driver';
+          const driverName = driverData.firstName|| 'New Driver';
           await this.notificationService.createNoti(
             `Driver "${driverName}" created successfully`,
             userId
@@ -104,7 +104,7 @@ export class DriverController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Viewed driver "${driver.name}" details`,
+            `Viewed driver "${driver.firstName}" details`,
             userId
           );
         }
@@ -143,7 +143,7 @@ export class DriverController {
       try {
         const userId = res.locals.user?.id;
         if (userId) {
-          const driverName = parsedData.name || updatedDriver.name || 'Driver';
+          const driverName = parsedData.firstName || updatedDriver.firstName|| 'Driver';
           await this.notificationService.createNoti(
             `Driver "${driverName}" updated successfully`,
             userId
@@ -183,7 +183,7 @@ export class DriverController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Driver "${driver.name}" deleted successfully`,
+            `Driver "${driver.firstName}" deleted successfully`,
             userId
           );
         }

@@ -182,7 +182,7 @@ const TYPES = {
   TPVoucherController: Symbol.for("TPVoucherController"),
   //packingMaterialPaymentVoucher
   PMPVoucherRepository: Symbol.for("PMPVoucherRepository"),
-  PMPVoucherService: Symbol.for(" PMPVoucherService"),
+  PMPVoucherService: Symbol.for("PMPVoucherService"),
   PMPVoucherController: Symbol.for("PMPVoucherController"),
 
   //multiCashVoucher
@@ -435,8 +435,13 @@ WorkflowHierarchyController:Symbol.for("WorkflowHierarchyController"),
   DashboardController:Symbol.for("DashboardController"),
   //registration report
   RegistrationReportController:Symbol.for("RegistrationReportController"),
-  RegistrationReportService:Symbol.for("RegistrationReportService")
+  RegistrationReportService:Symbol.for("RegistrationReportService"),
 
+  //report
+  ReportController:Symbol.for("ReportController"),
+  ReportService:Symbol.for("ReportService"),
+  SalesReportService:Symbol.for("SalesReportService"),
+RfpaPaymentInfoRepository:Symbol.for("RfpaPaymentInfoRepository")
 
 };
 

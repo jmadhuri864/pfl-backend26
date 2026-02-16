@@ -85,8 +85,8 @@ import { format } from 'date-fns-tz';
   requestedBy: User;
 
   
-  @Column({ name: 'any attachment', nullable: true })
-  anyAttachment: string;
+  @Column('simple-array', { nullable: true })
+  anyAttachment: string[] | null;
 
   @Column({
     type: 'enum',

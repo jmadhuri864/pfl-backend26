@@ -8,8 +8,10 @@ import { NextFunction ,Request,Response} from "express";
 import logger from "../utils/logger";
 import AppError from "../utils/appError";
 import { PaginationOptions } from "../utils/pagination";
-import { uploadFile } from "../middleware/uploadwithAWS";
+
 import { ControllerLogger } from "../utils/controllerLogger";
+import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { setAttachmentUrls } from "../utils/fileUploadHelper";
 
 @controller('/tranfer-delivery-challan', deserializeUser, requireUser)
 export class StockTranferDeliveryChallanController {
@@ -20,7 +22,7 @@ export class StockTranferDeliveryChallanController {
         @inject(TYPES.NotificationService)
         private notificationService: NotificationService
       ) {}
- @httpPost('/',uploadFile.single('anyAttachment'))
+ @httpPost('/', uploadAttachments)
   public async create(
     @request() req: Request,
     @response() res: Response,
@@ -29,19 +31,12 @@ export class StockTranferDeliveryChallanController {
     try {
       console.log('in controller',req.body);
 
-      if(req.file){
-      
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        req.body.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(req.body, req.files as any[]);
       logger.info('Creating stock transfer delivery challan');
       const requestedBy = res.locals.user.id;
       req.body.createdBy = requestedBy;
+      req.body.transferType=req.body.stockTransferType;
       const challan = await this.stockTransferDeliveryChallanService.create(req.body, requestedBy);
       if (!challan) {
         ControllerLogger.logError('Stock Transfer Delivery Challan creation', new AppError(400, 'Stock transfer delivery challan could not be created'), req, res);
@@ -242,7 +237,7 @@ export class StockTranferDeliveryChallanController {
     }
   }
 
-  @httpPatch('/:id', captureUser,uploadFile.single('anyAttachment'))
+  @httpPatch('/:id', captureUser, uploadAttachments)
   public async update(
     @requestParam('id') id: string,
     @request() req: Request,
@@ -251,16 +246,9 @@ export class StockTranferDeliveryChallanController {
   ) {
     try {
       const updatedBy = res.locals.updatedBy;
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        req.body.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(req.body, req.files as any[]);
       const updated = await this.stockTransferDeliveryChallanService.update(id, {
         ...req.body,
         updatedBy,

@@ -12,20 +12,20 @@ import { UOM } from './uom.entity';
   @Entity("material_use_for_packing_voucher")
   export class Materials extends Model{
     
-    @Column()
+    @Column({nullable:true})
     itemName: string;
   
-    @Column('int')
+    @Column('int',{nullable:true})
     itemQty: number;
   
     @ManyToOne(() => UOM, { nullable: true ,onDelete: "SET NULL",cascade:true})
     @JoinColumn({ name: "uom_id" })
     itemUom: UOM;
 
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Column('decimal', { precision: 10, scale: 2 ,nullable:true})
     rate: number;
   
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Column('decimal', { precision: 10, scale: 2 ,nullable:true})
     amt: number;
   
     @ManyToOne(() => PMPVoucher, (pmVoucher) => pmVoucher.materials, { onDelete: "SET NULL" })

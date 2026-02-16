@@ -33,11 +33,11 @@ export class LabourPaymentVoucherService {
 
     //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'labor-payment-voucher')
+    //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'labor-payment-voucher')
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
-    }
+    // if (!approvalFlowExit) {
+    //   throw new Error('Approval flow not found');
+    // }
 
 
     const voucherNo = await this.generateVoucherNo();

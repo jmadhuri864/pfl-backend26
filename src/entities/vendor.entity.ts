@@ -215,8 +215,8 @@ export class Vendor extends Model {
   // Instead of storing string[], create a relation to Product
   @ManyToMany(() => Product, { cascade: true })
   @JoinTable({
-    name: 'order_products', // join table name
-    joinColumn: { name: 'order_id', referencedColumnName: 'id' },
+    name: 'vendor_products', // join table name
+    joinColumn: { name: 'vendor_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'product_id', referencedColumnName: 'id' },
   })
   listOfAllProducts: Product[];

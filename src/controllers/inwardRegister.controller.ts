@@ -17,7 +17,7 @@ import AppError from '../utils/appError';
 import logger from '../utils/logger';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
-import { uploadNone } from '../middleware/multerConfig';
+;
 import { Source } from '../utils/status.enum';
 import { error } from 'console';
 import { PaginationOptions } from '../utils/pagination';
@@ -280,9 +280,10 @@ try {
   ) {
     try {
       console.log(id);
+      const userId=res.locals.user.id;
       logger.info('Fetching inward register by ID', { id });
       const inwardRegister =
-        await this.inwardRegisterService.getInwardidforupdate(id);
+        await this.inwardRegisterService.getInwardidforupdate(id,userId);
       console.log(inwardRegister)
       if (!inwardRegister) {
         logger.warn('Inward register not found', { id });

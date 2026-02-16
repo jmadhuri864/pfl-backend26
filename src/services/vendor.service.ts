@@ -19,6 +19,10 @@ import { BankDetailsvend } from "../entities/bankDetailsVend.entity";
 import { VendorSaleInfo } from "../entities/vendorsaleinfo.entity";
 import { VendorCategoryRepository } from "../repositories/vendorCategory.repository";
 import { VendorSubcategoryRepository } from "../repositories/vendorSubcategory.repository";
+import { VendorCategory } from "../entities/vendorCategory.entity";
+import { VendorSubcategory } from "../entities/vendorSubcategory.entity";
+import { Product } from "../entities/product.entity";
+import { User } from "../entities/user.entity";
 import { In } from "typeorm";
 import { ProductRepository } from "../repositories/product.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -62,9 +66,21 @@ async createVendor(vendorDto: any): Promise<any> {
       
     }
     if(vendorDto.listOfAllProducts && Array.isArray(vendorDto.listOfAllProducts)){
-      const productIds = vendorDto.listOfAllProducts.map((p: any) => p.id);
-      vendorDto.listOfAllProducts = await this.productRepository.findBy({id: In(productIds)});
+      const productIds = vendorDto.listOfAllProducts.map((p: any) => p.id || p);
+      console.log("Product IDs to find:", productIds);
+      
+      const foundProducts = await this.productRepository.findBy({id: In(productIds)});
+      console.log("Found products:", foundProducts.length);
+      
+      vendorDto.listOfAllProducts = foundProducts;
+    }
 
+    // Handle mainProduct if provided
+    if(vendorDto.mainProduct && typeof vendorDto.mainProduct === 'object' && vendorDto.mainProduct.id) {
+      const mainProduct = await this.productRepository.findOneBy({id: vendorDto.mainProduct.id});
+      if(mainProduct) {
+        vendorDto.mainProduct = mainProduct;
+      }
     }
     //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
 
@@ -172,28 +188,17 @@ async getVendorByIdforview(id: string): Promise<any> {
     inFandVBusinessSince: vendor.inFandVBusinessSince,
 
     // 🔹 Product relations
-    mainProduct: vendor.mainProduct
-      ? {
-          id: vendor.mainProduct.id,
-          name: vendor.mainProduct.name,
-        }
-      : null,
-    listOfAllProducts: vendor.listOfAllProducts?.map((p) => ({
-      id: p.id,
-      name: p.name,
-    })) || [],
+    mainProduct: vendor.mainProduct.name || null,
+     
+    
 
     // 🔹 Packing material relations
-    mainPackingMaterial: vendor.mainPackingMaterial
-      ? {
-          id: vendor.mainPackingMaterial.id,
-          name: vendor.mainPackingMaterial.packagingMaterialName,
-        }
-      : null,
-    listOfPackingMaterial: vendor.listOfPackingMaterial?.map((pm) => ({
-      id: pm.id,
-      name: pm.packagingMaterialName,
-    })) || [],
+    mainPackingMaterial: vendor.mainPackingMaterial?.packagingMaterialName || null,
+     listOfPackingMaterial: vendor.listOfPackingMaterial?.map(p => p.packagingMaterialName),
+     
+  listOfAllProducts: vendor.listOfAllProducts?.map(p => p.name),
+
+
 
     dispatchCenter: vendor.dispatchCenter,
     warehouseLocations: vendor.warehouseLocations,
@@ -365,28 +370,15 @@ async getVendorByIdforupdate(id: string): Promise<any> {
     inFandVBusinessSince: vendor.inFandVBusinessSince,
 
     // 🔹 Product relations
-    mainProduct: vendor.mainProduct
-      ? {
-          id: vendor.mainProduct.id,
-          name: vendor.mainProduct.name,
-        }
-      : null,
-    listOfAllProducts: vendor.listOfAllProducts?.map((p) => ({
-      id: p.id,
-      name: p.name,
-    })) || [],
+    mainProduct: vendor.mainProduct?.id || null,
+     
+    listOfAllProducts: vendor.listOfAllProducts?.map(p => p.id) || [],
 
     // 🔹 Packing material relations
-    mainPackingMaterial: vendor.mainPackingMaterial
-      ? {
-          id: vendor.mainPackingMaterial.id,
-          name: vendor.mainPackingMaterial.packagingMaterialName,
-        }
-      : null,
-    listOfPackingMaterial: vendor.listOfPackingMaterial?.map((pm) => ({
-      id: pm.id,
-      name: pm.packagingMaterialName,
-    })) || [],
+    mainPackingMaterial: vendor.mainPackingMaterial?.id || null,
+    listOfPackingMaterial: vendor.listOfPackingMaterial?.map(p => p.id) || [],
+    
+   
 
     dispatchCenter: vendor.dispatchCenter,
     warehouseLocations: vendor.warehouseLocations,
@@ -511,9 +503,28 @@ async getVendorByIdforupdate(id: string): Promise<any> {
 
   return formattedResult;
 }
-async createVendorWithExcel(vendorData: any): Promise<any> {
-    console.log("in create vendor");
-    const workbook = XLSX.readFile(vendorData);
+async createVendorWithExcel(fileUrl: string): Promise<any> {
+  try {
+    console.log("in create vendor with Excel, fileUrl:", fileUrl);
+    
+    // First, download the file from DigitalOcean Spaces
+    let fileBuffer: Buffer;
+    
+    if (fileUrl.startsWith('https://')) {
+      // Extract the key from the URL
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
+      console.log('Downloading file from Spaces with key:', key);
+      
+      // Download file from Spaces
+      fileBuffer = await this.getExcelFromSpaces(key);
+    } else {
+      // If it's already a local path or key, try to get it from Spaces
+      fileBuffer = await this.getExcelFromSpaces(fileUrl);
+    }
+    
+    // Read the Excel file from buffer instead of file path
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
     const sheetNames = workbook.SheetNames;
     console.log("Sheet names found:", sheetNames);
 
@@ -554,49 +565,50 @@ async createVendorWithExcel(vendorData: any): Promise<any> {
 
 
         //Checking category and subcategory
-        let categoryId = rowData["Vendor Category"];
-        console.log("Category id",categoryId);
+        let categoryEntity: any = null;
+        let subCategoryEntity: any = null;
         
-        let subCategoryId = rowData ["Vendor Subcategory"];
+        const categoryName = rowData["Vendor Category"];
+        console.log("Category name:", categoryName);
+        
+        const subCategoryName = rowData["Vendor Subcategory"];
         const isCategoryPresent = await this.vendorCategoryRepository.findOne({
-          where: { name: categoryId },
+          where: { name: categoryName },
         });
-       // const saveCategory;
+        
         if (!isCategoryPresent) {
           const createNewCategory = this.vendorCategoryRepository.create({
             name: rowData["Vendor Category"],
           });
           const saveCategory = await this.vendorCategoryRepository.save(createNewCategory);
           console.log("Created new category:", createNewCategory);
-          categoryId = saveCategory.id;
+          categoryEntity = saveCategory;
 
           const createSubCategory = await this.vendorSubcategoryRepository.create({
             name: rowData["Vendor Subcategory"],
-            category: { id: categoryId },
+            category: saveCategory,
           });
           const saveSubCategory = await this.vendorSubcategoryRepository.save(createSubCategory);
-          subCategoryId = saveSubCategory.id;
+          subCategoryEntity = saveSubCategory;
 
-        }else {
-          categoryId = isCategoryPresent.id;
-          console.log("Existing category:", categoryId);
-          console.log("Subcategory id",subCategoryId);
+        } else {
+          categoryEntity = isCategoryPresent;
+          console.log("Existing category:", categoryEntity.name);
           
           const isSubCategoryPresent = await this.vendorSubcategoryRepository.findOne({
-            where: { name: subCategoryId, category: { id: categoryId }, },
+            where: { name: subCategoryName, category: { id: categoryEntity.id } },
           });
 
           if (!isSubCategoryPresent) {
             const createSubCategory = await this.vendorSubcategoryRepository.create({
               name: rowData["Vendor Subcategory"],
-              category: { id: categoryId },
+              category: categoryEntity,
             });
             const saveSubCategory = await this.vendorSubcategoryRepository.save(createSubCategory);
-            subCategoryId = saveSubCategory.id;
+            subCategoryEntity = saveSubCategory;
           } else {
-            subCategoryId = isSubCategoryPresent.id;
-            console.log("Sub Categor ID:", subCategoryId);
-            
+            subCategoryEntity = isSubCategoryPresent;
+            console.log("Existing subcategory:", subCategoryEntity.name);
           }
         }
 
@@ -609,13 +621,75 @@ async createVendorWithExcel(vendorData: any): Promise<any> {
         const vendor = new Vendor();
         vendor.companyName = rowData["Company Name"];
         vendor.vendorCode = vendorCode;
-        vendor.category = categoryId;
-        vendor.subcategory = subCategoryId;
+        vendor.category = categoryEntity; // Assign the actual entity object
+        vendor.subcategory = subCategoryEntity; // Assign the actual entity object
         vendor.inFandVBusinessSince = rowData["In FandV Business Since"];
         if (rowData["Date Of Incorporation"])
           vendor.dateOfIncorporation = new Date(rowData["Date Of Incorporation"]);
-        vendor.mainProduct = rowData["Main Product"];
-        vendor.listOfAllProducts = rowData["List Of All Products"];
+        
+        // Handle Main Product lookup
+        if (rowData["Main Product"]) {
+          console.log(`Looking up main product: ${rowData["Main Product"]}`);
+          const mainProductName = rowData["Main Product"].trim();
+          const mainProduct = await this.productRepository
+            .createQueryBuilder('product')
+            .where('LOWER(product.name) = LOWER(:name)', { name: mainProductName })
+            .getOne();
+          
+          if (mainProduct) {
+            vendor.mainProduct = mainProduct;
+            console.log(`✅ Found main product: ${mainProduct.name} (ID: ${mainProduct.id})`);
+          } else {
+            console.warn(`⚠️  Main product not found: ${mainProductName}`);
+            // Continue without setting mainProduct - it's nullable
+          }
+        }
+        
+        // Handle List of All Products (comma-separated string)
+        if (rowData["List Of All Products"]) {
+          console.log(`Looking up products list: ${rowData["List Of All Products"]}`);
+          const productNames = rowData["List Of All Products"].split(',').map((name: string) => name.trim());
+          const products = [];
+          
+          for (const productName of productNames) {
+            if (productName) {
+              const product = await this.productRepository
+                .createQueryBuilder('product')
+                .where('LOWER(product.name) = LOWER(:name)', { name: productName })
+                .getOne();
+              
+              if (product) {
+                products.push(product);
+                console.log(`✅ Found product: ${product.name} (ID: ${product.id})`);
+              } else {
+                console.warn(`⚠️  Product not found in list: ${productName}`);
+              }
+            }
+          }
+          
+          vendor.listOfAllProducts = products;
+        }
+        
+        // Handle createdBy field if provided in Excel
+        if (rowData['Created By']) {
+          console.log(`Looking up user for createdBy: ${rowData['Created By']}`);
+          
+          // Find user by name (case-insensitive search)
+          const createdByName = rowData['Created By'].trim();
+          const user = await this.userRepository
+            .createQueryBuilder('user')
+            .where('LOWER(CONCAT(user.firstName, \' \', user.lastName)) = LOWER(:name)', { name: createdByName })
+            .getOne();
+          
+          if (user) {
+            vendor.createdBy = user;
+            console.log(`✅ Found user: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
+          } else {
+            console.warn(`⚠️  User not found for createdBy: ${createdByName}`);
+            // Continue without setting createdBy - it's nullable
+          }
+        }
+        
         vendor.dispatchCenter = rowData["Dispatch Center"];
         vendor.warehouseLocations = rowData["Ware House Locations"];
         vendor.gstn = rowData["GSTN"];
@@ -723,6 +797,153 @@ async createVendorWithExcel(vendorData: any): Promise<any> {
         console.log("Saved vendor with ID:", result.id);
       }
     }
+
+    // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
+    await this.deleteFileFromSpaces(fileUrl);
+    
+  } catch (error) {
+    console.error('Error processing vendor upload:', error);
+    
+    // 🗑️ Still attempt to delete the file even if processing failed
+    try {
+      await this.deleteFileFromSpaces(fileUrl);
+    } catch (deleteError) {
+      console.error('Error deleting file after failed processing:', deleteError);
+    }
+    
+    throw error;
+  }
+}
+
+  /**
+   * Get Excel file from DigitalOcean Spaces
+   * @param key - Spaces key/path to the Excel file
+   * @returns Buffer containing the file data
+   */
+  private async getExcelFromSpaces(key: string): Promise<Buffer> {
+    try {
+      console.log('📂 Reading Excel file from Spaces:', key);
+
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('../middleware/spaces.config');
+      const command = new GetObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      const response = await s3.send(command);
+
+      if (!response.Body) {
+        throw new Error('No file content found in Spaces response');
+      }
+
+      const bytes = await response.Body.transformToByteArray();
+      const fileBuffer = Buffer.from(bytes);
+
+      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
+      return fileBuffer;
+    } catch (error) {
+      console.error('❌ Error reading Excel file from Spaces:', error);
+      throw new Error(`Failed to read Excel file: ${key}`);
+    }
+  }
+
+  /**
+   * Delete file from DigitalOcean Spaces
+   * @param fileUrl - The full URL or key of the file to delete
+   */
+  private async deleteFileFromSpaces(fileUrl: string): Promise<void> {
+    try {
+      // Extract the key from the full URL
+      // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
+      
+      const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('../middleware/spaces.config');
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.DO_SPACES_BUCKET!,
+        Key: key,
+      });
+
+      await s3.send(deleteCommand);
+      console.log(`Successfully deleted file: ${key}`);
+    } catch (error) {
+      console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
+      // Don't throw error here to avoid breaking the main flow
+    }
+  }
+
+  /**
+   * Get available vendor categories for reference when uploading vendor data
+   */
+  async getAvailableVendorCategories(): Promise<{ id: string; name: string }[]> {
+    const categories = await this.vendorCategoryRepository
+      .createQueryBuilder('category')
+      .select(['category.id', 'category.name'])
+      .orderBy('category.name', 'ASC')
+      .getMany();
+    
+    return categories.map(category => ({
+      id: category.id,
+      name: category.name
+    }));
+  }
+
+  /**
+   * Get available vendor subcategories for reference when uploading vendor data
+   */
+  async getAvailableVendorSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
+    const queryBuilder = this.vendorSubcategoryRepository
+      .createQueryBuilder('subcategory')
+      .leftJoinAndSelect('subcategory.category', 'category')
+      .select(['subcategory.id', 'subcategory.name', 'category.name'])
+      .orderBy('category.name', 'ASC')
+      .addOrderBy('subcategory.name', 'ASC');
+    
+    if (categoryId) {
+      queryBuilder.where('category.id = :categoryId', { categoryId });
+    }
+    
+    const subcategories = await queryBuilder.getMany();
+    
+    return subcategories.map(subcategory => ({
+      id: subcategory.id,
+      name: subcategory.name,
+      categoryName: subcategory.category?.name || 'Unknown'
+    }));
+  }
+
+  /**
+   * Get available products for reference when uploading vendor data
+   */
+  async getAvailableProducts(): Promise<{ id: string; name: string }[]> {
+    const products = await this.productRepository
+      .createQueryBuilder('product')
+      .select(['product.id', 'product.name'])
+      .orderBy('product.name', 'ASC')
+      .getMany();
+    
+    return products.map(product => ({
+      id: product.id,
+      name: product.name
+    }));
+  }
+
+  /**
+   * Get available users for reference when uploading vendor data
+   */
+  async getAvailableUsers(): Promise<{ id: string; name: string }[]> {
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.firstName', 'user.lastName'])
+      .orderBy('user.firstName', 'ASC')
+      .getMany();
+    
+    return users.map(user => ({
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`
+    }));
   }
 
 
@@ -1380,52 +1601,11 @@ async createVendorWithExcel(vendorData: any): Promise<any> {
     };
   }
 
-  // ✅ Otherwise, return all vendors (no pagination)
-  // const vendors = await query.getMany();
-  // return {
-  //   data: vendors,
-  // };
+  
 }
 
 
 
-// export async function generateNextVendorId(): Promise<string> {
-//   const lastVendor = await AppDataSource
-//     .getRepository(Vendor)
-//     .createQueryBuilder('vendor')
-//     .select('vendor.id')
-//     .orderBy('vendor.id', 'DESC')
-//     .getOne();
 
-//   // Get the current date in YYYYMMDD format
-//   const currentDate = format(new Date(), 'yyyyMMdd');
-
-//   if (!lastVendor) {
-//     // Start with the first ID if no vendors exist
-//     return `VEND-${currentDate}-001`;
-//   }
-
-//   // Extract the numeric part and date part from the ID (e.g., 'VEND-20241230-026000' -> 26000)
-//   const [_, lastDate, lastIdNumericPart] = lastVendor.id.split('-');
-
-//   let nextId;
-
-//   if (lastDate === currentDate) {
-//     // If the date matches the current date, increment the sequence
-//     const lastId = parseInt(lastIdNumericPart, 10);
-
-//     // Calculate dynamic width based on the length of the numeric part
-//     const dynamicWidth = lastIdNumericPart.length;
-
-//     // Increment and format dynamically (e.g., 26000 -> 026001)
-//     nextId = (lastId + 1).toString().padStart(dynamicWidth, '0');
-//   } else {
-//     // If the date does not match, reset the sequence for the new date
-//     nextId = '001';
-//   }
-
-//   // Return the new ID with the current date and incremented value
-//   return `VEND-${currentDate}-${nextId}`;
-// }
 }
 

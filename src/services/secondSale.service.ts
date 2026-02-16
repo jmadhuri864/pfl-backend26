@@ -117,6 +117,7 @@ const { search } = queryOptions;
             where: { id: doc.document_type_id },
             relations: [
               "companyName",
+              "location"
             ],
           });
 

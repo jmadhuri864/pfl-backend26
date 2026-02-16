@@ -20,13 +20,14 @@ import {
   deserializeUser,
   requireUser,
 } from '../middleware/deserializeUser';
-import { uploads } from '../middleware/muterConfigCSV';
+
 import { NotificationService } from '../services/notification.service';
 import { PaginationOptions } from '../utils/pagination';
-import { uploadFileMultiple } from '../middleware/multiFileWithAWS';
+import { upload } from '../middleware/upload.middleware';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { Status } from '../utils/status.enum';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { uploadSingle } from '../middleware/uploadsingle.middleware';
 
 @controller('/farmers',deserializeUser, requireUser)
 export class FarmerController {
@@ -41,7 +42,7 @@ export class FarmerController {
 
   @httpPost(
     '/',
-    uploadFileMultiple.fields([
+    upload.fields([
       { name: 'farmPhoto', maxCount: 1 },
       { name: 'farmerPhoto', maxCount: 1 },
       { name: 'idProofCopy', maxCount: 1 },
@@ -59,9 +60,10 @@ export class FarmerController {
       
       if (req.files) {
         const files = req.files as {
-          [fieldname: string]: Express.MulterS3.File[];
+          [fieldname: string]: any[];
         };
-
+console.log(files)
+        // DigitalOcean Spaces URLs are automatically provided by multer-s3 in .location property
         farmerData.farmPhoto = files.farmPhoto
           ? files.farmPhoto[0].location
           : null;
@@ -227,7 +229,7 @@ export class FarmerController {
     }
   }
 
-  @httpPost('/upload-farmer', uploads.single('file'))
+  @httpPost('/upload-farmer', uploadSingle.single('file'))
   public async uploadFarmerExcel(
     @request() req: Request,
     @response() res: Response,
@@ -239,7 +241,7 @@ export class FarmerController {
         return next(new AppError(400, 'No file uploaded'));
       }
 
-      await this.farmerService.createFarmerwithExcel(req.file.path);
+      await this.farmerService.createFarmerwithExcel((req.file as any).location!);
 
       ControllerLogger.logSuccess('Farmer Excel uploaded', 'bulk', req, res);
       res.status(200).json({ message: 'File processed successfully' });
@@ -417,7 +419,7 @@ export class FarmerController {
   @httpPut(
     '/:id',
     captureUser,
-    uploadFileMultiple.fields([
+    upload.fields([
       { name: 'farmPhoto', maxCount: 1 },
       { name: 'farmerPhoto', maxCount: 1 },
       { name: 'idProofCopy', maxCount: 1 },
@@ -433,32 +435,24 @@ export class FarmerController {
     try {
       const farmerData = req.body;
 
-      const fileFields = [
-        'farmPhoto',
-        'farmerPhoto',
-        'idProofCopy',
-        'sevenTwelveCopy',
-      ];
+      if (req.files) {
+        const files = req.files as {
+          [fieldname: string]: any[];
+        };
 
-      for (const field of fileFields) {
-        const uploadedFile = (
-          req.files as { [key: string]: Express.MulterS3.File[] }
-        )?.[field]?.[0];
-        const bodyValue = farmerData[field];
-
-        if (uploadedFile && uploadedFile.location) {
-          farmerData[field] = uploadedFile.location;
-        } else if (typeof bodyValue === 'string') {
-          if (bodyValue.trim() === '') {
-            farmerData[field] = null;
-          } else {
-            farmerData[field] = undefined;
-          }
-        } else {
-          farmerData[field] = undefined;
-        }
+        // DigitalOcean Spaces URLs are automatically provided by multer-s3 in .location property
+       farmerData.farmPhoto = files.farmPhoto
+          ? files.farmPhoto[0].location
+          : null;
+        farmerData.farmerPhoto = files.farmerPhoto
+          ? files.farmerPhoto[0].location
+          : null;
+        if(files.idProofCopy)
+        farmerData.idProofCopy = files.idProofCopy[0].location
+          if(files.sevenTwelveCopy)
+        farmerData.sevenTwelveCopy = files.sevenTwelveCopy[0].location
+          
       }
-
       const requestedBy = res.locals.user.id;
       const updatedBy = res.locals.updatedBy.id;
       const farmer = await this.farmerService.updateFarmer(
@@ -585,33 +579,6 @@ export class FarmerController {
     }
   }
 
-  @httpPost('/upload', uploads.single('file'))
-  public async uploadFarmersData(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      const filePath = req.file?.path;
-      
-      if (!filePath) {
-        ControllerLogger.logValidationError('Upload Farmers Data', 'File not found', req, res);
-        return next(new AppError(404, 'File not found'));
-      }
-
-      await this.farmerService.processCsv(filePath);
-
-      ControllerLogger.logSuccess('Farmers Data uploaded', 'bulk', req, res);
-      res.status(200).json({
-        status: 'success',
-        message: 'Farmer data uploaded successfully',
-      });
-    } catch (error) {
-      ControllerLogger.logError('Upload Farmers Data', error, req, res);
-      next(error); 
-    }
-  }
-
   @httpGet('/filterFarmer/search/withfilter')
   public async getAllFarmersWithQuery(
     @request() req: Request,
@@ -646,24 +613,45 @@ export class FarmerController {
   ) {
     try {
       const key = 'formats/FarmerDetailsTemplate.xlsx';
-      const fileBuffer = await this.pdfGeneratorService.getExcelFromS3(key);
-
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${key.split('/').pop()}"`,
-      );
       
-      ControllerLogger.logList('Farmer Template Downloaded', req, res);
-      res.send(fileBuffer);
+      
+      
+      
+      const fileUrl = `https://${process.env.DO_SPACES_BUCKET}.sgp1.digitaloceanspaces.com/${key}`;
+      
+      
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Farmer template "${key.split('/').pop()}" accessed`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Template access notification error:', notifError);
+      }
+      
+      ControllerLogger.logList('Farmer Template URL Generated', req, res);
+      
+      // Return the URL in JSON response
+      res.status(200).json({
+        status: 'success',
+        message: 'Template URL generated successfully',
+        data: {
+          // templateUrl: fileUrl,
+          // fileName: key.split('/').pop(),
+          downloadUrl: fileUrl, // Alternative property name for clarity
+          //fileKey: key // Include the key for reference
+        }
+      });
     } catch (error) {
-      ControllerLogger.logError('Download Farmer Template', error, req, res);
+      ControllerLogger.logError('Generate Farmer Template URL', error, req, res);
       next(error);
     }
   }
+
+ 
 
   @httpGet('/multifilter')
   public async getFilteredFarmers(

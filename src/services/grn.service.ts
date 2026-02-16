@@ -401,18 +401,20 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
-    const { search } = queryOptions;
-    const {data,meta}= await this.documentbService.getAllDocumentByUserId(
+        const { search } = queryOptions;
+    // Get ALL documents without pagination first
+    const {data: allDocuments}= await this.documentbService.getAllDocumentByUserId(
       userId,
       DocumentTypeEnum.GRN,
-      queryOptions
+      queryOptions,
+      true // skipPagination = true
     );
-const paginatedData = await buildQueryFromArray(data,queryOptions)
-  //   console.log('data in grn service', data);
-//const data = paginatedResult.data
+
+    const typedDocuments = allDocuments as DocumentWithRelatedData[];
 
 
-    const typedDocuments = paginatedData.data as DocumentWithRelatedData[];
+
+    
     for (const doc of typedDocuments) {
       if (!doc.document_type_id) continue;
       try {
@@ -430,45 +432,7 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
 
   
 
-    // let relatedDataOnly = typedDocuments
-    //   .filter((d) => d)
-    //   .map((doc) => ({
-    //     documentId: doc.id,
-    //     overAllStatus: doc.status,
-    //     createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-    //     createdDate: formatDateTime(doc.createdAt).createdDate,
-    //     createdTime: formatDateTime(doc.createdAt).createdTime,
-    //     ...doc.relatedData,
-    //     id: doc.relatedData.id ,
-    //     companyName: doc.relatedData?.companyName?.name || null,
-    //     // grnNo: doc.relatedData.grnNo,
-    //     // requestingDepartment: doc.relatedData.requestingDepartment,
-    //     purchaseLocation: doc.relatedData.purchaseLocation?.name || null,
-    //     purchaseForSalesLocation: doc.relatedData.purchaseForSalesLocation?.name || null,
-    //     otherPurchaseForSalesLoc: doc.relatedData.otherPurchaseForSalesLoc || null,
-    //     otherPurchaseLoc: doc.relatedData.otherPurchaseLoc || null,
-    //     purchaseInstructionsBy: doc.relatedData.purchaseInstructionsBy,
-    //     grnProducts: doc.relatedData.grnProducts.map((product: any) => ({
-    //       id: product.id,
-          
-    //       quantity: product.quantity,
-    //       unitPrice: product.unitPrice,
-    //       productName: product.productName?.id,
-    //       variant: product.variant?.id || null,
-    //       uom: product.uom?.id,
-         
-    //       amount: product.amount,
-    //       rtv: product.rtv,
-    //       purchaseDate: product.purchaseDate,
-    //       dispatchDate: product.dispatchDate,
-    //       deliveryDate: product.deliveryDate,
-    //       deliveryLocation: product.deliveryLocation,
-    //       expectedHarvestDate: product.expectedHarvestDate,
-    //     })),
-
-    //   }))
-
-    //TODO:New code
+    
 
     let relatedDataOnly = typedDocuments
   .filter((doc) => doc.relatedData) // ✅ filter out null GRNs
@@ -496,12 +460,13 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
      otherCharges: related?.otherCharges||null,
      totalAmt:related?.totalAmt || null,
      amtWords:related?.amtWords || null,
-     
+     cratesIn:related?.cratesIn || null,
      purchasedBy:related?.purchasedBy || null,
      receivedThrough:related?.receivedThrough || null,
      vehicleNo:related?.vehicleNo || null,
      timeIn:related?.timeIn || null,
-     
+     remark:related?.remark || null,
+     securityPerson:related?.securityPerson|| null,
      deliveryReceivingPerson:related?.deliveryReceivingPerson || null,
      rmn:related?.rmn || null,
    
@@ -579,14 +544,24 @@ paymentInfo: {
     });
   }
 
-    return {
-  data: relatedDataOnly,
-  meta: {
-    total: paginatedData.meta.total,
-    page:paginatedData.meta.page,
-    pages: paginatedData.meta.pages
-  }
-};
+        // Apply pagination
+  const total = relatedDataOnly.length;
+  const page = queryOptions.page || 1;
+  const limit = queryOptions.limit || 10;
+  const pages = Math.ceil(total / limit);
+  const skip = (page - 1) * limit;
+  const paginatedResult = relatedDataOnly.slice(skip, skip + limit);
+
+  return {
+    data: paginatedResult,
+    meta: {
+      total,
+      page,
+      pages
+    }
+  };
+
+
   }
 //   public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promise<{
 //     data: any[];

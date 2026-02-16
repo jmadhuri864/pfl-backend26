@@ -10,10 +10,12 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 import logger from "../utils/logger";
 import AppError from "../utils/appError";
 import { ControllerLogger } from '../utils/controllerLogger';
-import { upload } from "../middleware/multerConfig";
-import { uploadFile } from "../middleware/uploadwithAWS";
+
 import { PaginationOptions } from "../utils/pagination";
 import { NotificationService } from "../services/notification.service";
+import { uploadSingle } from "../middleware/uploadsingle.middleware";
+import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { setAttachmentUrls } from "../utils/fileUploadHelper";
 //,deserializeUser,requireUser
 @controller('/multiCashVoucher',deserializeUser,requireUser)
 export class  MultiCashVoucherController {
@@ -23,7 +25,7 @@ export class  MultiCashVoucherController {
       @inject(TYPES.NotificationService) private notificationService: NotificationService
     ) {}
 
-    @httpPost("/",uploadFile.single('anyAttachment'))
+    @httpPost("/", uploadAttachments)
   public async createVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -32,17 +34,10 @@ export class  MultiCashVoucherController {
     try {
       logger.info("Creating a new Multi Cash Voucher");
       const voucherData = req.body;
-    //console.log(req.body);
-    if(req.file){
-      
-      const imageUrl = (req.file as any).location;
-      console.log("imageurl is ",imageUrl)
-     if (imageUrl) {
-       
-      voucherData.anyAttachment = imageUrl;
-     }
- 
-   }
+    console.log(req.body);
+    
+    // Use helper function to handle file URL extraction
+    setAttachmentUrls(voucherData, req.files as any[]);
 
    Object.keys(voucherData).forEach((key) => {
     if (voucherData[key] === "null") voucherData[key] = null;
@@ -70,6 +65,7 @@ export class  MultiCashVoucherController {
        
       });
     } catch (err) {
+      console.log(err)
       logger.error("Error while creating Multi Cash Voucher", { error: err });
       ControllerLogger.logError('Multi Cash Voucher creation', err, req, res);
       next(err);
@@ -257,7 +253,7 @@ export class  MultiCashVoucherController {
   }
 
   // Update a Labour Payment Voucher
-  @httpPatch("/:id",uploadFile.single('anyAttachment'),captureUser)
+  @httpPatch("/:id", uploadAttachments, captureUser)
   public async updateVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -269,16 +265,9 @@ export class  MultiCashVoucherController {
       const updatedData = req.body;
       console.log(req.body)
       logger.info(`Updating Multi Cash Voucher with ID: ${id}`, { updatedBy });
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        updatedData.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(updatedData, req.files as any[]);
 
      Object.keys( updatedData).forEach((key) => {
       if ( updatedData[key] === "null")  updatedData[key] = null;

@@ -19,7 +19,8 @@ import { BankDetailsCust } from '../entities/bankDetailsCust.entity';
 
 import { FileType } from '../utils/status.enum';
 import path from 'path';
-import { upload } from '../middleware/multifileupload';
+import { upload } from '../middleware/upload.middleware';
+
 interface FileFields {
   bankStatementCopy?: Express.Multer.File[];
   cancelledChequeCopy?: Express.Multer.File[];

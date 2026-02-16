@@ -17,13 +17,13 @@ export class BankDetailsCust extends Model {
  
 
   @Column({ name: 'customer_bank_account_holder_fname', nullable: true })
-  accountHolderFName: string;
+  bankAccHolderFName: string;
 
   @Column({ name: 'customer_bank_account_holder_mname', nullable: true })
-  accountHolderMName: string;
+  bankAccHolderMName: string;
   
   @Column({ name: 'customer_bank_account_holder_lname', nullable: true })
-  accountHolderLName: string;
+  bankAccHolderLName: string;
   @Column({ name: 'customer_bank_name', nullable: true })
   bankName: string;
 
@@ -48,7 +48,7 @@ export class BankDetailsCust extends Model {
   ifCancelledCheque: boolean;  // true or false
 
   @Column({ name: 'reason_no_cheque', nullable: true })
-  notCancelledChequereason: string; // Reason for not providing the copy
+  notCancelledChequeReason: string; // Reason for not providing the copy
   @Column({ name: 'cancelled_cheque_copy', nullable: true })
   cancelledChequeCopy: string; // Reason for not providing the copy
   @Column({ name: 'other_type_of_account', nullable: true })

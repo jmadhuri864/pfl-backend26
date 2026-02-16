@@ -2,13 +2,14 @@ import { inject } from "inversify";
 import { controller, httpDelete, httpGet, httpPatch, httpPost, next, request, requestParam, response } from "inversify-express-utils";
 import { TYPES } from "../types";
 import { DeliveryDetailsCustService } from "../services/DeliveryDetailsCust.service";
-import { upload } from "../middleware/multifileupload";
+
 import { NextFunction ,Request,Response} from "express";
 import AppError from "../utils/appError";
 import { DeliveryDetails } from "../entities/deliveryDetailsCust.entity";
 import path from "path";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import logger from "../utils/logger";
+import { upload } from "../middleware/upload.middleware";
 
 
 @controller('/delivery-details',deserializeUser, requireUser)

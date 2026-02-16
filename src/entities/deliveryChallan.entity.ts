@@ -94,8 +94,8 @@ export class DeliveryChallanPurchase extends Model {
   @Column({ nullable: true })
   receiverName: string;
 
-  @Column({ name: 'any attachment', nullable: true })
-  anyAttachment: string;
+  @Column('simple-array', { nullable: true })
+  anyAttachment: string[] | null;
 
   @Column({
     type: 'enum',

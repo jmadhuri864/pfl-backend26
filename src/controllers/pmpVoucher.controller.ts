@@ -7,12 +7,14 @@ import { TYPES } from "../types";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 
 import logger from "../utils/logger";
-import { upload } from "../middleware/multerConfig";
-import { uploadFile } from "../middleware/uploadwithAWS";
+
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import { uploadSingle } from "../middleware/uploadsingle.middleware";
+import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { setAttachmentUrls } from "../utils/fileUploadHelper";
 //,deserializeUser, requireUser
 @controller("/pmpvoucher",deserializeUser, requireUser)
 export class PMPVoucherController {
@@ -206,7 +208,7 @@ export class PMPVoucherController {
   }
 
   // Create a new voucher
-  @httpPost("/",uploadFile.single('anyAttachment'))
+  @httpPost("/", uploadAttachments)
   public async createVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -214,17 +216,11 @@ export class PMPVoucherController {
   ) {
     try {
       console.log("reqbody",req.body)
+      console.log("req.files:", req.files) // Debug log
       const voucherData = req.body;
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        voucherData.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(voucherData, req.files as any[]);
       Object.keys(voucherData).forEach((key) => {
         if (voucherData[key] === "null") voucherData[key] = null;
       });
@@ -262,7 +258,7 @@ export class PMPVoucherController {
   }
 
   // Update a voucher
-  @httpPatch("/:id",uploadFile.single('anyAttachment'),captureUser)
+  @httpPatch("/:id", uploadAttachments, captureUser)
   public async updateVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -272,22 +268,11 @@ export class PMPVoucherController {
       const updatedBy=res.locals.updatedBy
       const { id } = req.params;
       const updatedData = req.body;
-      // const file = req.file;
-      // console.log(file);
-      // if (file) {
-      //   updatedData.anyAttachment=file.path;
-      //   //console.log("Uploaded file:", file); // Check file path, originalname, etc.
-      // } 
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        updatedData.anyAttachment = imageUrl;
-       }
-   
-     }
+      console.log("req.files in update:", req.files); // Debug log
+      
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(updatedData, req.files as any[]);
 
      Object.keys(updatedData).forEach((key) => {
       if (updatedData[key] === "null") updatedData[key] = null;

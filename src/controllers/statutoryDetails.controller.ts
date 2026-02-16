@@ -3,7 +3,8 @@ import { controller, httpDelete, httpGet, httpPatch, httpPost, request, requestP
 import { TYPES } from "../types";
 import { StatutoryDetailsCustService } from "../services/statutoryDetails.service";
 import { NextFunction, Request, Response } from "express";
-import { upload } from "../middleware/multifileupload";
+import { upload } from "../middleware/upload.middleware";
+
 
 @controller('/statutory-details')
 export class StatutoryDetailsCustController {

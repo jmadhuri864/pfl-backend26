@@ -434,33 +434,70 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
   deliveryChallanId: string,
   invoiceType: string
 ): Promise<any> {
+  console.log("=== GENERATE FINAL INVOICE START ===");
   console.log("deliveryChallanId", deliveryChallanId);
   console.log("invoiceType", invoiceType);
 
-  // First, update delivery challan with latest return data
-  await this.updateDeliveryChallanWithReturns(deliveryChallanId);
+  // Check if the customer delivery challan exists
+  const challanExists = await this.challanRepository
+    .createQueryBuilder('challan')
+    .where('challan.id = :id', { id: deliveryChallanId })
+    .getOne();
 
-  const deliveryChallan = await this.challanRepository.findOne({
-    where: { id: deliveryChallanId },
-    relations: [
-      'deliveryChallanProducts',
-      'deliveryChallanProducts.productName',
-      'deliveryChallanProducts.uom',
-      'companyName',
-      'companyName.bankDetails',
-      'offices',
-      'customerName', // 👈 from CustomerDeliveryChallan
-      'customerName.billingDetails.billingAddress',
-      'customerName.deliveryDetails.deliveryAddress',
-      'customerName.statutoryDetails',
-      'billingAddress', // 👈 CustomerDeliveryChallan specific
-      'deliveryAddress', // 👈 CustomerDeliveryChallan specific
-    ],
-  });
+  console.log("Challan exists as CustomerDeliveryChallan:", !!challanExists);
+
+  if (!challanExists) {
+    // Let's check if there are ANY customer delivery challans to help debug
+    const recentChallans = await this.challanRepository
+      .createQueryBuilder('challan')
+      .select(['challan.id', 'challan.challanNo', 'challan.createdAt'])
+      .orderBy('challan.createdAt', 'DESC')
+      .limit(5)
+      .getMany();
+
+    console.error("Customer Delivery Challan not found with ID:", deliveryChallanId);
+    console.log("Recent customer delivery challans (last 5):", 
+      recentChallans.map(c => ({ id: c.id, challanNo: c.challanNo, createdAt: c.createdAt }))
+    );
+    
+    throw new Error(
+      `Customer Delivery Challan not found with ID: ${deliveryChallanId}. ` +
+      `This ID does not exist in the database. Please verify the ID is correct.`
+    );
+  }
+
+  // Fetch delivery challan with all required relations
+  const deliveryChallan = await this.challanRepository
+    .createQueryBuilder('challan')
+    .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
+    .leftJoinAndSelect('products.productName', 'productName')
+    .leftJoinAndSelect('products.uom', 'uom')
+    .leftJoinAndSelect('challan.companyName', 'companyName')
+    .leftJoinAndSelect('companyName.bankDetails', 'bankDetails')
+    .leftJoinAndSelect('challan.offices', 'offices')
+    .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
+    .leftJoinAndSelect('challan.customerName', 'customerName')
+    .leftJoinAndSelect('customerName.billingDetails', 'billingDetails')
+    .leftJoinAndSelect('billingDetails.billingAddress', 'billingAddress')
+    .leftJoinAndSelect('customerName.deliveryDetails', 'deliveryDetails')
+    .leftJoinAndSelect('deliveryDetails.deliveryAddress', 'deliveryAddress')
+    .leftJoinAndSelect('customerName.statutoryDetails', 'statutoryDetails')
+    .leftJoinAndSelect('challan.billingAddress', 'challanBillingAddress')
+    .leftJoinAndSelect('challan.deliveryAddress', 'challanDeliveryAddress')
+    .where('challan.id = :id', { id: deliveryChallanId })
+    .getOne();
+
+  console.log("Challan loaded with relations:", !!deliveryChallan);
+  console.log("Has products:", deliveryChallan?.deliveryChallanProducts?.length || 0);
+  console.log("Has company:", !!deliveryChallan?.companyName);
+  console.log("Has customer:", !!deliveryChallan?.customerName);
 
   if (!deliveryChallan) {
-    throw new Error("Delivery Challan not found");
+    throw new Error("Delivery Challan not found after loading relations");
   }
+
+  // Update delivery challan with latest return data (pass the challan to avoid re-query)
+  await this.updateDeliveryChallanWithReturnsOptimized(deliveryChallan);
 
   const date = new Date();
 
@@ -491,14 +528,16 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
     
     // Get return values (default to 0 if not set) - using existing returnedQty field
     const returnQty = product.returnedQty || 0;
-    const returnAmount = product.returnedAmount || 0;
-    const returnNetWeight = product.returnedNetWeight || 0;
+
     
     // Calculate net values after returns
     const netQuantity = baseQuantity - returnQty;
     const baseAmount = baseQuantity * baseUnitPrice;
+    const returnAmount = returnQty * baseUnitPrice;
     const netAmount = baseAmount - returnAmount;
-    const netWeight = (product.netWeight || 0) - returnNetWeight;
+    const netWeight = baseQuantity > 0 
+      ? (product.netWeight || 0) * (netQuantity / baseQuantity)
+      : 0;
 
     return {
       productName: sanitizeValue(product.productName.name),
@@ -508,7 +547,7 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
       qty: netQuantity,
       rate: baseUnitPrice,
       originalAmt: baseAmount,
-      returnAmt: returnAmount,
+     
       amt: netAmount,
       netWeight: netWeight,
     };
@@ -657,11 +696,15 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
      * This aggregates all returns for a delivery challan and updates the items
      */
     async updateDeliveryChallanWithReturns(deliveryChallanId: string): Promise<void> {
+      console.log('Checking returns for delivery challan:', deliveryChallanId);
+      
       // Get all returns for this delivery challan
       const returns = await this.postReturnByCustomerRepository.find({
         where: { deliveryChallanNo: { id: deliveryChallanId } },
         relations: ['returnedProducts', 'returnedProducts.productName'],
       });
+
+      console.log('Returns found:', returns?.length || 0);
 
       if (!returns || returns.length === 0) {
         console.log('No returns found for this delivery challan');
@@ -674,8 +717,10 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
         relations: ['deliveryChallanProducts', 'deliveryChallanProducts.productName'],
       });
 
+      console.log('Delivery challan found:', !!deliveryChallan);
+
       if (!deliveryChallan) {
-        throw new Error('Delivery Challan not found');
+        throw new Error('Delivery Challan not found in updateDeliveryChallanWithReturns');
       }
 
       // Aggregate returns by product
@@ -701,8 +746,57 @@ async generateInvoice(deliveryChallanId: string, invoiceType: string): Promise<a
 
         if (returns) {
           product.returnedQty = returns.qty;
-          product.returnedAmount = returns.amount;
-          product.returnedNetWeight = returns.netWeight;
+         
+        }
+      }
+
+      // Save updated delivery challan
+      await this.challanRepository.save(deliveryChallan);
+      console.log('Delivery challan updated with return data');
+    }
+
+    /**
+     * Optimized version that accepts the challan object directly to avoid re-querying
+     */
+    async updateDeliveryChallanWithReturnsOptimized(deliveryChallan: CustomerDeliveryChallan): Promise<void> {
+      console.log('Checking returns for delivery challan:', deliveryChallan.id);
+      
+      // Get all returns for this delivery challan
+      const returns = await this.postReturnByCustomerRepository.find({
+        where: { deliveryChallanNo: { id: deliveryChallan.id } },
+        relations: ['returnedProducts', 'returnedProducts.productName'],
+      });
+
+      console.log('Returns found:', returns?.length || 0);
+
+      if (!returns || returns.length === 0) {
+        console.log('No returns found for this delivery challan');
+        return;
+      }
+
+      // Aggregate returns by product
+      const returnsByProduct = new Map<string, { qty: number; amount: number; netWeight: number }>();
+
+      returns.forEach((returnRecord) => {
+        returnRecord.returnedProducts.forEach((returnedProduct) => {
+          const productId = returnedProduct.productName.id;
+          const existing = returnsByProduct.get(productId) || { qty: 0, amount: 0, netWeight: 0 };
+
+          existing.qty += returnedProduct.returnedQty || 0;
+          existing.amount += returnedProduct.returnedQtyAmt || 0;
+          existing.netWeight += returnedProduct.returnedNetWt || 0;
+
+          returnsByProduct.set(productId, existing);
+        });
+      });
+
+      // Update delivery challan products with aggregated return data
+      for (const product of deliveryChallan.deliveryChallanProducts) {
+        const productId = product.productName.id;
+        const returns = returnsByProduct.get(productId);
+
+        if (returns) {
+          product.returnedQty = returns.qty;
         }
       }
 

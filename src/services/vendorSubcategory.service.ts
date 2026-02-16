@@ -52,16 +52,28 @@ export class VendorSubcategoryService {
   }
 
   public async getSubcategories(
-    categoryId?: string
+    categoryIdOrName?: string
   ): Promise<Partial<VendorSubcategory>[]> {
     const queryBuilder =
-      this.vendorSubcategoryRepository.createQueryBuilder("subcategory");
+      this.vendorSubcategoryRepository.createQueryBuilder("subcategory")
+      .leftJoinAndSelect("subcategory.category", "category");
 
-    // Apply the filter if categoryId is provided
-    if (categoryId) {
-      queryBuilder.where("subcategory.categoryId = :categoryId", {
-        categoryId,
-      });
+    // Apply the filter if categoryIdOrName is provided
+    if (categoryIdOrName) {
+      // Check if it's a UUID (36 characters with hyphens) or a name
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryIdOrName);
+      
+      if (isUUID) {
+        // If it's a UUID, search by category ID
+        queryBuilder.where("subcategory.categoryId = :categoryId", {
+          categoryId: categoryIdOrName,
+        });
+      } else {
+        // If it's not a UUID, search by category name
+        queryBuilder.where("category.name = :categoryName", {
+          categoryName: categoryIdOrName,
+        });
+      }
     }
 
     // Select only the subcategory fields (excluding relations like category)

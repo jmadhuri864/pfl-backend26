@@ -38,7 +38,7 @@ export class keyMobileNoData extends Model {
     @Column({ name: 'reason_for_electricity_bill', nullable: true})
     notElectricityBillReason: string;
     @Column({ name: 'customer_black_listed_by', nullable: true})
-    customerBlacklisted: string;
+    customerBlacklisted: boolean;
     @Column({ name: 'reason_for_backlisted', nullable: true})
     ifBlacklistedReason: string;
     @Column({ name: 'backlisted_by', nullable: true})

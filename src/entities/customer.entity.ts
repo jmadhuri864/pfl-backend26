@@ -137,7 +137,7 @@ export class Customer extends Model {
   @Column({ name: 'customer_email_primary', nullable: true })
   emailPrimary: string;
 
-  @Column({ name: 'customer_email_secondary', nullable: true, unique: true })
+  @Column({ name: 'customer_email_secondary', nullable: true})
   emailSecondary: string;
 
   @Column({ name: 'customercode', nullable: true })

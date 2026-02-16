@@ -15,7 +15,7 @@ import { OtherDeliveryChallanService } from '../services/otherDeliveryChallan.se
 import { inject } from 'inversify';
 import { NextFunction, Response, Request } from 'express';
 import { PaginationOptions } from '../utils/pagination';
-import { uploadFile } from '../middleware/uploadwithAWS';
+
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
 import { DocumentbService } from '../services/documentb.service';
@@ -23,6 +23,8 @@ import { UserRepository } from '../repositories/user.repository';
 import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import AppError from '../utils/appError';
+import { upload, uploadAttachments } from '../middleware/upload.middleware';
+import { setAttachmentUrls } from '../utils/fileUploadHelper';
 
 @controller('/other-delivery-challan', deserializeUser, requireUser)
 export class OtherDeliveryChallanController {
@@ -76,7 +78,7 @@ export class OtherDeliveryChallanController {
     }
   }
 
-  @httpPost('/', uploadFile.single('anyAttachment'))
+  @httpPost('/', uploadAttachments)
   public async createOtherDeliveryChallan(
     @response() res: Response,
     @request() req: Request,
@@ -90,13 +92,8 @@ export class OtherDeliveryChallanController {
       otherDeliveryChallanData.requestedBy = requestedBy;
       otherDeliveryChallanData.requestingDepartment = res.locals.user.selectDepartment;
 
-      if (req.file) {
-        const imageUrl = (req.file as any).location;
-        console.log('imageurl is ', imageUrl);
-        if (imageUrl) {
-          otherDeliveryChallanData.anyAttachment = imageUrl;
-        }
-      }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(otherDeliveryChallanData, req.files as any[]);
 
       const otherDeliveryChallan =
         await this.otherDeliveryChallanService.create(otherDeliveryChallanData);
@@ -487,7 +484,7 @@ export class OtherDeliveryChallanController {
     }
   }
 
-  @httpPatch('/:id', uploadFile.single('anyAttachment'), captureUser)
+  @httpPatch('/:id', uploadAttachments, captureUser)
   public async updateOtherDeliveryChallan(
     @requestParam('id') id: string,
     @response() res: Response,
@@ -503,10 +500,8 @@ export class OtherDeliveryChallanController {
       }
 
       // ✅ Handle uploaded image
-      if (req.file) {
-        const imageUrl = (req.file as any).location;
-        if (imageUrl) otherDeliveryChallanData.anyAttachment = imageUrl;
-      }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(otherDeliveryChallanData, req.files as any[]);
 
       // ✅ Clean 'null' strings
       Object.keys(otherDeliveryChallanData).forEach((key) => {

@@ -335,6 +335,11 @@ import { UserReportService } from "./services/userreport.service";
 import { SuperAdminService } from "./services/superadmin.service";
 import { SuperAdminController } from "./controllers/superAdmin.controller";
 
+// Report imports
+import { ReportController } from "./controllers/report.controller";
+import { ReportService } from "./services/report.service";
+import { SalesReportService } from "./services/salesReport.service";
+
 
 const container = new Container();
 //socket server
@@ -753,8 +758,8 @@ container.bind<TPVoucherRepository>(TYPES.TPVoucherRepository).toDynamicValue((c
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(TPVoucher).extend(TPVoucherRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
-container.bind<TPVoucherService>(TYPES.TPVoucherService).to(TPVoucherService);
-container.bind<TPVoucherController >(TYPES.TPVoucherController ).to(TPVoucherController );
+container.bind<TPVoucherService>(TYPES.TPVoucherService).to(TPVoucherService).inSingletonScope();
+container.bind<TPVoucherController>(TYPES.TPVoucherController).to(TPVoucherController).inSingletonScope();
 
 
 //-------------------------------packing_material_Payment_Voucher-------------------------------
@@ -762,8 +767,8 @@ container.bind<PMPVoucherRepository>(TYPES.PMPVoucherRepository).toDynamicValue(
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(PMPVoucher).extend(PMPVoucherRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
-container.bind<PMPVoucherService>(TYPES. PMPVoucherService).to( PMPVoucherService);
-container.bind<PMPVoucherController >(TYPES.PMPVoucherController).to(PMPVoucherController );
+container.bind<PMPVoucherService>(TYPES.PMPVoucherService).to(PMPVoucherService).inSingletonScope();
+container.bind<PMPVoucherController>(TYPES.PMPVoucherController).to(PMPVoucherController).inSingletonScope();
 
 //-------------------------------multiCash_Payment_Voucher-------------------------------
 container.bind<MultiCashVoucherRepository>(TYPES.MultiCashVoucherRepository).toDynamicValue((context) => {
@@ -1241,13 +1246,15 @@ import { SalesTargetWeek } from "./entities/salesTargetWeek.entity";
 import { SalesAchievementRepository } from "./repositories/salesAchievement.repository";
 import { SalesAchievement } from "./entities/salesachivement.entity";
 //import { DashboardService } from "./services/dash;
-import { DashboardController } from "./controllers/dashboard.controller";
+
 import { ProcurementTargetProduct } from "./entities/procurementTargetProduct.entity";
 import { ProcurementTargetProductRepository } from "./repositories/procurmentTargetProduct.repository";
 import { ProcurementTargetWeek } from "./entities/procurementTargetWeek.entity";
 import { ProcurementTargetWeekRepository } from "./repositories/procurmentTargetWeek.repository";
 import { ProcurementTargetAchievementRepository } from "./repositories/procurmentAchievement.repository";
 import { ProcurementAchievement } from "./entities/procurementAchievement.entity";
+import { PaymentInfoForRFPA } from "./entities/rfpaPayementInfo.entity";
+import { RfpaPaymentInfoRepository } from "./repositories/rfpaPaymentInfo.repository";
 // import { RegistrationReportService } from "./services/registrationReport.service";
 // import { RegistrationReportController } from "./controllers/registrationReport.controller";
 
@@ -1329,4 +1336,13 @@ container.bind<SalesTargetController>(TYPES.SalesTargetController).to(SalesTarge
 // container.bind<RegistrationReportService>(TYPES.RegistrationReportService).to(RegistrationReportService).inSingletonScope();
 // container.bind<RegistrationReportController>(TYPES.RegistrationReportController).to(RegistrationReportController).inSingletonScope();
 
+//report
+container.bind<ReportService>(TYPES.ReportService).to(ReportService).inSingletonScope();
+container.bind<SalesReportService>(TYPES.SalesReportService).to(SalesReportService).inSingletonScope();
+container.bind<ReportController>(TYPES.ReportController).to(ReportController).inSingletonScope();
+//paymentinfoforrfpa
+container.bind<RfpaPaymentInfoRepository>(TYPES.RfpaPaymentInfoRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(PaymentInfoForRFPA).extend(RfpaPaymentInfoRepository);
+}).inRequestScope();
 export { container };

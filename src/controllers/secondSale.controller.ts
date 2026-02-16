@@ -21,7 +21,7 @@ import {
 } from '../middleware/deserializeUser';
 import { NotificationService } from '../services/notification.service';
 import logger from '../utils/logger';
-import { uploadAny, uploadNone } from '../middleware/multerConfig';
+
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 
@@ -263,7 +263,7 @@ export class SecondSaleController {
   }
 
   // Update a second sale
-  @httpPatch('/:id', captureUser, uploadAny)
+  @httpPatch('/:id', captureUser)
   public async updateSecondSale(
     @requestParam('id') id: string,
     @request() req: Request<{}, {}, any>,

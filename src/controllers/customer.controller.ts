@@ -5,6 +5,7 @@ import {
   httpGet,
   httpPatch,
   httpPost,
+  httpPut,
   next,
   request,
   requestParam,
@@ -14,15 +15,17 @@ import { CustomerService } from '../services/customer.service';
 import { TYPES } from '../types';
 import AppError from '../utils/appError';
 import { NextFunction, Request, Response } from 'express';
-import { upload } from '../middleware/multifileupload';
+
 
 import { ControllerLogger } from '../utils/controllerLogger';
 import { PaginationOptions } from '../utils/pagination';
-import { uploadFileMultiple } from '../middleware/multiFileWithAWS';
+;
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { generateIncrementalCode } from '../utils/codeGeneration';
 import { Status } from '../utils/status.enum';
 import { NotificationService } from '../services/notification.service';
+import { upload } from '../middleware/upload.middleware';
+
 
 @controller('/customers', deserializeUser, requireUser)
 export class CustomerController {
@@ -35,7 +38,7 @@ export class CustomerController {
 
   @httpPost(
     '/',
-    uploadFileMultiple.fields([
+    upload.fields([
       { name: 'customerImage', maxCount: 1 },
       { name: 'cancelledChequeCopy', maxCount: 1 },
       { name: 'bankStatementCopy', maxCount: 1 },
@@ -67,7 +70,7 @@ export class CustomerController {
       
 
       const files = req.files as {
-        [fieldname: string]: Express.MulterS3.File[];
+        [fieldname: string]: Express.Multer.File[];
       };
 
       const customerData = req.body;
@@ -78,52 +81,53 @@ customerData.createdBy = res.locals.user.id;
       customerData.deliveryDetails = customerData.deliveryDetails || {};
       customerData.paymentTerms = customerData.paymentTerms || {};
       customerData.keyMobileNumbers = customerData.keyMobileNumbers || {};
+      // Assign DigitalOcean Spaces URLs to customer data
       if (files.customerImage?.[0])
-        customerData.customerImage = files.customerImage[0].location;
+        customerData.customerImage = (files.customerImage[0] as any).location;
       if (files.cancelledChequeCopy?.[0])
         customerData.bankDetailsCust.cancelledChequeCopy =
-          files.cancelledChequeCopy[0].location;
+          (files.cancelledChequeCopy[0] as any).location;
       if (files.bankStatementCopy?.[0])
         customerData.bankDetailsCust.bankStatementCopy =
-          files.bankStatementCopy[0].location;
+          (files.bankStatementCopy[0] as any).location;
       if (files.panCopy?.[0])
-        customerData.statutoryDetails.panCopy = files.panCopy[0].location;
+        customerData.statutoryDetails.panCopy = (files.panCopy[0] as any).location;
       if (files.aadharCopy?.[0])
-        customerData.statutoryDetails.aadharCopy = files.aadharCopy[0].location;
+        customerData.statutoryDetails.aadharCopy = (files.aadharCopy[0] as any).location;
       if (files.billBookCopy?.[0])
         customerData.statutoryDetails.billBookCopy =
-          files.billBookCopy[0].location;
+          (files.billBookCopy[0] as any).location;
       if (files.incorpoCertificateCopy?.[0])
         customerData.statutoryDetails.incorpoCertificateCopy =
-          files.incorpoCertificateCopy[0].location;
+          (files.incorpoCertificateCopy[0] as any).location;
       if (files.regiCertificateCopy?.[0])
         customerData.statutoryDetails.regiCertificateCopy =
-          files.regiCertificateCopy[0].location;
+          (files.regiCertificateCopy[0] as any).location;
       if (files.billingFormatCopy?.[0])
         customerData.billingDetails.billingFormatCopy =
-          files.billingFormatCopy[0].location;
+          (files.billingFormatCopy[0] as any).location;
       if (files.billingAddressProofCopy?.[0])
         customerData.billingDetails.billingAddressProofCopy =
-          files.billingAddressProofCopy[0].location;
+          (files.billingAddressProofCopy[0] as any).location;
       if (files.deliveryAddressProofCopy?.[0])
         customerData.deliveryDetails.deliveryAddressProofCopy =
-          files.deliveryAddressProofCopy[0].location;
-      if (files.lc?.[0]) customerData.paymentTerms.lc = files.lc[0].location;
-      if (files.bg?.[0]) customerData.paymentTerms.bg = files.bg[0].location;
+          (files.deliveryAddressProofCopy[0] as any).location;
+      if (files.lc?.[0]) customerData.paymentTerms.lc = (files.lc[0] as any).location;
+      if (files.bg?.[0]) customerData.paymentTerms.bg = (files.bg[0] as any).location;
       if (files.docEvidenceCopy?.[0])
         customerData.paymentTerms.docEvidenceCopy =
-          files.docEvidenceCopy[0].location;
+          (files.docEvidenceCopy[0] as any).location;
       if (files.mandiLicenceCopy?.[0])
         customerData.keyMobileNumbers.mandiLicenceCopy =
-          files.mandiLicenceCopy[0].location;
+          (files.mandiLicenceCopy[0] as any).location;
       if (files.regiCopy?.[0])
-        customerData.keyMobileNumbers.regiCopy = files.regiCopy[0].location;
+        customerData.keyMobileNumbers.regiCopy = (files.regiCopy[0] as any).location;
       if (files.electricityBillCopy?.[0])
         customerData.keyMobileNumbers.electricityBillCopy =
-          files.electricityBillCopy[0].location;
+          (files.electricityBillCopy[0] as any).location;
       if (files.visitingCardCopy?.[0])
         customerData.keyMobileNumbers.visitingCardCopy =
-          files.visitingCardCopy[0].location;
+          (files.visitingCardCopy[0] as any).location;
 
 customerData.customerCode = await generateIncrementalCode('customer')
       const customer = await this.customerService.create(customerData);
@@ -152,13 +156,26 @@ customerData.customerCode = await generateIncrementalCode('customer')
       }
       
       // Log successful creation
-      const customerId = Array.isArray(customer) ? (customer[0] as any)?.id : (customer as any)?.id;
-      ControllerLogger.logSuccess('Customer created', customerId || 'unknown', req, res);
+      const customerId = customer?.id || 'unknown';
+      ControllerLogger.logSuccess('Customer created', customerId, req, res);
+      
+      // Create a clean response object without circular references
+      const responseData = {
+        id: customer.id,
+        organisationName: customer.organisationName,
+        customerCode: customer.customerCode,
+        organisationType: customer.organisationType,
+        primaryContactNo: customer.primaryContactNo,
+        emailPrimary: customer.emailPrimary,
+        status: customer.status,
+        createdAt: customer.createdAt,
+        message: 'Customer created successfully'
+      };
       
       res.status(201).json({
         status: 'success',
         message: 'Customer created successfully',
-        data: customer,
+        data: responseData,
       });
     } catch (err) {
       console.log(err);
@@ -524,9 +541,9 @@ async approveCustomer(
   }
 
 
-  @httpPatch(
+  @httpPut(
     '/:id',
-    uploadFileMultiple.fields([
+    upload.fields([
       { name: 'customerImage', maxCount: 1 },
       { name: 'cancelledChequeCopy', maxCount: 1 },
       { name: 'bankStatementCopy', maxCount: 1 },
@@ -560,55 +577,56 @@ async approveCustomer(
       const updatedBy = res.locals.updatedBy;
       const customerData = req.body;
       const files = req.files as {
-        [fieldname: string]: Express.MulterS3.File[];
+        [fieldname: string]: Express.Multer.File[];
       };
       if (files) {
-        // if (files.customerImage?.[0]) customerData.customerImage = files.customerImage[0].location;
+        // Assign DigitalOcean Spaces URLs to customer data
+        if (files.customerImage?.[0]) customerData.customerImage = (files.customerImage[0] as any).location;
         if (files.cancelledChequeCopy?.[0])
           customerData.bankDetailsCust.cancelledChequeCopy =
-            files.cancelledChequeCopy[0].location;
+            (files.cancelledChequeCopy[0] as any).location;
         if (files.bankStatementCopy?.[0])
           customerData.bankDetailsCust.bankStatementCopy =
-            files.bankStatementCopy[0].location;
+            (files.bankStatementCopy[0] as any).location;
         if (files.panCopy?.[0])
-          customerData.statutoryDetails.panCopy = files.panCopy[0].location;
+          customerData.statutoryDetails.panCopy = (files.panCopy[0] as any).location;
         if (files.aadharCopy?.[0])
           customerData.statutoryDetails.aadharCopy =
-            files.aadharCopy[0].location;
+            (files.aadharCopy[0] as any).location;
         if (files.billBookCopy?.[0])
           customerData.statutoryDetails.billBookCopy =
-            files.billBookCopy[0].location;
+            (files.billBookCopy[0] as any).location;
         if (files.incorpoCertificateCopy?.[0])
           customerData.statutoryDetails.incorpoCertificateCopy =
-            files.incorpoCertificateCopy[0].location;
+            (files.incorpoCertificateCopy[0] as any).location;
         if (files.regiCertificateCopy?.[0])
           customerData.statutoryDetails.regiCertificateCopy =
-            files.regiCertificateCopy[0].location;
+            (files.regiCertificateCopy[0] as any).location;
         if (files.billingFormatCopy?.[0])
           customerData.billingDetails.billingFormatCopy =
-            files.billingFormatCopy[0].location;
+            (files.billingFormatCopy[0] as any).location;
         if (files.billingAddressProofCopy?.[0])
           customerData.billingDetails.billingAddressProofCopy =
-            files.billingAddressProofCopy[0].location;
+            (files.billingAddressProofCopy[0] as any).location;
         if (files.deliveryAddressProofCopy?.[0])
           customerData.deliveryDetails.deliveryAddressProofCopy =
-            files.deliveryAddressProofCopy[0].location;
-        if (files.lc?.[0]) customerData.paymentTerms.lc = files.lc[0].location;
-        if (files.bg?.[0]) customerData.paymentTerms.bg = files.bg[0].location;
+            (files.deliveryAddressProofCopy[0] as any).location;
+        if (files.lc?.[0]) customerData.paymentTerms.lc = (files.lc[0] as any).location;
+        if (files.bg?.[0]) customerData.paymentTerms.bg = (files.bg[0] as any).location;
         if (files.docEvidenceCopy?.[0])
           customerData.paymentTerms.docEvidenceCopy =
-            files.docEvidenceCopy[0].location;
+            (files.docEvidenceCopy[0] as any).location;
         if (files.mandiLicenceCopy?.[0])
           customerData.keyMobileNumbers.mandiLicenceCopy =
-            files.mandiLicenceCopy[0].location;
+            (files.mandiLicenceCopy[0] as any).location;
         if (files.regiCopy?.[0])
-          customerData.keyMobileNumbers.regiCopy = files.regiCopy[0].location;
+          customerData.keyMobileNumbers.regiCopy = (files.regiCopy[0] as any).location;
         if (files.electricityBillCopy?.[0])
           customerData.keyMobileNumbers.electricityBillCopy =
-            files.electricityBillCopy[0].location;
+            (files.electricityBillCopy[0] as any).location;
         if (files.visitingCardCopy?.[0])
           customerData.keyMobileNumbers.visitingCardCopy =
-            files.visitingCardCopy[0].location;
+            (files.visitingCardCopy[0] as any).location;
       }
       const updatedCustomer = await this.customerService.updateCustomer(
         id,
@@ -696,7 +714,7 @@ async approveCustomer(
                 return res.status(400).send("No file uploaded");
             }
             try {
-                this.customerService.upload(req.file.path);
+                await this.customerService.upload((req.file as any).location);
                 
                 // 🔔 Send notification for file upload
                 try {
@@ -721,4 +739,51 @@ async approveCustomer(
                 return res.status(500).send("Error uploading file");
             }
         }
+
+
+         @httpGet('/download/template')
+  public async downloadExcelTemplate(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const key = 'formats/CustomerData.xlsx';
+      
+      
+      
+      
+      const fileUrl = `https://${process.env.DO_SPACES_BUCKET}.sgp1.digitaloceanspaces.com/${key}`;
+      
+      
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Farmer template "${key.split('/').pop()}" accessed`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Template access notification error:', notifError);
+      }
+      
+      ControllerLogger.logList('Farmer Template URL Generated', req, res);
+      
+      // Return the URL in JSON response
+      res.status(200).json({
+        status: 'success',
+        message: 'Template URL generated successfully',
+        data: {
+          // templateUrl: fileUrl,
+          // fileName: key.split('/').pop(),
+          downloadUrl: fileUrl, // Alternative property name for clarity
+          //fileKey: key // Include the key for reference
+        }
+      });
+    } catch (error) {
+      ControllerLogger.logError('Generate Farmer Template URL', error, req, res);
+      next(error);
+    }
+  }
 }

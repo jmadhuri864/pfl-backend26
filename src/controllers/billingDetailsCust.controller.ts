@@ -14,7 +14,8 @@ import { TYPES } from '../types';
 import { BillingDetailsCustService } from '../services/billing-detailsCust.service';
 
 import { NextFunction, Request, Response } from 'express';
-import { upload } from '../middleware/multifileupload';
+import { upload } from '../middleware/upload.middleware';
+
 
 @controller('/customer-billing-details')
 export class BillingDetailsCustController {

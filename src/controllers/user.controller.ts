@@ -25,7 +25,8 @@ import { BranchessService } from "../services/branches.service";
 import { Branches } from "../entities/branches.entity";
 import { OfficesData } from "../entities/offices.entity";
 import { parseExcel } from "../utils/excelParser";
-import { upload } from "../middleware/multerConfig";
+import { uploadSingle } from "../middleware/uploadsingle.middleware";
+
 
  @controller("/employee" , deserializeUser, requireUser)
 //@controller("/employee")
@@ -279,86 +280,7 @@ console.log("joining office",result.joiningOffice)
       next(err);
     }
   }
-
-  // @httpPatch("/:id")
-  // public async updateUser(
-  //   @requestParam("id") id: string,
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ) {
-  //   try {
-  //     // console.log("handler id is ", id);
-  //    console.log("handler body is ", req.body);
-  //  if(Object.keys(req.body).length === 0)
-  //  {
-  //   return next(new AppError(400, "User Data is Empty"));
-  //  }
-  
-  //     const updateBy=res.locals.user.id;
-
-  //       const joiningLocationId = req.body.joiningLocation;
-  //   const currentLocationId = req.body.currentWorkLocation;
-
-  //   // Handle joining location
-  //   if (joiningLocationId !== undefined) {
-  //     try {
-  //       const resolved = await this.resolveLocation(joiningLocationId);
-  //       if (resolved.type === 'BRANCH') {
-  //         req.body.joiningLocation = resolved.entity.id;
-  //         req.body.joiningOffice = null;
-  //       } else {
-  //         req.body.joiningOffice = resolved.entity.id;
-  //         req.body.joiningLocation = null;
-  //       }
-  //     } catch (err) {
-  //       logger.warn("Invalid joining location ID during update. Setting both to null.");
-  //       req.body.joiningLocation = null;
-  //       req.body.joiningOffice = null;
-  //     }
-  //   }
-
-  //   // Handle current work location
-  //   if (currentLocationId !== undefined) {
-  //     try {
-  //       const resolved = await this.resolveLocation(currentLocationId);
-  //       if (resolved.type === 'BRANCH') {
-  //         req.body.currentWorkLocation = resolved.entity.id;
-  //         req.body.currentOfficeLocation = null;
-  //       } else {
-  //         req.body.currentOfficeLocation = resolved.entity.id;
-  //         req.body.currentWorkLocation = null;
-  //       }
-  //     } catch (err) {
-  //       logger.warn("Invalid current work location ID during update. Setting both to null.");
-  //       req.body.currentWorkLocation = null;
-  //       req.body.currentOfficeLocation = null;
-  //     }
-  //   }
-  //     console.log("joining location",req.body.joiningLocation); 
-  //     console.log("current location",req.body.currentWorkLocation);
-  //     console.log("current office",req.body.currentOfficeLocation);
-  //     console.log("joining office",req.body.joiningOffice)
-  //     const updatedUser = await this.userService.updateUser(id, req.body,updateBy);
-        
-
-  //     if (!updatedUser) {
-  //       return next(
-  //         new AppError(404, "User not found or could not be updated")
-  //       );
-  //     }
-
-  //     res.status(200).json({
-  //       status: "success",
-  //       message: "User updated successfully",
-  //       //user: updatedUser,
-  //     });
-  //   } catch (err) {
-  //     next(err);
-  //   }
-  // }
-
-  @httpPut("/:id")
+    @httpPut("/:id")
 public async updateUser(
   @requestParam("id") id: string,
   @request() req: Request,
@@ -366,7 +288,8 @@ public async updateUser(
   @next() next: NextFunction
 ) {
   try {
-    console.log("handler body is ", req.body);
+    console.log("Update user request - ID:", id);
+    console.log("Update user request - Body:", req.body);
 
     if (Object.keys(req.body).length === 0) {
       ControllerLogger.logError('Employee update', new AppError(400, "User Data is Empty"), req, res);
@@ -414,12 +337,16 @@ public async updateUser(
       }
     }
 
+    console.log("Processed request body before service call:", req.body);
+
     const updatedUser = await this.userService.updateUser(id, req.body, updateBy);
 
     if (!updatedUser) {
       ControllerLogger.logError('Employee update', new AppError(404, "User not found or could not be updated"), req, res);
       return next(new AppError(404, "User not found or could not be updated"));
     }
+
+    console.log("User updated successfully:", updatedUser.id);
 
     ControllerLogger.logSuccess('Employee updated', id, req, res);
 
@@ -438,11 +365,11 @@ public async updateUser(
       user: updatedUser,
     });
   } catch (err) {
+    console.error("Error updating user:", err);
     ControllerLogger.logError('Employee update', err, req, res);
     next(err);
   }
 }
-
 
   @httpDelete("/:id")
   public async deleteUser(
@@ -584,7 +511,7 @@ public async partialAllUser(
   }
 }
 
-@httpPost("/user/upload", upload.single('file'))
+@httpPost("/user/upload", uploadSingle.single('file'))
 public async upload(req: Request, res: Response) {
     try {
       if (!req.file) {
@@ -594,56 +521,89 @@ public async upload(req: Request, res: Response) {
       const rawData:any = parseExcel(req.file.path);
       console.log("Parsed Data:", rawData);
       
-       const user = [];
-    for (const row of rawData) {
-      const mappedRow = {
-        firstName: row["First Name"],
-        lastName: row["Last Name"],
-        username: row["Username"],
-        primaryMobNo: row["Primary MobiLe Number"],
-        primaryEmail: row["Primary Email"],
-        residentialAddress: {
-          address1: row["Residential Address"],
-          location: row["Location"],
-          city: row["City"],
-          state: row["State"],
-          pincode: row["Pincode"]
-        },
-        permanentAddress: {
-          address1: row["Permanent Adress"],
-          location: row["Location.1"],
-          city: row["City.1"],
-          state: row["State.1"],
-          pincode: row["Pincode.1"]
-        },
-        department: row["Department"],
-        companyName: {
-          name: row["Company Name"],
-          officeAddress: row["Office Address"]
-        },
-        joiningDate: row["Joining Date"],
-        workEmail: row["Work Email"],
-        joiningLocation: {
-          name: row["Joining Location"]
-        },
-        currentWorkLocation: {
-          name: row["Current Work Location"]
-        },
-        accessLocation: row["Access Location"],
-        permissions: {
-          documentDefinition: {
-            name: row["Document Name"],
-            documentType: row["Document Type"]
+      const user = [];
+      for (const row of rawData) {
+        // Parse multiple document permissions
+        const parseDocumentPermissions = (permissionsString: string) => {
+          if (!permissionsString) return [];
+          
+          const permissions = [];
+          const permissionGroups = permissionsString.split(';');
+          
+          for (const group of permissionGroups) {
+            const parts = group.trim().split('|');
+            if (parts.length === 7) {
+              permissions.push({
+                documentDefinition: {
+                  name: parts[0].trim(),
+                  documentType: parts[1].trim()
+                },
+                canCreate: parts[2].trim() === "true",
+                canView: parts[3].trim() === "true",
+                canEdit: parts[4].trim() === "true",
+                canDelete: parts[5].trim() === "true",
+                canDownload: parts[6].trim() === "true"
+              });
+            }
+          }
+          
+          return permissions;
+        };
+
+        const mappedRow = {
+          firstName: row["First Name"],
+          lastName: row["Last Name"],
+          username: row["Username"],
+          primaryMobNo: row["Primary MobiLe Number"],
+          secondaryMobNo: row["Secondary Mobile Number"],
+          primaryEmail: row["Primary Email"],
+          secondaryEmail: row["Secondary Email"],
+          employeeId: row["Employee ID"],
+          designation: row["Designation"],
+          cugNo: row["CUG Number"],
+          workEmail: row["Work Email"],
+          joiningDate: row["Joining Date"],
+          department: row["Department"] ? row["Department"].split(',').map((d: string) => d.trim()) : [],
+          roles: row["Roles"] ? row["Roles"].split(',').map((r: string) => r.trim()) : ['employee'],
+          status: row["Status"] || 'INACTIVE',
+          isAddressSame: row["Is Address Same"] === "true",
+          otherWorkLocationInput: row["Other Work Location Input"],
+          residentialAddress: {
+            address1: row["Residential Address"],
+            location: row["Location"],
+            city: row["City"],
+            state: row["State"],
+            pincode: row["Pincode"]
           },
-          canCreate: row["Can Create"] === "true",
-          canView: row["Can View"] === "true",
-          canEdit: row["Can Edit"] === "true",
-          canDelete: row["Can Delete"] === "true",
-          canDownload: row["Can Dwonload"] === "true"
-        }
-      };
-      user.push(mappedRow);
-    }
+          permanentAddress: {
+            address1: row["Permanent Adress"],
+            location: row["Location.1"],
+            city: row["City.1"],
+            state: row["State.1"],
+            pincode: row["Pincode.1"]
+          },
+          companyName: {
+            name: row["Company Name"],
+            officeAddress: row["Office Address"]
+          },
+          joiningLocation: {
+            name: row["Joining Location"]
+          },
+          joiningOffice: {
+            name: row["Joining Office"]
+          },
+          currentWorkLocation: {
+            name: row["Current Work Location"]
+          },
+          currentOfficeLocation: {
+            name: row["Current Office Location"]
+          },
+          accessLocation: row["Access Location"],
+          // Parse multiple document permissions
+          permissions: parseDocumentPermissions(row["Document Permissions"])
+        };
+        user.push(mappedRow);
+      }
 
       const users = await this.userService.createUsersWithRelations(user);
       ControllerLogger.logSuccess('Employee bulk upload', `${users.length} users`, req, res);

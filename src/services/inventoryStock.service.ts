@@ -78,6 +78,12 @@ export class InventoryStockService {
   // ✔ Get All Inventory Stock
   //-----------------------------------------------------------------------
   async getAllInventoryStocks(queryOptions: PaginationOptions) {
+    // First, let's check what's actually in the database with a raw query
+    const rawData = await this.inventoryStockRepository.query(`
+      SELECT * FROM inventory_stock LIMIT 1
+    `);
+    console.log('🔍 RAW DATABASE DATA:', rawData[0]);
+    
     const qb = this.inventoryStockRepository
       .createQueryBuilder('inventory')
       .leftJoinAndSelect('inventory.location', 'location')
@@ -113,7 +119,22 @@ export class InventoryStockService {
       totalCount = data.length;
     }
 
+    // Debug logging
+    if (data.length > 0) {
+      console.log('🔍 Sample stock data:', {
+        id: data[0].id,
+        inwardQty: data[0].inwardQty,
+        inwardAmt: data[0].inwardAmt,
+        rawKeys: Object.keys(data[0])
+      });
+    }
+
     const mappedData = data.map((s: any) => this.formatInventoryStock(s));
+
+    // Debug logging for mapped data
+    if (mappedData.length > 0) {
+      console.log('🔍 Sample mapped data:', mappedData[0]);
+    }
 
     return { 
       data: mappedData, 
@@ -500,8 +521,8 @@ export class InventoryStockService {
       companyName: stock.companyname,
       location: stock.locationname,
       product: stock.productname,
-      inwardQty: parseFloat(stock.inwardQty),
-      inwardAmt: parseFloat(stock.inwardAmt),
+      inwardQty: parseFloat(stock.inwardqty || stock.inwardQty || 0),
+      inwardAmt: parseFloat(stock.inwardamt || stock.inwardAmt || 0),
     };
   }
 
@@ -1115,85 +1136,111 @@ export class InventoryStockService {
   }
 
 
-  async getlocationcompanywisestock(
+async getlocationcompanywisestock(
   queryOptions: PaginationOptions,
   company?: string,
   location?: string,
-  startDate?: string,
-  endDate?: string
+  search?: string
 ) {
+
   const qb = this.inventoryStockRepository
     .createQueryBuilder('stock')
     .leftJoin('stock.company', 'company')
     .leftJoin('stock.location', 'location')
     .leftJoin('stock.product', 'product')
+
     .select([
-      'company.id AS companyId',
-      'company.name AS companyName',
-      'location.id AS locationId',
-      'location.name AS locationName',
-      'product.id AS productId',
-      'product.name AS productName',
+      'product.id AS productid',
+      'product.name AS productname',
     ])
-    .addSelect('COALESCE(SUM(stock.inwardQty), 0)', 'inwardQty')
-    .addSelect('COALESCE(SUM(stock.inwardAmt), 0)', 'inwardAmt')
-    .addSelect('COALESCE(SUM(stock.dumpQty), 0)', 'dumpQty')
-    .addSelect('COALESCE(SUM(stock.dumpAmt), 0)', 'dumpAmt')
-    .groupBy('company.id')
-    .addGroupBy('location.id')
-    .addGroupBy('product.id');
 
-  if (company) qb.andWhere('company.id = :company', { company });
-  if (location) qb.andWhere('location.id = :location', { location });
+    // ✅ Aggregations - sum across all companies and locations
+    .addSelect('COALESCE(SUM(stock."inwardQty"), 0)', 'inwardqty')
+    .addSelect('COALESCE(SUM(stock."inwardAmt"), 0)', 'inwardamt')
+    .addSelect('COALESCE(SUM(stock."dumpQty"), 0)', 'dumpqty')
+    .addSelect('COALESCE(SUM(stock."dumpAmt"), 0)', 'dumpamt')
 
-  if (startDate && endDate) {
-    qb.andWhere('stock.createdAt BETWEEN :start AND :end', {
-      start: `${startDate} 00:00:00`,
-      end: `${endDate} 23:59:59`,
-    });
+    // ✅ Group only by product to get unique products
+    .groupBy('product.id')
+    .addGroupBy('product.name');
+
+  // ✅ Filters
+  if (company) {
+    qb.andWhere('company.id = :company', { company });
   }
 
-  const page = queryOptions.page;
-  const limit = queryOptions.limit;
-  const isPaged = page && limit;
-
-  let data;
-  let totalCount;
-
-  if (isPaged) {
-    const skip = (page - 1) * limit;
-
-    const totalQ = qb.clone();
-    totalCount = (await totalQ.getRawMany()).length;
-
-    qb.skip(skip).take(limit);
-    data = await qb.getRawMany();
-  } else {
-    data = await qb.getRawMany();
-    totalCount = data.length;
+  if (location) {
+    qb.andWhere('location.id = :location', { location });
   }
 
+  // ✅ Search filter - search across product, company, and location names
+  if (search) {
+    qb.andWhere(
+      '(LOWER(product.name) LIKE LOWER(:search) OR LOWER(company.name) LIKE LOWER(:search) OR LOWER(location.name) LIKE LOWER(:search))',
+      { search: `%${search}%` }
+    );
+  }
+
+  // 🔎 Debug SQL
+  console.log('🔍 SQL Query:', qb.getSql());
+  console.log('🔍 Parameters:', qb.getParameters());
+
+  // ✅ Pagination Setup
+  const page = queryOptions.page || 1;
+  const limit = queryOptions.limit || 10;
+  const skip = (page - 1) * limit;
+
+  // ✅ Get total count - count distinct products
+  const countQb = this.inventoryStockRepository
+    .createQueryBuilder('stock')
+    .leftJoin('stock.company', 'company')
+    .leftJoin('stock.location', 'location')
+    .leftJoin('stock.product', 'product')
+    .select('COUNT(DISTINCT product.id)', 'total');
+
+  if (company) countQb.andWhere('company.id = :company', { company });
+  if (location) countQb.andWhere('location.id = :location', { location });
+
+  // ✅ Apply search filter to count query as well
+  if (search) {
+    countQb.andWhere(
+      '(LOWER(product.name) LIKE LOWER(:search) OR LOWER(company.name) LIKE LOWER(:search) OR LOWER(location.name) LIKE LOWER(:search))',
+      { search: `%${search}%` }
+    );
+  }
+
+  const totalResult = await countQb.getRawOne();
+  const totalCount = Number(totalResult?.total || 0);
+
+  // ✅ Apply pagination to main query
+  qb.offset(skip).limit(limit);
+
+  const data = await qb.getRawMany();
+
+  console.log('🔍 Sample Raw:', data[0]);
+
+  // ✅ Mapping Result
   const mappedData = data.map(r => ({
     id: r.productid,
-    company: r.companyname,
-    location: r.locationname,
     product: r.productname,
-    inwardQty: Number(r.inwardQty) || 0,
-    inwardAmt: Number(r.inwardAmt) || 0,
-    dumpQty: Number(r.dumpQty) || 0,
-    dumpAmt: Number(r.dumpAmt) || 0,
+    inwardQty: Number(r.inwardqty || 0),
+    inwardAmt: Number(r.inwardamt || 0),
+    dumpQty: Number(r.dumpqty || 0),
+    dumpAmt: Number(r.dumpamt || 0),
+
   }));
 
   return {
     data: mappedData,
     meta: {
       total: totalCount,
-      page: page || 1,
-      pages: isPaged ? Math.ceil(totalCount / limit) : 1,
-      limit: limit || totalCount,
+      page,
+      pages: Math.ceil(totalCount / limit),
+      limit,
     },
   };
 }
+
 
 
 
@@ -1201,10 +1248,88 @@ export class InventoryStockService {
   queryOptions: PaginationOptions,
   company?: string,
   location?: string,
-  product?: string,
-  startDate?: string,
-  endDate?: string
+  product?: string
 ) {
+  // When product is provided, use aggregation to get unique product-variant combinations
+  if (product) {
+    const qb = this.inventoryStockRepository
+      .createQueryBuilder('stock')
+      .leftJoin('stock.company', 'company')
+      .leftJoin('stock.location', 'location')
+      .leftJoin('stock.product', 'product')
+      .leftJoin('stock.variant', 'variant')
+      .select([
+        'product.id AS productid',
+        'product.name AS productname',
+        'variant.id AS variantid',
+        'variant.variantName AS variantname',
+      ])
+      .addSelect('COALESCE(SUM(stock."inwardQty"), 0)', 'inwardqty')
+      .addSelect('COALESCE(SUM(stock."inwardAmt"), 0)', 'inwardamt')
+      .addSelect('COALESCE(SUM(stock."dumpQty"), 0)', 'dumpqty')
+      .addSelect('COALESCE(SUM(stock."dumpAmt"), 0)', 'dumpamt')
+      .where('product.id = :product', { product })
+      .groupBy('product.id')
+      .addGroupBy('product.name')
+      .addGroupBy('variant.id')
+      .addGroupBy('variant.variantName');
+
+    // Apply additional filters
+    if (company) {
+      qb.andWhere('company.id = :company', { company });
+    }
+
+    if (location) {
+      qb.andWhere('location.id = :location', { location });
+    }
+
+    // Pagination
+    const page = queryOptions.page || 1;
+    const limit = queryOptions.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Count query
+    const countQb = this.inventoryStockRepository
+      .createQueryBuilder('stock')
+      .leftJoin('stock.company', 'company')
+      .leftJoin('stock.location', 'location')
+      .leftJoin('stock.product', 'product')
+      .leftJoin('stock.variant', 'variant')
+      .select('COUNT(DISTINCT(product.id, variant.id))', 'total')
+      .where('product.id = :product', { product });
+
+    if (company) countQb.andWhere('company.id = :company', { company });
+    if (location) countQb.andWhere('location.id = :location', { location });
+
+    const totalResult = await countQb.getRawOne();
+    const totalCount = Number(totalResult?.total || 0);
+
+    // Apply pagination
+    qb.offset(skip).limit(limit);
+
+    const data = await qb.getRawMany();
+
+    const mappedData = data.map((r: any) => ({
+      id: r.variantid,
+      variant: r.variantname,
+      inwardQty: Number(r.inwardqty || 0),
+      inwardAmt: Number(r.inwardamt || 0),
+      dumpQty: Number(r.dumpqty || 0),
+      dumpAmt: Number(r.dumpamt || 0),
+    }));
+
+    return {
+      data: mappedData,
+      meta: {
+        total: totalCount,
+        page,
+        pages: Math.ceil(totalCount / limit),
+        limit,
+      },
+    };
+  }
+
+  // Original logic when no product is provided
   const queryBuilder = this.inventoryStockRepository
     .createQueryBuilder('stock')
     .leftJoinAndSelect('stock.company', 'company')
@@ -1218,17 +1343,6 @@ export class InventoryStockService {
 
   if (location) {
     queryBuilder.andWhere('location.id = :location', { location });
-  }
-
-  if (product) {
-    queryBuilder.andWhere('product.id = :product', { product });
-  }
-
-  if (startDate && endDate) {
-    queryBuilder.andWhere('stock.createdAt BETWEEN :start AND :end', {
-      start: `${startDate} 00:00:00`,
-      end: `${endDate} 23:59:59`,
-    });
   }
 
   const page = queryOptions.page;

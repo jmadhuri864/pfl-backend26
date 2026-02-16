@@ -7,12 +7,13 @@ import { LPVoucher } from "../entities/labourPaymentVoucher.entity";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 
 import logger from "../utils/logger";
-import { upload } from "../middleware/multerConfig";
-import { uploadFile } from "../middleware/uploadwithAWS";
+
 import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from "../services/notification.service";
+import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { setAttachmentUrls } from "../utils/fileUploadHelper";
 
 @controller("/lpvoucher", deserializeUser, requireUser)
 export class LabourPaymentVoucherController {
@@ -166,7 +167,7 @@ export class LabourPaymentVoucherController {
   }
 
   // Create a new Labour Payment Voucher
-  @httpPost("/",uploadFile.single('anyAttachment'))
+  @httpPost("/", uploadAttachments)
   public async createVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -175,16 +176,9 @@ export class LabourPaymentVoucherController {
     try {
       logger.info("Creating new Labour Payment Voucher");
       const voucherData = req.body;
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        voucherData.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(voucherData, req.files as any[]);
      Object.keys( voucherData).forEach((key) => {
       if ( voucherData[key] === "null")  voucherData[key] = null;
     });
@@ -217,7 +211,7 @@ export class LabourPaymentVoucherController {
   }
 
   // Update a Labour Payment Voucher
-  @httpPatch("/:id",uploadFile.single('anyAttachment'),captureUser)
+  @httpPatch("/:id", uploadAttachments, captureUser)
   public async updateVoucher(
     @request() req: Request,
     @response() res: Response,
@@ -229,16 +223,9 @@ export class LabourPaymentVoucherController {
       logger.info(`Updating Labour Payment Voucher with ID: ${id}`);
       console.log(req.body)
       const updatedData= req.body;
-      if(req.file){
       
-        const imageUrl = (req.file as any).location;
-        console.log("imageurl is ",imageUrl)
-       if (imageUrl) {
-         
-        updatedData.anyAttachment = imageUrl;
-       }
-   
-     }
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(updatedData, req.files as any[]);
 
      Object.keys(updatedData).forEach((key) => {
       if (updatedData[key] === "null") updatedData[key] = null;

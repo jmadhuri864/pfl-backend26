@@ -3,11 +3,13 @@ import { inject } from 'inversify';
 import { controller, httpGet } from 'inversify-express-utils';
 import { AuditLogService } from '../services/auditLog.service';
 import { TYPES } from '../types';
+import { AuditLogRepository } from '../repositories/AuditLog.repository';
 
 @controller('/audit-logs')
 export class AuditLogController {
   constructor(
     @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,
+    @inject(TYPES.AuditLogRepository) private auditLogRepo:AuditLogRepository
   ) {}
 
   // Get all audit logs
@@ -142,7 +144,7 @@ export class AuditLogController {
         return;
       }
 
-      const logs = await this.auditLogService.auditLogRepo
+      const logs = await this.auditLogRepo
         .createQueryBuilder('auditLog')
         .where('auditLog.updatedAt >= :startDate', { startDate: new Date(startDate as string) })
         .andWhere('auditLog.updatedAt <= :endDate', { endDate: new Date(endDate as string) })

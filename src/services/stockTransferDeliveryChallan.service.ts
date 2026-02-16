@@ -427,7 +427,10 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
             doc.relatedData = await this.challanRepository.findOne({
               where: { id: doc.document_type_id },
               relations:[
-                'customerName'
+                'customerName',
+                "fromLocation",
+                "toLocation"
+
               ]
             })
             console.log("data:", doc.relatedData);

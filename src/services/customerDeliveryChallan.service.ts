@@ -204,6 +204,10 @@ export class CustomerDeliveryChallanService {
 
     } catch (error: any) {
       console.error('Error creating Delivery Challan:', error);
+      // Re-throw AppError instances (like insufficient stock) to preserve the error message
+      if (error instanceof AppError) {
+        throw error;
+      }
       throw new Error('Failed to create Customer Delivery Challan');
     }
   }

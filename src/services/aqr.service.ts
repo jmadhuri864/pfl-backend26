@@ -132,15 +132,16 @@ export class AqrService {
       return null;
     }
 
-    // Extract and format createdAt
-    const { createdDate, createdTime } = formatDateTime(result.createdAt);
-   const dc1 = new Date (result.arrivalDate)
-   const dc2 = new Date (result.dcDate)
- const dcDate= formatDateTime(dc2 ).createdDate
-   const arrivalDate= formatDateTime(dc1 ).createdDate
-      
-   console.log("dcDate",dcDate);
-   console.log("arrivalDate",arrivalDate);
+   ;
+
+   const { createdDate, createdTime } = formatDateTime(result.createdAt);
+    console.log("result.arrivaleDate",result.arrivalDate);
+    console.log("result.dcDate",result.dcDate);
+    
+    // Pass strings directly instead of wrapping in new Date()
+    const dcDate = formatDateTime(result.dcDate).createdDate;
+    const arrivalDate = formatDateTime(result.arrivalDate).createdDate;
+
     // Format arrivalDate to remove time
     //const arrivalDate = result.arrivalDate ? formatDateTime(result.arrivalDate).createdDate : null;
 
@@ -863,12 +864,13 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
     //brand: aqr.product?.brand || null,
     packingType: aqr.product?.packingType || null,
 
-    // Users (show full names if you prefer)
-    sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}.trim()` : null,
-    purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ''} ${aqr.purchaseBy.lastName || ''}.trim()` : null,
-    receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ''} ${aqr.receivedBy.lastName || ''}.trim()` : null,
-    qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ''} ${aqr.qcCheckBy.lastName || ''}.trim()` : null,
-    verifiedBy: aqr.verifiedBy ? `${aqr.verifiedBy.firstName || ''} ${aqr.verifiedBy.lastName || ''}.trim()` : null,
+    
+sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}`.trim() : null,
+    purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ''} ${aqr.purchaseBy.lastName || ''}`.trim() : null,
+    receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ''} ${aqr.receivedBy.lastName || ''}`.trim() : null,
+    qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ''} ${aqr.qcCheckBy.lastName || ''}`.trim() : null,
+    verifiedBy: aqr.verifiedBy ? `${aqr.verifiedBy.firstName || ''} ${aqr.verifiedBy.lastName || ''}`.trim() : null,
+
 
     // parameters
     parameters: aqr.parameters?.map(param => ({
