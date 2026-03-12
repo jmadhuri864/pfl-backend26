@@ -299,7 +299,30 @@ timeIn: string | null;
   @JoinColumn({ name: 'payment_info_id' })
   paymentInfo: PaymentInfoForGRN;
 
+  @Column({ default: false })
+  isAQRCreated: boolean;
   
+   @Column({ default: false })
+  isInwardCreated: boolean;
+
+   @Column({ default: false })
+  isDumpCreated: boolean;
+
+   @Column({ default: false })
+  isDCForCustomerCreated: boolean;
+
+   @Column({ default: false })
+  isMCVoucherCreated: boolean;
+
+   @Column({ default: false })
+  isTPVoucherCreated: boolean;
+
+   @Column({ default: false })
+  isPMPVoucherCreated: boolean;
+
+   @Column({ default: false })
+    isLPVoucherCreated: boolean;
+
 }
 // @Column({
 //   type: "timestamp",

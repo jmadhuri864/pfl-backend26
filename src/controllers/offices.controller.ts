@@ -19,7 +19,7 @@ import {
   CreateOfficeBodySchema,
   UpdateOfficeBodySchema,
 } from '../schemas/offices.schema';
-import { uploadNone } from '../middleware/multerConfig';
+
 import {
   captureUser,
   deserializeUser,

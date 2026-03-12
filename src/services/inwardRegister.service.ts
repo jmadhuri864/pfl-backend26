@@ -4,7 +4,7 @@ import { InwardRepository } from '../repositories/inwardRegister.repository';
 import { InwardRegister } from '../entities/inwardRegister.entity';
 import AppError from '../utils/appError';
 
-import { LessThanOrEqual, DataSource, SelectQueryBuilder, In } from 'typeorm';
+import { LessThanOrEqual, DataSource, SelectQueryBuilder, In, IsNull } from 'typeorm';
 import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 
@@ -47,10 +47,16 @@ export class InwardRegisterService {
         @inject(TYPES.DocumentbService)
         private readonly documentbService: DocumentbService,
         @inject(TYPES .DocumentbRepository) private documentbRepository: DocumentbRepository,
+        @inject(TYPES.DataSource)
+        private readonly dataSource: DataSource,
      
   ) {}
 
 public async createInwardRegister(data: any): Promise<any> {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
   try {
     // 1. Normalize variant IDs
     let variantIds: string[] = [];
@@ -61,7 +67,7 @@ public async createInwardRegister(data: any): Promise<any> {
     }
 
     // 2. Fetch variants with product relation
-    const variants = await this.productVarientsRepository.find({
+    const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
       where: { id: In(variantIds) },
       relations: ['product'],
     });
@@ -70,13 +76,13 @@ public async createInwardRegister(data: any): Promise<any> {
     const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
     // 4. Create Inward Register
-    const inward = this.inwardRegisterRepo.create({
+    const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
       ...data,
       variants: variants.map(v => ({ id: v.id })),
       products: productIds.map(id => ({ id })),
     });
 
-    const savedInward = await this.inwardRegisterRepo.save(inward);
+    const savedInward = await queryRunner.manager.save(inward);
 
     // 5. Auto-create document
     const savedInwardId =
@@ -98,8 +104,8 @@ public async createInwardRegister(data: any): Promise<any> {
       const { variant, quantity, unitPrice, netWeight, productName } = item;
 
       // Validate required fields
-      if (!productName || !variant) {
-        console.warn(`Skipping item without product or variant:`, item);
+      if (!productName) {
+        console.warn(`Skipping item without product:`, item);
         continue;
       }
 
@@ -111,14 +117,14 @@ public async createInwardRegister(data: any): Promise<any> {
       // Amount calculation
       const amount = +(itemUnitPrice * itemQuantity).toFixed(2);
 
-      console.log(`Processing inward item: Product=${productName}, Variant=${variant}, NetWeight=${itemNetWeight}, Amount=${amount}`);
+      console.log(`Processing inward item: Product=${productName}, Variant=${variant || 'null'}, NetWeight=${itemNetWeight}, Amount=${amount}`);
 
       // FIND existing stock for (company + product + variant + location)
-      const existingStock = await this.inventoryStockRepository.findOne({
+      const existingStock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
         where: {
           company: { id: data.companyName },
           product: { id: productName },
-          variant: { id: variant },
+          variant: variant ? { id: variant } : IsNull(),
           location: { id: data.location },
         },
       });
@@ -133,31 +139,42 @@ public async createInwardRegister(data: any): Promise<any> {
 
         console.log(`✅ Updated existing stock: InwardQty=${existingStock.inwardQty}, InwardAmt=${existingStock.inwardAmt}`);
 
-        await this.inventoryStockRepository.save(existingStock);
+        await queryRunner.manager.save(existingStock);
 
       } else {
         // NEW STOCK ENTRY
-        const newStock = this.inventoryStockRepository.create({
+        const stockData: Record<string, any> = {
           company: { id: data.companyName },
           location: { id: data.location },
           product: { id: productName },
-          variant: { id: variant },
-
-          // Inward stock values
           inwardQty: itemNetWeight,
           inwardAmt: amount,
-        });
+        };
+
+        if (variant) {
+          stockData.variant = { id: variant };
+        }
+
+        const newStock = queryRunner.manager.create(this.inventoryStockRepository.target, stockData);
 
         console.log(`✅ Created new stock: InwardQty=${newStock.inwardQty}, InwardAmt=${newStock.inwardAmt}`);
 
-        await this.inventoryStockRepository.save(newStock);
+        await queryRunner.manager.save(newStock);
       }
     }
+
+    // Commit transaction - all operations succeeded
+    await queryRunner.commitTransaction();
 
     return savedInward;
 
   } catch (error: any) {
+    // Rollback transaction - undo all changes
+    await queryRunner.rollbackTransaction();
     throw new Error(`Failed to create inward register: ${error.message}`);
+  } finally {
+    // Release query runner
+    await queryRunner.release();
   }
 }
 
@@ -1303,8 +1320,15 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
         'deliveryChallanNo',
         'companyName',
         'location',
-        'selectedVendor',
+       
+          'selectedVendor',
+        'selectedVendor.officeAddress',
+        'selectedVendor.category',
+        'selectedVendor.subcategory',
+        'selectedVendor.vendorSaleInfo',
         'selectedFarmer',
+        'selectedFarmer.farmAddress',
+        'selectedFarmer.residensialAddress',
         'purchasedBy',
         'inwardBy',
         'inwardProducts',
@@ -1319,7 +1343,59 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
       if (!inwardRegister) { 
         throw new Error('inwardRegister not found');
       }
+ const selectedParty =
+      inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+        ? { 
+          fullname:inwardRegister.selectedFarmer.farmerfName+' '+inwardRegister.selectedFarmer.farmermName+' '+inwardRegister.selectedFarmer.farmerlName,
+          primaryMobileNo:inwardRegister.selectedFarmer.primaryMobileNo,
+          secondaryMobileNo:inwardRegister.selectedFarmer.secondaryMobileNo,
+          farmerCode:inwardRegister.selectedFarmer.farmerCode,
+          email:inwardRegister.selectedFarmer.email,
 
+           farmAddress:inwardRegister.selectedFarmer.farmAddress ? {
+            id:inwardRegister.selectedFarmer.farmAddress.id,
+            address1:inwardRegister.selectedFarmer.farmAddress.address1,
+            address2:inwardRegister.selectedFarmer.farmAddress.address2,
+            location:inwardRegister.selectedFarmer.farmAddress.location,
+            city:inwardRegister.selectedFarmer.farmAddress.city,
+            state:inwardRegister.selectedFarmer.farmAddress.state,
+            pincode:inwardRegister.selectedFarmer.farmAddress.pincode
+
+          }:null,
+
+           residensialAddress:inwardRegister.selectedFarmer.residensialAddress ? {
+            id:inwardRegister.selectedFarmer.residensialAddress.id,
+            address1:inwardRegister.selectedFarmer.residensialAddress.address1,
+            address2:inwardRegister.selectedFarmer.residensialAddress.address2,
+            location:inwardRegister.selectedFarmer.residensialAddress.location,
+            city:inwardRegister.selectedFarmer.residensialAddress.city,
+            state:inwardRegister.selectedFarmer.residensialAddress.state,
+            pincode:inwardRegister.selectedFarmer.residensialAddress.pincode
+
+          }:null
+          
+
+        }
+           
+        : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+        ? {
+          companyName:inwardRegister.selectedVendor.companyName,
+          category:inwardRegister.selectedVendor.category?.name,
+          subcategory:inwardRegister.selectedVendor.subcategory?.name,
+          vendorCode:inwardRegister.selectedVendor?.vendorCode,
+          contactPersonName:inwardRegister.selectedVendor.vendorSaleInfo.contactFName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactMName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactLName,
+          officeAddress:inwardRegister.selectedVendor.officeAddress ? {
+            id:inwardRegister.selectedVendor.officeAddress.id,
+            address1:inwardRegister.selectedVendor.officeAddress.address1,
+            address2:inwardRegister.selectedVendor.officeAddress.address2,
+            location:inwardRegister.selectedVendor.officeAddress.location,
+            city:inwardRegister.selectedVendor.officeAddress.city,
+            state:inwardRegister.selectedVendor.officeAddress.state,
+            pincode:inwardRegister.selectedVendor.officeAddress.pincode
+
+          }:null
+        }
+        : null;
      
       const rawDate = inwardRegister.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
@@ -1330,27 +1406,25 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
     createdDate,
     createdTime,
     approvalSummary: document.approvalSummary,
-
+selectedParty,
     
       // from InwardRegister:
       id: inwardRegister.id,
       inwardType: inwardRegister.inwardType,
-      lotNo: inwardRegister.batchNo,
+      batchNo: inwardRegister.batchNo,
       remarks: inwardRegister.remarks,
       source: inwardRegister.source,
+      date:inwardRegister.date,
       purchasedQty: inwardRegister.purchasedQty,
       inwardQtyInKg: inwardRegister.inwardQtyInKg,
       inwardCost: inwardRegister.inwardCost,
       totalWeightInKg: inwardRegister.totalWeightInKg,
 
       grnNo: inwardRegister.grnNo?.grnNo || null,
-      deliveryChallanId: inwardRegister.deliveryChallanNo?.id || null,
+      deliveryChallanNo: inwardRegister.deliveryChallanNo?.id || null,
       companyName: inwardRegister.companyName?.name || null,
-      locationName: inwardRegister.location?.name || null,
-      vendorName: inwardRegister.selectedVendor?.companyName || null,
-      farmerName: inwardRegister.selectedFarmer
-        ? `${inwardRegister.selectedFarmer.farmerfName} ${inwardRegister.selectedFarmer.farmermName || ''} ${inwardRegister.selectedFarmer.farmerlName}`
-        : null,
+      location: inwardRegister.location?.name || null,
+     
 
       purchasedBy: `${inwardRegister.inwardBy?.firstName || null } ${inwardRegister.inwardBy?.lastName || null}`,
       inwardBy: `${inwardRegister.inwardBy?.firstName || null } ${inwardRegister.inwardBy?.lastName || null}`,

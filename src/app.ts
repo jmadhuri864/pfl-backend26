@@ -109,9 +109,9 @@ const startServer = async () => {
       // Main CORS handler - MUST be before any other middleware that might set headers
       app.use((req, res, next) => {
         const origin = req.headers.origin as string|| '*';
-        console.log('🔍 CORS Handler - Origin:', origin);
-        console.log('🔍 CORS Handler - Method:', req.method);
-        console.log('🔍 CORS Handler - Path:', req.path);
+        // console.log('🔍 CORS Handler - Origin:', origin);
+        // console.log('🔍 CORS Handler - Method:', req.method);
+        // console.log('🔍 CORS Handler - Path:', req.path);
         
         // Allow all origins if '*' is in allowedOrigins, otherwise check specific origins
         if (allowedOrigins.includes("*") || (origin && allowedOrigins.includes(origin))) {
@@ -119,15 +119,15 @@ const startServer = async () => {
           res.setHeader("Access-Control-Allow-Credentials", "true");
           res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
           res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
-          console.log('✅ CORS - Set origin to:', origin || "*");
+          // console.log('✅ CORS - Set origin to:', origin || "*");
         } else {
-          console.log('❌ CORS - Origin not in allowed list:', origin);
-          console.log('🔍 CORS - Allowed origins:', allowedOrigins);
+          // console.log('❌ CORS - Origin not in allowed list:', origin);
+          // console.log('🔍 CORS - Allowed origins:', allowedOrigins);
         }
 
         // Handle preflight requests
         if (req.method === "OPTIONS") {
-          console.log('🔍 Handling OPTIONS preflight for:', req.path);
+        //  console.log('🔍 Handling OPTIONS preflight for:', req.path);
           return res.status(204).end();
         }
         
@@ -137,13 +137,13 @@ const startServer = async () => {
       // SSE-specific middleware
       app.use("/sse", (req, res, next) => {
         const origin = req.headers.origin as string;
-        console.log('🔍 SSE Middleware - Origin:', origin);
+        //console.log('🔍 SSE Middleware - Origin:', origin);
         
         // Ensure CORS headers are set for SSE
         if (origin && allowedOrigins.includes(origin)) {
           res.setHeader("Access-Control-Allow-Origin", origin);
           res.setHeader("Access-Control-Allow-Credentials", "true");
-          console.log('✅ SSE - Set origin to:', origin);
+         // console.log('✅ SSE - Set origin to:', origin);
         }
 
         // SSE-specific headers
@@ -152,7 +152,7 @@ const startServer = async () => {
         res.setHeader("Connection", "keep-alive");
         res.setHeader("X-Accel-Buffering", "no");
         
-        console.log('🔍 SSE Final Headers:', res.getHeaders());
+       // console.log('🔍 SSE Final Headers:', res.getHeaders());
         next();
       });
 
@@ -186,7 +186,7 @@ const startServer = async () => {
             message: err.message || 'Internal Server Error',
           });
         }
-        console.log(err);
+        //console.log(err);
         logger.error(`Unhandled Error: ${err.message}`, { stack: err.stack });
 
         return res.status(500).json({
@@ -201,9 +201,9 @@ const startServer = async () => {
     const port = process.env.PORT || 3000;
     app.listen(port, () => {
 
-      console.log(`🚀 Server started on port ${port}`);
-      console.log(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
-      console.log(`🧪 SSE test: http://localhost:${port}/sse/test`);
+      // console.log(`🚀 Server started on port ${port}`);
+      // console.log(`📡 SSE endpoint: http://localhost:${port}/sse/notifications`);
+      // console.log(`🧪 SSE test: http://localhost:${port}/sse/test`);
     });
 
     process.on('SIGINT', () => {
@@ -211,7 +211,7 @@ const startServer = async () => {
       process.exit(0);
     });
   } catch (error) {
-    console.log(error)
+    //console.log(error)
     logger.error('Error starting the server:', error);
     process.exit(1);
   }

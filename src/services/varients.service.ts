@@ -45,6 +45,9 @@ export class ProductVarientsService {
             product.prefix,
             item.count,
             item.size,
+            item.variety,
+            item.origin,
+            item.brand,
           ),
         });
 
@@ -93,6 +96,9 @@ export async function generateVariantCode(
   prefix: string,
   count?: string,
   size?: string,
+  variety?: string,
+  origin?: string,
+  brand?: string,
 ): Promise<string> {
   const parts: string[] = [];
 
@@ -106,6 +112,18 @@ export async function generateVariantCode(
 
   if (size) {
     parts.push(`S${size}`);
+  }
+
+  if (variety) {
+    parts.push(`V${variety}`);
+  }
+
+  if (origin) {
+    parts.push(`O${origin}`);
+  }
+
+  if (brand) {
+    parts.push(`B${brand}`);
   }
 
   const variantRepo = AppDataSource.getRepository(ProductVarient);

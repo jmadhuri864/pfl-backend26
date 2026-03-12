@@ -19,5 +19,4 @@ export class ActiveSession extends Model {
 
 
 
-
 }

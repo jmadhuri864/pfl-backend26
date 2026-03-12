@@ -14,13 +14,13 @@
 
     body {
       font-family: Arial, sans-serif;
-      line-height: 1.5;
+      line-height: 1.4;
       padding: 20px;
     }
 
     .invoice-container {
       max-width: 800px;
-      margin: 10px auto;
+      margin: 0 auto;
       padding: 0;
     }
 
@@ -32,7 +32,7 @@
       border-bottom: 1px solid black;
     }
 
-    .right-bottom {
+    .right-border {
       border-right: 1px solid black;
     }
 
@@ -47,101 +47,136 @@
       align-items: center;
     }
 
-    .flex-horizontal-center {
-      display: flex;
-      justify-content: center;
-    }
-
-    .bottom-border {
-      border-bottom: 1px solid black;
-    }
-
-    .right-border {
-      border-right: 1px solid black;
-    }
-
     .header-first-row {
       width: 100%;
-      height: 30px;
-      padding: 0px 10px;
+      min-height: 30px;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .header-second-row {
       width: 100%;
-      height: 70px;
+      min-height: 70px;
+      display: flex;
     }
 
     .header-third-row {
       width: 100%;
-      height: 50px;
+      min-height: 50px;
       text-align: center;
+      padding: 5px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .header-fourth-row {
       width: 100%;
-      height: 20px;
+      min-height: 25px;
       text-align: center;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .info-row {
+      width: 100%;
+      display: flex;
+      min-height: 25px;
+    }
+
+    .info-cell {
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .info-cell-left {
+      width: 50%;
+    }
+
+    .info-cell-right {
+      width: 50%;
     }
 
     .customer-address-block {
       width: 100%;
+      display: flex;
+      min-height: 120px;
     }
 
-    .customer-address-block div {
+    .address-section {
       width: 50%;
-      padding: 0px 10px;
+      padding: 10px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin: 0;
     }
 
     th,
     td {
       border: 1px solid black;
-    }
-
-    th,
-    td {
       text-align: center;
-      padding: 8px;
+      padding: 6px 4px;
+      font-size: 12px;
     }
 
     th {
       background-color: #f2f2f2;
+      font-weight: bold;
     }
 
     .total-row {
       font-weight: bold;
     }
 
-    .notes {
+    .text-right {
+      text-align: right;
+    }
+
+    .text-left {
       text-align: left;
-      vertical-align: top;
     }
 
     .bank-details {
       width: 100%;
-      height: 50px;
-      text-align: center;
+      min-height: 60px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .bank-info-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 5px;
     }
 
     .invoice-footer {
       width: 100%;
-      height: 200px;
+      min-height: 150px;
+      display: flex;
     }
 
     .terms-condition {
       width: 50%;
-      height: inherit;
-      padding: 0px 10px;
+      padding: 10px;
     }
 
     .signature-box {
       width: 50%;
-      height: inherit
+      display: flex;
+      flex-direction: column;
     }
 
     .receiver-sign-block {
@@ -149,7 +184,8 @@
       height: 50%;
       display: flex;
       justify-content: center;
-      align-items: end;
+      align-items: flex-end;
+      padding: 10px;
     }
 
     .authorized-sign-block {
@@ -165,7 +201,7 @@
     .footer-heading {
       display: block;
       width: 100%;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
     }
   </style>
@@ -174,167 +210,190 @@
 <body>
   <div class="invoice-container all-border">
     <header>
-      <div class="header-first-row flex-vertical-center bottom-border">
-        <span style="font-size: 15px; font-weight: bold;">ORIGINAL COPY</span>
-        <span style="margin-left: 200px; font-size: 15px; font-weight: bold;"><%= data.type %> INVOICE</span>
+      <div class="header-first-row bottom-border">
+        <span style="font-size: 14px; font-weight: bold;">ORIGINAL COPY</span>
+        <span style="font-size: 14px; font-weight: bold;"><%= data.type %> INVOICE</span>
       </div>
-      <div class="header-second-row flex-center bottom-border">
-        <h1 class="flex-center right-border" style="width: 80%; height: inherit;"><%= data.company %></h1>
-        <div class="flex-center" style="width: 20%; height: inherit;">
+      <div class="header-second-row bottom-border">
+        <div class="flex-center right-border" style="width: 80%; height: 100%;">
+          <h1 style="font-size: 24px;"><%= data.company %></h1>
+        </div>
+        <div class="flex-center" style="width: 20%; height: 100%;">
           <img src="https://aws-sdk-multer.s3.ap-south-1.amazonaws.com/invoices/drawer-logo.png" 
                alt="Company Logo" 
                style="width: 80%; height: auto; max-width: 80%; max-height: 80%;" />
-      </div>
+        </div>
       </div>
       <div class="header-third-row bottom-border">
-          <p style="font-size:small; font-weight: bold">Regd. & Admin Office : 102, Sanskar-||, Near Ketav Petrol
-            Pump, Polytechnic Road, Ambawadi, Ahmedabad - 380015</p>
-          <p style="font-size: x-small; font-weight: 600;">Phone: 079-40320244, Email:
-            info@primefreshlimited.com</p>
-          <p style="font-size: x-small; font-weight: 600;">FSSAI No: 10021021000490 for Ambawadi, FSSAI No:
-            10721026000215 for Naroda </p>
+        <p style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">
+          Regd. & Admin Office : 102, Sanskar-||, Near Ketav Petrol Pump, Polytechnic Road, Ambawadi, Ahmedabad - 380015
+        </p>
+        <p style="font-size: 10px; font-weight: 600; margin-bottom: 2px;">
+          Phone: 079-40320244, Email: info@primefreshlimited.com
+        </p>
+        <p style="font-size: 10px; font-weight: 600;">
+          FSSAI No: 10021021000490 for Ambawadi, FSSAI No: 10721026000215 for Naroda
+        </p>
       </div>
-      <div class="header-fourth-row bottom-border flex-center">
-        <span style="font-size: small; font-weight: bold;">V-1210-1220, Prime Fresh Ltd, New Krushi Wholesale Mart, Opp
-          Aakashar Business Park Sec19-A Turbhe, Vashi-400703</span>
+      <div class="header-fourth-row bottom-border">
+        <span style="font-size: 11px; font-weight: bold;">
+          V-1210-1220, Prime Fresh Ltd, New Krushi Wholesale Mart, Opp Aakashar Business Park Sec19-A Turbhe, Vashi-400703
+        </span>
       </div>
     </header>
+    
     <section>
-      <div class="flex-vertical-center bottom-border" style="width: 100%;">
-        <div class="right-border" style="width: 50%; padding: 0px 10px;">
+      <div class="info-row bottom-border">
+        <div class="info-cell info-cell-left right-border">
           <span style="font-weight: bold; margin-right: 10px;">Invoice No:</span>
           <span><%= data.invoiceNumber %></span>
         </div>
-        <div style="width: 50%; padding: 0px 10px">
+        <div class="info-cell info-cell-right">
           <span style="font-weight: bold; margin-right: 10px;">PO Number:</span>
           <span><%= data.poNo %></span>
         </div>
       </div>
-      <div class="flex-vertical-center bottom-border" style="width: 100%;">
-        <div class="right-border" style="width: 50%; padding: 0px 10px">
+      <div class="info-row bottom-border">
+        <div class="info-cell info-cell-left right-border">
           <span style="font-weight: bold; margin-right: 10px;">Invoice Date:</span>
           <span><%= data.invoiceDate %></span>
         </div>
-        <div style="width: 50%; padding: 0px 10px">
+        <div class="info-cell info-cell-right">
           <span style="font-weight: bold; margin-right: 10px;">Vehicle No:</span>
           <span><%= data.vehicleNo %></span>
         </div>
       </div>
-      <div class="flex-vertical-center bottom-border" style="width: 100%;">
-        <div class="right-border" style="width: 50%; padding: 0px 10px">
+      <div class="info-row bottom-border">
+        <div class="info-cell info-cell-left right-border">
           <span style="font-weight: bold; margin-right: 10px;">Customer ID:</span>
           <span><%= data.customerCode %></span>
         </div>
-        <div style="width: 50%; padding: 0px 10px">
+        <div class="info-cell info-cell-right">
           <span style="font-weight: bold; margin-right: 10px;">Place of Supply:</span>
-          <span><%= data.shipToAddress.location %></span>
+          <span><%= data.shipToAddress.city %></span>
         </div>
       </div>
     </section>
-    <section class="customer-address-block flex-center bottom-border">
-      <div class="right-border">
-        <h5 style="font-size: small; font-weight: bold;">Billed To:</h5>
-        <p style="font-size: large; font-weight: 600;"><%= data.partyName %></p>
-        <p style="font-size: medium; font-weight: 500;"><%= data.billToAddress.address1 %>,<%= data.billToAddress.address2 %>,<%= data.billToAddress.location %>,<%= data.billToAddress.city %>,<%= data.billToAddress.state %>,<%= data.billToAddress.pincode %></p>
-        <p style="font-size: medium; font-weight: 500;">Contact No:</p>
-        <p style="font-size: medium; font-weight: 500;">GSTN:<%= data.gstn %></p>
-        <p style="font-size: medium; font-weight: 500;">PAN:<%= data. panNo%></p>
+    
+    <section class="customer-address-block bottom-border">
+      <div class="address-section right-border">
+        <h5 style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">Billed To:</h5>
+        <p style="font-size: 14px; font-weight: 600; margin-bottom: 3px;"><%= data.partyName %></p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 3px;">
+          <%= data.billToAddress.address1 %>, <%= data.billToAddress.address2 %>, 
+          <%= data.billToAddress.location %>, <%= data.billToAddress.city %>, 
+          <%= data.billToAddress.state %>, <%= data.billToAddress.pincode %>
+        </p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 2px;">Contact No:</p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 2px;">GSTN: <%= data.gstn %></p>
+        <p style="font-size: 11px; font-weight: 500;">PAN: <%= data.panNo %></p>
       </div>
-      <div>
-        <h5 style="font-size: small; font-weight: bold;">Shipped To:</h5>
-        <p style="font-size: large; font-weight: 600;"><%= data.partyName %></p>
-        <p style="font-size: medium; font-weight: 500;"><%= data.shipToAddress.address1 %>,<%= data.shipToAddress.address2 %>,<%= data.shipToAddress.location %>,<%= data.shipToAddress.city %>,<%= data.shipToAddress.state %>,<%= data.shipToAddress.pincode %></p>
-        <p style="font-size: medium; font-weight: 500;">Contact No:</p>
-        <p style="font-size: medium; font-weight: 500;">GSTN: <%= data.gstn %></p>
-        <p style="font-size: medium; font-weight: 500;">PAN: <%= data. panNo%></p>
+      <div class="address-section">
+        <h5 style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">Shipped To:</h5>
+        <p style="font-size: 14px; font-weight: 600; margin-bottom: 3px;"><%= data.partyName %></p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 3px;">
+          <%= data.shipToAddress.address1 %>, <%= data.shipToAddress.address2 %>, 
+          <%= data.shipToAddress.location %>, <%= data.shipToAddress.city %>, 
+          <%= data.shipToAddress.state %>, <%= data.shipToAddress.pincode %>
+        </p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 2px;">Contact No:</p>
+        <p style="font-size: 11px; font-weight: 500; margin-bottom: 2px;">GSTN: <%= data.gstn %></p>
+        <p style="font-size: 11px; font-weight: 500;">PAN: <%= data.panNo %></p>
       </div>
     </section>
     <section class="item-table">
       <table>
         <thead>
           <tr>
-            <th>S.No.</th>
-            <th>Description of goods</th>
-            <th>HSN/SAC Code</th>
-            <th>QTY</th>
-            <th>UNIT</th>
-            <th>PRICE</th>
-            <th>AMOUNT (Rs)</th>
+            <th style="width: 5%;">S.No.</th>
+            <th style="width: 30%;">Description of goods</th>
+            <th style="width: 10%;">HSN/SAC Code</th>
+            <th style="width: 10%;">QTY</th>
+            <th style="width: 10%;">UNIT</th>
+            <th style="width: 15%;">PRICE</th>
+            <th style="width: 20%;">AMOUNT (Rs)</th>
           </tr>
         </thead>
         <tbody>
-            <% data.items.forEach((item, index) => { %>
-                <tr>
-                    <td><%= index + 1 %></td>
-                    <td><%= item.productName %></td>
-                    <td></td>
-                    <td><%= item.qty %></td>
-                    <td><%= item.uom %></td>
-                    <td><%= item.rate %></td>
-                    <td><%= item.amt%></td>
-                </tr>
-            <% }); %>
+          <% data.items.forEach((item, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td class="text-left" style="padding-left: 8px;"><%= item.productName %><%= item.variantName ? ' (' + item.variantName + ')' : '' %></td>
+            <td></td>
+            <td><%= item.qty %></td>
+            <td><%= item.uom %></td>
+            <td class="text-right" style="padding-right: 8px;"><%= item.rate %></td>
+            <td class="text-right" style="padding-right: 8px;"><%= item.amt %></td>
+          </tr>
+          <% }); %>
 
           <tr>
-            <td colspan="6" class="total-row" style="text-align: end;">TOTAL</td>
-            <td> <%= data.totalAmt %></td>
+            <td colspan="6" class="total-row text-right" style="padding-right: 8px;">TOTAL</td>
+            <td class="text-right" style="padding-right: 8px;"><%= data.totalAmt %></td>
           </tr>
           <tr>
-            <td colspan="6" class="notes" style="text-align: end;">
+            <td colspan="6" class="text-left" style="padding: 8px; vertical-align: top;">
               <strong>Other Exp. If any</strong><br>
               Transportation<br>
               Unloading Local labour<br>
               Labour charges<br>
             </td>
+            <td></td>
           </tr>
           <tr>
-            <td colspan="6" class="total-row" style="text-align: end;">GRAND TOTAL</td>
-            <td> <%= data.totalAmt %></td>
+            <td colspan="6" class="total-row text-right" style="padding-right: 8px;">GRAND TOTAL</td>
+            <td class="text-right" style="padding-right: 8px;"><%= data.totalAmt %></td>
           </tr>
           <tr>
-            <td colspan="3" class="total-row" style="text-align:center;">Total Amount In Words: </td>
-            <td colspan="3"><%= data.amountInWords%></td>
+            <td colspan="3" class="total-row">Total Amount In Words:</td>
+            <td colspan="4" class="text-left" style="padding-left: 8px;"><%= data.amountInWords %></td>
           </tr>
         </tbody>
       </table>
     </section>
+    
     <section class="bank-details bottom-border">
-      <span style="font-size: large; font-weight: bolder;">Bank Details</span>
-      <div class="flex-center">
-        <div style="margin-right: 10px;">
-          <span style="font-size:small; font-weight: bold;">Bank Name:</span>
-          <span style="font-size: small;"><%= data.bankDetails.bankName %></span>
-        </div>
-        <div style="margin-right: 10px;">
-          <span style="font-weight: bold;">Account No:</span>
-          <span style="font-size: small;"><%= data.bankDetails.accountNo %></span>
-        </div>
-        <div style="margin-right: 10px;">
-          <span style="font-size:small; font-weight: bold;">IFSC:</span>
-          <span style="font-size: small;"><%= data.bankDetails.ifsc%></span>
+      <span style="font-size: 14px; font-weight: bold;">Bank Details</span>
+      <div class="bank-info-row">
+        <div>
+          <span style="font-size: 12px; font-weight: bold;">Bank Name: </span>
+          <span style="font-size: 12px;"><%= data.bankDetails.bankName %></span>
         </div>
         <div>
-          <span style="font-size:small; font-weight: bold;">Branch:</span>
-          <span style="font-size: small;"><%= data.bankDetails.branch%></span>
+          <span style="font-size: 12px; font-weight: bold;">Account No: </span>
+          <span style="font-size: 12px;"><%= data.bankDetails.accountNo %></span>
+        </div>
+        <div>
+          <span style="font-size: 12px; font-weight: bold;">IFSC: </span>
+          <span style="font-size: 12px;"><%= data.bankDetails.ifsc %></span>
+        </div>
+        <div>
+          <span style="font-size: 12px; font-weight: bold;">Branch: </span>
+          <span style="font-size: 12px;"><%= data.bankDetails.branch %></span>
         </div>
       </div>
     </section>
-    <footer class="invoice-footer flex-center">
+    
+    <footer class="invoice-footer">
       <div class="terms-condition right-border">
-        <span class="footer-heading">Terms & Conditions:</span>
-        <span style="display: block; width: 100%; ;font-size: small;">1. Goods once sold will not be taken back.</span>
-        <span style="display: block; width: 100%; ;font-size: small;">2. Interest @ 24% p.a. will be charged if the
-          payment is not made with in the Due Date.</span>
-        <span style="display: block; width: 100%; ;font-size: small;">3. Subject to Ahmedabad Jurisdiction only. 
-          "This is computar generated invoice No signature required"</span>
+        <span class="footer-heading" style="margin-bottom: 5px;">Terms & Conditions:</span>
+        <span style="display: block; width: 100%; font-size: 11px; margin-bottom: 3px;">
+          1. Goods once sold will not be taken back.
+        </span>
+        <span style="display: block; width: 100%; font-size: 11px; margin-bottom: 3px;">
+          2. Interest @ 24% p.a. will be charged if the payment is not made with in the Due Date.
+        </span>
+        <span style="display: block; width: 100%; font-size: 11px;">
+          3. Subject to Ahmedabad Jurisdiction only. "This is computar generated invoice No signature required"
+        </span>
       </div>
       <div class="signature-box">
         <div class="receiver-sign-block bottom-border">
-          <span class="footer-heading" style="text-align: center;">Receiver Signature</span>
+          <span class="footer-heading">Receiver Signature</span>
         </div>
         <div class="authorized-sign-block">
-          <span class="footer-heading" style="text-align: center;">Company Name</span>
-          <span class="footer-heading" style="text-align: center;">Authorized Signature</span>
+          <span class="footer-heading"><%= data.company %></span>
+          <span class="footer-heading">Authorized Signature</span>
         </div>
       </div>
     </footer>

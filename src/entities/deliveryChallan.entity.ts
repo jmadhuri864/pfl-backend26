@@ -35,7 +35,7 @@ export class DeliveryChallanPurchase extends Model {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'company_id' })
-  companyName: Company;
+  companyName: Company;    //
 
   @ManyToOne(() => OfficesData, {
     nullable: true,

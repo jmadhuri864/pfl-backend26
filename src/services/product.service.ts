@@ -142,6 +142,9 @@ export class ProductService {
           savedProduct1.prefix,
           dto.varient.count,
           dto.varient.size,
+          dto.varient.variety,
+          dto.varient.origin,
+          dto.varient.brand,
         ));
       const variantEntity = this.productVarientsRepository.create(dto.varient);
 
@@ -976,6 +979,9 @@ export class ProductService {
             updatedProduct.prefix,
             variantData.count,
             variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
           ),
         };
 
@@ -998,6 +1004,9 @@ export class ProductService {
             updatedProduct.prefix,
             variantData.count,
             variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
           ),
         });
 

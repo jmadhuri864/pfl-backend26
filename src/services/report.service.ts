@@ -1498,7 +1498,7 @@ export class ReportService {
       
       let query = `
         SELECT 
-          cust."organisationName" as name,
+          cust.organisation_name as name,
           SUM(
             CASE 
               WHEN $${paramIndex} = 'tonnes' THEN i."netWeight" / 1000
@@ -1506,7 +1506,7 @@ export class ReportService {
             END
           ) as quantity,
           SUM(i.amount) as amount
-        FROM customer cust
+        FROM customers cust
         LEFT JOIN delivery_challan_purchase dc ON cust.id = dc.customer_id
         LEFT JOIN d_items i ON dc.id = i."deliveryChallanId"
         WHERE dc.type = 'customer_delivery_challan'
@@ -1541,7 +1541,7 @@ export class ReportService {
       }
 
       query += `
-        GROUP BY cust.id, cust."organisationName"
+        GROUP BY cust.id, cust.organisation_name
         HAVING SUM(i."netWeight") > 0
         ORDER BY amount DESC
       `;

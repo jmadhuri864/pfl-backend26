@@ -43,6 +43,7 @@ import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { RfpaPaymentInfoRepository } from '../repositories/rfpaPaymentInfo.repository';
+import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
 
 export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
@@ -83,8 +84,9 @@ export class RfpaService {
     @inject(TYPES.DocumentbRepository)
     private documentbRepository: DocumentbRepository,
     @inject(TYPES.RfpaPaymentInfoRepository)
-    private rfpaPaymentInfoRepository:RfpaPaymentInfoRepository
-    
+    private rfpaPaymentInfoRepository:RfpaPaymentInfoRepository,
+    @inject(TYPES.ApprovalFlowRepository)
+    private approvalFlowRepository:ApprovalFlowRepository    
   ) {}
 
   // async findAllRfpas(): Promise<any[]> {
@@ -179,6 +181,10 @@ export class RfpaService {
 
 
   async createRfpa(rfpaData: any): Promise<any> {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
   try {
     // Generate RFPA ID
     const rfpaId = await this.generateRFPAId();
@@ -197,7 +203,7 @@ export class RfpaService {
     const selectedVendorId = rfpaData.source === 'vendor' ? extractId(rfpaData.selectedParty || rfpaData.selectedVendor) : null;
     const selectedFarmerId = rfpaData.source === 'farmer' ? extractId(rfpaData.selectedParty || rfpaData.selectedFarmer) : null;
 
-    const rfpaPaymentInfo = this.rfpaPaymentInfoRepository.create({
+    const rfpaPaymentInfo = queryRunner.manager.create(this.rfpaPaymentInfoRepository.target, {
       paymentMode: rfpaData.paymentInfo.paymentMode,
       creditPeriod: rfpaData.paymentInfo.creditPeriod,
       paymentDate: rfpaData.paymentInfo.paymentDate,
@@ -207,11 +213,11 @@ export class RfpaService {
       validityOfQuote: rfpaData.paymentInfo.validityOfQuote
     })
 
-    const saveRfpaPaymentInfo = await this.rfpaPaymentInfoRepository.save(rfpaPaymentInfo);
+    const saveRfpaPaymentInfo = await queryRunner.manager.save(rfpaPaymentInfo);
     console.log("RFPA Data...........", saveRfpaPaymentInfo);
     
     // Create RFPA entity with plain ID values (TypeORM will handle the relationships)
-    const rfpaEntity = this.rfpaRepository.create({
+    const rfpaEntity = queryRunner.manager.create(this.rfpaRepository.target, {
       rfpaId,
       requestingDepartment: rfpaData.requestingDepartment,
       companyName: extractId(rfpaData.companyName),
@@ -254,7 +260,7 @@ export class RfpaService {
     }
 
     // Save RFPA with products in one transaction (cascade will save products automatically)
-    const savedRfpaResult = await this.rfpaRepository.save(rfpaEntity);
+    const savedRfpaResult = await queryRunner.manager.save(rfpaEntity);
     
     // Handle both single entity and array return types
     const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
@@ -271,10 +277,18 @@ export class RfpaService {
 
     await this.documentbService.startApprovalFlow(document.id);
 
+    // Commit transaction - all operations succeeded
+    await queryRunner.commitTransaction();
+
     return savedRfpa;
   } catch (error: any) {
+    // Rollback transaction - undo all changes
+    await queryRunner.rollbackTransaction();
     console.error('Error creating RFPA:', error);
     throw new Error(`Failed to create RFPA: ${error.message}`);
+  } finally {
+    // Release query runner
+    await queryRunner.release();
   }
 }
 
@@ -1284,57 +1298,421 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
       }
     };
   }
-  public async getAllRFPANumbers(): Promise<
-    {
-      id: string;
-      rfpaId: string;
-      //,approvalStatus:string
-    }[]
-  > {
-    const rfpas = await this.rfpaRepository.find({
-      select: ['id', 'rfpaId'], 
-      order: {
-        createdAt: 'DESC', 
-      },
-    });
+// public async getAllRFPANumbers(
+//   filter: {
+//     overAllStatus?: string;
+//     isDealSlipCreated?: boolean;
+//     employeeBaseHirechey?: boolean;
+//     page?: number;
+//     limit?: number;
+//     search?: string;
+//   },
+//   loginUserId: string
+// ): Promise<{
+//   data: {
+//     id: string;
+//     rfpaId: string;
+//     documentId: string | null;
+//   }[];
+//   total: number;
+//   page: number;
+//   limit: number;
+//   totalPages: number;
+// }> {
 
-    const typedDocuments = rfpas as RFPAWithRelatedData[];
+//   const rfpaWhere: any = {};
 
-    const results: {
+//   if (typeof filter?.isDealSlipCreated === "boolean") {
+//     rfpaWhere.isDealSlipCreated = filter.isDealSlipCreated;
+//   }
+
+//   // Fetch RFPA
+//   const rfpas = await this.rfpaRepository.find({
+//     select: ["id", "rfpaId", "isDealSlipCreated"],
+//     where: rfpaWhere,
+//     relations: ["createdBy"],
+//     order: { createdAt: "DESC" }
+//   });
+
+//   const filteredResults: {
+//     id: string;
+//     rfpaId: string;
+//     documentId: string | null;
+//   }[] = [];
+
+//   for (const rfpa of rfpas) {
+
+//     if (!rfpa.id || !rfpa.rfpaId) {
+//       continue;
+//     }
+
+//     // =============================
+//     // Fetch Document
+//     // =============================
+
+//     const document = await this.documentbRepository.findOne({
+//       where: { document_type_id: rfpa.id },
+//       select: ["id", "status"]
+//     });
+
+//     const documentId = document?.id || null;
+//     const documentStatus = document?.status;
+
+//     // =============================
+//     // Employee Hierarchy Logic
+//     // =============================
+
+//     if (filter?.employeeBaseHirechey) {
+
+//       const approvalFlow = await this.approvalFlowRepository
+//         .createQueryBuilder("approvalflows")
+
+//         .leftJoinAndSelect("approvalflows.creator", "creator")
+//         .leftJoinAndSelect("approvalflows.verifiers", "verifiers")
+
+//         .leftJoinAndSelect("approvalflows.approvers", "approvers")
+
+//         .leftJoinAndSelect("approvers.firstApprover", "firstApprover")
+//         .leftJoinAndSelect("firstApprover.users", "firstApproverUsers")
+
+//         .leftJoinAndSelect("approvers.secondApprover", "secondApprover")
+//         .leftJoinAndSelect("secondApprover.users", "secondApproverUsers")
+
+//         .leftJoinAndSelect("approvers.thirdApprover", "thirdApprover")
+//         .leftJoinAndSelect("thirdApprover.users", "thirdApproverUsers")
+
+//         .leftJoinAndSelect("approvalflows.finalizers", "finalizers")
+//         .leftJoinAndSelect("finalizers.firstFinalizers", "firstFinalizers")
+//         .leftJoinAndSelect("finalizers.secondFinalizers", "secondFinalizers")
+
+//         .where("creator.id = :creatorId", { creatorId: rfpa.createdBy?.id })
+//         .andWhere("approvalflows.type = :documentType", { documentType: "Procurement" })
+
+//         .getOne();
+
+//       if (!approvalFlow) {
+//         continue;
+//       }
+
+//       let hierarchy = 0;
+
+//       if (approvalFlow.creator?.id === loginUserId) {
+//         hierarchy = 1;
+//       }
+//       else if (approvalFlow.verifiers?.some(v => v.id === loginUserId)) {
+//         hierarchy = 2;
+//       }
+//       else if (approvalFlow.approvers?.firstApprover?.users?.some(u => u.id === loginUserId)) {
+//         hierarchy = 3;
+//       }
+//       else if (approvalFlow.approvers?.secondApprover?.users?.some(u => u.id === loginUserId)) {
+//         hierarchy = 4;
+//       }
+//       else if (approvalFlow.approvers?.thirdApprover?.users?.some(u => u.id === loginUserId)) {
+//         hierarchy = 5;
+//       }
+//       else if (approvalFlow.finalizers?.firstFinalizers?.some(u => u.id === loginUserId)) {
+//         hierarchy = 6;
+//       }
+//       else if (approvalFlow.finalizers?.secondFinalizers?.some(u => u.id === loginUserId)) {
+//         hierarchy = 7;
+//       }
+
+//       if (hierarchy === 0) {
+//         continue;
+//       }
+
+//       if (hierarchy === 1 && rfpa.createdBy?.id !== loginUserId) {
+//         continue;
+//       }
+//     }
+
+//     // =============================
+//     // Status / DealSlip Filtering
+//     // =============================
+
+//     if (
+//       filter?.overAllStatus &&
+//       typeof filter?.isDealSlipCreated === "boolean"
+//     ) {
+
+//       if (
+//         documentStatus === filter.overAllStatus &&
+//         rfpa.isDealSlipCreated === filter.isDealSlipCreated
+//       ) {
+//         filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+//       }
+
+//     }
+
+//     else if (filter?.overAllStatus) {
+
+//       if (documentStatus === filter.overAllStatus) {
+//         filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+//       }
+
+//     }
+
+//     else if (typeof filter?.isDealSlipCreated === "boolean") {
+
+//       if (rfpa.isDealSlipCreated === filter.isDealSlipCreated) {
+//         filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+//       }
+
+//     }
+
+//     else {
+//       filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+//     }
+
+//   }
+
+//   // =============================
+//   // Search After Filtering
+//   // =============================
+
+//   let searchedResults = filteredResults;
+
+//   if (filter?.search) {
+//     const search = filter.search.toLowerCase();
+
+//     searchedResults = filteredResults.filter(item =>
+//       item.rfpaId.toLowerCase().includes(search)
+//     );
+//   }
+
+//   // =============================
+//   // Pagination
+//   // =============================
+
+//   const page = filter.page || 1;
+//   const limit = filter.limit || 10;
+
+//   const startIndex = (page - 1) * limit;
+//   const endIndex = startIndex + limit;
+
+//   const paginatedResults = searchedResults.slice(startIndex, endIndex);
+
+//   return {
+//     data: paginatedResults,
+//     total: searchedResults.length,
+//     page,
+//     limit,
+//     totalPages: Math.ceil(searchedResults.length / limit)
+//   };
+// }
+public async getAllRFPANumbers(
+  filter: {
+    overAllStatus?: string;
+    isDealSlipCreated?: boolean;
+    employeeBaseHirechey?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+  },
+  loginUserId: string
+): Promise<any> {
+
+  const rfpaWhere: any = {};
+
+  if (typeof filter?.isDealSlipCreated === "boolean") {
+    console.log("--------------");
+    
+    rfpaWhere.isDealSlipCreated = filter.isDealSlipCreated;
+  }
+
+  // Fetch RFPA
+  const rfpas = await this.rfpaRepository.find({
+    select: ["id", "rfpaId", "isDealSlipCreated"],
+    where: rfpaWhere,
+    relations: ["createdBy"],
+    order: { createdAt: "DESC" }
+  });
+
+  const filteredResults: {
     id: string;
     rfpaId: string;
     documentId: string | null;
   }[] = [];
 
-    for (const rfpa of rfpas) {
-      if (!rfpa.id || !rfpa.rfpaId ) {
-        throw new Error('RFPA ID or RFPA Number is missing');
-      }
+  for (const rfpa of rfpas) {
 
-      let documentId: string | null = null;
+    if (!rfpa.id || !rfpa.rfpaId) {
+      continue;
+    }
 
-      try {
-         const document = await this.documentbRepository.findOne({
-          where: { document_type_id: rfpa.id }
-        });
-        documentId = document?.id || null;
-      } catch (error) {
-        console.error(`Error fetching document for RFPA ID ${rfpa.id}:`, error);
-        documentId = null; // Set to null if no document found or error occurs
-      }
+    // =============================
+    // Fetch Document
+    // =============================
 
-      results.push({
-      id: rfpa.id,
-      rfpaId: rfpa.rfpaId,
-      documentId:documentId,
+    const document = await this.documentbRepository.findOne({
+      where: { document_type_id: rfpa.id },
+      select: ["id", "status"]
     });
+
+    const documentId = document?.id || null;
+    const documentStatus = document?.status;
+
+    // =============================
+    // Employee Hierarchy Logic
+    // =============================
+
+    if (filter?.employeeBaseHirechey) {
+
+      const approvalFlow = await this.approvalFlowRepository
+        .createQueryBuilder("approvalflows")
+
+        .leftJoinAndSelect("approvalflows.creator", "creator")
+        .leftJoinAndSelect("approvalflows.verifiers", "verifiers")
+
+        .leftJoinAndSelect("approvalflows.approvers", "approvers")
+
+        .leftJoinAndSelect("approvers.firstApprover", "firstApprover")
+        .leftJoinAndSelect("firstApprover.users", "firstApproverUsers")
+
+        .leftJoinAndSelect("approvers.secondApprover", "secondApprover")
+        .leftJoinAndSelect("secondApprover.users", "secondApproverUsers")
+
+        .leftJoinAndSelect("approvers.thirdApprover", "thirdApprover")
+        .leftJoinAndSelect("thirdApprover.users", "thirdApproverUsers")
+
+        .leftJoinAndSelect("approvalflows.finalizers", "finalizers")
+        .leftJoinAndSelect("finalizers.firstFinalizers", "firstFinalizers")
+        .leftJoinAndSelect("finalizers.secondFinalizers", "secondFinalizers")
+
+        .where("creator.id = :creatorId", { creatorId: rfpa.createdBy?.id })
+        .andWhere("approvalflows.type = :documentType", { documentType: "Procurement" })
+
+        .getOne();
+
+      if (!approvalFlow) {
+        continue;
+      }
+
+      let hierarchy = 0;
+
+      if (approvalFlow.creator?.id === loginUserId) {
+        hierarchy = 1;
+      }
+      else if (approvalFlow.verifiers?.some(v => v.id === loginUserId)) {
+        hierarchy = 2;
+      }
+      else if (approvalFlow.approvers?.firstApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 3;
+      }
+      else if (approvalFlow.approvers?.secondApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 4;
+      }
+      else if (approvalFlow.approvers?.thirdApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 5;
+      }
+      else if (approvalFlow.finalizers?.firstFinalizers?.some(u => u.id === loginUserId)) {
+        hierarchy = 6;
+      }
+      else if (approvalFlow.finalizers?.secondFinalizers?.some(u => u.id === loginUserId)) {
+        hierarchy = 7;
+      }
+
+      if (hierarchy === 0) {
+        continue;
+      }
+
+      if (hierarchy === 1 && rfpa.createdBy?.id !== loginUserId) {
+        continue;
+      }
+    }
+
+    // =============================
+    // Status / DealSlip Filtering
+    // =============================
+
+    if (
+      filter?.overAllStatus &&
+      typeof filter?.isDealSlipCreated === "boolean"
+    ) {
+
+      if (
+        documentStatus === filter.overAllStatus &&
+        rfpa.isDealSlipCreated === filter.isDealSlipCreated
+      ) {
+        filteredResults.push({
+           id: rfpa.id, 
+           rfpaId: rfpa.rfpaId, 
+           documentId });
+      }
 
     }
 
-    
+    else if (filter?.overAllStatus) {
 
-    return results;
+      if (documentStatus === filter.overAllStatus) {
+        filteredResults.push({ 
+          id: rfpa.id, 
+          rfpaId: rfpa.rfpaId, 
+          documentId });
+      }
+
+    }
+
+    else if (typeof filter?.isDealSlipCreated === "boolean") {
+
+      if (rfpa.isDealSlipCreated === filter.isDealSlipCreated) {
+        filteredResults.push({ 
+          id: rfpa.id, 
+          rfpaId: rfpa.rfpaId, 
+          documentId });
+      }
+
+    }
+
+    else {
+      filteredResults.push({ 
+        id: rfpa.id, 
+        rfpaId: rfpa.rfpaId, 
+        documentId });
+    }
+
   }
+
+  // =============================
+  // Search After Filtering
+  // =============================
+
+  let searchedResults = filteredResults;
+
+  if (filter?.search) {
+    const search = filter.search.toLowerCase();
+
+    searchedResults = filteredResults.filter(item =>
+      item.rfpaId.toLowerCase().includes(search)
+    );
+  }
+
+  // =============================
+  // Pagination
+  // =============================
+
+  const page = filter.page || 1;
+  const limit = filter.limit || 10;
+
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  const paginatedResults = searchedResults.slice(startIndex, endIndex);
+
+  return {
+  
+  data: paginatedResults,
+  pagination: {
+    total: searchedResults.length,
+    page,
+    limit,
+    totalPages: Math.ceil(searchedResults.length / limit)
+  }
+};
+}
+
+  
 
   async deleteRfpa(id: string): Promise<boolean> {
     

@@ -12,7 +12,7 @@ export class DumpProduct extends Model {
   @ManyToOne(() => Product, { nullable: true,onDelete: "SET NULL" })
   @JoinColumn({ name: "product_id" })
   productName: Product;
-@ManyToOne(() => ProductVarient, { onDelete: 'SET NULL', cascade: true })
+@ManyToOne(() => ProductVarient, { onDelete: 'SET NULL', cascade: true ,nullable:true})
     @JoinColumn({ name: 'varient_id' })
     variant: ProductVarient;
     

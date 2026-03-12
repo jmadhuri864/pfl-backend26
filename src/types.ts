@@ -167,6 +167,12 @@ const TYPES = {
   GrnRepository: Symbol.for("GrnRepository"),
   GrnService: Symbol.for("GrnService"),
   GrnController: Symbol.for("GrnController"),
+  GrnReportService: Symbol.for("GrnReportService"),
+  GrnReportController: Symbol.for("GrnReportController"),
+  
+  //delivery challan report
+  DeliveryChallanReportService: Symbol.for("DeliveryChallanReportService"),
+  DeliveryChallanReportController: Symbol.for("DeliveryChallanReportController"),
   //grnProduct
   GrnProductRepository: Symbol.for("GrnProductRepository"),
   GrnProductService: Symbol.for("GrnProductService"),
@@ -312,8 +318,8 @@ DumpProductRepository:Symbol.for("DumpProductRepository"),
 
     //invoice
     InvoiceRepository:Symbol.for("InvoiceRepository"),
-    InvoiceService:Symbol.for("InvoiceService"),
-    InvoiceController:Symbol.for(" InvoiceController"),
+    InvoiceProductRepository:Symbol.for("InvoiceProductRepository"),
+  
    //return by customer
     PostReturnByCustomerRepository:Symbol.for("PostReturnByCustomerRepository"),
     PostReturnByCustomerService:Symbol.for("PostReturnByCustomerService"),
@@ -436,12 +442,22 @@ WorkflowHierarchyController:Symbol.for("WorkflowHierarchyController"),
   //registration report
   RegistrationReportController:Symbol.for("RegistrationReportController"),
   RegistrationReportService:Symbol.for("RegistrationReportService"),
+  
+  //new registration report
+  NewRegistrationController:Symbol.for("NewRegistrationController"),
+  NewRegistrationService:Symbol.for("NewRegistrationService"),
 
   //report
   ReportController:Symbol.for("ReportController"),
   ReportService:Symbol.for("ReportService"),
   SalesReportService:Symbol.for("SalesReportService"),
-RfpaPaymentInfoRepository:Symbol.for("RfpaPaymentInfoRepository")
+RfpaPaymentInfoRepository:Symbol.for("RfpaPaymentInfoRepository"),
+RegistrationReportsController:Symbol.for("RegistrationReportsController"),
+  ReturnToVendorService:Symbol.for("ReturnToVendorService"),
+  ReturnToVendorRepository:Symbol.for("ReturnToVendorRepository"),
+  ReturnToVendorController:Symbol.for("ReturnToVendorController"),
+  FinalInvoiceService:Symbol.for("FinalInvoiceService"),
+  FinalInvoiceController:Symbol.for("FinalInvoiceController")
 
 };
 

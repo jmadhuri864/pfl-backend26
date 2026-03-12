@@ -346,6 +346,12 @@ export class ReportController {
   ) {
     try {
       const filters: SalesReportFilters = req.body;
+      
+      // Normalize field names: handle both singular and plural forms
+      if (req.body.customer && !filters.customers) {
+        filters.customers = req.body.customer;
+      }
+      
       console.log(req.body)
       // Validate required fields
       if (!filters.reportBased || !filters.units || !filters.period) {

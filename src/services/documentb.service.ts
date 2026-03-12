@@ -71,7 +71,8 @@ export class DocumentbService {
       DocumentTypeEnum.MULTI_CASH_VOUCHER,
       DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
       DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
-      DocumentTypeEnum.DUMP_REGISTER
+      DocumentTypeEnum.DUMP_REGISTER,
+      DocumentTypeEnum.FINAL_INVOICE
     ].includes(type);
   }
 
@@ -1220,22 +1221,32 @@ function isWithinRange(min: number | string | null, max: number | string | null,
         documentTypeNo = documentType?.dealSlipNo;
         break;
 
+      case 'return-by-customer':
+        // PostReturnByCustomer doesn't have a return number field yet
+        // Using document ID as reference for now
+        documentTypeNo = document.document_type_id ? `ID: ${document.document_type_id.substring(0, 8)}` : 'N/A';
+        break;
+
       // ➕ Add more cases as needed
     }
 
-    for (const user of users) {
+    const message = `You have been assigned as a ${role} for ${document?.type} type document with ${document?.type}No=${documentTypeNo}`;
+
+    // Send notifications in parallel for better performance
+    const notificationPromises = users.map(async (user) => {
       console.log(
         `Assigned user ${user.id} as ${role} for document ${documentId}`,
       );
-
-      const message = `You have been assigned as a ${role} for ${document?.type} type document with ${document?.type}No=${documentTypeNo}`;
 
       try {
         await this.notificationService.createNoti(message, user.id);
       } catch (err) {
         console.error(`Failed to send notification to user ${user.id}:`, err);
       }
-    }
+    });
+
+    // Wait for all notifications to complete
+    await Promise.all(notificationPromises);
 
     // Optional: Update document status
     // await this.documentbRepository.update(documentId, {

@@ -24,12 +24,13 @@ export class InwardProduct extends Model {
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   packingMaterialWeight: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   quantity: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   unitPrice: number;
-  @Column({ nullable: true })
+  
+  @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   amount: number;
 
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })

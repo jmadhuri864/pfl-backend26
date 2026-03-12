@@ -45,53 +45,66 @@ export class SecondSaleService {
   ) { }
 
   public async createSecondSale(secondSaleData: any, requestedBy: any): Promise<any> {
+    const queryRunner = this.AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
+    try {
+      //TODO: Check approval flow is exit or not for logged user
 
-    //TODO: Check approval flow is exit or not for logged user
+       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
+      if (!approvalFlowExit) {
+        throw new Error('Approval flow not found');
+      }
+   // 1. Normalize variant IDs
+      let variantIds: string[] = [];
+      if (Array.isArray(secondSaleData.variants)) {
+        variantIds = secondSaleData.variants;
+      } else if (secondSaleData.variants) {
+        variantIds = [secondSaleData.variants];
+      }
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
+      // 2. Fetch variants with product relation
+      const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
+        where: { id: In(variantIds) },
+        relations: ['product'],
+      });
+
+      // 3. Extract product IDs from variants
+      const productIds = variants.map(v => v.product?.id).filter(Boolean);
+
+      const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
+        ...secondSaleData,
+        variants: variants.map(v => ({ id: v.id })), // only IDs
+        products: productIds.map(id => ({ id })),   // only IDs
+      });
+      const savedSecondSale = await queryRunner.manager.save(secondSale);
+
+      const document = await this.documentbService.createDocument({
+        type: DocumentTypeEnum.SECOND_SALE,
+        docDef: DocDefEnum.SALE,
+        // totalAmt: rfpaData.totalAmt,
+        status: DocumentStatus.HOLD,
+        remarks: 'Document auto-created with SecondSale',
+        lastActionBy: { id: requestedBy },
+        document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
+      }, );
+
+      await this.documentbService.startApprovalFlow(document.id);
+
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
+
+      return savedSecondSale;
+    } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
     }
- // 1. Normalize variant IDs
-    let variantIds: string[] = [];
-    if (Array.isArray(secondSaleData.variants)) {
-      variantIds = secondSaleData.variants;
-    } else if (secondSaleData.variants) {
-      variantIds = [secondSaleData.variants];
-    }
-
-    // 2. Fetch variants with product relation
-    const variants = await this.productVarientsRepository.find({
-      where: { id: In(variantIds) },
-      relations: ['product'],
-    });
-
-    // 3. Extract product IDs from variants
-    const productIds = variants.map(v => v.product?.id).filter(Boolean);
-
-    const secondSale = this.secondSaleRepository.create({
-      ...secondSaleData,
-      variants: variants.map(v => ({ id: v.id })), // only IDs
-      products: productIds.map(id => ({ id })),   // only IDs
-    });
-    const savedSecondSale = await this.secondSaleRepository.save(secondSale);
-
-    const document = await this.documentbService.createDocument({
-      type: DocumentTypeEnum.SECOND_SALE,
-      docDef: DocDefEnum.SALE,
-      // totalAmt: rfpaData.totalAmt,
-      status: DocumentStatus.HOLD,
-      remarks: 'Document auto-created with SecondSale',
-      lastActionBy: { id: requestedBy },
-      document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
-    }, );
-
-    await this.documentbService.startApprovalFlow(document.id);
-
-    return savedSecondSale;
-
   }
 
 

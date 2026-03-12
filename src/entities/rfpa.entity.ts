@@ -15,6 +15,7 @@ import { RFPAProduct } from './rfpaProduct.entity'; // Import the RFPAProduct en
 
 import { Branches } from './branches.entity';
 import { Company } from './company.entity';
+import { User } from './user.entity';
 
 @Entity('rfpa')
 export class RFPA extends Model {
@@ -104,5 +105,14 @@ export class RFPA extends Model {
 
   @Column({ type: 'text', nullable: true })
   remark: string;
+
+  @Column({ default: false })
+  isDealSlipCreated: boolean;
+
+ 
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
 }
 

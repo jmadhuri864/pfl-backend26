@@ -549,7 +549,7 @@ for (const [field, value] of Object.entries(filters)) {
     data: paginatedData,
     meta: {
       total,
-      page: page || 1,
+      page: page ,
       pages: page && limit ? Math.ceil(total / limit) : 1,
     },
   };

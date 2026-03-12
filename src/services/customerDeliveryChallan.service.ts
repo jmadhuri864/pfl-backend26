@@ -15,7 +15,7 @@ import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { DeliveryChallanService } from './deliveryChallan.service';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { InventoryStock } from '../entities/inventoryStock.entity';
-import { LessThanOrEqual, DataSource, In } from 'typeorm';
+import { LessThanOrEqual, DataSource, In, IsNull } from 'typeorm';
 import { InventoryStockRepository } from '../repositories/inventoryStock.repository';
 import { DitemRepository } from '../repositories/dItem.repository';
 import { ProductVarientsRepository } from '../repositories/productVarients.repository';
@@ -54,9 +54,13 @@ export class CustomerDeliveryChallanService {
     private readonly deliveryChallanProductRepository: DitemRepository,
   ) { }
   async create(data: any, requestedBy: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
       // 1. Fetch Customer
-      const cus = await this.customerRepo.findOne({
+      const cus = await queryRunner.manager.findOne(this.customerRepo.target, {
         where: { id: data.partyName },
         relations: [
           'billingDetails.billingAddress',
@@ -86,7 +90,7 @@ export class CustomerDeliveryChallanService {
       else if (data.variants) variantIds = [data.variants];
 
       // 5. Fetch variants
-      const variants = await this.productVarientsRepository.find({
+      const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
         where: { id: In(variantIds) },
         relations: ['product'],
       });
@@ -99,36 +103,72 @@ export class CustomerDeliveryChallanService {
         for (const item of data.deliveryChallanProducts) {
           const deliveredQty = Number(item.netWeight ?? 0);
           const variantId = typeof item.variant === 'object' ? item.variant.id : item.variant;
+          const productId = typeof item.productName === 'object' ? item.productName.id : item.productName;
 
-          if (!variantId) {
-            throw new AppError(400, `Variant missing for product`);
+          if (!productId) {
+            throw new AppError(400, `Product missing`);
           }
 
-          // Fetch variant (to get product id)
-          const variant = await this.productVarientsRepository.findOne({
-            where: { id: variantId },
-            relations: ['product'],
-          });
+          let productInfo;
+          
+          // If variant exists, fetch variant with product
+          if (variantId) {
+            const variant = await queryRunner.manager.findOne(this.productVarientsRepository.target, {
+              where: { id: variantId },
+              relations: ['product'],
+            });
 
-          if (!variant) {
-            throw new AppError(400, `Variant with id ${variantId} not found`);
+            if (!variant) {
+              throw new AppError(400, `Variant with id ${variantId} not found`);
+            }
+            
+            productInfo = {
+              productId: variant.product.id,
+              productName: variant.product.name,
+              variantId: variant.id,
+              variantName: variant.variantName
+            };
+          } else {
+            // No variant - fetch product directly
+            const product = await queryRunner.manager.findOne(this.productRepository.target, {
+              where: { id: productId }
+            });
+
+            if (!product) {
+              throw new AppError(400, `Product with id ${productId} not found`);
+            }
+
+            productInfo = {
+              productId: product.id,
+              productName: product.name,
+              variantId: null,
+              variantName: null
+            };
           }
 
           // Check existing inventory stock
-          const existingStock = await this.inventoryStockRepository.findOne({
-            where: {
-              company: { id: typeof data.companyName === 'string' ? data.companyName : data.companyName?.id },
-              location: { id: typeof data.fromLocation === 'string' ? data.fromLocation : data.fromLocation?.id },
-              product: { id: variant.product.id },
-              variant: { id: variant.id },
-            },
+          const stockWhere: any = {
+            company: { id: typeof data.companyName === 'string' ? data.companyName : data.companyName?.id },
+            location: { id: typeof data.fromLocation === 'string' ? data.fromLocation : data.fromLocation?.id },
+            product: { id: productInfo.productId },
+          };
+
+          // Add variant condition only if variant exists
+          if (productInfo.variantId) {
+            stockWhere.variant = { id: productInfo.variantId };
+          } else {
+            stockWhere.variant = IsNull();
+          }
+
+          const existingStock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
+            where: stockWhere,
             relations: ['product', 'variant'],
           });
 
           if (!existingStock) {
             throw new AppError(
               400,
-              `Insufficient stock: No inventory found for product "${variant.product.name}" (variant: ${variant.variantName || 'N/A'}) at this location`
+              `Insufficient stock: No inventory found for product "${productInfo.productName}" ${productInfo.variantName ? `(variant: ${productInfo.variantName})` : ''} at this location`
             );
           }
 
@@ -137,20 +177,20 @@ export class CustomerDeliveryChallanService {
           if (availableQty < deliveredQty) {
             throw new AppError(
               400,
-              `Insufficient stock: Required ${deliveredQty} units but only ${availableQty} units available for product "${variant.product.name}" (variant: ${variant.variantName || 'N/A'})`
+              `Insufficient stock: Required ${deliveredQty} units but only ${availableQty} units available for product "${productInfo.productName}" ${productInfo.variantName ? `(variant: ${productInfo.variantName})` : ''}`
             );
           }
         }
       }
 
       // 8. Create challan (only after stock validation passes)
-      const challan = this.challanRepository.create({
+      const challan = queryRunner.manager.create(this.challanRepository.target, {
         ...data,
         variants: variants.map(v => ({ id: v.id })),
         products: productIds.map(id => ({ id })),
       });
 
-      const savedChallan = await this.challanRepository.save(challan);
+      const savedChallan = await queryRunner.manager.save(challan);
 
       // 9. Auto-create document
       const actualChallan = Array.isArray(savedChallan) ? savedChallan[0] : savedChallan;
@@ -174,21 +214,49 @@ export class CustomerDeliveryChallanService {
         const deliveredAmt = Number(item.amount ?? 0);
 
         const variantId = typeof item.variant === 'object' ? item.variant.id : item.variant;
+        const productId = typeof item.productName === 'object' ? item.productName.id : item.productName;
 
-        // Fetch variant (to get product id)
-        const variant = await this.productVarientsRepository.findOne({
-          where: { id: variantId },
-          relations: ['product'],
-        });
+        let productInfo;
+
+        // If variant exists, fetch variant with product
+        if (variantId) {
+          const variant = await queryRunner.manager.findOne(this.productVarientsRepository.target, {
+            where: { id: variantId },
+            relations: ['product'],
+          });
+
+          if (variant) {
+            productInfo = {
+              productId: variant.product.id,
+              variantId: variant.id
+            };
+          }
+        } else {
+          // No variant - use product directly
+          productInfo = {
+            productId: productId,
+            variantId: null
+          };
+        }
+
+        if (!productInfo) continue;
 
         // Get existing stock (we know it exists from validation)
-        const existingStock = await this.inventoryStockRepository.findOne({
-          where: {
-            company: { id: typeof challn.companyName === 'string' ? challn.companyName : challn.companyName?.id },
-            location: { id: typeof challn.fromLocation === 'string' ? challn.fromLocation : challn.fromLocation?.id },
-            product: { id: variant!.product.id },
-            variant: { id: variant!.id },
-          },
+        const stockWhere: any = {
+          company: { id: typeof challn.companyName === 'string' ? challn.companyName : challn.companyName?.id },
+          location: { id: typeof challn.fromLocation === 'string' ? challn.fromLocation : challn.fromLocation?.id },
+          product: { id: productInfo.productId },
+        };
+
+        // Add variant condition only if variant exists
+        if (productInfo.variantId) {
+          stockWhere.variant = { id: productInfo.variantId };
+        } else {
+          stockWhere.variant = IsNull();
+        }
+
+        const existingStock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
+          where: stockWhere,
         });
 
         if (existingStock) {
@@ -196,19 +264,27 @@ export class CustomerDeliveryChallanService {
           existingStock.inwardQty = +(existingStock.inwardQty - deliveredQty);
           existingStock.inwardAmt = +(existingStock.inwardAmt - deliveredAmt);
 
-          await this.inventoryStockRepository.save(existingStock);
+          await queryRunner.manager.save(existingStock);
         }
       }
+
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
 
       return actualChallan;
 
     } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
       console.error('Error creating Delivery Challan:', error);
       // Re-throw AppError instances (like insufficient stock) to preserve the error message
       if (error instanceof AppError) {
         throw error;
       }
       throw new Error('Failed to create Customer Delivery Challan');
+    } finally {
+      // Release query runner
+      await queryRunner.release();
     }
   }
 
@@ -896,6 +972,30 @@ export class CustomerDeliveryChallanService {
 
         hasReturns: challan.isReturned,
       },
+    };
+  }
+
+  /**
+   * Check if Return By Customer has been created for a delivery challan
+   * Returns the status and details
+   */
+  async checkReturnByCustomerStatus(deliveryChallanId: string): Promise<any> {
+    const challan = await this.challanRepository.findOne({
+      where: { id: deliveryChallanId },
+      relations: ['returns'],
+    });
+
+    if (!challan) {
+      throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
+    }
+
+    return {
+      deliveryChallanId: challan.id,
+      challanNo: challan.challanNo,
+      isReturnByCustomerCreated: (challan as any).isReturnByCustomerCreated || false,
+      isReturned: challan.isReturned,
+      returnsCount: challan.returns?.length || 0,
+      canCreateReturn: !(challan as any).isReturnByCustomerCreated,
     };
   }
 }

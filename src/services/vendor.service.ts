@@ -29,6 +29,8 @@ import { UserRepository } from "../repositories/user.repository";
 import { Role } from "../entities/user.entity";
 import { Status } from "../utils/status.enum";
 import { formatDateTime } from "../utils/dateUtils";
+import { PackingMaterial } from "../entities/packingMaterial.entity";
+import { formatAddress } from "../utils/addressFormate.utils";
 
 @injectable()
 export class VendorService {
@@ -947,15 +949,54 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
   }
 
 
- public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
+//  public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
+//   const queryBuilder = this.vendorRepository
+//     .createQueryBuilder('vendor')
+//     .leftJoinAndSelect('vendor.createdBy', 'createdBy') // ✅ include who created
+//     .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
+//     .leftJoinAndSelect('vendor.vendorSaleInfo', 'vendorSaleInfo')
+//     .leftJoinAndSelect('vendor.vendorBankDetails', 'vendorBankDetails')
+//     .leftJoinAndSelect('vendor.ref1Address', 'ref1Address')
+//     .leftJoinAndSelect('vendor.ref2Address', 'ref2Address')
+//     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
+//     .leftJoinAndSelect('vendor.category', 'category')
+//     .orderBy('vendor.createdAt', 'DESC');
+
+//   const vendors = await buildQuery(queryBuilder, queryOptions, 'vendor');
+
+  
+//   const formattedData = vendors.data.map((vendor: any) => {
+//     const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
+
+//     return {
+//       ...vendor,
+//       createdBy: `${vendor.createdBy?.firstName ?? ''} ${vendor.createdBy?.lastName ?? ''}`.trim(),
+        
+//       createdDate,
+//       createdTime,
+//       //createdAt: createdDate && createdTime ? `${createdDate} ${createdTime}` : null,
+//     };
+//   });
+
+//   return {
+//     ...vendors,
+//     data: formattedData,
+//   };
+// }
+
+public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
   const queryBuilder = this.vendorRepository
     .createQueryBuilder('vendor')
     .leftJoinAndSelect('vendor.createdBy', 'createdBy') // ✅ include who created
     .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
     .leftJoinAndSelect('vendor.vendorSaleInfo', 'vendorSaleInfo')
-    .leftJoinAndSelect('vendor.vendorBankDetails', 'vendorBankDetails')
-    .leftJoinAndSelect('vendor.ref1Address', 'ref1Address')
-    .leftJoinAndSelect('vendor.ref2Address', 'ref2Address')
+    //.leftJoinAndSelect('vendor.vendorBankDetails', 'vendorBankDetails')
+   // .leftJoinAndSelect('vendor.ref1Address', 'ref1Address')
+    //.leftJoinAndSelect('vendor.ref2Address', 'ref2Address')
+    .leftJoinAndSelect('vendor.mainProduct','product')
+    .leftJoinAndSelect('vendor.listOfAllProducts','listOfAllProducts')
+    .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
+    .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
     .leftJoinAndSelect('vendor.category', 'category')
     .orderBy('vendor.createdAt', 'DESC');
@@ -967,12 +1008,46 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
     const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
 
     return {
-      ...vendor,
+      //...vendor,
       createdBy: `${vendor.createdBy?.firstName ?? ''} ${vendor.createdBy?.lastName ?? ''}`.trim(),
-        
+      id:vendor.id,
+      status:vendor.status,
+      vendorCode:`${vendor.vendorCode}`.toUpperCase(),
+      companyName:vendor.companyName,
+      classification:vendor.classification,
+      category:vendor.category.name,
+      subcategory:vendor.subcategory.name,
+      officeAddress:vendor.officeAddress? formatAddress(vendor.officeAddress) : '',
+      officeContactNo:vendor.officeContactNo,
+      officeEmail:vendor.officeEmail,
+      gstn:`${vendor.gstn}`.toUpperCase(),
+      panNo:`${vendor.panNo}`.toUpperCase() ,
+      msmeNo:`${vendor.msmeNo}`.toUpperCase(),
+      tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
+      paymentMode:vendor.paymentMode,
+      proposedPaymentTerms:vendor.proposedPaymentTerms,
+      creditTerms:vendor.creditTerms,
+      listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
+                        .map((product:Product)=>product?.name)
+                        .join(','):'',
+      mainProduct:vendor.mainProduct?.name || '', 
+      listOfAllPackingMaterials:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
+                                 .map((material:PackingMaterial)=>material?.packagingMaterialName)
+                                 .join(',') : '',
+      mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
+      dispatchCenter:vendor.dispatchCenter,
+      wareHouseLocation:vendor.warehouseLocations,
+      packingCenterLocation:vendor.packingCenterLocation,
+      vendorSalesInfo:{
+        contactFName:vendor.vendorSaleInfo.contactFName ,
+        contactMName:vendor.vendorSaleInfo.contactMName ,
+        contactLName:vendor.vendorSaleInfo.contactLName ,
+        directContactNumber:vendor.vendorSaleInfo.directContactNumber ,
+        mobileNumber:vendor.vendorSaleInfo.mobileNumber,
+        email:vendor.vendorSaleInfo.email
+      },
       createdDate,
       createdTime,
-      //createdAt: createdDate && createdTime ? `${createdDate} ${createdTime}` : null,
     };
   });
 

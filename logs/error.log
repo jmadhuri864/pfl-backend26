@@ -335,3 +335,328 @@
 2026-02-14 02:34:30 PM [error]: AppError: Inward register with ID 51468ac5-c218-49a4-a7d6-3e9299f7d5ae not found 
 2026-02-14 02:35:35 PM [error]: AppError: No farmers found 
 2026-02-14 02:35:36 PM [error]: AppError: No farmers found 
+2026-02-14 05:15:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-16 11:16:40 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 67192ba5-dda4-4548-8e2e-d684829d244d not found 
+2026-02-16 11:16:41 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 67192ba5-dda4-4548-8e2e-d684829d244d not found 
+2026-02-16 11:17:10 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 4d2bd54c-deb6-40b4-b914-3400edae5326 not found 
+2026-02-16 11:17:11 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 4d2bd54c-deb6-40b4-b914-3400edae5326 not found 
+2026-02-16 11:40:34 AM [error]: AppError: Vendor not found 
+2026-02-16 11:40:36 AM [error]: AppError: Vendor not found 
+2026-02-16 11:42:33 AM [error]: Error creating inward register 
+2026-02-16 11:42:33 AM [error]: Unhandled Error: Failed to create inward register: Error creating document: Error: No approval flow found for user 18824b25-df3d-4c85-87dd-006af0f98af4 and type GRN 
+2026-02-16 11:52:13 AM [error]: AppError: Vendor not found 
+2026-02-16 11:52:14 AM [error]: AppError: Vendor not found 
+2026-02-16 11:54:29 AM [error]: AppError: Vendor not found 
+2026-02-16 11:54:31 AM [error]: AppError: Vendor not found 
+2026-02-16 12:01:05 PM [error]: AppError: Vendor not found 
+2026-02-16 12:01:06 PM [error]: AppError: Vendor not found 
+2026-02-16 12:02:26 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:02:35 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:02:45 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:02:58 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:04:34 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:05:47 PM [error]: Unhandled Error: Failed to create Dump Register: Each dump product must have productId/productName and variantId/variant 
+2026-02-16 12:50:03 PM [error]: AppError: Vendor not found 
+2026-02-16 12:50:04 PM [error]: AppError: Vendor not found 
+2026-02-16 02:11:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-16 02:23:10 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: Alphonso Mango,Count-12,Size-100,Variety-alphonso-a,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:28:42 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: Alphonso Mango,Count-12,Size-100,Variety-alphonso-a,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:28:57 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: Alphonso Mango,Count-12,Size-100,Variety-alphonso-a,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:29:08 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:29:17 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-24,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:29:25 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: Alphonso Mango,Count-12,Size-100,Variety-alphonso-a,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:29:34 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: Alphonso Mango,Count-24,Size-200,Variety-alphonso-b,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:35:22 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:35:37 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:35:48 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:36:07 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:37:37 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:37:53 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:38:04 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 02:38:16 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-02-16 03:24:01 PM [error]: AppError: Vendor not found 
+2026-02-16 03:24:03 PM [error]: AppError: Vendor not found 
+2026-02-16 03:27:47 PM [error]: AppError: No farmers found 
+2026-02-16 03:27:49 PM [error]: AppError: No farmers found 
+2026-02-16 03:33:09 PM [error]: Error creating inward register 
+2026-02-16 03:33:09 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:36:06 PM [error]: Error creating inward register 
+2026-02-16 03:36:06 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:36:13 PM [error]: Error creating inward register 
+2026-02-16 03:36:13 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:36:36 PM [error]: Error creating inward register 
+2026-02-16 03:36:36 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:37:38 PM [error]: Error creating inward register 
+2026-02-16 03:37:38 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:38:42 PM [error]: Error creating inward register 
+2026-02-16 03:38:43 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:39:08 PM [error]: Error creating inward register 
+2026-02-16 03:39:08 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:39:51 PM [error]: Error creating inward register 
+2026-02-16 03:39:51 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "12299.5" 
+2026-02-16 03:41:09 PM [error]: AppError: Vendor not found 
+2026-02-16 03:41:10 PM [error]: AppError: Vendor not found 
+2026-02-16 03:53:55 PM [error]: AppError: No farmers found 
+2026-02-16 03:53:56 PM [error]: AppError: No farmers found 
+2026-02-16 04:03:42 PM [error]: AppError: No farmers found 
+2026-02-16 04:03:43 PM [error]: AppError: No farmers found 
+2026-02-16 04:13:16 PM [error]: Error creating inward register 
+2026-02-16 04:13:16 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:13:31 PM [error]: Error creating inward register 
+2026-02-16 04:13:31 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:13:37 PM [error]: Error creating inward register 
+2026-02-16 04:13:37 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:13:43 PM [error]: Error creating inward register 
+2026-02-16 04:13:43 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:14:15 PM [error]: Error creating inward register 
+2026-02-16 04:14:15 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:15:11 PM [error]: Error creating inward register 
+2026-02-16 04:15:11 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:15:26 PM [error]: Error creating inward register 
+2026-02-16 04:15:26 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:15:31 PM [error]: Error creating inward register 
+2026-02-16 04:15:31 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:31:08 PM [error]: Error creating inward register 
+2026-02-16 04:31:08 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:31:08 PM [error]: Error creating inward register 
+2026-02-16 04:31:08 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:35:22 PM [error]: Error creating inward register 
+2026-02-16 04:35:22 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:35:31 PM [error]: Error creating inward register 
+2026-02-16 04:35:31 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:35:55 PM [error]: Error creating inward register 
+2026-02-16 04:35:55 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:36:54 PM [error]: Error creating inward register 
+2026-02-16 04:36:54 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:37:49 PM [error]: Error creating inward register 
+2026-02-16 04:37:49 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 04:39:18 PM [error]: Error creating inward register 
+2026-02-16 04:39:18 PM [error]: Unhandled Error: Failed to create inward register: invalid input syntax for type integer: "749.5" 
+2026-02-16 05:02:50 PM [error]: AppError: Variant missing for product 
+2026-02-16 05:03:28 PM [error]: AppError: Variant missing for product 
+2026-02-16 05:03:41 PM [error]: AppError: Variant missing for product 
+2026-02-16 05:04:56 PM [error]: AppError: Variant missing for product 
+2026-02-16 05:37:52 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:38:25 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:38:57 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:39:57 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:40:20 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:41:11 PM [error]: Unhandled Error: relation "customer" does not exist 
+2026-02-16 05:55:42 PM [error]: Unhandled Error: column cust.organisationName does not exist 
+2026-02-16 05:56:26 PM [error]: Unhandled Error: column cust.organisationName does not exist 
+2026-02-16 05:56:35 PM [error]: Unhandled Error: column cust.organisationName does not exist 
+2026-02-16 05:56:41 PM [error]: Unhandled Error: column cust.organisationName does not exist 
+2026-02-17 11:03:14 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-17 05:29:09 PM [error]: Error starting the server: sorry, too many clients already 
+2026-02-18 11:47:11 AM [error]: AppError: You are not logged in 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 10:33:45 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-19 12:03:40 PM [error]: Unhandled Error: column a.address_line1 does not exist 
+2026-02-19 12:05:37 PM [error]: Unhandled Error: column f.farmer_code does not exist 
+2026-02-19 12:34:03 PM [error]: Unhandled Error: Expected double-quoted property name in JSON at position 119 
+2026-02-19 12:34:20 PM [error]: Unhandled Error: invalid input value for enum customers_status_enum: "rejected" 
+2026-02-19 12:39:00 PM [error]: Unhandled Error: Expected ',' or '}' after property value in JSON at position 80 
+2026-02-19 02:36:49 PM [error]: AppError: registrationType and period are required fields 
+2026-02-19 02:38:00 PM [error]: Unhandled Error: column v.ref1_first_name does not exist 
+2026-02-19 02:40:22 PM [error]: Unhandled Error: relation "delivery_details_cust" does not exist 
+2026-02-19 04:03:39 PM [error]: AppError: No farmers found 
+2026-02-19 04:03:40 PM [error]: AppError: No farmers found 
+2026-02-20 03:00:18 PM [error]: Unhandled Error: bind message supplies 11 parameters, but prepared statement "" requires 5 
+2026-02-20 05:34:04 PM [error]: Unhandled Error: column reference "created_by" is ambiguous 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:10 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:11 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:11 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:24:11 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:25:08 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-23 10:44:24 AM [error]: Unhandled Error: Cannot read properties of null (reading 'name') 
+2026-02-23 10:44:25 AM [error]: Unhandled Error: Cannot read properties of null (reading 'name') 
+2026-02-23 11:07:45 AM [error]: Unhandled Error: invalid input syntax for type timestamp: "0NaN-NaN-NaNTNaN:NaN:NaN.NaN+NaN:NaN" 
+2026-02-23 11:08:43 AM [error]: Unhandled Error: invalid input syntax for type timestamp: "0NaN-NaN-NaNTNaN:NaN:NaN.NaN+NaN:NaN" 
+2026-02-23 11:13:16 AM [error]: Unhandled Error: invalid input syntax for type timestamp: "0NaN-NaN-NaNTNaN:NaN:NaN.NaN+NaN:NaN" 
+2026-02-23 11:17:02 AM [error]: Unhandled Error: Invalid endDate: 23-02-2026 
+2026-02-23 11:17:38 AM [error]: Unhandled Error: Invalid startDate: 01-01-2025-01-01 
+2026-02-25 05:43:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-25 05:43:22 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-26 11:31:42 AM [error]: Unhandled Error: invalid input syntax for type uuid: "vendor-uuid-here" 
+2026-02-26 12:39:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-26 12:44:05 PM [error]: AppError: No farmers found 
+2026-02-26 12:44:06 PM [error]: AppError: No farmers found 
+2026-02-26 12:45:44 PM [error]: AppError: No farmers found 
+2026-02-26 12:46:09 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'id') 
+2026-02-26 12:54:19 PM [error]: AppError: Vendor not found 
+2026-02-26 12:54:20 PM [error]: AppError: Vendor not found 
+2026-02-26 12:54:46 PM [error]: AppError: No farmers found 
+2026-02-26 12:54:47 PM [error]: AppError: No farmers found 
+2026-02-26 12:59:12 PM [error]: AppError: No farmers found 
+2026-02-26 12:59:13 PM [error]: AppError: No farmers found 
+2026-02-26 01:01:04 PM [error]: AppError: No farmers found 
+2026-02-26 01:01:05 PM [error]: AppError: No farmers found 
+2026-02-26 01:04:18 PM [error]: AppError: No farmers found 
+2026-02-26 01:04:59 PM [error]: AppError: No farmers found 
+2026-02-26 01:05:37 PM [error]: AppError: No farmers found 
+2026-02-26 01:05:38 PM [error]: AppError: No farmers found 
+2026-02-26 01:06:56 PM [error]: AppError: No farmers found 
+2026-02-26 01:06:58 PM [error]: AppError: No farmers found 
+2026-02-26 02:07:40 PM [error]: AppError: No farmers found 
+2026-02-26 02:07:42 PM [error]: AppError: No farmers found 
+2026-02-26 03:02:54 PM [error]: AppError: No farmers found 
+2026-02-26 03:02:55 PM [error]: AppError: No farmers found 
+2026-02-26 03:03:49 PM [error]: AppError: No farmers found 
+2026-02-26 03:03:50 PM [error]: AppError: No farmers found 
+2026-02-26 03:07:52 PM [error]: AppError: No farmers found 
+2026-02-26 03:07:54 PM [error]: AppError: No farmers found 
+2026-02-26 03:09:00 PM [error]: AppError: No farmers found 
+2026-02-26 03:09:02 PM [error]: AppError: No farmers found 
+2026-02-26 03:14:50 PM [error]: AppError: No farmers found 
+2026-02-26 03:14:51 PM [error]: AppError: No farmers found 
+2026-02-26 03:16:13 PM [error]: AppError: No farmers found 
+2026-02-26 03:16:15 PM [error]: AppError: No farmers found 
+2026-02-26 03:22:27 PM [error]: AppError: No farmers found 
+2026-02-26 03:22:29 PM [error]: AppError: No farmers found 
+2026-02-26 03:31:05 PM [error]: AppError: No stock transfer delivery challans found 
+2026-02-26 03:31:06 PM [error]: AppError: No stock transfer delivery challans found 
+2026-02-26 03:37:55 PM [error]: AppError: No stock transfer delivery challans found 
+2026-02-26 03:37:56 PM [error]: AppError: No stock transfer delivery challans found 
+2026-02-27 10:03:18 AM [error]: Unhandled Error: operator does not exist: character varying = uuid 
+2026-02-27 04:21:59 PM [error]: AppError: Vendor not found 
+2026-02-27 04:22:00 PM [error]: AppError: Vendor not found 
+2026-02-27 04:22:14 PM [error]: AppError: Vendor not found 
+2026-02-27 04:22:16 PM [error]: AppError: Vendor not found 
+2026-02-27 05:03:41 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-02-27 05:15:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-02 11:09:21 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-02 02:30:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-02 03:57:17 PM [error]: Unhandled Error: column grn.totalqty does not exist 
+2026-03-02 03:57:52 PM [error]: Unhandled Error: column grn.totalqty does not exist 
+2026-03-02 04:17:36 PM [error]: Unhandled Error: No metadata for "vendors" was found. 
+2026-03-02 04:24:11 PM [error]: Unhandled Error: Expected double-quoted property name in JSON at position 1543 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 10:53:57 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-04 12:39:36 PM [error]: Unhandled Error: column grn.verifiedby does not exist 
+2026-03-04 12:39:48 PM [error]: Unhandled Error: column grn.verifiedby does not exist 
+2026-03-04 04:47:04 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'ownColumns') 
+2026-03-04 05:18:26 PM [error]: Error starting the server: No matching bindings found for serviceIdentifier: Symbol(InvoiceProductRepository) 
+2026-03-04 05:18:54 PM [error]: Error starting the server: No matching bindings found for serviceIdentifier: Symbol(InvoiceProductRepository) 
+2026-03-05 11:01:36 AM [error]: Unhandled Error: Invoice already created for this delivery challan 
+2026-03-05 01:07:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-05 04:22:45 PM [error]: Unhandled Error: Invoice already created for this delivery challan 
+2026-03-05 06:04:44 PM [error]: Unhandled Error: Invoice already created for this delivery challan 
+2026-03-06 09:57:18 AM [error]: Unhandled Error: Invoice already created for this delivery challan 
+2026-03-06 10:06:52 AM [error]: AppError: Invoice already created for this delivery challan. Please check existing invoices. 
+2026-03-06 10:41:39 AM [error]: AppError: No farmers found 
+2026-03-06 10:41:40 AM [error]: AppError: No farmers found 
+2026-03-06 10:42:05 AM [error]: AppError: No farmers found 
+2026-03-06 10:42:07 AM [error]: AppError: No farmers found 
+2026-03-06 11:01:58 AM [error]: Unhandled Error: invalid input syntax for type uuid: "p" 
+2026-03-06 11:02:00 AM [error]: Unhandled Error: invalid input syntax for type uuid: "p" 
+2026-03-06 11:02:11 AM [error]: AppError: No farmers found 
+2026-03-06 11:02:13 AM [error]: AppError: No farmers found 
+2026-03-06 11:15:21 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-06 12:04:28 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:30 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:39 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:41 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:54 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:54 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:04:56 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:05:02 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:05:04 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:05:31 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:05:33 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:07 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:07 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:09 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:25 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:28 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:07:52 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:54:44 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:54:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-06 12:54:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-06 12:55:01 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:15 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:17 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:41 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:41 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:43 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:53 PM [error]: AppError: No RFPAs found 
+2026-03-06 12:55:55 PM [error]: AppError: No RFPAs found 
+2026-03-06 02:10:40 PM [error]: Unhandled Error: relation "returned_products" does not exist 
+2026-03-06 02:11:56 PM [error]: Unhandled Error: relation "returned_products" does not exist 
+2026-03-06 02:14:45 PM [error]: Unhandled Error: Error creating document: Error: No approval flow found for user c4e181f5-d728-49b2-af54-192f518eb855 and type GRN 
+2026-03-06 02:14:54 PM [error]: Unhandled Error: Error creating document: Error: No approval flow found for user c4e181f5-d728-49b2-af54-192f518eb855 and type GRN 
+2026-03-06 02:14:58 PM [error]: Unhandled Error: Error creating document: Error: No approval flow found for user c4e181f5-d728-49b2-af54-192f518eb855 and type GRN 
+2026-03-06 02:15:06 PM [error]: Unhandled Error: relation "post_return_by_customer" does not exist 
+2026-03-06 02:20:49 PM [error]: Unhandled Error: relation "post_return_by_customer" does not exist 
+2026-03-06 03:11:36 PM [error]: Unhandled Error: relation "delivery_challan_products" does not exist 
+2026-03-06 05:05:33 PM [error]: AppError: Insufficient stock: No inventory found for product "Alphonso Mango" (variant: AlphonsoMango,Count-12,Size-100,Variety-alphonsoa,Origin-rantnagiri,Brand-alphonso) at this location 
+2026-03-06 05:57:43 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-06 05:57:45 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-06 05:57:49 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-06 05:57:51 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 10:38:31 AM [error]: AppError: Invoice already created for this delivery challan. Please check existing invoices. 
+2026-03-09 11:22:32 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 11:22:32 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 11:23:13 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-09 11:23:15 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-09 03:02:18 PM [error]: Unhandled Error: Cannot read properties of null (reading 'toUpperCase') 
+2026-03-09 03:02:19 PM [error]: Unhandled Error: Cannot read properties of null (reading 'toUpperCase') 
+2026-03-09 03:06:20 PM [error]: Unhandled Error: Cannot read properties of null (reading 'toUpperCase') 
+2026-03-09 03:06:21 PM [error]: Unhandled Error: Cannot read properties of null (reading 'toUpperCase') 
+2026-03-09 03:18:36 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:18:37 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:18:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:18:43 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:18:48 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:18:49 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:19:15 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:19:16 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'address1') 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-09 03:22:49 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-10 10:22:44 AM [error]: AppError: Invoice with id f241c1eb-f411-4615-8643-f209fe43ad6a not found 
+2026-03-10 10:23:29 AM [error]: AppError: Invoice has already been created for this delivery challan 
+2026-03-10 10:30:08 AM [error]: AppError: Invoice with id 05cf5355-6cba-4839-964c-20960680db3c not found 
+2026-03-11 01:08:21 PM [error]: Unhandled Error: C:\Users\Admin\OneDrive\Desktop\kiro-optimization\3augPrimeFresh - Copy\src\templates\invoiceTemplate.ejs:273
+    271|         <div class="info-cell info-cell-right">
+    272|           <span style="font-weight: bold; margin-right: 10px;">Place of Supply:</span>
+ >> 273|           <span><%= data.shipToAddress.city %></span>
+    274|         </div>
+    275|       </div>
+    276|     </section>
+
+Cannot read properties of undefined (reading 'city') 
+2026-03-11 03:32:16 PM [error]: Error fetching invoice for PDF with ID: 94fc48c3-5138-406f-a11d-c2c9b5c102c2 
+2026-03-11 03:32:16 PM [error]: Unhandled Error: Failed to fetch invoice for PDF generation 

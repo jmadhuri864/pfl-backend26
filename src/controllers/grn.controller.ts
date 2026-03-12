@@ -677,6 +677,40 @@ export class GrnController {
 
 
   //TODO: Get all GRN numbers
+  // @httpGet('/grnnumbers/getAllgrnNo')
+  // public async getAllGrnNumbers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const grns = await this.grnService.getAllGrnNumbers(); // Call the service method
+  //     if (!grns || grns.length === 0) {
+  //       return next(new AppError(404, 'No GRNs found'));
+  //     }
+
+  //     // 🔔 Send notification for accessing GRN numbers
+  //     try {
+  //       const userId = res.locals.user.id;
+  //       await this.notificationService.createNoti(
+  //         `Retrieved all GRN numbers (${grns.length} items)`,
+  //         userId
+  //       );
+  //     } catch (notifError) {
+  //       console.log('Notification error:', notifError);
+  //     }
+     
+  //     ControllerLogger.logList('GRN Numbers', req, res);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: grns, // Respond with the fetched GRN data
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('GRN numbers retrieval', error, req, res);
+  //     next(error); // Pass any errors to the error-handling middleware
+  //   }
+  // }
   @httpGet('/grnnumbers/getAllgrnNo')
   public async getAllGrnNumbers(
     @request() req: Request,
@@ -684,7 +718,28 @@ export class GrnController {
     @next() next: NextFunction,
   ) {
     try {
-      const grns = await this.grnService.getAllGrnNumbers(); // Call the service method
+
+    //   isAQRCreated?: boolean;
+    // isInwardCreated?: boolean;
+    // isDumpCreated?: boolean;
+    // isDCForCustomerCreated?: boolean;
+    // isMCVoucherCreated?: boolean;
+    // isTPVoucherCreated?: boolean;
+    // isPMPVoucherCreated?: boolean;
+    // isLPVoucherCreated?: boolean;
+
+    const isAQRCreated = req.query.isAQRCreated === 'true' ? true : req.query.isAQRCreated === 'false' ? false : undefined;
+    const isInwardCreated = req.query.isInwardCreated === 'true' ? true : req.query.isInwardCreated === 'false' ? false : undefined;
+    const isDumpCreated = req.query.isDumpCreated === 'true' ? true : req.query.isDumpCreated === 'false' ? false : undefined;
+    const isDCForCustomerCreated = req.query.isDCForCustomerCreated === 'true' ? true : req.query.isDCForCustomerCreated === 'false' ? false : undefined;
+    const isMCVoucherCreated = req.query.isMCVoucherCreated === 'true' ? true : req.query.isMCVoucherCreated === 'false' ? false : undefined;
+    const isTPVoucherCreated = req.query.isTPVoucherCreated === 'true' ? true : req.query.isTPVoucherCreated === 'false' ? false : undefined;
+    const isPMPVoucherCreated = req.query.isPMPVoucherCreated === 'true' ? true : req.query.isPMPVoucherCreated === 'false' ? false : undefined;
+    const isLPVoucherCreated = req.query.isLPVoucherCreated === 'true' ? true : req.query.isLPVoucherCreated === 'false' ? false : undefined;
+
+    const userId = res.locals.user.id;
+
+      const grns = await this.grnService.getAllGrnNumbers({...req.query, isAQRCreated, isInwardCreated, isDumpCreated, isDCForCustomerCreated, isMCVoucherCreated, isTPVoucherCreated, isPMPVoucherCreated, isLPVoucherCreated}, userId); // Call the service method
       if (!grns || grns.length === 0) {
         return next(new AppError(404, 'No GRNs found'));
       }
@@ -704,7 +759,10 @@ export class GrnController {
 
       res.status(200).json({
         status: 'success',
-        data: grns, // Respond with the fetched GRN data
+        data: grns.data, // Respond with the fetched GRN data
+        allRecords: grns.pagination.total,
+        totalPages: grns.pagination.pages,
+        page: grns.pagination.page,
       });
     } catch (error) {
       ControllerLogger.logError('GRN numbers retrieval', error, req, res);

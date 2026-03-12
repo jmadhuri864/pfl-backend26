@@ -11,6 +11,7 @@ import {
   LessThan,
   Like,
   MoreThanOrEqual,
+  DataSource,
 } from 'typeorm';
 import { ProductRepository } from '../repositories/product.repository';
 import { UOMRepository } from '../repositories/uom.repository';
@@ -40,6 +41,7 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
+import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
 
 
 interface SourceMetrics {
@@ -74,6 +76,8 @@ export class GrnService {
     private readonly vendorService: VendorService,
     @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
+    @inject(TYPES.ApprovalFlowRepository)
+    private readonly approvalFlowRepository:ApprovalFlowRepository,
 
     @inject(TYPES.NotificationService)
     private readonly notificationService: NotificationService,
@@ -96,7 +100,9 @@ export class GrnService {
     @inject(TYPES.DocumentbService)
     private readonly documentbService: DocumentbService,
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
   ) // @inject(TYPES.DocumentApproveRepository)
   // private readonly docApproveRepo: DocumentApproveRepository,
 
@@ -329,74 +335,87 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
 };
   }
   public async createGrn(grnData: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
 
-      //TODO: Check approval flow is exit or not for logged user
+        //TODO: Check approval flow is exit or not for logged user
 
-    //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(grnData.requestedBy, 'grn')
+      //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(grnData.requestedBy, 'grn')
 
-    // if (!approvalFlowExit) {
-    //   throw new Error('Approval flow not found');
-    // }
+      // if (!approvalFlowExit) {
+      //   throw new Error('Approval flow not found');
+      // }
 
 
-      grnData.createdAt = new Date();
-      console.log('UTC Time:', grnData.createdAt);
+        grnData.createdAt = new Date();
+        console.log('UTC Time:', grnData.createdAt);
 
-      const branch = await this.branchesRepository.findOne({
-        where: { id: grnData.purchaseLocation },
-      });
+        const branch = await queryRunner.manager.findOne(this.branchesRepository.target, {
+          where: { id: grnData.purchaseLocation },
+        });
 
-      if (!branch) {
-        throw new Error(`Branch not found for id: ${grnData.purchaseForWhich}`);
+        if (!branch) {
+          throw new Error(`Branch not found for id: ${grnData.purchaseForWhich}`);
+        }
+
+        const serialNo = await this.generateSerialNo(branch.prefix);
+        grnData.grnNo = serialNo;
+
+   // 3. Normalize variants input
+      let variantIds: string[] = [];
+      if (Array.isArray(grnData.variants)) {
+        variantIds = grnData.variants;
+      } else if (grnData.variants) {
+        variantIds = [grnData.variants];
       }
 
-      const serialNo = await this.generateSerialNo(branch.prefix);
-      grnData.grnNo = serialNo;
+      // 4. Fetch variants
+      const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
+        where: { id: In(variantIds) },
+        relations: ['product'],
+      });
+  // 5. Extract product IDs
+      const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
- // 3. Normalize variants input
-    let variantIds: string[] = [];
-    if (Array.isArray(grnData.variants)) {
-      variantIds = grnData.variants;
-    } else if (grnData.variants) {
-      variantIds = [grnData.variants];
+        const grn = queryRunner.manager.create(this.grnRepository.target, {...grnData,
+           variants: variants.map(v => ({ id: v.id })),
+        products: productIds.map(id => ({ id })),
+      });
+        const savedGrn = await queryRunner.manager.save(grn) as GRN | GRN[];
+        console.log('totalAmt ', grnData.requestedBy);
+
+        const document = await this.documentbService.createDocument({
+          type: DocumentTypeEnum.GRN,
+          docDef: DocDefEnum.PROCUREMENT,
+          totalAmt: grnData.totalAmt,
+          status: DocumentStatus.HOLD,
+          remarks: 'Document auto-created with GRN',
+          lastActionBy: { id: grnData.requestedBy },
+          document_type_id: Array.isArray(savedGrn) ? (savedGrn[0] as GRN)?.id : (savedGrn as GRN).id
+        }, );
+        //console.log('Document created:', docuemnt);
+        //const saved = await this.grnRepository.save(savedGrn);
+
+        await this.documentbService.startApprovalFlow(document.id);
+
+        // Commit transaction - all operations succeeded
+        await queryRunner.commitTransaction();
+
+        return savedGrn;
+      } catch (error: any) {
+        // Rollback transaction - undo all changes
+        await queryRunner.rollbackTransaction();
+        console.error('Error creating GRN:', error);
+        throw new Error('Failed to create GRN');
+      } finally {
+        // Release query runner
+        await queryRunner.release();
+      }
     }
-    
-    // 4. Fetch variants
-    const variants = await this.productVarientsRepository.find({
-      where: { id: In(variantIds) },
-      relations: ['product'],
-    });
-// 5. Extract product IDs
-    const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
-      const grn = this.grnRepository.create({...grnData,
-         variants: variants.map(v => ({ id: v.id })),
-      products: productIds.map(id => ({ id })),
-    });
-      const savedGrn = await this.grnRepository.save(grn) as GRN | GRN[];
-      console.log('totalAmt ', grnData.requestedBy);
-
-      const document = await this.documentbService.createDocument({
-        type: DocumentTypeEnum.GRN,
-        docDef: DocDefEnum.PROCUREMENT,
-        totalAmt: grnData.totalAmt,
-        status: DocumentStatus.HOLD,
-        remarks: 'Document auto-created with GRN',
-        lastActionBy: { id: grnData.requestedBy },
-        document_type_id: Array.isArray(savedGrn) ? (savedGrn[0] as GRN)?.id : (savedGrn as GRN).id
-      }, );
-      //console.log('Document created:', docuemnt);
-      //const saved = await this.grnRepository.save(savedGrn);
-
-      await this.documentbService.startApprovalFlow(document.id);
-
-      return savedGrn;
-    } catch (error: any) {
-      console.error('Error creating GRN:', error);
-      throw new Error('Failed to create GRN');
-    }
-  }
 public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promise<{
     data: any[];
     meta: { total: number; page: number; pages: number };
@@ -1167,12 +1186,12 @@ paymentInfo: {
 
 
   public async getGrnByIdForupdate(id: string): Promise<any> {
-       const document = await this.documentbService.getDocumentById(id)
-    const id1 = document.documentTypeId;
-    console.log('id in getGrnByIdForView', id1);
+    //    const document = await this.documentbService.getDocumentById(id)
+    // const id1 = document.documentTypeId;
+    // console.log('id in getGrnByIdForView', id1);
 
     const grn = await this.grnRepository.findOne({
-      where: { id: id1 },
+      where: { id: id },
       relations: [
         'companyName',
         'grnProducts',
@@ -1627,19 +1646,232 @@ paymentInfo: {
     return `${datePart}${sequenceNumber.toString().padStart(4, '0')}`;
   }
   // Get all GRNs with only id and grnNo
-  public async getAllGrnNumbers(): Promise<{ id: string; grnNo: string }[]> {
-    const grns = await this.grnRepository.find({
-      select: ['id', 'grnNo'], // Select only the id and grnNo fields
-      order: {
-        createdAt: 'DESC', // Optionally order by creation date
-      },
-    });
+  // public async getAllGrnNumbers(): Promise<{ id: string; grnNo: string }[]> {
+  //   const grns = await this.grnRepository.find({
+  //     select: ['id', 'grnNo'], // Select only the id and grnNo fields
+  //     order: {
+  //       createdAt: 'DESC', // Optionally order by creation date
+  //     },
+  //   });
 
-    return grns.map((grn) => ({
-      id: grn.id,
-      grnNo: grn.grnNo,
-    }));
+  //   return grns.map((grn) => ({
+  //     id: grn.id,
+  //     grnNo: grn.grnNo,
+  //   }));
+  // }
+  public async getAllGrnNumbers(
+  filter: {
+    overAllStatus?: string;
+    isAQRCreated?: boolean;
+    isInwardCreated?: boolean;
+    isDumpCreated?: boolean;
+    isDCForCustomerCreated?: boolean;
+    isMCVoucherCreated?: boolean;
+    isTPVoucherCreated?: boolean;
+    isPMPVoucherCreated?: boolean;
+    isLPVoucherCreated?: boolean;
+    employeeBaseHirechey?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+  },
+  loginUserId: string
+): Promise<any> {
+
+  const page = filter.page || 1;
+  const limit = filter.limit || 10;
+
+  const where: any = {};
+
+  if (typeof filter?.isAQRCreated === "boolean") where.isAQRCreated = filter.isAQRCreated;
+  if (typeof filter?.isInwardCreated === "boolean") where.isInwardCreated = filter.isInwardCreated;
+  if (typeof filter?.isDumpCreated === "boolean") where.isDumpCreated = filter.isDumpCreated;
+  if (typeof filter?.isDCForCustomerCreated === "boolean") where.isDCForCustomerCreated = filter.isDCForCustomerCreated;
+  if (typeof filter?.isMCVoucherCreated === "boolean") where.isMCVoucherCreated = filter.isMCVoucherCreated;
+  if (typeof filter?.isTPVoucherCreated === "boolean") where.isTPVoucherCreated = filter.isTPVoucherCreated;
+  if (typeof filter?.isPMPVoucherCreated === "boolean") where.isPMPVoucherCreated = filter.isPMPVoucherCreated;
+  if (typeof filter?.isLPVoucherCreated === "boolean") where.isLPVoucherCreated = filter.isLPVoucherCreated;
+
+  // -----------------------------
+  // Fetch GRN
+  // -----------------------------
+
+  const grns = await this.grnRepository.find({
+    select: [
+      "id",
+      "grnNo",
+      "isAQRCreated",
+      "isInwardCreated",
+      "isDumpCreated",
+      "isDCForCustomerCreated",
+      "isMCVoucherCreated",
+      "isTPVoucherCreated",
+      "isPMPVoucherCreated",
+      "isLPVoucherCreated"
+    ],
+    where,
+    relations: ["createdBy"],
+    order: { createdAt: "DESC" }
+  });
+
+  if (!grns.length) {
+    return {
+      data: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        totalPages: 0
+      }
+    };
   }
+
+  const grnIds = grns.map(g => g.id);
+  const creatorIds = [...new Set(grns.map(g => g.createdBy?.id))];
+
+  // -----------------------------
+  // Fetch Documents
+  // -----------------------------
+
+  const documents = await this.documentbRepository
+    .createQueryBuilder("doc")
+    .select(["doc.id", "doc.status", "doc.document_type_id"])
+    .where("doc.document_type_id IN (:...ids)", { ids: grnIds })
+    .getMany();
+
+  const documentMap = new Map(
+    documents.map(d => [d.document_type_id, d])
+  );
+
+  // -----------------------------
+  // Fetch Approval Flows
+  // -----------------------------
+
+  const approvalFlows = await this.approvalFlowRepository
+    .createQueryBuilder("approvalflows")
+
+    .leftJoinAndSelect("approvalflows.creator", "creator")
+    .leftJoinAndSelect("approvalflows.verifiers", "verifiers")
+
+    .leftJoinAndSelect("approvalflows.approvers", "approvers")
+
+    .leftJoinAndSelect("approvers.firstApprover", "firstApprover")
+    .leftJoinAndSelect("firstApprover.users", "firstApproverUsers")
+
+    .leftJoinAndSelect("approvers.secondApprover", "secondApprover")
+    .leftJoinAndSelect("secondApprover.users", "secondApproverUsers")
+
+    .leftJoinAndSelect("approvers.thirdApprover", "thirdApprover")
+    .leftJoinAndSelect("thirdApprover.users", "thirdApproverUsers")
+
+    .leftJoinAndSelect("approvalflows.finalizers", "finalizers")
+    .leftJoinAndSelect("finalizers.firstFinalizers", "firstFinalizers")
+    .leftJoinAndSelect("finalizers.secondFinalizers", "secondFinalizers")
+
+    .where("creator.id IN (:...ids)", { ids: creatorIds })
+    .andWhere("approvalflows.type = :documentType", { documentType: "Procurement" })
+
+    .getMany();
+
+  const flowMap = new Map(
+    approvalFlows.map(f => [f.creator?.id, f])
+  );
+
+  // -----------------------------
+  // Filtering
+  // -----------------------------
+
+  const filteredResults: {
+    id: string;
+    grnNo: string;
+    documentId: string | null;
+  }[] = [];
+
+  for (const grn of grns) {
+
+    const document = documentMap.get(grn.id);
+    const documentId = document?.id || null;
+    const documentStatus = document?.status;
+
+    // -----------------------------
+    // Hierarchy filtering
+    // -----------------------------
+
+    if (filter?.employeeBaseHirechey) {
+
+      const approvalFlow = flowMap.get(grn.createdBy?.id);
+
+      if (!approvalFlow) continue;
+
+      let hierarchy = 0;
+
+      if (approvalFlow.creator?.id === loginUserId) hierarchy = 1;
+      else if (approvalFlow.verifiers?.some(v => v.id === loginUserId)) hierarchy = 2;
+      else if (approvalFlow.approvers?.firstApprover?.users?.some(u => u.id === loginUserId)) hierarchy = 3;
+      else if (approvalFlow.approvers?.secondApprover?.users?.some(u => u.id === loginUserId)) hierarchy = 4;
+      else if (approvalFlow.approvers?.thirdApprover?.users?.some(u => u.id === loginUserId)) hierarchy = 5;
+      else if (approvalFlow.finalizers?.firstFinalizers?.some(u => u.id === loginUserId)) hierarchy = 6;
+      else if (approvalFlow.finalizers?.secondFinalizers?.some(u => u.id === loginUserId)) hierarchy = 7;
+
+      if (hierarchy === 0) continue;
+
+      if (hierarchy === 1 && grn.createdBy?.id !== loginUserId) continue;
+    }
+
+    // -----------------------------
+    // Status filter
+    // -----------------------------
+
+    if (filter?.overAllStatus) {
+      if (documentStatus === filter.overAllStatus) {
+        filteredResults.push({
+          id: grn.id,
+          grnNo: grn.grnNo,
+          documentId
+        });
+      }
+    } else {
+      filteredResults.push({
+        id: grn.id,
+        grnNo: grn.grnNo,
+        documentId
+      });
+    }
+  }
+
+  // -----------------------------
+  // Search
+  // -----------------------------
+
+  let searchedResults = filteredResults;
+
+  if (filter?.search) {
+    const search = filter.search.toLowerCase();
+
+    searchedResults = filteredResults.filter(r =>
+      r.grnNo.toLowerCase().includes(search)
+    );
+  }
+
+  // -----------------------------
+  // Pagination
+  // -----------------------------
+
+  const start = (page - 1) * limit;
+
+  const paginatedResults = searchedResults.slice(start, start + limit);
+
+  return {
+    data: paginatedResults,
+    pagination: {
+      total: searchedResults.length,
+      page,
+      limit,
+      totalPages: Math.ceil(searchedResults.length / limit)
+    }
+  };
+}
+
   // async escalateToNextLevel(
   //   grn: GRN,
   //   currentLevel: Levels

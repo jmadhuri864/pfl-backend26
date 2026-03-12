@@ -283,14 +283,46 @@ export class CustomerService {
     const { createdDate, createdTime } = formatDateTime(cust.createdAt);
 
     return {
-      ...cust,
+      id: cust.id,
       createdBy: cust.createdBy 
         ? `${cust.createdBy.firstName} ${cust.createdBy.lastName}`
         : 'Unknown User',
       customerTypes: cust.customerTypes?.name || null,
-      
       createdDate,
       createdTime,
+      status: cust.status.charAt(0).toUpperCase() + cust.status.slice(1),
+      customerCode: cust.customerCode.toUpperCase(),
+      organisationName: cust.organisationName,
+      organisationType: cust.organisationType,
+      customerCategory: cust.customerCategory?.name || null,
+      primaryContactNo: cust.primaryContactNo,
+      secondaryContactNo: cust.secondaryContactNo,
+      emailPrimary: cust.emailPrimary,
+      emailSecondary: cust.emailSecondary,
+      customerAddress: cust.customerAddress 
+        ? `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()
+        : null,
+      billingDetails:{
+        billingName: cust.billingDetails?.billingName || null,
+        contactPersonFName: cust.billingDetails?.contactPersonFName || null,
+        contactPersonLName: cust.billingDetails?.contactPersonLName || null,
+        contactPersonMName: cust.billingDetails?.contactPersonMName || null,
+        billingAddress: cust.billingDetails?.billingAddress 
+          ? `${cust.billingDetails.billingAddress.address1 || ''} ${cust.billingDetails.billingAddress.address2 || ''} ${cust.billingDetails.billingAddress.city || ''} ${cust.billingDetails.billingAddress.state || ''} ${cust.billingDetails.billingAddress.pincode || ''}`.trim()
+          : null,
+        primaryContactNo: cust.billingDetails?.primaryContactNo || null,
+        emailPrimary: cust.billingDetails?.emailPrimary || null,
+      },
+        deliveryDetails:{
+        receivingPersonFName: cust.deliveryDetails?.receivingPersonFName || null,
+        receivingPersonLName: cust.deliveryDetails?.receivingPersonLName || null,
+        receivingPersonMName: cust.deliveryDetails?.receivingPersonMName || null,
+        deliveryAddress: cust.deliveryDetails?.deliveryAddress 
+          ? `${cust.deliveryDetails.deliveryAddress.address1 || ''} ${cust.deliveryDetails.deliveryAddress.address2 || ''} ${cust.deliveryDetails.deliveryAddress.city || ''} ${cust.deliveryDetails.deliveryAddress.state || ''} ${cust.deliveryDetails.deliveryAddress.pincode || ''}`.trim()
+          : null,
+        primaryContactNo: cust.deliveryDetails?.primaryContactNo || null,
+        emailPrimary: cust.deliveryDetails?.emailPrimary || null,
+        },
     };
   });
 

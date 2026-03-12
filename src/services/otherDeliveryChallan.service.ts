@@ -4,6 +4,7 @@ import { OtherDeliveryChallanRepository } from '../repositories/otherDeliveryCha
 import logger from '../utils/logger';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
+import { DataSource } from 'typeorm';
 
 
 @injectable()
@@ -11,19 +12,32 @@ export class OtherDeliveryChallanService {
   constructor(
     @inject(TYPES.OtherDeliveryChallanRepository)
     private readonly challanRepository: OtherDeliveryChallanRepository,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
    
   ) {}
 
   async create(data: any): Promise<any> {
-    try {
-      const challan = this.challanRepository.create(data);
-      const savedchallan = await this.challanRepository.save(challan);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
+    try {
+      const challan = queryRunner.manager.create(this.challanRepository.target, data);
+      const savedchallan = await queryRunner.manager.save(challan);
+
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
       
       return savedchallan;
     } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
       console.error('Error creating GRN:', error);
       throw new Error('Failed to create GRN');
+    } finally {
+      // Release query runner
+      await queryRunner.release();
     }
   }
   catch(err: any) {

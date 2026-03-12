@@ -63,7 +63,7 @@ export class FarmerService {
   //     // return await paginate(queryBuilder, options);
   //   }
 
-  async getAllFarmers(options: PaginationOptions): Promise<any> {
+async getAllFarmers(options: PaginationOptions): Promise<any> {
   const queryBuilder = this.farmerRepository
     .createQueryBuilder('farmer')
     .leftJoinAndSelect('farmer.createdBy', 'createdBy') // ✅ include this
@@ -99,19 +99,38 @@ export class FarmerService {
     const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
 
     return {
-      ...farmer,
+      //...farmer,
+      id: farmer.id,
       createdBy: farmer.createdBy
         ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
         : null,
       createdDate,
       createdTime,
-      //createdAt: createdDate && createdTime ? `${createdDate} ${createdTime}` : null,
+      status: farmer.status,
+      farmerCode: farmer.farmerCode.toUpperCase(),
+      faermerfName: farmer.farmerfName,
+      farmermName: farmer.farmermName,
+      farmerlName: farmer.farmerlName,
+      primaryMobileNo: farmer.primaryMobileNo,
+      secondaryMobileNo: farmer.secondaryMobileNo,
+      email: farmer.email,
+      gender:farmer.gender,
+      dob: farmer.dob,
+      residensialAddress: farmer.residensialAddress.address1+" "+farmer.residensialAddress.address2+" "+farmer.residensialAddress.location+" "+farmer.residensialAddress.city+" "+farmer.residensialAddress.state+" "+farmer.residensialAddress.pincode,
+      farmAddress: farmer.farmAddress.address1+" "+farmer.farmAddress.address2+" "+farmer.farmAddress.location+" "+farmer.farmAddress.city+" "+farmer.farmAddress.state+" "+farmer.farmAddress.pincode,
+      totalLandArea: farmer.totalLandArea,
+      cultivationArea: farmer.cultivationArea,
+      landHoldingStatus: farmer.landHoldingStatus,
+      landStatus: farmer.landStatus,
+      idProofNo: farmer.idProofNo.toUpperCase(),
+      sevenTwelveNo: farmer.sevenTwelveNo,
     };
   });
 
   // ✅ Return final structured response
   return {
     ...farmers,
+
     data: formattedData,
   };
 }

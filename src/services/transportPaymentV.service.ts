@@ -14,7 +14,7 @@ import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { ProductRepository } from '../repositories/product.repository';
-import { In } from 'typeorm';
+import { In, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 
 @injectable()
@@ -29,52 +29,69 @@ export class TPVoucherService {
     @inject(TYPES.DocumentbService)
         private readonly documentbService: DocumentbService,
         @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
   ) {}
 
   async createTPVoucher(tpvoucherData: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    //TODO: Check approval flow is exit or not for logged user
+    try {
+      //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(tpvoucherData.requestedBy, 'transport-payment-voucher')
+       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(tpvoucherData.requestedBy, 'transport-payment-voucher')
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
+      if (!approvalFlowExit) {
+        throw new Error('Approval flow not found');
+      }
+
+
+      tpvoucherData.voucherNo = await this.generateTransportPaymentVoucherNo();
+
+      const currentDate = new Date();
+      tpvoucherData.createdDate = currentDate;
+      tpvoucherData.createdTime = currentDate.toLocaleTimeString();
+      console.log(tpvoucherData.createdTime);
+  console.log(tpvoucherData.products.length);
+  if (tpvoucherData.products && Array.isArray(tpvoucherData.products)) {
+      const products = await queryRunner.manager.findBy(this.productRepository.target, {
+        id: In(tpvoucherData.products),
+      });
+      tpvoucherData.products = products; // ✅ replace IDs with actual entities
     }
 
+      const newVoucher = queryRunner.manager.create(this.tpVoucherRepository.target, tpvoucherData);
+      console.log(newVoucher);
+      const saveVoucher= await queryRunner.manager.save(newVoucher);
+      const document = await this.documentbService.createDocument({
+              type: DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
+              docDef: DocDefEnum.PROCUREMENT,
+              totalAmt: tpvoucherData.totalAmt,
+              status: DocumentStatus.HOLD,
+              remarks: 'Document auto-created with GRN',
+              lastActionBy: { id: tpvoucherData.requestedBy },
+              document_type_id : Array.isArray(saveVoucher) ? (saveVoucher[0] as TPVoucher)?.id : (saveVoucher as TPVoucher).id
+            }, );
+            //console.log('Document created:', docuemnt);
+            //const saved = await this.grnRepository.save(savedGrn);
+      
+            await this.documentbService.startApprovalFlow(document.id);
 
-    tpvoucherData.voucherNo = await this.generateTransportPaymentVoucherNo();
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
 
-    const currentDate = new Date();
-    tpvoucherData.createdDate = currentDate;
-    tpvoucherData.createdTime = currentDate.toLocaleTimeString();
-    console.log(tpvoucherData.createdTime);
-console.log(tpvoucherData.products.length);
-if (tpvoucherData.products && Array.isArray(tpvoucherData.products)) {
-    const products = await this.productRepository.findBy({
-      id: In(tpvoucherData.products),
-    });
-    tpvoucherData.products = products; // ✅ replace IDs with actual entities
-  }
-
-    const newVoucher = this.tpVoucherRepository.create(tpvoucherData);
-    console.log(newVoucher);
-    const saveVoucher= await this.tpVoucherRepository.save(newVoucher);
-    const document = await this.documentbService.createDocument({
-            type: DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
-            docDef: DocDefEnum.PROCUREMENT,
-            totalAmt: tpvoucherData.totalAmt,
-            status: DocumentStatus.HOLD,
-            remarks: 'Document auto-created with GRN',
-            lastActionBy: { id: tpvoucherData.requestedBy },
-            document_type_id : Array.isArray(saveVoucher) ? (saveVoucher[0] as TPVoucher)?.id : (saveVoucher as TPVoucher).id
-          }, );
-          //console.log('Document created:', docuemnt);
-          //const saved = await this.grnRepository.save(savedGrn);
-    
-          await this.documentbService.startApprovalFlow(document.id);
-
-    return saveVoucher;
+      return saveVoucher;
+    } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
  public async getAllRecycleBinTPVouchers(
     queryOptions: PaginationOptions,userId: string,

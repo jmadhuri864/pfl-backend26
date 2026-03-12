@@ -347,70 +347,83 @@ export class SalesReportService {
   }
 
   private async getSalesCustomerReport(filters: SalesReportFilters, dateRange: DateRange): Promise<SalesReportData[]> {
-    try {
-      let paramIndex = 1;
-      const params: any[] = [];
-      
-      let query = `
-        SELECT 
-          cust."organisationName" as name,
-          COALESCE(SUM(
-            CASE 
-              WHEN $${paramIndex} = 'tonnes' THEN i."netWeight" / 1000
-              ELSE i."netWeight"
-            END
-          ), 0) as quantity,
-          COALESCE(SUM(i.amount), 0) as amount
-        FROM customer cust
-        LEFT JOIN delivery_challan_purchase dc ON cust.id = dc.customer_id AND dc.type = 'customer_delivery_challan' AND dc."createdAt" BETWEEN $${paramIndex + 1} AND $${paramIndex + 2}
-        LEFT JOIN item i ON dc.id = i."deliveryChallanId"
-        WHERE 1=1
-      `;
-      
-      params.push(filters.units, dateRange.startDate, dateRange.endDate);
-      paramIndex += 3;
+      try {
+        let paramIndex = 1;
+        const params: any[] = [];
 
-      if (filters.customers && filters.customers.length > 0) {
-        query += ` AND cust.id = ANY($${paramIndex})`;
-        params.push(filters.customers);
-        paramIndex++;
+        // Build the base query with proper LEFT JOIN conditions
+        let query = `
+          SELECT 
+            cust.organisation_name as name,
+            COALESCE(SUM(
+              CASE 
+                WHEN $${paramIndex} = 'tonnes' THEN i."netWeight" / 1000
+                ELSE i."netWeight"
+              END
+            ), 0) as quantity,
+            COALESCE(SUM(i.amount), 0) as amount
+          FROM customers cust
+          LEFT JOIN delivery_challan_purchase dc ON cust.id = dc.customer_id 
+            AND dc.type = 'customer_delivery_challan' 
+            AND dc."createdAt" BETWEEN $${paramIndex + 1} AND $${paramIndex + 2}
+        `;
+
+        params.push(filters.units, dateRange.startDate, dateRange.endDate);
+        paramIndex += 3;
+
+        // Add company filter to JOIN condition if provided
+        if (filters.companyNames && filters.companyNames.length > 0) {
+          query += ` AND dc.company_id = ANY($${paramIndex})`;
+          params.push(filters.companyNames);
+          paramIndex++;
+        }
+
+        // Add location filter to JOIN condition if provided
+        if (filters.locations && filters.locations.length > 0) {
+          query += ` AND dc.office_id = ANY($${paramIndex})`;
+          params.push(filters.locations);
+          paramIndex++;
+        }
+
+        // Complete the LEFT JOIN for items
+        query += `
+          LEFT JOIN item i ON dc.id = i."deliveryChallanId"
+        `;
+
+        // Add product filter to JOIN condition if provided
+        if (filters.products && filters.products.length > 0) {
+          query += ` AND i.product_id = ANY($${paramIndex})`;
+          params.push(filters.products);
+          paramIndex++;
+        }
+
+        // Add WHERE clause only for customer filter
+        query += ` WHERE 1=1`;
+
+        if (filters.customers && filters.customers.length > 0) {
+          query += ` AND cust.id = ANY($${paramIndex})`;
+          params.push(filters.customers);
+          paramIndex++;
+        }
+
+        query += `
+          GROUP BY cust.id, cust.organisation_name
+          ORDER BY amount DESC
+        `;
+
+        const result = await AppDataSource.query(query, params);
+
+        return result.map((row: any) => ({
+          name: row.name,
+          quantity: parseFloat(row.quantity) || 0,
+          amount: parseFloat(row.amount) || 0,
+        }));
+      } catch (error) {
+        console.error('Error in getSalesCustomerReport:', error);
+        throw error;
       }
-
-      if (filters.companyNames && filters.companyNames.length > 0) {
-        query += ` AND (dc.company_id IN (SELECT id FROM company WHERE name = ANY($${paramIndex})) OR dc.id IS NULL)`;
-        params.push(filters.companyNames);
-        paramIndex++;
-      }
-
-      if (filters.locations && filters.locations.length > 0) {
-        query += ` AND (dc.office_id = ANY($${paramIndex}) OR dc.id IS NULL)`;
-        params.push(filters.locations);
-        paramIndex++;
-      }
-
-      if (filters.products && filters.products.length > 0) {
-        query += ` AND (i.product_id = ANY($${paramIndex}) OR i.id IS NULL)`;
-        params.push(filters.products);
-        paramIndex++;
-      }
-
-      query += `
-        GROUP BY cust.id, cust."organisationName"
-        ORDER BY amount DESC
-      `;
-
-      const result = await AppDataSource.query(query, params);
-
-      return result.map((row: any) => ({
-        name: row.name,
-        quantity: parseFloat(row.quantity) || 0,
-        amount: parseFloat(row.amount) || 0,
-      }));
-    } catch (error) {
-      console.error('Error in getSalesCustomerReport:', error);
-      throw error;
     }
-  }
+
 
   private async getSalesProductReport(filters: SalesReportFilters, dateRange: DateRange): Promise<SalesReportData[]> {
     try {
@@ -666,9 +679,9 @@ export class SalesReportService {
     }
     
     try {
-      const query = `SELECT "organisationName" FROM customer WHERE id = ANY($1)`;
+      const query = `SELECT organisation_name FROM customers WHERE id = ANY($1)`;
       const result = await AppDataSource.query(query, [customerIds]);
-      return result.map((row: any) => row.organisationName).join(', ');
+      return result.map((row: any) => row.organisation_name).join(', ');
     } catch (error) {
       console.error('Error fetching customer names:', error);
       return 'Selected Customers';

@@ -346,6 +346,30 @@ export class DealSlipController {
     }
   }
 
+  // @httpGet("/dealslipno/getAlldealslipNo")
+  // public async getAllDealSlipNumbers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dealSlips = await this.dealSlipService.getAllDealSlipsNo();
+      
+  //     if (!dealSlips || dealSlips.length === 0) {
+  //       ControllerLogger.logOperationFailed('Get All', 'Deal Slip Numbers', 'No records found', req, res);
+  //       return next(new AppError(404, "No Deal Slips found"));
+  //     }
+      
+  //     ControllerLogger.logList('Deal Slip Numbers', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dealSlips,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Get All Deal Slip Numbers', error, req, res);
+  //     next(error);
+  //   }
+  // }
   @httpGet("/dealslipno/getAlldealslipNo")
   public async getAllDealSlipNumbers(
     @request() req: Request,
@@ -353,9 +377,16 @@ export class DealSlipController {
     @next() next: NextFunction
   ) {
     try {
-      const dealSlips = await this.dealSlipService.getAllDealSlipsNo();
+
+      const isGrnCreated = req.query.isGrnCreated === "true" ? true : req.query.isGrnCreated === "false" ? false : undefined;
+      const userId = res.locals.user.id;
+
+      console.log("User ID----------", userId);
       
-      if (!dealSlips || dealSlips.length === 0) {
+
+      const dealSlips = await this.dealSlipService.getAllDealSlipsNo({...req.query, isGrnCreated},userId);
+      
+      if (!dealSlips || dealSlips.total === 0) {
         ControllerLogger.logOperationFailed('Get All', 'Deal Slip Numbers', 'No records found', req, res);
         return next(new AppError(404, "No Deal Slips found"));
       }
@@ -363,7 +394,11 @@ export class DealSlipController {
       ControllerLogger.logList('Deal Slip Numbers', req, res);
       res.status(200).json({
         status: "success",
-        data: dealSlips,
+        data: dealSlips.data,
+        allRecords: dealSlips.pagination.total,
+        totalPages: dealSlips.pagination.totalPages,
+        page: dealSlips.pagination.page,
+        
       });
     } catch (error) {
       ControllerLogger.logError('Get All Deal Slip Numbers', error, req, res);

@@ -122,6 +122,10 @@ import { GRN } from "./entities/grn.entity";
 import { GrnRepository } from "./repositories/grn.repository";
 import { GrnService } from "./services/grn.service";
 import { GrnController } from "./controllers/grn.controller";
+import { GrnReportService } from "./services/grnReport.service";
+import { GrnReportController } from "./controllers/grnReport.controller";
+import { DeliveryChallanReportService } from "./services/deliveryChallanReport.service";
+import { DeliveryChallanReportController } from "./controllers/deliveryChallanReport.controller";
 import { GrnProduct } from "./entities/grnProduct.entity";
 import { GrnProductRepository } from "./repositories/grnProduct.repository";
 import { GrnProductService } from "./services/grnProduct.service";
@@ -242,9 +246,10 @@ import { SaleOrderRepository } from "./repositories/saleOrder.repository";
 import { SaleOrderService } from "./services/saleOrder.service";
 import { SaleOrderController } from "./controllers/saleOrder.controller";
 import { Invoice } from "./entities/invoice.entity";
+import { InvoiceProduct } from "./entities/invoiceProduct.entity";
 import { InvoiceRepository } from "./repositories/invoice.repository";
-import { InvoiceService } from "./services/invoice.service";
-import { InvoiceController } from "./controllers/invoice.controller";
+import { InvoiceProductRepository } from "./repositories/invoiceProduct.repository";
+
 import { PostReturnByCustomer } from "./entities/postReturnByCustomer.entity";
 import { PostReturnByCustomerRepository } from "./repositories/postReturnByCustomer.repository";
 import { PostReturnByCustomerService } from "./services/postReturnByCustomer.service";
@@ -288,6 +293,8 @@ import { CustomerDeliveryChallan } from "./entities/customerDeliveryChallan.enti
 import { CustomerDeliveryChallanRepository } from "./repositories/customerDeliveryChallan.repository";
 import { CustomerDeliveryChallanService } from "./services/customerDeliveryChallan.service";
 import { CustomerDeliveryChallanController } from "./controllers/customerDeliveryChallan.controller";
+import { FinalInvoiceService } from "./services/finalInvoice.service";
+import { FinalInvoiceController } from "./controllers/finalInvoice.controller";
 import { StockTranferDeliveryChallanController } from "./controllers/stockTransferDeliveryChallan.controllers";
 import { StockTransferDeliveryChallan } from "./entities/stockTransferdeliveryChallan.entity";
 import { StockTransferDeliveryChallanService } from "./services/stockTransferDeliveryChallan.service";
@@ -737,6 +744,12 @@ container.bind<GrnRepository>(TYPES.GrnRepository).toDynamicValue((context) => {
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 container.bind<GrnService>(TYPES.GrnService).to(GrnService);
 container.bind<GrnController>(TYPES.GrnController).to(GrnController);
+container.bind<GrnReportService>(TYPES.GrnReportService).to(GrnReportService);
+container.bind<GrnReportController>(TYPES.GrnReportController).to(GrnReportController);
+
+//----------------------------------Delivery Challan Report---------------------------------
+container.bind<DeliveryChallanReportService>(TYPES.DeliveryChallanReportService).to(DeliveryChallanReportService);
+container.bind<DeliveryChallanReportController>(TYPES.DeliveryChallanReportController).to(DeliveryChallanReportController);
 //------------------------------GrnProduct---------------------------
 container.bind<GrnProductRepository>(TYPES.GrnProductRepository).toDynamicValue((context) => {
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
@@ -999,8 +1012,11 @@ container.bind<InvoiceRepository>(TYPES.InvoiceRepository).toDynamicValue((conte
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(Invoice).extend(InvoiceRepository);
 }).inRequestScope(); 
-container.bind<InvoiceService>(TYPES.InvoiceService).to(InvoiceService).inSingletonScope();
-container.bind<InvoiceController>(TYPES.InvoiceController).to(InvoiceController).inSingletonScope()
+container.bind<InvoiceProductRepository>(TYPES.InvoiceProductRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(InvoiceProduct).extend(InvoiceProductRepository);
+}).inRequestScope(); 
+
 
 //returnByCustomer
 container.bind<PostReturnByCustomerRepository>(TYPES.PostReturnByCustomerRepository).toDynamicValue((context) => {
@@ -1255,6 +1271,15 @@ import { ProcurementTargetAchievementRepository } from "./repositories/procurmen
 import { ProcurementAchievement } from "./entities/procurementAchievement.entity";
 import { PaymentInfoForRFPA } from "./entities/rfpaPayementInfo.entity";
 import { RfpaPaymentInfoRepository } from "./repositories/rfpaPaymentInfo.repository";
+import { RegistrationReportsController } from "./controllers/registrationReport.controller";
+import { RegistrationReportService } from "./services/registrationReport.service";
+import { NewRegistrationController } from "./controllers/newRegistration.controller";
+import { NewRegistrationService } from "./services/newRegistration.service";
+import { ReturnToVendorService } from "./services/retrunToVendor.service";
+import { ReturnToVendorRepository } from "./repositories/returnToVendor.repository";
+import { ReturnToVendor } from "./entities/returnToVendor.entity";
+import { ReturnToVendorController } from "./controllers/returnToVendor.controller";
+
 // import { RegistrationReportService } from "./services/registrationReport.service";
 // import { RegistrationReportController } from "./controllers/registrationReport.controller";
 
@@ -1333,8 +1358,8 @@ container.bind<SalesTargetController>(TYPES.SalesTargetController).to(SalesTarge
 // container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
 // container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
 // //registration report
-// container.bind<RegistrationReportService>(TYPES.RegistrationReportService).to(RegistrationReportService).inSingletonScope();
-// container.bind<RegistrationReportController>(TYPES.RegistrationReportController).to(RegistrationReportController).inSingletonScope();
+container.bind<NewRegistrationService>(TYPES.NewRegistrationService).to(NewRegistrationService).inSingletonScope();
+ container.bind<NewRegistrationController>(TYPES.NewRegistrationController).to(NewRegistrationController).inSingletonScope();
 
 //report
 container.bind<ReportService>(TYPES.ReportService).to(ReportService).inSingletonScope();
@@ -1345,4 +1370,12 @@ container.bind<RfpaPaymentInfoRepository>(TYPES.RfpaPaymentInfoRepository).toDyn
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(PaymentInfoForRFPA).extend(RfpaPaymentInfoRepository);
 }).inRequestScope();
+  container.bind<ReturnToVendorService>(TYPES.ReturnToVendorService).to(ReturnToVendorService).inSingletonScope();
+  container.bind<ReturnToVendorRepository>(TYPES.ReturnToVendorRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(ReturnToVendor).extend(ReturnToVendorRepository);
+}).inRequestScope();
+container.bind<ReturnToVendorController>(TYPES.ReturnToVendorController).to(ReturnToVendorController).inSingletonScope();
+container.bind<FinalInvoiceService>(TYPES.FinalInvoiceService).to(FinalInvoiceService).inSingletonScope();
+container.bind<FinalInvoiceController>(TYPES.FinalInvoiceController).to(FinalInvoiceController).inSingletonScope()
 export { container };

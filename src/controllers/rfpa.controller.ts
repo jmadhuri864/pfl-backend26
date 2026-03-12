@@ -267,7 +267,7 @@ public async getRecycleBinRfpa(
         );
       }
 
-      rfpaData.requestedBy = requestedBy;
+      rfpaData.createdBy = requestedBy;
 
       rfpaData.requestingDepartment = res.locals.user.selectDepartment;
 
@@ -451,17 +451,24 @@ public async getRecycleBinRfpa(
     try {
       logger.info('Fetching all RFPA numbers');
       console.log('rfpanumbers');
-      const rfpas = await this.rfpaService.getAllRFPANumbers();
-      if (!rfpas || rfpas.length === 0) {
+      const isDealSlipCreated = req.query.isDealSlipCreated === 'true' ? true : req.query.isDealSlipCreated === 'false' ? false : undefined;
+      const userId = res.locals.user?.id;
+      console.log('User ID:', userId);
+      const rfpas = await this.rfpaService.getAllRFPANumbers({ ...req.query, isDealSlipCreated }, userId);
+      if (!rfpas || !rfpas.data || rfpas.data.length === 0) {
         logger.warn('No RFPA numbers found');
         ControllerLogger.logError('RFPA numbers retrieval', new AppError(404, 'No RFPAs found'), req, res);
         return next(new AppError(404, 'No RFPAs found'));
       }
-      logger.info(`Found ${rfpas.length} RFPA numbers`);
+      logger.info(`Found ${rfpas.data.length} RFPA numbers`);
       ControllerLogger.logList('RFPA Numbers', req, res);
       res.status(200).json({
         status: 'success',
-        data: rfpas,
+        
+        data: rfpas.data,
+      allRecords: rfpas.total,
+      totalPages: rfpas.totalPages,
+      page: rfpas.page,
       });
     } catch (error) {
       logger.error('Error fetching RFPA numbers:', error);

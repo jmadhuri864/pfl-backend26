@@ -385,4 +385,30 @@ export class CustomerDeliveryChallanController {
       next(err);
     }
   }
+
+  @httpGet('/check-return-status/:id')
+  public async checkReturnStatus(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const status = await this.customerDeliveryChallanService.checkReturnByCustomerStatus(id);
+
+      if (!status) {
+        ControllerLogger.logNotFound('Delivery Challan', id, req, res);
+        return next(new AppError(404, 'Delivery challan not found'));
+      }
+
+      ControllerLogger.logView('Delivery Challan return status', id, req, res);
+      res.status(200).json({
+        status: 'success',
+        data: status,
+      });
+    } catch (err) {
+      ControllerLogger.logError('Check Delivery Challan return status', err, req, res);
+      next(err);
+    }
+  }
 }

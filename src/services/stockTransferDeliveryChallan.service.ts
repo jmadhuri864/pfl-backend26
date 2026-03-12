@@ -19,6 +19,7 @@ import { InventoryStockRepository } from '../repositories/inventoryStock.reposit
 import { DitemRepository } from '../repositories/dItem.repository';
 import { custom } from 'zod';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { DataSource } from 'typeorm';
 
 
 @injectable()
@@ -47,10 +48,16 @@ export class StockTransferDeliveryChallanService {
     
         @inject(TYPES.ProductRepository)
         private readonly productRepository: ProductRepository,
+        @inject(TYPES.DataSource)
+        private readonly dataSource: DataSource
             
   ) {}
 
  async create(data: any, requestedBy: any): Promise<any> {
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
   try {
     // 1. Approval flow check
     const approvalFlowExit =
@@ -67,8 +74,8 @@ export class StockTransferDeliveryChallanService {
     data.challanNo = await this.deliveryChallanService.generateVoucherNo();
 
     // 3. Save challan
-    const challan = this.challanRepository.create(data);
-    const savedChallanArr = await this.challanRepository.save(challan);
+    const challan = queryRunner.manager.create(this.challanRepository.target, data);
+    const savedChallanArr = await queryRunner.manager.save(challan);
     const savedChallan = Array.isArray(savedChallanArr)
       ? savedChallanArr[0]
       : savedChallanArr;
@@ -86,7 +93,7 @@ export class StockTransferDeliveryChallanService {
     await this.documentbService.startApprovalFlow(document.id);
 
     // 5. Reload challan with full relations
-    const challanFull = await this.challanRepository.findOne({
+    const challanFull = await queryRunner.manager.findOne(this.challanRepository.target, {
       where: { id: savedChallan.id },
       relations: [
         'deliveryChallanProducts',
@@ -111,7 +118,7 @@ export class StockTransferDeliveryChallanService {
       const variantId = typeof variant === 'object' ? variant.id : variant;
 
       // Fetch variant + product (CORRECT ENTITY RELATION)
-      const foundVariant = await this.variantRepository.findOne({
+      const foundVariant = await queryRunner.manager.findOne(this.variantRepository.target, {
         where: { id: variantId },
         relations: ['product'], // VALID RELATION
       });
@@ -129,7 +136,7 @@ export class StockTransferDeliveryChallanService {
       // -------------------------------------------------------------------
       // OUTWARD STOCK (reduce from FROM location)
       // -------------------------------------------------------------------
-      let fromStock = await this.inventoryStockRepository.findOne({
+      let fromStock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
         where: {
           company: { id: challanFull.companyName.id },
           location: { id: challanFull.fromLocation.id },
@@ -143,10 +150,10 @@ export class StockTransferDeliveryChallanService {
         fromStock.inwardQty = Number(fromStock.inwardQty) - deliveredQty;
         fromStock.inwardAmt = Number(fromStock.inwardAmt) - deliveredAmt;
 
-        await this.inventoryStockRepository.save(fromStock);
+        await queryRunner.manager.save(fromStock);
       } else {
         // No stock exists → create negative (outward movement)
-        fromStock = this.inventoryStockRepository.create({
+        fromStock = queryRunner.manager.create(this.inventoryStockRepository.target, {
           company: { id: challanFull.companyName.id },
           location: { id: challanFull.fromLocation.id },
           product: { id: productId },
@@ -155,7 +162,7 @@ export class StockTransferDeliveryChallanService {
           inwardAmt: -deliveredAmt,
         });
 
-        await this.inventoryStockRepository.save(fromStock);
+        await queryRunner.manager.save(fromStock);
       }
 
       // ----------------------------------------------------------
@@ -163,10 +170,18 @@ export class StockTransferDeliveryChallanService {
       // ----------------------------------------------------------
     }
 
+    // Commit transaction - all operations succeeded
+    await queryRunner.commitTransaction();
+
     return savedChallan;
   } catch (error) {
+    // Rollback transaction - undo all changes
+    await queryRunner.rollbackTransaction();
     console.error('Error creating Stock Transfer:', error);
     throw new Error('Failed to create Stock Transfer');
+  } finally {
+    // Release query runner
+    await queryRunner.release();
   }
 }
 

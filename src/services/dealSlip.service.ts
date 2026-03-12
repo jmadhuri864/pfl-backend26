@@ -4,7 +4,7 @@ import { DealSlipRepository } from "../repositories/dealSlip.repository";
 import { DealSlip } from "../entities/dealSlip.entity";
 
 import { RfpaRepository } from "../repositories/rfpa.repository";
-import { Between, DeepPartial, LessThan, MoreThanOrEqual, SelectQueryBuilder } from "typeorm";
+import { Between, DeepPartial, LessThan, MoreThanOrEqual, SelectQueryBuilder, DataSource } from "typeorm";
 import { Status } from "../utils/status.enum";
 import { UserService } from "./user.service";
 import { AuditLogService } from "./auditLog.service";
@@ -19,6 +19,7 @@ import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
 import { DocSingalApproverService } from "./DocSingalApproverService.service";
 import { ApprovalFlowService } from "./approvalFlow.service";
 import { DocumentbRepository } from "../repositories/documentb.repository";
+import { ApprovalFlowRepository } from "../repositories/approvalFlow.repository";
 
 
 @injectable()
@@ -40,9 +41,13 @@ export class DealSlipService {
        private readonly docSingalApproverService: DocSingalApproverService,
        @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService,
+      @inject(TYPES.ApprovalFlowRepository)
+    private approvalFlowRepository:ApprovalFlowRepository, 
 
     @inject(TYPES.DocumentbRepository)
-    private readonly documentbRepository: DocumentbRepository
+    private readonly documentbRepository: DocumentbRepository,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
 
       ) {}
 
@@ -347,52 +352,78 @@ export class DealSlipService {
   
 
       async createDealSlip(dealSlipData: any): Promise<any> {
-        
-        const rfpaId=dealSlipData.rfpa
-       
-        if(!rfpaId)
-        {
-          throw new Error("id not found")
-        }
-        
-    const rfpa = await this.rfpaRepository.findOne({ where: { id: rfpaId } }); 
-    
-        if (!rfpa) {
-            throw new Error('RFPA not found');
-        }
-    //console.log(rfpa)
-        // Ensure the RFPA is approved before allowing Deal Slip creation
-        // if (rfpa.approvalStatus !== Status.APPROVED) {
-        //     throw new Error('Cannot create Deal Slip because the associated RFPA is not approved');
-        // }
-    
-        
-        const dealSlipId = await this.generateDealSlipId();
-        dealSlipData.dealSlipNo = dealSlipId;
-    
-        
-        const dealSlip = this.dealSlipRepository.create({
-            ...dealSlipData,
-            rfpa
-        });
-    
-        
-        const savedDealSlip= await this.dealSlipRepository.save(dealSlip);
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        //Todo:By Vaishali
-               const document = await this.documentbService.createDocument({
-                      type: DocumentTypeEnum.DEAL_SLIP,
-                      docDef: DocDefEnum.PROCUREMENT,
-                     // totalAmt: rfpaData.totalAmt,
-                      status: DocumentStatus.HOLD,
-                      remarks: 'Document auto-created with Deal Slip',
-                      lastActionBy: { id: dealSlipData.requestedBy },
-                      document_type_id: Array.isArray(savedDealSlip) ? (savedDealSlip[0] as DealSlip)?.id : (savedDealSlip as DealSlip).id
-                    });
-              
-                    await this.documentbService.startApprovalFlow(document.id);
-                    return savedDealSlip;
-    }
+        try {
+              const rfpaId=dealSlipData.rfpa
+
+              if(!rfpaId)
+              {
+                throw new Error("id not found")
+              }
+
+          const rfpa = await queryRunner.manager.findOne(this.rfpaRepository.target, { where: { id: rfpaId } }); 
+
+              if (!rfpa) {
+                  throw new Error('RFPA not found');
+              }
+
+              // Check if deal slip already created for this RFPA
+              if (rfpa.isDealSlipCreated) {
+                  throw new AppError(409, 'Deal slip already created for this RFPA. Please check existing deal slips.');
+              }
+          //console.log(rfpa)
+              // Ensure the RFPA is approved before allowing Deal Slip creation
+              // if (rfpa.approvalStatus !== Status.APPROVED) {
+              //     throw new Error('Cannot create Deal Slip because the associated RFPA is not approved');
+              // }
+
+
+              const dealSlipId = await this.generateDealSlipId();
+              dealSlipData.dealSlipNo = dealSlipId;
+
+
+              const dealSlip = queryRunner.manager.create(this.dealSlipRepository.target, {
+                  ...dealSlipData,
+                  rfpa
+              });
+
+
+              const savedDealSlip= await queryRunner.manager.save(dealSlip);
+
+              // Update RFPA isDealSlipCreated flag
+              rfpa.isDealSlipCreated = true;
+              await queryRunner.manager.save(rfpa);
+
+              //Todo:By Vaishali
+                     const document = await this.documentbService.createDocument({
+                            type: DocumentTypeEnum.DEAL_SLIP,
+                            docDef: DocDefEnum.PROCUREMENT,
+                           // totalAmt: rfpaData.totalAmt,
+                            status: DocumentStatus.HOLD,
+                            remarks: 'Document auto-created with Deal Slip',
+                            lastActionBy: { id: dealSlipData.requestedBy },
+                            document_type_id: Array.isArray(savedDealSlip) ? (savedDealSlip[0] as DealSlip)?.id : (savedDealSlip as DealSlip).id
+                          });
+
+                          await this.documentbService.startApprovalFlow(document.id);
+
+          // Commit transaction - all operations succeeded
+          await queryRunner.commitTransaction();
+
+                          return savedDealSlip;
+        } catch (error: any) {
+          // Rollback transaction - undo all changes
+          await queryRunner.rollbackTransaction();
+          throw error;
+        } finally {
+          // Release query runner
+          await queryRunner.release();
+        }
+      }
+
 
     
     
@@ -497,21 +528,218 @@ public async approveDealSlip(dealSlipId: string, userId: string, data: { approva
 
   return existingDealSlip;
 }
-public async getAllDealSlipsNo(): Promise<{ id: string; dealSlipNo: string; approvalStatus: string }[]> {
+// public async getAllDealSlipsNo(): Promise<{ id: string; dealSlipNo: string; approvalStatus: string }[]> {
+//   const dealSlips = await this.dealSlipRepository.find({
+//     select: ["id", "dealSlipNo", "approvalStatus"], // Select the required fields
+//     order: {
+//       createdAt: "DESC", // Optionally order by creation date
+//     },
+//   });
+
+//   // Map the results to include the required fields
+//   return dealSlips.map(dealSlip => ({
+//     id: dealSlip.id as string,
+//     dealSlipNo: dealSlip.dealSlipNo as string,
+//     approvalStatus: dealSlip.approvalStatus as string,
+//   }));
+// }
+
+public async getAllDealSlipsNo(
+  filter: {
+    overAllStatus?: string;
+    isGrnCreated?: boolean;
+    employeeBaseHirechey?: boolean;
+    page?: number;
+    limit?: number;
+    search?: string;
+  },
+  loginUserId: string
+): Promise<any> {
+
+  const where: any = {};
+
+  if (typeof filter?.isGrnCreated === "boolean") {
+    console.log("--------------------------");
+    where.isGrnCreated = filter.isGrnCreated;
+  }
+
+  console.log("where", where);
+  
+
   const dealSlips = await this.dealSlipRepository.find({
-    select: ["id", "dealSlipNo", "approvalStatus"], // Select the required fields
-    order: {
-      createdAt: "DESC", // Optionally order by creation date
-    },
+    select: ["id", "dealSlipNo", "isGrnCreated"],
+    where: where,
+    relations: ["createdBy"],
+    order: { createdAt: "DESC" }
   });
 
-  // Map the results to include the required fields
-  return dealSlips.map(dealSlip => ({
-    id: dealSlip.id as string,
-    dealSlipNo: dealSlip.dealSlipNo as string,
-    approvalStatus: dealSlip.approvalStatus as string,
-  }));
+  const filteredResults: {
+    id: string;
+    dealSlipNo: string;
+    documentId: string | null;
+  }[] = [];
+
+  for (const dealSlip of dealSlips) {
+
+    if (!dealSlip.id || !dealSlip.dealSlipNo) {
+      continue;
+    }
+
+    const document = await this.documentbRepository.findOne({
+      where: { document_type_id: dealSlip.id },
+      select: ["id", "status"]
+    });
+
+    const documentId = document?.id || null;
+    const documentStatus = document?.status;
+
+
+    // =============================
+    // Employee Hierarchy Logic
+    // =============================
+
+    if (filter?.employeeBaseHirechey) {
+
+      const approvalFlow = await this.approvalFlowRepository
+        .createQueryBuilder("approvalflows")
+
+        .leftJoinAndSelect("approvalflows.creator", "creator")
+        .leftJoinAndSelect("approvalflows.verifiers", "verifiers")
+
+        .leftJoinAndSelect("approvalflows.approvers", "approvers")
+
+        .leftJoinAndSelect("approvers.firstApprover", "firstApprover")
+        .leftJoinAndSelect("firstApprover.users", "firstApproverUsers")
+
+        .leftJoinAndSelect("approvers.secondApprover", "secondApprover")
+        .leftJoinAndSelect("secondApprover.users", "secondApproverUsers")
+
+        .leftJoinAndSelect("approvers.thirdApprover", "thirdApprover")
+        .leftJoinAndSelect("thirdApprover.users", "thirdApproverUsers")
+
+        .leftJoinAndSelect("approvalflows.finalizers", "finalizers")
+        .leftJoinAndSelect("finalizers.firstFinalizers", "firstFinalizers")
+        .leftJoinAndSelect("finalizers.secondFinalizers", "secondFinalizers")
+
+        .where("creator.id = :creatorId", { creatorId: dealSlip.createdBy?.id })
+        .andWhere("approvalflows.type = :documentType", { documentType: "Procurement" })
+
+        .getOne();
+
+      if (!approvalFlow) {
+        continue;
+      }
+
+      let hierarchy = 0;
+
+      if (approvalFlow.creator?.id === loginUserId) {
+        hierarchy = 1;
+      }
+      else if (approvalFlow.verifiers?.some(v => v.id === loginUserId)) {
+        hierarchy = 2;
+      }
+      else if (approvalFlow.approvers?.firstApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 3;
+      }
+      else if (approvalFlow.approvers?.secondApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 4;
+      }
+      else if (approvalFlow.approvers?.thirdApprover?.users?.some(u => u.id === loginUserId)) {
+        hierarchy = 5;
+      }
+      else if (approvalFlow.finalizers?.firstFinalizers?.some(u => u.id === loginUserId)) {
+        hierarchy = 6;
+      }
+      else if (approvalFlow.finalizers?.secondFinalizers?.some(u => u.id === loginUserId)) {
+        hierarchy = 7;
+      }
+
+      if (hierarchy === 0) {
+        continue;
+      }
+
+      if (hierarchy === 1 && dealSlip.createdBy?.id !== loginUserId) {
+        continue;
+      }
+    }
+
+    // =============================
+    // Approval Status Filtering
+    // =============================
+
+    if (filter?.overAllStatus &&
+      typeof filter?.isGrnCreated === "boolean"
+    ) {
+
+      if (documentStatus === filter.overAllStatus &&
+        dealSlip.isGrnCreated === filter.isGrnCreated
+      ) {
+        filteredResults.push({
+          id: dealSlip.id,
+          dealSlipNo: dealSlip.dealSlipNo,
+          documentId
+        });
+      }
+
+    } else if (typeof filter?.isGrnCreated === "boolean") {
+
+      if (dealSlip.isGrnCreated === filter.isGrnCreated) {
+        filteredResults.push({ 
+          id: dealSlip.id, 
+          dealSlipNo: dealSlip.dealSlipNo, 
+          documentId });
+      }
+
+    }
+     else {
+
+      filteredResults.push({
+        id: dealSlip.id,
+        dealSlipNo: dealSlip.dealSlipNo,
+        documentId
+      });
+
+    }
+
+  }
+
+  // =============================
+  // Search
+  // =============================
+
+  let searchedResults = filteredResults;
+
+  if (filter?.search) {
+    const search = filter.search.toLowerCase();
+
+    searchedResults = filteredResults.filter(item =>
+      item.dealSlipNo.toLowerCase().includes(search)
+    );
+  }
+
+  // =============================
+  // Pagination
+  // =============================
+
+  const page = filter.page || 1;
+  const limit = filter.limit || 10;
+
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  const paginatedResults = searchedResults.slice(startIndex, endIndex);
+
+  return {
+    data: paginatedResults,
+    pagination: {
+    total: searchedResults.length,
+    page,
+    limit,
+    totalPages: Math.ceil(searchedResults.length / limit)
+    }
+  };
 }
+
 
 public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
   // Find the Deal Slip by ID

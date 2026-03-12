@@ -20,7 +20,7 @@ import { DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { LessThan } from 'typeorm';
+import { LessThan, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 
 
@@ -42,7 +42,9 @@ export class MultiCashVoucherService {
     @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,
     @inject(TYPES.DocumentbService) private documentbService: DocumentbService, // Assuming DocumentbService is defined elsewhere
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
   ) {}
 public async getAllVouchers(
     queryOptions: PaginationOptions, userId: string
@@ -501,91 +503,106 @@ public async getAllVouchers(
 
   //TODO: Create Voucher (Correction By Shri)
   public async createVoucher(voucherData: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    //TODO: Check approval flow is exit or not for logged user
+    try {
+      //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'multi-cash-voucher')
+       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'multi-cash-voucher')
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
-    }
-
-
-    console.log('voucherData is ', voucherData.requestedBy);
-    const voucherNo = await this.generateVoucherNo();
-    voucherData.voucherNo = voucherNo;
-
-    if (voucherData.grnNo) {
-      const grn = await this.grnRepository.findOne({
-        where: { id: voucherData.grnNo },
-      });
-      if (!grn) {
-        throw new Error(`GRN with ID ${voucherData.grnNo} not found.`);
+      if (!approvalFlowExit) {
+        throw new Error('Approval flow not found');
       }
-      voucherData.grnNo = grn;
-    } else {
-      voucherData.grnNo = null;
-    }
 
-    if (voucherData.challanNo) {
-      const challan = await this.deliverychllanRepository.findOne({
-        where: { id: voucherData.challanNo },
-      });
-      if (!challan) {
-        throw new Error(`Challan with ID ${voucherData.challanNo} not found.`);
+
+      console.log('voucherData is ', voucherData.requestedBy);
+      const voucherNo = await this.generateVoucherNo();
+      voucherData.voucherNo = voucherNo;
+
+      if (voucherData.grnNo) {
+        const grn = await queryRunner.manager.findOne(this.grnRepository.target, {
+          where: { id: voucherData.grnNo },
+        });
+        if (!grn) {
+          throw new Error(`GRN with ID ${voucherData.grnNo} not found.`);
+        }
+        voucherData.grnNo = grn;
+      } else {
+        voucherData.grnNo = null;
       }
-      voucherData.challanNo = challan;
-    } else {
-      voucherData.challanNo = null;
+
+      if (voucherData.challanNo) {
+        const challan = await queryRunner.manager.findOne(this.deliverychllanRepository.target, {
+          where: { id: voucherData.challanNo },
+        });
+        if (!challan) {
+          throw new Error(`Challan with ID ${voucherData.challanNo} not found.`);
+        }
+        voucherData.challanNo = challan;
+      } else {
+        voucherData.challanNo = null;
+      }
+
+      const cashVoucher = queryRunner.manager.create(this.cashVoucherRepository.target, voucherData);
+
+      const voucher = await queryRunner.manager.save(cashVoucher) as CashVoucher | CashVoucher[];
+
+    //  console.log("Voucher created:", voucher);
+
+      // const manager = await this.userRepository.findOne({
+      //   where: { id: voucherData.requestedBy },
+      //   relations: ['reportingManagers', 'reportingManagers.reportingTo'],
+      // });
+
+      // if (!manager) {
+      //   throw new Error(`User with ID ${voucherData.requestedBy} not found`);
+      // }
+
+      // const reportingManagers = manager.reportingManagers.flatMap(
+      //   (rm) => rm.reportingTo,
+      // );
+      // setTimeout(async () => {
+      //   for (const reportingManager of reportingManagers) {
+      //     const message = `A new Multi Cash Voucher has been created by ${manager.firstName} ${manager.lastName}.`;
+      //     console.log('message is ', message);
+      //     console.log('reportingManager is ', reportingManager.id);
+      //     await this.notificationService.createNoti(message, reportingManager.id);
+      //   }
+      // }, 1000);
+
+    //  console.log("Log ID", Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id);
+
+
+      const document = await this.documentbService.createDocument({
+              type: 'multi-cash-voucher',
+              docDef: DocDefEnum.PROCUREMENT,
+              totalAmt: Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.totalAmt : (voucher as CashVoucher).totalAmt,
+              status: DocumentStatus.HOLD,
+              remarks: 'Document auto-created with GRN',
+              lastActionBy: { id: voucherData.requestedBy },
+              document_type_id : Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id
+            }, );
+            //console.log('Document created:', docuemnt);
+            //const saved = await this.grnRepository.save(savedGrn);
+
+            await this.documentbService.startApprovalFlow(document.id);
+
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
+
+      return voucher;
+    } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
     }
-
-    const cashVoucher = await this.cashVoucherRepository.create(voucherData);
-
-    const voucher = await this.cashVoucherRepository.save(cashVoucher) as CashVoucher | CashVoucher[];
-
-  //  console.log("Voucher created:", voucher);
-    
-    // const manager = await this.userRepository.findOne({
-    //   where: { id: voucherData.requestedBy },
-    //   relations: ['reportingManagers', 'reportingManagers.reportingTo'],
-    // });
-
-    // if (!manager) {
-    //   throw new Error(`User with ID ${voucherData.requestedBy} not found`);
-    // }
-
-    // const reportingManagers = manager.reportingManagers.flatMap(
-    //   (rm) => rm.reportingTo,
-    // );
-    // setTimeout(async () => {
-    //   for (const reportingManager of reportingManagers) {
-    //     const message = `A new Multi Cash Voucher has been created by ${manager.firstName} ${manager.lastName}.`;
-    //     console.log('message is ', message);
-    //     console.log('reportingManager is ', reportingManager.id);
-    //     await this.notificationService.createNoti(message, reportingManager.id);
-    //   }
-    // }, 1000);
-
-  //  console.log("Log ID", Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id);
-    
-
-    const document = await this.documentbService.createDocument({
-            type: 'multi-cash-voucher',
-            docDef: DocDefEnum.PROCUREMENT,
-            totalAmt: Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.totalAmt : (voucher as CashVoucher).totalAmt,
-            status: DocumentStatus.HOLD,
-            remarks: 'Document auto-created with GRN',
-            lastActionBy: { id: voucherData.requestedBy },
-            document_type_id : Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id
-          }, );
-          //console.log('Document created:', docuemnt);
-          //const saved = await this.grnRepository.save(savedGrn);
-    
-          await this.documentbService.startApprovalFlow(document.id);
-    
-
-    return voucher;
   }
+
 public async getAllRecycleBinVouchers(
     queryOptions: PaginationOptions, userId: string
   ): Promise<{ data: any[]; meta: any }> {

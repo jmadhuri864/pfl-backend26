@@ -12,7 +12,7 @@ import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { LessThan } from 'typeorm';
+import { LessThan, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 
 
@@ -26,43 +26,60 @@ export class LabourPaymentVoucherService {
     @inject(TYPES.DocumentbService) private documentbService: DocumentbService, // Assuming DocumentbService is defined elsewhere
     @inject(TYPES.DocumentbRepository) private documentbRepository: DocumentbRepository,
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
   ) {}
 
-  async createLPVoucher(data: any): Promise<LPVoucher[]> {
+  async createLPVoucher(data: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    //TODO: Check approval flow is exit or not for logged user
+    try {
+      //TODO: Check approval flow is exit or not for logged user
 
-    //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'labor-payment-voucher')
+      //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'labor-payment-voucher')
 
-    // if (!approvalFlowExit) {
-    //   throw new Error('Approval flow not found');
-    // }
+      // if (!approvalFlowExit) {
+      //   throw new Error('Approval flow not found');
+      // }
 
 
-    const voucherNo = await this.generateVoucherNo();
-    data.voucherNo = voucherNo;
+      const voucherNo = await this.generateVoucherNo();
+      data.voucherNo = voucherNo;
 
-    const newLPVoucher = this.lpVoucherRepository.create(data);
+      const newLPVoucher = queryRunner.manager.create(this.lpVoucherRepository.target, data);
 
-    const saveLPVoucher = await this.lpVoucherRepository.save(newLPVoucher) //as LPVoucher | LPVoucher[];
+      const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) //as LPVoucher | LPVoucher[];
 
-    const document = await this.documentbService.createDocument({
-            type: DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
-            docDef: DocDefEnum.PROCUREMENT,
-            totalAmt: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.totalAmt : (saveLPVoucher as LPVoucher).totalAmt,
-            status: DocumentStatus.HOLD,
-            remarks: 'Document auto-created with GRN',
-            lastActionBy: { id: data.requestedBy },
-            document_type_id: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.id : (saveLPVoucher as LPVoucher).id
-          });
-    
-    //console.log('Document created:', docuemnt);
-      //const saved = await this.grnRepository.save(savedGrn);
+      const document = await this.documentbService.createDocument({
+              type: DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
+              docDef: DocDefEnum.PROCUREMENT,
+              totalAmt: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.totalAmt : (saveLPVoucher as LPVoucher).totalAmt,
+              status: DocumentStatus.HOLD,
+              remarks: 'Document auto-created with GRN',
+              lastActionBy: { id: data.requestedBy },
+              document_type_id: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.id : (saveLPVoucher as LPVoucher).id
+            });
+      
+      //console.log('Document created:', docuemnt);
+        //const saved = await this.grnRepository.save(savedGrn);
 
-      await this.documentbService.startApprovalFlow(document.id);
-          
-    return saveLPVoucher;
+        await this.documentbService.startApprovalFlow(document.id);
+      
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
+            
+      return saveLPVoucher;
+    } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 
   // public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {

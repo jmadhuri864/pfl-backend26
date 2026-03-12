@@ -22,13 +22,12 @@ import {
   requireUser,
 } from '../middleware/deserializeUser';
 import logger from '../utils/logger';
-import { uploadFile } from '../middleware/uploadwithAWS';
-import { uploads } from '../middleware/muterConfigCSV';
+
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
 import { NotificationService } from '../services/notification.service';
 import { PaginationOptions } from '../utils/pagination';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
-import { upload } from '../middleware/multerConfig';
+
 import { ControllerLogger } from '../utils/controllerLogger'
  @controller('/products', deserializeUser, requireUser)
 export class ProductController {

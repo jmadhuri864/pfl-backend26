@@ -14,6 +14,7 @@ import { log } from 'console';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { DataSource } from 'typeorm';
 
 
 @injectable()
@@ -26,7 +27,9 @@ export class PMPVoucherService {
         @inject(TYPES.DocumentbService) private documentbService: DocumentbService, // Assuming DocumentbService is defined elsewhere
         @inject(TYPES.DocumentbRepository) private documentbRepository : DocumentbRepository,
         @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
     
   ) {}
 
@@ -607,38 +610,53 @@ if(!voucher)
   }
 
   public async createVoucher(voucherData: any): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    //TODO: Check approval flow is exit or not for logged user
+    try {
+      //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'packaging-material-voucher')
+       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'packaging-material-voucher')
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
+      if (!approvalFlowExit) {
+        throw new Error('Approval flow not found');
+      }
+
+
+      voucherData.voucherNo = await this.generatePMPVoucherNo();
+
+      const pmpvoucher = queryRunner.manager.create(this.pmpVoucherRepository.target, voucherData);
+      const savePmpVoucher =  await queryRunner.manager.save(pmpvoucher);
+
+      const document = await this.documentbService.createDocument({
+              type: DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
+              docDef: DocDefEnum.PROCUREMENT,
+              totalAmt: Array.isArray(savePmpVoucher) ? (savePmpVoucher[0] as PMPVoucher)?.totalAmt : (savePmpVoucher as PMPVoucher).totalAmt,
+              status: DocumentStatus.HOLD,
+              remarks: 'Document auto-created with GRN',
+              lastActionBy: { id: voucherData.requestedBy },
+              document_type_id: Array.isArray(savePmpVoucher) ? (savePmpVoucher[0] as PMPVoucher)?.id : (savePmpVoucher as PMPVoucher).id
+            }, );
+            //console.log('Document created:', docuemnt);
+            //const saved = await this.grnRepository.save(savedGrn);
+
+            await this.documentbService.startApprovalFlow(document.id);
+
+      // Commit transaction - all operations succeeded
+      await queryRunner.commitTransaction();
+
+      return savePmpVoucher;
+    } catch (error: any) {
+      // Rollback transaction - undo all changes
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
     }
-
-
-    voucherData.voucherNo = await this.generatePMPVoucherNo();
-
-    const pmpvoucher = this.pmpVoucherRepository.create(voucherData);
-    const savePmpVoucher =  await this.pmpVoucherRepository.save(pmpvoucher);
-
-    const document = await this.documentbService.createDocument({
-            type: DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
-            docDef: DocDefEnum.PROCUREMENT,
-            totalAmt: Array.isArray(savePmpVoucher) ? (savePmpVoucher[0] as PMPVoucher)?.totalAmt : (savePmpVoucher as PMPVoucher).totalAmt,
-            status: DocumentStatus.HOLD,
-            remarks: 'Document auto-created with GRN',
-            lastActionBy: { id: voucherData.requestedBy },
-            document_type_id: Array.isArray(savePmpVoucher) ? (savePmpVoucher[0] as PMPVoucher)?.id : (savePmpVoucher as PMPVoucher).id
-          }, );
-          //console.log('Document created:', docuemnt);
-          //const saved = await this.grnRepository.save(savedGrn);
-    
-          await this.documentbService.startApprovalFlow(document.id);
-    
-
-    return savePmpVoucher;
   }
+
 
   public async updateVoucher(
     id: string,

@@ -38,146 +38,169 @@ export class DumpRegisterService{
      @inject(TYPES.InventoryStockRepository)
                 private readonly inventoryStockRepository: InventoryStockRepository,
     @inject(TYPES.DocumentbRepository)
-    private documentbRepository: DocumentbRepository
+    private documentbRepository: DocumentbRepository,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
     ) {}
       
 
     async createDumpRegister(data: any): Promise<any> {
-  try {
-    console.log(data)
-    console.log("Creating Dump Register with data:", JSON.stringify(data, null, 2));
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
-    // Expecting data.dumpProducts to be an array of { productId, variantId, uomId, quantity, unitPrice, amount }
-    if (!data.dumpProducts || !Array.isArray(data.dumpProducts) || data.dumpProducts.length === 0) {
-      throw new Error("dumpProducts array is required and must not be empty");
-    }
+      try {
+        console.log(data)
+        console.log("Creating Dump Register with data:", JSON.stringify(data, null, 2));
 
-    console.log("Creating dump register header...");
-    // Create the dump register header
-    // Handle both companyId/companyName field names
-    const companyId = data.companyId || data.companyName;
-    const locationId = data.locationId || data.location;
-    const grnId = data.grnId || data.grn;
-    
-    const dumpRegister = this.dumpRegisterRepository.create({
-      companyName: companyId ? { id: companyId } : undefined,
-      location: locationId ? { id: locationId } : undefined,
-      date: data.date,
-      grn: grnId ? { id: grnId } : undefined,
-      batchNo: data.batchNo,
-      totalQty: data.totalQty,
-      totalDumpCost: data.totalDumpCost,
-      totalCostInWords: data.totalCostInWords,
-      remark: data.remark,
-      requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
-    });
+        // Expecting data.dumpProducts to be an array of { productId, variantId, uomId, quantity, unitPrice, amount }
+        if (!data.dumpProducts || !Array.isArray(data.dumpProducts) || data.dumpProducts.length === 0) {
+          throw new Error("dumpProducts array is required and must not be empty");
+        }
 
-    console.log("Saving dump register...");
-    const savedDumpRegister = await this.dumpRegisterRepository.save(dumpRegister);
-    console.log("Dump register saved with ID:", savedDumpRegister.id);
-    
-    console.log("Creating document...");
-    // Create document
-    const document = await this.documentService.createDocument({
-      type: DocumentTypeEnum.DUMP_REGISTER,
-      docDef: DocDefEnum.OPERATION,
-      status: DocumentStatus.HOLD,
-      remarks: 'Document auto-created with Dump Register',
-      lastActionBy: { id: data.requestedBy },
-      document_type_id: savedDumpRegister.id,
-    });
+        console.log("Creating dump register header...");
+        // Create the dump register header
+        // Handle both companyId/companyName field names
+        const companyId = data.companyId || data.companyName;
+        const locationId = data.locationId || data.location;
+        const grnId = data.grnId || data.grn;
 
-    console.log("Document created with ID:", document.id);
-    console.log("Starting approval flow...");
-    await this.documentService.startApprovalFlow(document.id);
-
-    console.log("Creating dump products and updating inventory...");
-    // Create DumpProduct records and update inventory
-    for (const productData of data.dumpProducts) {
-      console.log("Processing product:", productData);
-      // Handle both field name variations
-      const productId = productData.productId || productData.productName;
-      const variantId = productData.variantId || productData.variant;
-      const uomId = productData.uomId || productData.uom;
-      const quantity = productData.quantity;
-      const unitPrice = productData.unitPrice;
-      const amount = productData.amount;
-      
-      if (!productId || !variantId) {
-        throw new Error("Each dump product must have productId/productName and variantId/variant");
-      }
-
-      const dumpQty = Number(quantity ?? 0);
-      const dumpAmt = Number(amount ?? 0);
-
-      if (dumpQty <= 0) continue;
-
-      // Create DumpProduct record
-      const dumpProductData: any = {
-        dumpRegister: { id: savedDumpRegister.id },
-        productName: { id: productId },
-        variant: { id: variantId },
-        quantity: dumpQty,
-        unitPrice: Number(unitPrice ?? 0),
-        amount: dumpAmt,
-      };
-
-      if (uomId) {
-        dumpProductData.uom = { id: uomId };
-      }
-
-      const dumpProduct = this.dumpProductRepository.create(dumpProductData);
-      await this.dumpProductRepository.save(dumpProduct);
-
-      // Update inventory stock
-      const companyId = data.companyId || data.companyName;
-      const locationId = data.locationId || data.location;
-      
-      let stock = await this.inventoryStockRepository.findOne({
-        where: {
-          company: { id: companyId },
-          location: { id: locationId },
-          product: { id: productId },
-          variant: { id: variantId },
-        },
-      });
-
-      if (!stock) {
-        // Create new stock record if it doesn't exist
-        stock = this.inventoryStockRepository.create({
-          company: { id: companyId },
-          location: { id: locationId },
-          product: { id: productId },
-          variant: { id: variantId },
-          inwardQty: 0,
-          inwardAmt: 0,
-          purchaseQty: 0,
-          purchaseAmt: 0,
-          dumpQty: dumpQty,
-          dumpAmt: dumpAmt,
+        const dumpRegister = queryRunner.manager.create(this.dumpRegisterRepository.target, {
+          companyName: companyId ? { id: companyId } : undefined,
+          location: locationId ? { id: locationId } : undefined,
+          date: data.date,
+          grn: grnId ? { id: grnId } : undefined,
+          batchNo: data.batchNo,
+          totalQty: data.totalQty,
+          totalDumpCost: data.totalDumpCost,
+          totalCostInWords: data.totalCostInWords,
+          remark: data.remark,
+          requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
         });
-      } else {
-        // Update existing stock
-        stock.inwardQty = Number(stock.inwardQty ?? 0) - dumpQty;
-        stock.inwardAmt = Number(stock.inwardAmt ?? 0) - dumpAmt;
-        stock.dumpQty = Number(stock.dumpQty ?? 0) + dumpQty;
-        stock.dumpAmt = Number(stock.dumpAmt ?? 0) + dumpAmt;
-      }
 
-      await this.inventoryStockRepository.save(stock);
-      console.log(`Updated stock for variant ${variantId}: -${dumpQty} inwardQty, +${dumpQty} dumpQty`);
+        console.log("Saving dump register...");
+        const savedDumpRegister = await queryRunner.manager.save(dumpRegister);
+        console.log("Dump register saved with ID:", savedDumpRegister.id);
+
+        console.log("Creating document...");
+        // Create document
+        const document = await this.documentService.createDocument({
+          type: DocumentTypeEnum.DUMP_REGISTER,
+          docDef: DocDefEnum.OPERATION,
+          status: DocumentStatus.HOLD,
+          remarks: 'Document auto-created with Dump Register',
+          lastActionBy: { id: data.requestedBy },
+          document_type_id: savedDumpRegister.id,
+        });
+
+        console.log("Document created with ID:", document.id);
+        console.log("Starting approval flow...");
+        await this.documentService.startApprovalFlow(document.id);
+
+        console.log("Creating dump products and updating inventory...");
+        // Create DumpProduct records and update inventory
+        for (const productData of data.dumpProducts) {
+          console.log("Processing product:", productData);
+          // Handle both field name variations
+          const productId = productData.productId || productData.productName;
+          const variantId = productData.variantId || productData.variant;
+          const uomId = productData.uomId || productData.uom;
+          const quantity = productData.quantity;
+          const unitPrice = productData.unitPrice;
+          const amount = productData.amount;
+
+          if (!productId) {
+            throw new Error("Each dump product must have productId/productName");
+          }
+
+          const dumpQty = Number(quantity ?? 0);
+          const dumpAmt = Number(amount ?? 0);
+
+          if (dumpQty <= 0) continue;
+
+          // Create DumpProduct record
+          const dumpProductData: any = {
+            dumpRegister: { id: savedDumpRegister.id },
+            productName: { id: productId },
+            quantity: dumpQty,
+            unitPrice: Number(unitPrice ?? 0),
+            amount: dumpAmt,
+          };
+
+          if (variantId) {
+            dumpProductData.variant = { id: variantId };
+          }
+
+          if (uomId) {
+            dumpProductData.uom = { id: uomId };
+          }
+
+          const dumpProduct = queryRunner.manager.create(this.dumpProductRepository.target, dumpProductData);
+          await queryRunner.manager.save(dumpProduct);
+
+          // Update inventory stock
+          const companyId = data.companyId || data.companyName;
+          const locationId = data.locationId || data.location;
+
+          let stock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
+            where: {
+              company: { id: companyId },
+              location: { id: locationId },
+              product: { id: productId },
+              variant: variantId ? { id: variantId } : IsNull(),
+            },
+          });
+
+          if (!stock) {
+            // Create new stock record if it doesn't exist
+            const stockData: Record<string, any> = {
+              company: { id: companyId },
+              location: { id: locationId },
+              product: { id: productId },
+              inwardQty: 0,
+              inwardAmt: 0,
+              dumpQty: dumpQty,
+              dumpAmt: dumpAmt,
+            };
+
+            if (variantId) {
+              stockData.variant = { id: variantId };
+            }
+
+            stock = queryRunner.manager.create(this.inventoryStockRepository.target, stockData);
+          } else {
+            // Update existing stock
+            stock.inwardQty = Number(stock.inwardQty ?? 0) - dumpQty;
+            stock.inwardAmt = Number(stock.inwardAmt ?? 0) - dumpAmt;
+            stock.dumpQty = Number(stock.dumpQty ?? 0) + dumpQty;
+            stock.dumpAmt = Number(stock.dumpAmt ?? 0) + dumpAmt;
+          }
+
+          if (stock) {
+            await queryRunner.manager.save(stock);
+            console.log(`Updated stock for variant ${variantId}: -${dumpQty} inwardQty, +${dumpQty} dumpQty`);
+          }
+        }
+
+        // Commit transaction - all operations succeeded
+        await queryRunner.commitTransaction();
+
+        return savedDumpRegister;
+      } catch (error) {
+        // Rollback transaction - undo all changes
+        await queryRunner.rollbackTransaction();
+        console.error('Error creating Dump Register:', error);
+        // Re-throw the original error with more context
+        if (error instanceof Error) {
+          throw new Error(`Failed to create Dump Register: ${error.message}`);
+        }
+        throw error;
+      } finally {
+        // Release query runner
+        await queryRunner.release();
+      }
     }
-      
-    return savedDumpRegister;
-  } catch (error) {
-    console.error('Error creating Dump Register:', error);
-    // Re-throw the original error with more context
-    if (error instanceof Error) {
-      throw new Error(`Failed to create Dump Register: ${error.message}`);
-    }
-    throw error;
-  }
-}
+
   async getAllRecycleBinDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
 
       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(

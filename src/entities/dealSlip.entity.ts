@@ -61,7 +61,15 @@ import { User } from './user.entity';
   dealSlipApprovedAt: Date; // Column to store approval date and time
     
     @Column({nullable:true})
-    dealSlipNo: String; // Column to store creation date and time
+    dealSlipNo: string; // Column to store creation date and time
+    @Column({ default: false })
+  isGrnCreated: boolean;
+
+ 
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
    
   }
   

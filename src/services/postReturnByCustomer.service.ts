@@ -2,12 +2,8 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { PostReturnByCustomerRepository } from '../repositories/postReturnByCustomer.repository';
 import { DeliveryChallanRepository } from '../repositories/deliveryChallan.repository';
-import { PostReturnByCustomer } from '../entities/postReturnByCustomer.entity';
-import { AppDataSource } from '../utils/data-source';
-import { DeliveryChallanPurchase } from '../entities/deliveryChallan.entity';
-import { ReturnedProducts } from '../entities/returnProduct.entity';
 import { AuditLogService } from './auditLog.service';
-import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { UserLogger } from '../utils/logger';
@@ -15,205 +11,257 @@ import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
-import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
-import { ApprovalFlowService } from './approvalFlow.service';
-import { reject } from 'lodash';
-import { InventoryStockRepository } from '../repositories/inventoryStock.repository';
-import { ProductVarientsRepository } from '../repositories/productVarients.repository';
-import { ProductRepository } from '../repositories/product.repository';
-import { ProductVarientService } from './productVarient.service';
-import { DitemRepository } from '../repositories/dItem.repository';
-import { ProductVarientRepository } from '../repositories/varients.repository';
-import { In } from 'typeorm';
+import { DataSource } from 'typeorm';
 
 @injectable()
 export class PostReturnByCustomerService {
   constructor(
     @inject(TYPES.PostReturnByCustomerRepository)
     private readonly postReturnByCustomerRepository: PostReturnByCustomerRepository,
-
     @inject(TYPES.DeliveryChallanRepository)
     private readonly deliveryChallanRepository: DeliveryChallanRepository,
-    @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,
+    @inject(TYPES.AuditLogService) 
+    private readonly auditLogService: AuditLogService,
     @inject(TYPES.DocumentbService)
     private readonly documentbService: DocumentbService,
-    @inject(TYPES.ProductVarientService)
-    private readonly productVarientService: ProductVarientService,
     @inject(TYPES.DocDoubleApproverService)
     private readonly docDoubleApproverService: DocDoubleApproverService,
-    @inject(TYPES.ProductRepository)
-    private readonly productRepository: ProductRepository,
-    // @inject(TYPES.ProductVarientsRepository)
-    // private readonly variantRepository: ProductVarientsRepository,
-     @inject(TYPES.ProductVarientRepository)
-                private productVarientsRepository: ProductVarientRepository,
-    // @inject(TYPES.ApprovalFlowRepository)
-    //     private approvalFlowRepo: ApprovalFlowRepository,
-    @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService,
-    @inject(TYPES.InventoryStockRepository)
-    private readonly inventoryStockRepository: InventoryStockRepository,
-    @inject(TYPES.DitemRepository)
-    private readonly deliveryChallanProductRepository: DitemRepository,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource
   ) {}
 
-  //TODO: Create
+  /**
+   * Creates a customer return record with optimized transaction handling
+   * 
+   * LOGIC FLOW:
+   * 1. Validates delivery challan exists and checks if return already created
+   * 2. Validates that returned products match delivery challan products
+   * 3. Creates return record with returned products (cascade saves products automatically)
+   * 4. Marks delivery challan as returned and sets isReturnByCustomerCreated flag
+   * 5. Updates delivery challan items with return/reject/accept quantities
+   * 6. Creates approval document and starts workflow
+   * 7. Logs the creation event
+   * 
+   * BUSINESS RULES:
+   * - Only ONE return can be created per delivery challan
+   * - Returned products must match delivery challan products
+   * - AcceptedQty = DeliveryChallanQty - ReturnedQty - RejectedQty
+   * 
+   * OPTIMIZATIONS:
+   * - Uses single transaction for data consistency
+   * - Cascade save for returnedProducts (no manual save needed)
+   * - Efficient SQL aggregation for quantity updates
+   */
+  async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any> {
-
-  // 1️⃣ Validate required input
-  if (!returnData.deliveryChallanNo) {
-    throw new Error('Delivery Challan number is required');
-  }
-returnData.isChanged=true;
-  // 2️⃣ Fetch challan
-  const deliveryChallan = await this.deliveryChallanRepository.findOne({
-    where: { id: returnData.deliveryChallanNo },
-    relations: ['deliveryChallanProducts', 'deliveryChallanProducts.variant'],
-  });
-
-  if (!deliveryChallan) {
-    throw new Error('Delivery Challan not found');
-  }
-
-  // 3️⃣ Normalize variants input
-  let variantIds: string[] = [];
-
-  if (Array.isArray(returnData.variants)) {
-    variantIds = returnData.variants;
-  } else if (returnData.variants) {
-    variantIds = [returnData.variants];
-  }
-
-  // 4️⃣ Fetch variant entities
-  const variants = await this.productVarientsRepository.find({
-    where: { id: In(variantIds) },
-    relations: ['product'],
-  });
-
-  // 5️⃣ Extract product IDs
-  const productIds = variants.map(v => v.product?.id).filter(Boolean);
-
-  // 6️⃣ Create return entity
-  const newReturn = this.postReturnByCustomerRepository.create({
-    ...returnData,
-    variants: variants.map(v => ({ id: v.id })),
-    products: productIds.map(id => ({ id })),
-  });
-
-  // 7️⃣ Save challan & mark as returned
-  deliveryChallan.isReturned = true;
-  await this.deliveryChallanRepository.save(deliveryChallan);
-
-  // 8️⃣ Save return record
-  const savedNewReturn = await this.postReturnByCustomerRepository.save(newReturn);
-  const savedReturnEntity = Array.isArray(savedNewReturn)
-    ? savedNewReturn[0]
-    : savedNewReturn;
-
-  // 9️⃣ Create approval document
-  const document = await this.documentbService.createDocument({
-    type: DocumentTypeEnum.RETURN_BY_CUSTOMER,
-    docDef: DocDefEnum.OPERATION,
-    status: DocumentStatus.HOLD,
-    remarks: 'Document auto-created with RBC',
-    lastActionBy: { id: requestedBy },
-    document_type_id: savedReturnEntity.id,
-  });
-
-  // 🔟 Start approval flow
-  await this.documentbService.startApprovalFlow(document.id);
-
-  // 1️⃣1️⃣ Update original challan product rows with returned & rejected qty
-  await this.updateDeliveryChallanItemsWithReturns(
-    returnData.deliveryChallanNo,
-    savedReturnEntity.returnedProducts
-  );
-
-  // 1️⃣2️⃣ Log the creation
-  UserLogger.logRfpaCreated(savedReturnEntity.id, requestedBy, clientIp);
-
-  // 1️⃣3️⃣ Return final saved entity
-  return savedReturnEntity;
-}
-
-/**
- * Update delivery challan items with return data
- * This updates the returnedQty, rejectedQty, and acceptedQty fields
- */
-private async updateDeliveryChallanItemsWithReturns(
-    deliveryChallanId: string,
-    returnedProducts: any[]
-  ): Promise<void> {
-    const deliveryChallan = await this.deliveryChallanRepository.findOne({
-      where: { id: deliveryChallanId },
-      relations: [
-        'deliveryChallanProducts',
-        'deliveryChallanProducts.productName',
-        'deliveryChallanProducts.variant',
-      ],
-    });
-
-    if (!deliveryChallan) {
-      console.warn(`Delivery challan ${deliveryChallanId} not found for return update`);
-      return;
-    }
-
-    // Fetch ALL returns for this delivery challan (not just the current one)
-    const allReturns = await this.postReturnByCustomerRepository.find({
-      where: { deliveryChallanNo: { id: deliveryChallanId } },
-      relations: [
-        'returnedProducts',
-        'returnedProducts.productName',
-        'returnedProducts.variant',
-      ],
-    });
-
-    // Flatten all returned products from all returns
-    const allReturnedProducts = allReturns.flatMap(ret => ret.returnedProducts || []);
-
-    // Reset all return/reject quantities first for this challan
-    for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
-      dcProduct.returnedQty = 0;
-      dcProduct.rejectedQty = 0;
-      dcProduct.acceptedQty = Number(dcProduct.quantity || 0);
-    }
-
-    // Update each delivery challan product with aggregated return data
-    for (const dcProduct of deliveryChallan.deliveryChallanProducts) {
-      // Find ALL matching returned products across all returns
-      const matchingReturns = allReturnedProducts.filter(rp => {
-        const rpProductId = typeof rp.productName === 'object' ? rp.productName.id : rp.productName;
-        const rpVariantId = typeof rp.variant === 'object' ? rp.variant?.id : rp.variant;
-
-        return (
-          rpProductId === dcProduct.productName?.id &&
-          (rpVariantId === dcProduct.variant?.id || (!rpVariantId && !dcProduct.variant))
-        );
-      });
-
-      if (matchingReturns.length > 0) {
-        // Aggregate return values from ALL returns
-        const totalReturnedQty = matchingReturns.reduce(
-          (sum, rp) => sum + Number(rp.returnedQty || 0), 0
-        );
-        const totalRejectedQty = matchingReturns.reduce(
-          (sum, rp) => sum + Number(rp.rejectedQty || 0), 0
-        );
-
-        // Update the delivery challan product
-        dcProduct.returnedQty = totalReturnedQty;
-        dcProduct.rejectedQty = totalRejectedQty;
-
-        // Calculate accepted quantity (original quantity - returned - rejected)
-        const originalQty = Number(dcProduct.quantity || 0);
-        dcProduct.acceptedQty = originalQty - totalReturnedQty - totalRejectedQty;
-
-        console.log(`✅ Updated DC product ${dcProduct.productName?.name}: ${totalReturnedQty} returned, ${totalRejectedQty} rejected, ${dcProduct.acceptedQty} accepted`);
+    try {
+      // 1️⃣ Validate required input
+      if (!returnData.deliveryChallanNo) {
+        throw new Error('Delivery Challan number is required');
       }
 
-      // Save the updated product
-      await this.deliveryChallanProductRepository.save(dcProduct);
+      // 2️⃣ Fetch and validate delivery challan with products
+      const deliveryChallan = await queryRunner.manager.findOne(
+        this.deliveryChallanRepository.target, 
+        { 
+          where: { id: returnData.deliveryChallanNo },
+          relations: ['deliveryChallanProducts', 'deliveryChallanProducts.productName', 'deliveryChallanProducts.variant']
+        }
+      );
+
+      if (!deliveryChallan) {
+        throw new Error('Delivery Challan not found');
+      }
+
+      // 3️⃣ Check if return already created for this delivery challan
+      if ((deliveryChallan as any).isReturnByCustomerCreated) {
+        throw new Error('Return By Customer has already been created for this Delivery Challan');
+      }
+
+      // 4️⃣ Validate that returned products match delivery challan products
+      if (returnData.returnedProducts && returnData.returnedProducts.length > 0) {
+        for (const returnProduct of returnData.returnedProducts) {
+          const productId = typeof returnProduct.productName === 'object' 
+            ? returnProduct.productName.id 
+            : returnProduct.productName;
+          const variantId = returnProduct.variant 
+            ? (typeof returnProduct.variant === 'object' ? returnProduct.variant.id : returnProduct.variant)
+            : null;
+
+          // Find matching product in delivery challan
+          const matchingProduct = deliveryChallan.deliveryChallanProducts.find(dcProduct => {
+            const dcProductId = dcProduct.productName?.id;
+            const dcVariantId = dcProduct.variant?.id || null;
+            
+            return dcProductId === productId && dcVariantId === variantId;
+          });
+
+          if (!matchingProduct) {
+            throw new Error(
+              `Product ${productId}${variantId ? ` with variant ${variantId}` : ''} does not exist in the Delivery Challan`
+            );
+          }
+
+          // Validate quantities
+          const originalQty = Number(matchingProduct.quantity || 0);
+          const returnedQty = Number(returnProduct.returnedQty || 0);
+          const rejectedQty = Number(returnProduct.rejectedQty || 0);
+
+          if (returnedQty + rejectedQty > originalQty) {
+            throw new Error(
+              `Total returned (${returnedQty}) and rejected (${rejectedQty}) quantity cannot exceed original quantity (${originalQty}) for product ${productId}`
+            );
+          }
+        }
+      }
+
+      // 5️⃣ Create return entity with returnedProducts (cascade will auto-save products)
+      const newReturn = queryRunner.manager.create(
+        this.postReturnByCustomerRepository.target, 
+        {
+          deliveryChallanNo: returnData.deliveryChallanNo,
+          companyName: returnData.companyName,
+          location: returnData.location,
+          customerName: returnData.customerName,
+          date: returnData.date,
+          remark: returnData.remark,
+          returnedProducts: returnData.returnedProducts?.map((product: any) => ({
+            productName: product.productName,
+            variant: product.variant || null,
+            saleUoM: product.saleUoM,
+            unitPrice: product.unitPrice,
+            returnedQty: product.returnedQty,
+            returnedQtyAmt: product.returnedQtyAmt,
+            returnedPackingMaterialWt: product.returnedPackingMaterialWt,
+            returnedGrossWt: product.returnedGrossWt,
+            returnedNetWt: product.returnedNetWt,
+            rejectedQty: product.rejectedQty,
+            rejectedQtyAmt: product.rejectedQtyAmt,
+            rejectedPackingMaterialWt: product.rejectedPackingMaterialWt,
+            rejectedGrossWt: product.rejectedGrossWt,
+            rejectedNetWt: product.rejectedNetWt,
+          })) || [],
+        } as any
+      );
+
+      // 6️⃣ Mark challan as returned and set isReturnByCustomerCreated flag
+      deliveryChallan.isReturned = true;
+      (deliveryChallan as any).isReturnByCustomerCreated = true;
+      
+      const [, savedReturn] = await Promise.all([
+        queryRunner.manager.save(deliveryChallan),
+        queryRunner.manager.save(newReturn)
+      ]);
+
+      const savedReturnEntity = Array.isArray(savedReturn) ? savedReturn[0] : savedReturn;
+
+      // 7️⃣ Update delivery challan items with aggregated return quantities
+      await this.updateDeliveryChallanItemsWithReturns(returnData.deliveryChallanNo, queryRunner);
+
+      // 8️⃣ Create document and start approval flow
+      const document = await this.documentbService.createDocument({
+        type: DocumentTypeEnum.RETURN_BY_CUSTOMER,
+        docDef: DocDefEnum.OPERATION,
+        status: DocumentStatus.HOLD,
+        remarks: 'Document auto-created with RBC',
+        lastActionBy: { id: requestedBy },
+        document_type_id: savedReturnEntity.id,
+      });
+
+      await this.documentbService.startApprovalFlow(document.id);
+
+      // 9️⃣ Log creation
+      UserLogger.logRfpaCreated(savedReturnEntity.id, requestedBy, clientIp);
+
+      await queryRunner.commitTransaction();
+      return savedReturnEntity;
+
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Updates delivery challan items with aggregated return quantities
+   * 
+   * LOGIC FLOW:
+   * 1. Aggregates all returned/rejected quantities per product+variant using SQL GROUP BY
+   * 2. Bulk updates all delivery challan items with calculated quantities
+   * 3. Calculates acceptedQty = originalQty - returnedQty - rejectedQty
+   * 
+   * OPTIMIZATIONS:
+   * - Single SQL query for aggregation (vs N queries)
+   * - Handles NULL variants correctly
+   * - Uses parameterized queries to prevent SQL injection
+   * - Efficient DECIMAL casting for accurate calculations
+   * 
+   * @param deliveryChallanId - The delivery challan ID to update items for
+   * @param queryRunner - Optional query runner for transaction support
+   */
+  private async updateDeliveryChallanItemsWithReturns(
+    deliveryChallanId: string,
+    queryRunner?: any
+  ): Promise<void> {
+    // Define aggregation result type
+    interface AggregatedReturn {
+      productId: string;
+      variantId: string | null;
+      totalReturnedQty: string;
+      totalRejectedQty: string;
+    }
+
+    const manager = queryRunner ? queryRunner.manager : this.dataSource;
+
+    // 1️⃣ Aggregate return quantities using raw SQL for performance
+    const aggregatedReturns = await (queryRunner ? queryRunner.query : this.dataSource.query).call(
+      queryRunner || this.dataSource,
+      `
+      SELECT 
+        rp."product_id" as "productId",
+        rp."varient_id" as "variantId",
+        SUM(CAST(COALESCE(rp."returnedQty", 0) AS DECIMAL)) as "totalReturnedQty",
+        SUM(CAST(COALESCE(rp."rejectedQty", 0) AS DECIMAL)) as "totalRejectedQty"
+      FROM "returned_products_by_customer" rp
+      INNER JOIN "return_by_customer" prc ON rp."postReturnId" = prc."id"
+      WHERE prc."delivery_challan_id" = $1
+      GROUP BY rp."product_id", rp."varient_id"
+    `, [deliveryChallanId]);
+
+    if (!aggregatedReturns || aggregatedReturns.length === 0) {
+      return; // No returns to process
+    }
+
+    // 2️⃣ Execute bulk update for each product/variant combination
+    for (const agg of aggregatedReturns) {
+      const returnedQty = Number(agg.totalReturnedQty || 0);
+      const rejectedQty = Number(agg.totalRejectedQty || 0);
+
+      const queryBuilder = queryRunner 
+        ? queryRunner.manager.createQueryBuilder()
+        : this.dataSource.createQueryBuilder();
+
+      await queryBuilder
+        .update('item')
+        .set({
+          returnedQty,
+          rejectedQty,
+          acceptedQty: () => `CAST(COALESCE(quantity, 0) AS DECIMAL) - ${returnedQty} - ${rejectedQty}`,
+        })
+        .where('product_id = :productId', { productId: agg.productId })
+        .andWhere(
+          agg.variantId 
+            ? 'varient_id = :variantId' 
+            : 'varient_id IS NULL',
+          agg.variantId ? { variantId: agg.variantId } : {}
+        )
+        .andWhere('deliveryChallanId = :challanId', { challanId: deliveryChallanId })
+        .execute();
     }
   }
 
@@ -557,8 +605,6 @@ private async updateDeliveryChallanItemsWithReturns(
       throw new Error(`PostReturnByCustomer with ID ${id} not found`);
     }
 
-    const oldData = { ...postReturn };
-
     if (returnData?.returnedProducts) {
       for (const updatedProduct of returnData.returnedProducts) {
         const existingProduct = postReturn.returnedProducts.find(
@@ -581,8 +627,7 @@ private async updateDeliveryChallanItemsWithReturns(
     // Update delivery challan items with new return/reject quantities
     if (postReturn.deliveryChallanNo?.id) {
       await this.updateDeliveryChallanItemsWithReturns(
-        postReturn.deliveryChallanNo.id,
-        updatedPostReturn.returnedProducts
+        postReturn.deliveryChallanNo.id
       );
     }
 
@@ -590,17 +635,6 @@ private async updateDeliveryChallanItemsWithReturns(
     UserLogger.logRfpaUpdated(id, updatedBy, clientIp);
 
     return updatedPostReturn;
-  }
-
-  // Helper method to extract user ID consistently
-  private extractUserId(user: any): string {
-    if (typeof user === 'string') {
-      return user;
-    }
-    if (user && typeof user === 'object') {
-      return user.id || user.userId || 'System';
-    }
-    return 'System';
   }
 
   // Admin functionality: Get audit logs for a specific user

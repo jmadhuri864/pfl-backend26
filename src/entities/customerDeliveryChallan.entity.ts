@@ -13,14 +13,14 @@ export class CustomerDeliveryChallan extends DeliveryChallanPurchase {
     cascade: true,
   })
   @JoinColumn({ name: 'customer_id' })
-  customerName: Customer;
+  customerName: Customer;   //
 
   @Column({ nullable: true })
-  poNumber: string;
+  poNumber: string;         //
 
   @ManyToOne(() => Branches, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'branch_id' })
-  fromLocation: Branches;
+  fromLocation: Branches;  //
   
   @ManyToOne(() => Address, {
     nullable: true,
@@ -28,7 +28,7 @@ export class CustomerDeliveryChallan extends DeliveryChallanPurchase {
     cascade: true,
   })
   @JoinColumn({ name: 'billingAddres_id' })
-  billingAddress: Address;
+  billingAddress: Address;  //
 
   @ManyToOne(() => Address, {
     nullable: true,
@@ -36,5 +36,11 @@ export class CustomerDeliveryChallan extends DeliveryChallanPurchase {
     cascade: true,
   })
   @JoinColumn({ name: 'deliveryAddres_id' })
-  deliveryAddress: Address;
+  deliveryAddress: Address; //
+
+  @Column({ default: false })
+  isInvoiceCreated: boolean;
+
+  @Column({ default: false })
+  isReturnByCustomerCreated: boolean;
 }
