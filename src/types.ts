@@ -457,7 +457,9 @@ RegistrationReportsController:Symbol.for("RegistrationReportsController"),
   ReturnToVendorRepository:Symbol.for("ReturnToVendorRepository"),
   ReturnToVendorController:Symbol.for("ReturnToVendorController"),
   FinalInvoiceService:Symbol.for("FinalInvoiceService"),
-  FinalInvoiceController:Symbol.for("FinalInvoiceController")
+  FinalInvoiceController:Symbol.for("FinalInvoiceController"),
+  FinalInvoiceReportController:Symbol.for("FinalInvoiceReportController"),
+  FinalInvoiceReportService:Symbol.for("FinalInvoiceReportService")
 
 };
 

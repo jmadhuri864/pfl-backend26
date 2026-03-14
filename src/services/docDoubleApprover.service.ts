@@ -225,7 +225,7 @@ export class DocDoubleApproverService {
    async getDocumentById(id: string): Promise<any> {
     try {
       //TODO: By Shri
-      console.log("In document double service");
+      console.log("In document double service",id);
       
       const document = await this.documentbRepository.findOne({
         where: { id },

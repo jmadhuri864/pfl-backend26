@@ -12,6 +12,8 @@ import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliv
 import { DocumentbService } from './documentb.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
+import { DocDoubleApproverService } from './docDoubleApprover.service';
+import { toWords } from 'number-to-words';
 
 @injectable()
 export class FinalInvoiceService {
@@ -25,6 +27,8 @@ export class FinalInvoiceService {
     private challanRepository: CustomerDeliveryChallanRepository,
     @inject(TYPES.DocumentbService)
     private documentService: DocumentbService,
+    @inject(TYPES.DocDoubleApproverService)
+    private docDoubleApproverService: DocDoubleApproverService,
   ) {
     this.invoiceRepository = this.dataSource.getRepository(Invoice);
     this.invoiceProductRepository = this.dataSource.getRepository(InvoiceProduct);
@@ -36,6 +40,7 @@ export class FinalInvoiceService {
     await queryRunner.startTransaction();
 
     try {
+      console.log("requested by id in the create service",requestedBy)
       // Fetch delivery challan with all related data
       const deliveryChallan = await queryRunner.manager.findOne(this.challanRepository.target, {
         where: { id: deliveryChallanId },
@@ -293,35 +298,85 @@ export class FinalInvoiceService {
   }
 
   public async getByIdForView(id: string): Promise<any> {
-    const invoice = await this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.invoiceProducts', 'products')
-      .leftJoinAndSelect('invoice.companyName', 'companyName')
-      .leftJoinAndSelect('invoice.deliveryChallan', 'deliveryChallan')
-      .leftJoinAndSelect('invoice.customerName', 'customerName')
-      .leftJoinAndSelect('invoice.fromLocation', 'fromLocation')
-      .leftJoinAndSelect('invoice.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('invoice.deliveryAddress', 'deliveryAddress')
-      .leftJoinAndSelect('invoice.createdBy', 'createdBy')
-      .leftJoinAndSelect('products.productName', 'productName')
-      .leftJoinAndSelect('products.variant', 'variant')
-      .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .where('invoice.id = :id', { id })
-      .getOne();
+    const document = await this.docDoubleApproverService.getDocumentById(id);
+    console.log(document);
+
+    const invoiceId = document.documentTypeId;
+    console.log(invoiceId)
+
+    if (!invoiceId) {
+      throw new AppError(400, `Invoice with document ID ${id} not found`);
+    }
+
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+      relations: [
+        'invoiceProducts',
+        'invoiceProducts.productName',
+        'invoiceProducts.variant',
+        'invoiceProducts.saleUoM',
+        'companyName',
+        'companyName.bankDetails',
+        'deliveryChallan',
+        'customerName',
+        'customerName.statutoryDetails',
+        'fromLocation',
+        'billingAddress',
+        'deliveryAddress',
+        'createdBy',
+      ],
+    });
 
     if (!invoice) {
-      throw new AppError(400, `Invoice with id ${id} not found`);
+      throw new AppError(400, `Invoice with ID ${invoiceId} not found`);
     }
 
     const { createdDate, createdTime } = formatDateTime(invoice.createdAt);
 
-    const formattedInvoice = {
+    // Get customer contact number
+    const customerContactNo = invoice.customerName?.primaryContactNo || invoice.customerName?.secondaryContactNo || null;
+
+    // Get GSTN and PAN from statutory details
+    const gstn = invoice.customerName?.statutoryDetails?.gstn || null;
+    const panNo = invoice.customerName?.statutoryDetails?.panNo || null;
+
+    // Get company bank details
+    const companyBankDetails = invoice.companyName?.bankDetails && invoice.companyName.bankDetails.length > 0 
+      ? invoice.companyName.bankDetails[0] 
+      : null;
+
+    return {
       id: invoice.id,
       invoiceNo: invoice.invoiceNo,
       invoiceDate: invoice.invoiceDate,
-      companyName: invoice.companyName?.name || null,
+      companyName: {
+        id: invoice.companyName?.id || null,
+        name: invoice.companyName?.name || null,
+        officeAddress: invoice.companyName?.officeAddress || null,
+        gstNo: invoice.companyName?.gstNo || null,
+        fassaiNo: invoice.companyName?.fassaiNo || null,
+        bankDetails: companyBankDetails
+          ? {
+              bankName: companyBankDetails.bankName || null,
+              accountNo: companyBankDetails.accountNo || null,
+              branch: companyBankDetails.branch || null,
+              ifscCode: companyBankDetails.ifscCode || null,
+            }
+          : null,
+      },
+      customer:{
+        id:invoice.customerName?.id|| null,
+         customerName: invoice.customerName?.organisationName || null,
+      customerCode: invoice.customerName?.customerCode || null,
+      contactNo: customerContactNo|| null,
+      gstn: gstn|| null,
+      panNo: panNo|| null,
+
+      },
+      createdDate: createdDate,
+      createdTime: createdTime,
       deliveryChallan: invoice.deliveryChallan?.challanNo || null,
-      customerName: invoice.customerName?.organisationName || null,
+     
       poNumber: invoice.poNumber,
       fromLocation: invoice.fromLocation?.name || null,
       billingAddress: invoice.billingAddress
@@ -359,8 +414,6 @@ export class FinalInvoiceService {
       discount: invoice.discount,
       freight: invoice.freight,
       otherCharges: invoice.otherCharges,
-      createdDate,
-      createdTime,
       createdBy: invoice.createdBy
         ? `${invoice.createdBy.firstName} ${invoice.createdBy.lastName}`
         : null,
@@ -369,7 +422,7 @@ export class FinalInvoiceService {
         productName: product.productName?.name || null,
         variant: product.variant?.variantName || null,
         quantity: product.quantity,
-        acceptedQty: product.acceptedQty,
+        acceptedQty: (product.quantity || 0) - (product.returnedQty || 0),
         rejectedQty: product.rejectedQty,
         returnedQty: product.returnedQty,
         saleUoM: product.saleUoM?.unit || null,
@@ -380,59 +433,133 @@ export class FinalInvoiceService {
         hsnCode: product.hsnCode,
         description: product.description,
       })) || [],
+      overAllStatus: document.overAllStatus,
+      approvalSummary: document.approvalSummary,
+      documentId: document.id,
     };
-
-    return { data: formattedInvoice };
   }
 
   public async getAll(
     queryOptions: PaginationOptions,
     userId: string,
   ): Promise<any> {
-    const queryBuilder = this.invoiceRepository
-      .createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.invoiceProducts', 'products')
-      .leftJoinAndSelect('invoice.companyName', 'companyName')
-      .leftJoinAndSelect('invoice.deliveryChallan', 'deliveryChallan')
-      .leftJoinAndSelect('invoice.customerName', 'customerName')
-      .leftJoinAndSelect('invoice.fromLocation', 'fromLocation')
-      .leftJoinAndSelect('invoice.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('invoice.deliveryAddress', 'deliveryAddress')
-      .leftJoinAndSelect('invoice.createdBy', 'createdBy');
+    const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+      userId,
+      DocumentTypeEnum.FINAL_INVOICE,
+      queryOptions
+    );
 
-    const invoices = await buildQuery(queryBuilder, queryOptions, 'invoice');
+    const { search } = queryOptions;
+    const typedDocuments = data as any[];
+    const activeDocuments = typedDocuments.filter(doc => !doc.isDeleted);
+    
+    for (const doc of activeDocuments) {
+      if (!doc.document_type_id) continue;
+      try {
+        doc.relatedData = await this.invoiceRepository.findOne({
+          where: { id: doc.document_type_id },
+          relations: [
+            'invoiceProducts',
+            'companyName',
+            'deliveryChallan',
+            'customerName',
+            'fromLocation',
+            'billingAddress',
+            'deliveryAddress',
+            'createdBy',
+          ],
+        });
+      } catch {
+        doc.relatedData = null;
+      }
+    }
 
-    const response = {
-      data: invoices.data.map((invoice) => {
-        const { createdDate, createdTime } = formatDateTime(invoice.createdAt);
+    let relatedDataOnly = activeDocuments
+      .filter((doc) => doc.relatedData)
+      .map((doc) => ({
+        documentId: doc.id,
+        overAllStatus: doc.status,
+        createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
+        createdDate: formatDateTime(doc.createdAt).createdDate,
+        createdTime: formatDateTime(doc.createdAt).createdTime,
+        
+        id: doc.relatedData.id,
+        invoiceNo: doc.relatedData.invoiceNo,
+        invoiceDate: doc.relatedData.invoiceDate,
+        companyName: doc.relatedData.companyName?.name || null,
+        deliveryChallan: doc.relatedData.deliveryChallan?.challanNo || null,
+        customerName: doc.relatedData.customerName?.organisationName || null,
+        poNumber: doc.relatedData.poNumber,
+        fromLocation: doc.relatedData.fromLocation?.name || null,
+        totalProductAmount: doc.relatedData.totalProductAmount,
+        netProductWeight: doc.relatedData.netProductWeight,
+        totalAmount: doc.relatedData.totalAmount,
+      deliveryAddress:
+(doc.relatedData.deliveryAddress?.adress1 || "") +
+(doc.relatedData.deliveryAddress?.adress2 || "") + " " +
+(doc.relatedData.deliveryAddress?.location || "") + " " +
+(doc.relatedData.deliveryAddress?.city || "") + " " +
+(doc.relatedData.deliveryAddress?.state || "") + " " +
+(doc.relatedData.deliveryAddress?.pincode || "") || null,
 
-        return {
-          id: invoice.id,
-          invoiceNo: invoice.invoiceNo,
-          invoiceDate: invoice.invoiceDate,
-          companyName: invoice.companyName?.name || null,
-          deliveryChallan: invoice.deliveryChallan?.challanNo || null,
-          customerName: invoice.customerName?.organisationName || null,
-          poNumber: invoice.poNumber,
-          fromLocation: invoice.fromLocation?.name || null,
-          totalProductAmount: invoice.totalProductAmount,
-          netProductWeight: invoice.netProductWeight,
-          totalAmount: invoice.totalAmount,
-          cgst: invoice.cgst,
-          sgst: invoice.sgst,
-          igst: invoice.igst,
-          taxAmount: invoice.taxAmount,
-          createdDate,
-          createdTime,
-          createdBy: invoice.createdBy
-            ? `${invoice.createdBy.firstName} ${invoice.createdBy.lastName}`
-            : null,
-        };
-      }),
-      meta: invoices.meta,
+billingAddress:
+(doc.relatedData.billingAddress?.adress1 || "") +
+(doc.relatedData.billingAddress?.adress2 || "") + " " +
+(doc.relatedData.billingAddress?.location || "") + " " +
+(doc.relatedData.billingAddress?.city || "") + " " +
+(doc.relatedData.billingAddress?.state || "") + " " +
+(doc.relatedData.billingAddress?.pincode || "") || null,
+       
+      }));
+
+    // 🔍 Deep search helper
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') {
+        return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      }
+      return String(obj);
     };
 
-    return response;
+    // 🔍 Apply search filter
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
+    }
+
+    // 🔄 Sorting
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+
+        if (!isNaN(valA) && !isNaN(valB)) {
+          return (Number(valA) - Number(valB)) * sortOrder;
+        }
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
+
+    return {
+      data: relatedDataOnly,
+      meta: {
+        total: meta.total,
+        page: meta.page,
+        pages: meta.pages,
+      },
+    };
   }
 
   async update(id: string, data: any): Promise<any> {
@@ -467,7 +594,6 @@ export class FinalInvoiceService {
             'customerName.billingDetails',
             'customerName.deliveryDetails',
             'customerName.statutoryDetails',
-           
             'fromLocation',
             'fromLocation.address',
             'billingAddress',
@@ -541,17 +667,33 @@ export class FinalInvoiceService {
           branch: bankDetails?.bankBranch || bankDetails?.branch || '',
         };
         
+        // Get delivery challan to calculate acceptedQty with returns
+        const deliveryChallan = invoice.deliveryChallan;
         
-        // Format invoice products
-        const items = invoice.invoiceProducts?.map((product) => ({
-
-          productName: product.productName?.name || '',
-          variantName: product.variant?.variantName || '',
-          qty: product.quantity || 0,
-          rate: product.unitPrice || 0,
-          amt: product.amount || 0,
-          uom: product.saleUoM?.unit || '',
-        })) || [];
+        // Format invoice products with acceptedQty = qty - returnedQty (if returns exist)
+        const items = invoice.invoiceProducts?.map((product) => {
+          // If returnedQty exists and is > 0, calculate acceptedQty = qty - returnedQty
+          // Otherwise, use the original qty
+          const returnedQty = product.returnedQty || 0;
+          const acceptedQty = returnedQty > 0 ? (product.quantity || 0) - returnedQty : (product.quantity || 0);
+          // Calculate amount based on acceptedQty
+          const amt = acceptedQty * (product.unitPrice || 0);
+          
+          return {
+            productName: product.productName?.name || '',
+            variantName: product.variant?.variantName || '',
+            qty: product.quantity || 0,
+            acceptedQty: acceptedQty,
+            rate: product.unitPrice || 0,
+            amt: amt,
+            uom: product.saleUoM?.unit || '',
+          };
+        }) || [];
+        
+        // Recalculate total amount based on updated items
+        const totalAmt = items.reduce((sum, item) => sum + item.amt, 0);
+        const amountInWords = toWords(totalAmt).toUpperCase();
+        
 console.log(items)
         // Format date safely
         let invoiceDate = '';
@@ -589,8 +731,8 @@ console.log(items)
           gstn: customer?.statutoryDetails?.gstn || '',
           panNo: customer?.statutoryDetails?.panNo || '',
           items: items,
-          totalAmt: invoice.totalAmount || 0,
-          amountInWords: invoice.totalAmtInWords || '',
+          totalAmt: totalAmt,
+          amountInWords: amountInWords,
           bankDetails: mappedBankDetails,
         };
 

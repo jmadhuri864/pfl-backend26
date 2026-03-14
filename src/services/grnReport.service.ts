@@ -61,6 +61,9 @@ export class GrnReportService {
         if (operator === '>') return totalQty > targetQty;
         if (operator === '<') return totalQty < targetQty;
         if (operator === '=') return totalQty === targetQty;
+        if (operator === '>=') return totalQty >= targetQty;
+        if (operator === '<=') return totalQty <= targetQty;
+        if (operator === '!=') return totalQty !== targetQty;
         return true;
       });
     }
@@ -225,12 +228,17 @@ export class GrnReportService {
     // Total amount filter with operator
     if (filters.totalAmount !== undefined && filters.totalAmountOperator) {
       const operator = filters.totalAmountOperator;
-      if (operator === '>') {
-        queryBuilder.andWhere('grn.totalAmt > :totalAmount', { totalAmount: filters.totalAmount });
-      } else if (operator === '<') {
-        queryBuilder.andWhere('grn.totalAmt < :totalAmount', { totalAmount: filters.totalAmount });
-      } else if (operator === '=') {
-        queryBuilder.andWhere('grn.totalAmt = :totalAmount', { totalAmount: filters.totalAmount });
+      const operatorMap: Record<string, string> = {
+        '>': '>',
+        '<': '<',
+        '=': '=',
+        '>=': '>=',
+        '<=': '<=',
+        '!=': '!=',
+      };
+      const sqlOp = operatorMap[operator];
+      if (sqlOp) {
+        queryBuilder.andWhere(`grn.totalAmt ${sqlOp} :totalAmount`, { totalAmount: filters.totalAmount });
       }
     }
 

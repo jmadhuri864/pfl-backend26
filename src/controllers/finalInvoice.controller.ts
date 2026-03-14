@@ -114,7 +114,7 @@ export class FinalInvoiceController {
       ControllerLogger.logView('Final Invoice', id, req, res);
       res.status(200).json({
         status: 'success',
-        data: invoice.data,
+        data: invoice,
       });
     } catch (err) {
       ControllerLogger.logError('Get Final Invoice for view', err, req, res);
@@ -122,45 +122,7 @@ export class FinalInvoiceController {
     }
   }
 
-  @httpGet('/update/:id')
-  public async getInvoiceByIdForUpdate(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const invoice = await this.finalInvoiceService.getByIdForUpdate(id);
-
-      if (!invoice) {
-        ControllerLogger.logNotFound('Final Invoice', id, req, res);
-        return next(new AppError(404, 'Final invoice not found'));
-      }
-
-      // 🔔 Send notification for invoice update view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const invoiceNo = invoice.data?.invoiceNo || 'Invoice';
-          await this.notificationService.createNoti(
-            `Final invoice "${invoiceNo}" opened for editing`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Final invoice update view notification error:', notifError);
-      }
-
-      ControllerLogger.logView('Final Invoice (for update)', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: invoice.data,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Final Invoice for update', err, req, res);
-      next(err);
-    }
-  }
+  
 
   @httpGet('/')
   public async getAllInvoices(

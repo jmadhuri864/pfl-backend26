@@ -4,6 +4,7 @@ import {
   request,
   response,
   next,
+  httpGet,
 } from 'inversify-express-utils';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { inject } from 'inversify';
@@ -35,39 +36,16 @@ export class DeliveryChallanReportController {
     this.bucketName = process.env.DO_SPACES_BUCKET || 'your-bucket-name';
   }
 
-  @httpPost('/download')
-  async downloadDeliveryChallanReport(
-    @request() req: Request,
+@httpGet('/download')
+  async exportReport(@request() req: Request,
     @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const body: IDeliveryChallanReportDownloadRequest = req.body;
+    @next() next: NextFunction,) {
 
-      // Validate request
-      this.validateRequest(body, req, res, next);
+      try{
+        const buffer = await this.deliveryChallanReportService.generateDeliveryChallanReport(req.body);
 
-      // Transform request to filters
-      const filters = this.transformToFilters(body);
-
-      // Get logged-in user info
-      const userId = res.locals.user?.id;
-      const loggedInUser = userId ? res.locals.user : null;
-
-      // Generate Excel report
-      const excelBuffer = await this.deliveryChallanReportService.generateDeliveryChallanExcelReport(
-        filters, 
-        loggedInUser
-      );
-
-      if (!excelBuffer) {
-        ControllerLogger.logOperationFailed(
-          'Export', 
-          'Delivery Challan Report', 
-          'No data found for the given filters', 
-          req, 
-          res
-        );
+      if (!buffer) {
+        ControllerLogger.logOperationFailed('Export', 'Customer Deliver Challan Report', 'No data found for the given filters', req, res);
         return res.status(404).json({
           status: 'error',
           message: 'No data found for the given filters',
@@ -75,143 +53,56 @@ export class DeliveryChallanReportController {
       }
 
       // Upload to cloud and get URL
-      const fileUrl = await this.uploadToCloud(excelBuffer);
+      const fileUrl = await this.uploadToCloud(buffer);
 
       // Send notification
       await this.sendNotification(undefined, fileUrl, res);
 
-      ControllerLogger.logSuccess(
-        'Delivery Challan report stored in DigitalOcean Spaces', 
-        fileUrl, 
-        req, 
-        res
-      );
+      ControllerLogger.logSuccess('Customer Delivery Challan report stored in DigitalOcean Spaces', fileUrl, req, res);
 
       res.status(200).json({
         status: 'success',
-        message: 'Delivery Challan report generated and stored successfully',
+        message: 'Customer Delivery Challan report generated and stored successfully',
         data: { fileUrl },
       });
-    } catch (err) {
-      ControllerLogger.logError('Export Delivery Challan Report', err, req, res);
+      }catch(err){
+        ControllerLogger.logError('Export Excel to Spaces', err, req, res);
       next(err);
-    }
-  }
-
-  private validateRequest(
-    body: IDeliveryChallanReportDownloadRequest,
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void {
-    const { startDate, endDate } = body;
-
-    if (!startDate || !endDate) {
-      ControllerLogger.logValidationError(
-        'Export Delivery Challan Report', 
-        'Missing date range', 
-        req, 
-        res
-      );
-      throw new AppError(400, 'startDate and endDate are required');
-    }
-  }
-
-  private transformToFilters(body: IDeliveryChallanReportDownloadRequest): IDeliveryChallanReportFilters {
-    const {
-      startDate,
-      endDate,
-      company,
-      office,
-      customer,
-      fromLocation,
-      createdBy,
-      product,
-      challanNo,
-      grnNo,
-      approvalStatus,
-      requestingDepartment,
-      driverName,
-      vehicleNo,
-      licenseNo,
-      rmn,
-      receiverName,
-      totalProductAmount,
-      totalProductAmountOperator,
-      netProductWeight,
-      netProductWeightOperator,
-      invoiceGenerated,
-      invoiceType,
-      isReturned,
-    } = body;
-
-    return {
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      company: this.toArray(company),
-      office: this.toArray(office),
-      customer: this.toArray(customer),
-      fromLocation: this.toArray(fromLocation),
-      createdBy: this.toArray(createdBy),
-      product: this.toArray(product),
-      challanNo,
-      grnNo,
-      approvalStatus,
-      requestingDepartment,
-      driverName,
-      vehicleNo,
-      licenseNo,
-      rmn,
-      receiverName,
-      totalProductAmount,
-      totalProductAmountOperator,
-      netProductWeight,
-      netProductWeightOperator,
-      invoiceGenerated,
-      invoiceType,
-      isReturned,
-    };
-  }
-
-  private toArray(value: string | string[] | undefined): string[] | undefined {
-    if (!value) return undefined;
-    return Array.isArray(value) ? value : [value];
-  }
-
-  private async uploadToCloud(excelBuffer: Buffer): Promise<string> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `Delivery_Challan_Report_${timestamp}.xlsx`;
-    const s3Key = `reports/delivery-challan/${fileName}`;
-
-    const uploadParams = {
-      Bucket: this.bucketName,
-      Key: s3Key,
-      Body: excelBuffer,
-      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ContentDisposition: `attachment; filename="${fileName}"`,
-      ACL: 'public-read' as const,
-    };
-
-    await this.s3Client.send(new PutObjectCommand(uploadParams));
-
-    return `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${s3Key}`;
-  }
-
-  private async sendNotification(
-    employeeId: string | undefined, 
-    fileName: string, 
-    res: Response
-  ): Promise<void> {
-    try {
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Delivery Challan report stored in cloud: ${fileName}`,
-          userId
-        );
       }
-    } catch (error) {
-      console.log('Delivery Challan report notification error:', error);
-    }
+
+    
+
   }
+  private async uploadToCloud(excelBuffer: Buffer): Promise<string> {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `Customer_Delivery_Challan_Report_${timestamp}.xlsx`;
+      const s3Key = `reports/customer_challan/${fileName}`;
+  
+      const uploadParams = {
+        Bucket: this.bucketName,
+        Key: s3Key,
+        Body: excelBuffer,
+        ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ContentDisposition: `attachment; filename="${fileName}"`,
+        ACL: 'public-read' as const,
+      };
+  
+      await this.s3Client.send(new PutObjectCommand(uploadParams));
+  
+      return `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${s3Key}`;
+    }
+  
+    private async sendNotification(employeeId: string | undefined, fileName: string, res: Response): Promise<void> {
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Customer Delivery Challan report stored in cloud: ${fileName}`,
+            userId
+          );
+        }
+      } catch (error) {
+        console.log('Customer Delivery Challan report notification error:', error);
+      }
+    }
 }

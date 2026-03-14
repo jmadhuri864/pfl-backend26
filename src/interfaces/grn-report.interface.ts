@@ -31,9 +31,9 @@ export interface IGrnReportDownloadRequest {
 
   // Amount and quantity filters (optional)
   totalQuantity?: number;
-  totalQuantityOperator?: '>' | '<' | '=';
+  totalQuantityOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
   totalAmount?: number;
-  totalAmountOperator?: '>' | '<' | '=';
+  totalAmountOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
 
   // Approval filters (optional)
   verifiedBy?: string[];
@@ -77,9 +77,9 @@ export interface IGrnReportFilters {
   dueDateFrom?: Date;
   dueDateTo?: Date;
   totalQuantity?: number;
-  totalQuantityOperator?: '>' | '<' | '=';
+  totalQuantityOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
   totalAmount?: number;
-  totalAmountOperator?: '>' | '<' | '=';
+  totalAmountOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
   verifiedBy?: string[];
   approvedBy?: string[];
   status?: string;

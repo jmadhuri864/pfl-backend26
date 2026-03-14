@@ -2,794 +2,770 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliveryChallan.repository';
 import { IDeliveryChallanReportFilters } from '../interfaces/deliveryChallan-report.interface';
+import { DocumentbService } from './documentb.service';
+import { CompanyRepository } from '../repositories/company.repository';
+import { In } from 'typeorm';
+import { BranchessRepository } from '../repositories/branches.repository';
+import { CustomerRepository } from '../repositories/customer.repository';
+import { UserRepository } from '../repositories/user.repository';
+import { ProductRepository } from '../repositories/product.repository';
+import * as ExcelJS from 'exceljs';
+import { GrnRepository } from '../repositories/grn.repository';
 
 @injectable()
 export class DeliveryChallanReportService {
   constructor(
     @inject(TYPES.CustomerDeliveryChallanRepository) 
-    private readonly customerDeliveryChallanRepository: CustomerDeliveryChallanRepository
+    private readonly challanRepository: CustomerDeliveryChallanRepository,
+        @inject(TYPES.DocumentbService) 
+    private readonly documentbService: DocumentbService,
+      @inject(TYPES.CompanyRepository) 
+    private readonly companyRepository: CompanyRepository,
+      @inject(TYPES.BranchessRepository) 
+    private readonly branchesRepository: BranchessRepository,
+     @inject(TYPES.CustomerRepository) 
+    private readonly customerRepo: CustomerRepository,
+     @inject(TYPES.UserRepository) 
+    private readonly userRepository: UserRepository,
+     @inject(TYPES.ProductRepository) 
+    private readonly productRepository: ProductRepository,
+    @inject(TYPES.GrnRepository) 
+    private readonly grnRepository: GrnRepository,
+
+
+     
+    
+    
+
   ) {}
 
-  public async getReport(filters: IDeliveryChallanReportFilters): Promise<any> {
-    const queryBuilder = this.customerDeliveryChallanRepository
+  
+async generateDeliveryChallanReport(filter: any): Promise<Buffer> {
+    /*
+      ==========================
+      1) BUILD QUERY WITH FILTERS
+      ==========================
+    */
+
+let companyNames = 'All';
+let locationNames = 'All';
+let customerNames = 'All';
+let createdByNames = 'All';
+let productNames = 'All';
+let grnNos='All';
+
+    const qb = this.challanRepository
       .createQueryBuilder('dc')
-      .leftJoinAndSelect('dc.companyName', 'companyName')
-      .leftJoinAndSelect('dc.offices', 'offices')
-      .leftJoinAndSelect('dc.customerName', 'customerName')
-      .leftJoinAndSelect('dc.fromLocation', 'fromLocation')
-      .leftJoinAndSelect('dc.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('dc.deliveryAddress', 'deliveryAddress')
-      .leftJoinAndSelect('dc.grnNo', 'grnNo')
-      .leftJoinAndSelect('dc.deliveryChallanProducts', 'deliveryChallanProducts')
-      .leftJoinAndSelect('deliveryChallanProducts.productName', 'productName')
-      .leftJoinAndSelect('deliveryChallanProducts.variant', 'variant')
-      .leftJoinAndSelect('deliveryChallanProducts.uom', 'uom')
-      .leftJoinAndSelect('dc.invoices', 'invoices')
-      .leftJoinAndSelect('dc.returns', 'returns')
+      .leftJoinAndSelect('dc.customerName', 'customer')
+      .leftJoinAndSelect('dc.companyName', 'company')
+      .leftJoinAndSelect('dc.fromLocation', 'branch')
+      .leftJoinAndSelect('dc.grnNo', 'grn')
       .leftJoinAndSelect('dc.createdBy', 'createdBy')
-      .where('dc.isDeleted = :isDeleted', { isDeleted: false });
-
-    // Apply all filters
-    this.applyFilters(queryBuilder, filters);
-
-    queryBuilder.orderBy('dc.createdAt', 'DESC');
-
-    const result = await queryBuilder.getMany();
-
-    return this.formatDeliveryChallanReport(result);
-  }
-
-  private applyFilters(queryBuilder: any, filters: IDeliveryChallanReportFilters): void {
-    // Date range filter
-    if (filters.startDate && filters.endDate) {
-      queryBuilder.andWhere('dc.createdAt BETWEEN :startDate AND :endDate', {
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      });
-    }
-
-    // Entity filters
-    if (filters.company && filters.company.length > 0) {
-      queryBuilder.andWhere('dc.companyName IN (:...companyIds)', { companyIds: filters.company });
-    }
-
-    if (filters.office && filters.office.length > 0) {
-      queryBuilder.andWhere('dc.offices IN (:...officeIds)', { officeIds: filters.office });
-    }
-
-    if (filters.customer && filters.customer.length > 0) {
-      queryBuilder.andWhere('dc.customerName IN (:...customerIds)', { customerIds: filters.customer });
-    }
-
-    if (filters.fromLocation && filters.fromLocation.length > 0) {
-      queryBuilder.andWhere('dc.fromLocation IN (:...fromLocationIds)', { 
-        fromLocationIds: filters.fromLocation 
-      });
-    }
-
-    if (filters.createdBy && filters.createdBy.length > 0) {
-      queryBuilder.andWhere('dc.createdBy IN (:...createdByIds)', { createdByIds: filters.createdBy });
-    }
-
-    // Delivery Challan specific filters
-    if (filters.challanNo) {
-      queryBuilder.andWhere('dc.challanNo ILIKE :challanNo', { challanNo: `%${filters.challanNo}%` });
-    }
-
-    if (filters.grnNo) {
-      queryBuilder.andWhere('grnNo.grnNo ILIKE :grnNo', { grnNo: `%${filters.grnNo}%` });
-    }
-
-    if (filters.approvalStatus) {
-      queryBuilder.andWhere('dc.approvalStatus = :approvalStatus', { 
-        approvalStatus: filters.approvalStatus 
-      });
-    }
-
-    if (filters.requestingDepartment) {
-      queryBuilder.andWhere('dc.requestingDepartment = :requestingDepartment', {
-        requestingDepartment: filters.requestingDepartment,
-      });
-    }
-
-    // Driver and vehicle filters
-    if (filters.driverName) {
-      queryBuilder.andWhere('dc.driverName ILIKE :driverName', { 
-        driverName: `%${filters.driverName}%` 
-      });
-    }
-
-    if (filters.vehicleNo) {
-      queryBuilder.andWhere('dc.vehicleNo ILIKE :vehicleNo', { vehicleNo: `%${filters.vehicleNo}%` });
-    }
-
-    if (filters.licenseNo) {
-      queryBuilder.andWhere('dc.licenseNo ILIKE :licenseNo', { 
-        licenseNo: `%${filters.licenseNo}%` 
-      });
-    }
-
-    if (filters.rmn) {
-      queryBuilder.andWhere('dc.rmn ILIKE :rmn', { rmn: `%${filters.rmn}%` });
-    }
-
-    if (filters.receiverName) {
-      queryBuilder.andWhere('dc.receiverName ILIKE :receiverName', { 
-        receiverName: `%${filters.receiverName}%` 
-      });
-    }
-
-    // Product filters
-    if (filters.product && filters.product.length > 0) {
-      queryBuilder.andWhere('deliveryChallanProducts.productName IN (:...productIds)', { 
-        productIds: filters.product 
-      });
-    }
-
-    // Amount filter with operator
-    if (filters.totalProductAmount !== undefined && filters.totalProductAmountOperator) {
-      const operator = filters.totalProductAmountOperator;
-      if (operator === '>') {
-        queryBuilder.andWhere('dc.totalProductAmount > :totalProductAmount', { 
-          totalProductAmount: filters.totalProductAmount 
-        });
-      } else if (operator === '<') {
-        queryBuilder.andWhere('dc.totalProductAmount < :totalProductAmount', { 
-          totalProductAmount: filters.totalProductAmount 
-        });
-      } else if (operator === '=') {
-        queryBuilder.andWhere('dc.totalProductAmount = :totalProductAmount', { 
-          totalProductAmount: filters.totalProductAmount 
-        });
-      }
-    }
-
-    // Weight filter with operator
-    if (filters.netProductWeight !== undefined && filters.netProductWeightOperator) {
-      const operator = filters.netProductWeightOperator;
-      if (operator === '>') {
-        queryBuilder.andWhere('dc.netProductWeight > :netProductWeight', { 
-          netProductWeight: filters.netProductWeight 
-        });
-      } else if (operator === '<') {
-        queryBuilder.andWhere('dc.netProductWeight < :netProductWeight', { 
-          netProductWeight: filters.netProductWeight 
-        });
-      } else if (operator === '=') {
-        queryBuilder.andWhere('dc.netProductWeight = :netProductWeight', { 
-          netProductWeight: filters.netProductWeight 
-        });
-      }
-    }
-
-    // Invoice generated filter
-    if (filters.invoiceGenerated === 'yes') {
-      queryBuilder.andWhere('invoices.id IS NOT NULL');
-    } else if (filters.invoiceGenerated === 'no') {
-      queryBuilder.andWhere('invoices.id IS NULL');
-    }
-
-    // Invoice type filter
-    if (filters.invoiceType && filters.invoiceType !== 'all') {
-      queryBuilder.andWhere('invoices.type = :invoiceType', { invoiceType: filters.invoiceType });
-    }
-
-    // Return status filter
-    if (filters.isReturned !== undefined) {
-      queryBuilder.andWhere('dc.isReturned = :isReturned', { isReturned: filters.isReturned });
-    }
-  }
-
-  private formatDeliveryChallanReport(deliveryChallans: any[]): any[] {
-    return deliveryChallans.map((dc) => {
-      // Calculate totals
-      const productCount = dc.deliveryChallanProducts?.length || 0;
-      const totalQty = dc.deliveryChallanProducts?.reduce(
-        (sum: number, p: any) => sum + (parseFloat(p.quantity) || 0), 
-        0
-      ) || 0;
-
-      // Check invoice status
-      const hasInvoice = dc.invoices && dc.invoices.length > 0;
-      const invoiceInfo = hasInvoice ? dc.invoices[0] : null;
-
-      return {
-        id: dc.id,
-        challanNo: dc.challanNo ? dc.challanNo.toUpperCase() : null,
-        grnNo: dc.grnNo?.grnNo ? dc.grnNo.grnNo.toUpperCase() : null,
-        companyName: dc.companyName?.name || null,
-        officeName: dc.offices?.name || null,
-        customerName: dc.customerName?.organisationName || null,
-        fromLocation: dc.fromLocation?.name || null,
-        poNumber: dc.poNumber || null,
+      .leftJoinAndSelect('dc.deliveryChallanProducts', 'item')
+        .leftJoinAndSelect('item.productName', 'itemProduct')
+        .leftJoinAndSelect('item.variant', 'itemVariant')
+        .leftJoinAndSelect('item.saleUoM', 'itemSaleUoM')
         
-        // Product details
-        productCount,
-        totalQty,
-        totalProductAmount: dc.totalProductAmount || 0,
-        netProductWeight: dc.netProductWeight || 0,
-        netPackagingMaterialWeight: dc.netPackagingMaterialWeight || 0,
-        totalPackagingMaterialAmount: dc.totalPackagingMaterialAmount || 0,
-        totalAmtInWords: dc.totalAmtInWords || null,
 
-        // Driver and vehicle details
-        driverName: dc.driverName || null,
-        contactNo: dc.contactNo || null,
-        altContactNo: dc.altContactNo || null,
-        vehicleNo: dc.vehicleNo ? dc.vehicleNo.toUpperCase() : null,
-        licenseNo: dc.licenseNo ? dc.licenseNo.toUpperCase() : null,
-        rmn: dc.rmn ? dc.rmn.toUpperCase() : null,
-        receiverName: dc.receiverName || null,
-        transitInsuranceNo: dc.transitInsuranceNo || null,
+    // Date filters
+    if (filter.startDate && filter.endDate) {
+      qb.andWhere('dc.createdAt BETWEEN :start AND :end', {
+        start: filter.startDate,
+        end: filter.endDate,
+      });
+    }
 
-        // Status and approval
-        approvalStatus: dc.approvalStatus || null,
-        requestingDepartment: dc.requestingDepartment || null,
-        remark: dc.remark || null,
-        isReturned: dc.isReturned || false,
 
-        // Invoice information
-        invoiceGenerated: hasInvoice ? 'Yes' : 'No',
-        invoiceNo: invoiceInfo?.invoiceNo || null,
-        invoiceDate: invoiceInfo?.invoiceDate || null,
-        invoiceType: invoiceInfo?.type || null,
-        invoiceAmount: invoiceInfo?.totalAmount || null,
+    // Referred GRN
+    if (filter.referredGrn) {
 
-        // Addresses
-        billingAddress: dc.billingAddress ? this.formatAddress(dc.billingAddress) : null,
-        deliveryAddress: dc.deliveryAddress ? this.formatAddress(dc.deliveryAddress) : null,
+      const ids = Array.isArray(filter.referredGrn)
+        ? filter.company
+        : String(filter.company).split(',');
+      qb.andWhere('grn.id IN (:...grn)', { grn: ids });
+     // qb.andWhere('grn.id = :grnId', { grnId: filter.referredGrn });
 
-        // User info
-        createdBy: dc.createdBy
-          ? `${dc.createdBy.firstName} ${dc.createdBy.lastName}`
-          : null,
+     const grns = await this.grnRepository.findBy({
+        id: In(ids),
+      });
+      grnNos = grns.map((g) => g.grnNo).join(', ');
 
-        // Products
-        deliveryChallanProducts: dc.deliveryChallanProducts?.map((product: any) => ({
-          id: product.id,
-          productName: product.productName?.name || null,
-          variant: product.variant?.variantName || null,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          uom: product.uom?.unit || null,
-          amount: product.amount,
-          grossWeight: product.grossWeight,
-          packingMaterialWeight: product.packingMaterialWeight,
-          netWeight: product.netWeight,
-        })) || [],
+    }
+if (filter.minQuantity && filter.maxQuantity) {
 
-        // Timestamps
-        createdAt: dc.createdAt,
-        updatedAt: dc.updatedAt,
+  qb.andWhere(
+    'item.quantity BETWEEN :minQty AND :maxQty',
+    {
+      minQty: filter.minQuantity,
+      maxQty: filter.maxQuantity
+    }
+  );
+
+} else if (filter.minQuantity) {
+
+  qb.andWhere(
+    'item.quantity >= :minQty',
+    { minQty: filter.minQuantity }
+  );
+
+} else if (filter.maxQuantity) {
+
+  qb.andWhere(
+    'item.quantity <= :maxQty',
+    { maxQty: filter.maxQuantity }
+  );
+
+}
+
+
+
+
+if (filter.minTotalAmount && filter.maxTotalAmount) {
+
+  qb.andWhere(
+    'dc.totalProductAmount BETWEEN :minAmt AND :maxAmt',
+    {
+      minAmt: filter.minTotalAmount,
+      maxAmt: filter.maxTotalAmount
+    }
+  );
+
+} else if (filter.minTotalAmount) {
+
+  qb.andWhere(
+    'dc.totalProductAmount >= :minAmt',
+    { minAmt: filter.minTotalAmount }
+  );
+
+} else if (filter.maxTotalAmount) {
+
+  qb.andWhere(
+    'dc.totalProductAmount <= :maxAmt',
+    { maxAmt: filter.maxTotalAmount }
+  );
+
+}
+    // Company
+    if (filter.company) {
+      //we send multiple company name
+
+      //qb.andWhere('company.id = :companyId', { companyId: filter.company });
+      const ids = Array.isArray(filter.company)?filter.company
+        : String(filter.company).split(',');
+
+        console.log("Company IDs for filter: ", ids);
+      qb.andWhere('company.id IN (:...comp)', { comp: ids });
+
+      //after getting the company names we will prepare the display value for filter summary
+        const companies = await this.companyRepository.findBy({
+          id: In(ids)
+        });
+        companyNames = companies.map(c => c.name).join(', ');
+
+    }
+
+    // Deliver From Location
+    if (filter.deliverFromLocation) {
+
+      const ids = Array.isArray(filter.deliverFromLocation) ? filter.deliverFromLocation
+        : String(filter.deliverFromLocation).split(',');
+
+      qb.andWhere('branch.id IN (:...branch)', { branch: ids });
+
+      //after getting the location names we will prepare the display value for filter summary
+     const locations = await this.branchesRepository.findBy({
+        id: In(ids)
+      });
+      locationNames = locations.map(l => l.name).join(', ');
+
+    }
+
+    // PO Number
+    if (filter.poNumber) {
+      const poNo = String(filter.poNumber).trim();
+      qb.andWhere('dc.poNumber ILIKE :po', { po: `%${poNo}%` });
+    }
+
+    // Customers
+    if (filter.customers) {
+      const ids = Array.isArray(filter.customers)
+        ? filter.customers
+        : String(filter.customers).split(',');
+      qb.andWhere('customer.id IN (:...cust)', { cust: ids });
+
+      //after getting the customer names we will prepare the display value for filter summary
+      const customers = await this.customerRepo.findBy({
+        id: In(ids)
+      });
+      customerNames = customers.map(c => c.organisationName).join(', ');
+
+    }
+
+    // Created By
+    if (filter.createdBy) {
+      qb.andWhere('createdBy.id = :createdBy', {
+        createdBy: filter.createdBy,
+      });
+
+      //after getting the user names we will prepare the display value for filter summary
+      const users = await this.userRepository.findBy({
+        id: In(Array.isArray(filter.createdBy) ? filter.createdBy : String(filter.createdBy).split(','))
+      });
+      createdByNames = users.map(u => u.firstName + ' ' + u.lastName).join(', ');
+    }
+
+    // Product
+    if (filter.product) {
+      const ids = Array.isArray(filter.product)
+        ? filter.product
+        : String(filter.product).split(',');
+      qb.andWhere('item.product_id IN (:...p)', { p: ids });
+
+      //after getting the product names we will prepare the display value for filter summary
+      const products = await this.productRepository.findBy({
+        id: In(ids)
+      });
+      productNames = products.map(p => p.name).join(', ');
+
+    }
+
+    // Total Quantity (>=)
+    if (filter.totalQuantity) {
+      qb.andWhere('item.quantity >= :qty', { qty: filter.totalQuantity });
+    }
+
+    // Total Amount (>=)
+    if (filter.totalAmount) {
+      qb.andWhere('dc.totalProductAmount >= :amt', { amt: filter.totalAmount });
+    }
+
+    // have multiple Driver Name 
+    if (filter.driverName) {
+      const diverName = Array.isArray(filter.driverName) ? filter.driverName : String(filter.driverName).split(',');
+      qb.andWhere('dc.driverName IN (:...driver)', { driver: diverName });
+    }
+
+    //have multiple Driver License Number
+    if (filter.driverLicenseNumber) {
+      const licenseNumbers = Array.isArray(filter.driverLicenseNumber) ? filter.driverLicenseNumber : String(filter.driverLicenseNumber).split(',');
+      qb.andWhere('dc.licenseNo IN (:...lic)', { lic: licenseNumbers });
+    }
+
+    //have multiple Vehicle Number
+    if (filter.vehicleNumber) {
+      const vehicleNumbers = Array.isArray(filter.vehicleNumber) ? filter.vehicleNumber : String(filter.vehicleNumber).split(',');
+      qb.andWhere('dc.vehicleNo IN (:...veh)', { veh: vehicleNumbers });
+    }
+    
+
+    //have multiple Receiver Name
+    if (filter.receiverName) {
+      const receiverNames = Array.isArray(filter.receiverName) ? filter.receiverName : String(filter.receiverName).split(',');
+      qb.andWhere('dc.receiverName IN (:...rec)', { rec: receiverNames });
+    }
+
+    //have multiple Status
+    if (filter.status) {
+      const statuses = Array.isArray(filter.status) ? filter.status : String(filter.status).split(',');
+      qb.andWhere('dc.approvalStatus IN (:...status)', { status: statuses });
+    }
+
+    const challans = await qb.getMany();
+
+    // Fetch Documentb for each challan by document_type_id (which is challan.id)
+    // and cache results to avoid duplicate DB calls if needed
+    const documentbMap: Record<string, any> = {};
+    for (const dc of challans) {
+      try {
+        const documentb = await this.documentbService.getDocumentByTypeId(dc.id);
+        if (documentb) {
+          documentbMap[dc.id] = documentb;
+        }
+      } catch (e) {
+        // Optionally log error
+      }
+    }
+
+    /*
+      ==========================
+      2) CALCULATE SUMMARY
+      ==========================
+    */
+
+    const totalDeliveryChallans = challans.length;
+    let totalQuantity = 0;
+    let totalProcurementAmount = 0;
+
+    for (const dc of challans) {
+      totalProcurementAmount += Number(dc.totalProductAmount || 0);
+
+      if (dc.deliveryChallanProducts?.length) {
+        for (const item of dc.deliveryChallanProducts) {
+          totalQuantity += Number(item.quantity || 0);
+        }
+      }
+    }
+
+
+
+
+    /*
+      ==========================
+      3) CREATE EXCEL
+      ==========================
+    */
+
+    const workbook = new ExcelJS.Workbook();
+
+/*
+---- Sheet 1 : Report_Summary ----
+*/
+
+const summarySheet = workbook.addWorksheet("Report_Summary");
+
+summarySheet.columns = [
+  { width: 30 },
+  { width: 40 }
+];
+
+/*
+TITLE
+*/
+
+summarySheet.mergeCells("A1:B1");
+
+const titleCell = summarySheet.getCell("A1");
+
+titleCell.value = "Delivery Challan Detailed Report";
+
+titleCell.font = {
+  bold: true,
+  size: 14,
+  color: { argb: "FFFFFFFF" }
+};
+
+titleCell.alignment = {
+  horizontal: "center",
+  vertical: "middle"
+};
+
+titleCell.fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FF00B050" }
+};
+
+
+/*
+COMMON ROW STYLING
+*/
+
+const styleRow = (row: ExcelJS.Row) => {
+
+  row.eachCell((cell, colNumber) => {
+
+    if (colNumber === 1) {
+      cell.font = { bold: true };   // ONLY bold
+    }
+
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+
+    cell.alignment = {
+      wrapText: true,
+      vertical: "middle"
+    };
+
+  });
+
+};
+
+
+/*
+REPORT DETAILS
+*/
+
+summarySheet.addRow([]);
+
+const reportDetails = [
+  ["Company Name:", companyNames || "All"],
+  ["Reporting Period:", `${filter.startDate || ""} to ${filter.endDate || ""}`],
+  ["Generated By:", challans[0]?.createdBy?.firstName || "System"],
+  ["Generated Date:", new Date().toLocaleDateString()]
+];
+
+reportDetails.forEach((r) => {
+  const row = summarySheet.addRow(r);
+  styleRow(row);
+});
+
+summarySheet.addRow([]);
+
+
+/*
+APPLIED FILTERS HEADER
+*/
+
+const filterHeader = summarySheet.addRow(["Applied Filters"]);
+
+summarySheet.mergeCells(`A${filterHeader.number}:B${filterHeader.number}`);
+
+filterHeader.font = { bold: true };
+
+filterHeader.eachCell((cell) => {
+
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9E1F2" }
+  };
+
+  cell.border = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" }
+  };
+
+});
+
+
+/*
+FILTER VALUES
+*/
+
+const filters = [
+
+  ["Start Date", filter.startDate || "All"],
+  ["End Date", filter.endDate || "All"],
+  ["Period", filter.period || "All"],
+  ["Referred GRN", filter.grnNos || "All"],
+  ["Company", companyNames || "All"],
+  ["Deliver From Location", locationNames || "All"],
+  ["PO Number", filter.poNumber || "All"],
+  ["Customers", customerNames || "All"],
+  ["Created By", createdByNames || "All"],
+  ["Product", productNames || "All"],
+  ["Total Quantity", filter.totalQuantity || "All"],
+  ["Total Amount", filter.totalAmount || "All"],
+  ["Driver Name", filter.driverName || "All"],
+  ["Driver's License Number", filter.driverLicenseNumber || "All"],
+  ["Vehicle Number", filter.vehicleNumber || "All"],
+  ["Receiver Name", filter.receiverName || "All"],
+  ["RM Name", filter.rmName || "All"],
+  ["Approved By", filter.approvedBy || "All"],
+  ["Status", filter.status || "All"],
+  [
+  "Total Quantity",
+  filter.minQuantity && filter.maxQuantity
+    ? `${filter.minQuantity} - ${filter.maxQuantity}`
+    : filter.minQuantity
+    ? `>= ${filter.minQuantity}`
+    : filter.maxQuantity
+    ? `<= ${filter.maxQuantity}`
+    : "All"
+],
+[
+  "Total Amount",
+  filter.minTotalAmount && filter.maxTotalAmount
+    ? `${filter.minTotalAmount} - ${filter.maxTotalAmount}`
+    : filter.minTotalAmount
+    ? `>= ${filter.minTotalAmount}`
+    : filter.maxTotalAmount
+    ? `<= ${filter.maxTotalAmount}`
+    : "All"
+],
+
+
+];
+
+filters.forEach((f) => {
+  const row = summarySheet.addRow(f);
+  styleRow(row);
+});
+
+summarySheet.addRow([]);
+
+
+/*
+SUMMARY HEADER
+*/
+
+const summaryHeader = summarySheet.addRow(["Summary"]);
+
+summarySheet.mergeCells(`A${summaryHeader.number}:B${summaryHeader.number}`);
+
+summaryHeader.font = { bold: true };
+
+summaryHeader.eachCell((cell) => {
+
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9E1F2" }
+  };
+
+  cell.border = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" }
+  };
+
+});
+
+
+/*
+SUMMARY VALUES
+*/
+
+const summaryRows = [
+  ["Total Delivery Challans", totalDeliveryChallans],
+  ["Total Quantity (KG)", totalQuantity],
+  ["Total Procurement Amount (INR)", totalProcurementAmount]
+];
+
+summaryRows.forEach((s) => {
+  const row = summarySheet.addRow(s);
+  styleRow(row);
+});
+
+
+/*
+---- Sheet 2 : Report_Data ----
+*/
+
+const dataSheet = workbook.addWorksheet("Report_Data");
+
+dataSheet.columns = [
+  { header: "Date", key: "date", width: 12 },
+  { header: "Status", key: "status", width: 12 },
+  { header: "Created By", key: "createdBy", width: 18 },
+  { header: "PO Number", key: "poNumber", width: 15 },
+  { header: "Customer Name", key: "customerName", width: 20 },
+  { header: "Company Name", key: "companyName", width: 20 },
+  { header: "Deliver From Location", key: "location", width: 22 },
+  { header: "Referred GRN", key: "grn", width: 18 },
+  { header: "Product Name", key: "productName", width: 20 },
+  { header: "Variant Name", key: "variant", width: 25 },
+  { header: "Sales UoM", key: "salesUom", width: 12 },
+  { header: "Qty", key: "qty", width: 10 },
+  { header: "Unit Price", key: "unitPrice", width: 12 },
+  { header: "Amount", key: "amount", width: 15 },
+  { header: "Packing Material", key: "packingMaterial", width: 20 },
+  { header: "Material UoM", key: "materialUom", width: 15 },
+  { header: "Material Qty", key: "materialQty", width: 15 },
+  { header: "Material Weight Per Item", key: "materialWeightPerItem", width: 20 },
+  { header: "Material Weight", key: "materialWeight", width: 18 },
+  { header: "Material Unit Price", key: "materialUnitPrice", width: 18 },
+  { header: "Material Amount", key: "materialAmount", width: 18 },
+  { header: "Gross Weight", key: "grossWeight", width: 15 },
+  { header: "Net Weight", key: "netWeight", width: 15 },
+  { header: "Total Packing", key: "totalPacking", width: 15 },
+  { header: "Total Packing Amount", key: "totalPackingAmount", width: 20 },
+  { header: "Total Net Product", key: "totalNetProduct", width: 18 },
+  { header: "Total Product", key: "totalProduct", width: 18 },
+  { header: "Driver Name", key: "driverName", width: 18 },
+  { header: "License No", key: "licenseNo", width: 18 },
+  { header: "Contact No", key: "contactNo", width: 18 },
+  { header: "Vehicle No", key: "vehicleNo", width: 15 },
+  { header: "Receiver Name", key: "receiverName", width: 18 },
+  { header: "RM Name", key: "rmName", width: 18 },
+  { header: "Approved By", key: "approvedBy", width: 18 }
+];
+
+/*
+HEADER STYLE
+*/
+
+const headerRow = dataSheet.getRow(1);
+
+headerRow.eachCell((cell) => {
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFDE21" }
+  };
+
+  cell.font = { bold: true, size: 11 };
+
+  cell.alignment = {
+    horizontal: "center",
+    vertical: "middle"
+  };
+
+  cell.border = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" }
+  };
+});
+
+headerRow.height = 20;
+
+
+/*
+STATUS MAPPING (VALUE → LABEL + COLOR)
+*/
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  hold: { label: "Hold", color: "FFFF5700" },
+  VERIFIED: { label: "Verified", color: "FF6A00FF" },
+  approved: { label: "Approved", color: "FF40BF40" },
+  FINALIZING: { label: "Finalized", color: "FF0063B1" },
+  COMPLETE: { label: "Complete", color: "FF006600" },
+  reject: { label: "Reject", color: "FFAF0606" }
+};
+
+
+/*
+ADD DATA ROWS (GROUPED BY CHALLAN)
+*/
+
+for (const dc of challans) {
+
+  if (!dc.deliveryChallanProducts?.length) continue;
+
+  const challanStartRow = dataSheet.rowCount + 1;
+
+  const documentb = documentbMap[dc.id];
+
+  const statusValue = documentb?.status || '';
+
+  const statusInfo =
+    STATUS_MAP[statusValue] || { label: statusValue, color: "FFE7E6E6" };
+
+  const approvedBy = documentb?.lastActionBy?.firstName
+    ? documentb.lastActionBy.firstName +
+      (documentb.lastActionBy.lastName
+        ? " " + documentb.lastActionBy.lastName
+        : "")
+    : "";
+
+  for (const item of dc.deliveryChallanProducts) {
+
+    const row = dataSheet.addRow({
+
+      date: dc.createdAt?.toISOString().split("T")[0],
+
+      status: statusInfo.label,
+
+      createdBy: dc.createdBy?.firstName,
+      poNumber: dc.poNumber,
+      customerName: dc.customerName?.organisationName,
+      companyName: dc.companyName?.name,
+      location: dc.fromLocation?.name,
+      grn: dc.grnNo?.grnNo,
+
+      productName: item.productName?.name,
+      variant: item.variant?.variantName,
+      salesUom: item.saleUoM?.unit,
+      qty: item.quantity,
+      unitPrice: item.unitPrice,
+      amount: item.amount,
+
+      packingMaterial: item.packagingMaterial?.packagingMaterialName,
+      materialUom: item.packagingMaterialUoM?.unit,
+      materialQty: item.packagingMaterialQuantity,
+      materialWeightPerItem:
+        item.packagingMaterialTotalWeight /
+        item.packagingMaterialQuantity,
+      materialWeight: item.packagingMaterialTotalWeight,
+      materialUnitPrice: item.packagingMaterialUnitPrice,
+      materialAmount: item.packagingMaterialAmount,
+
+      grossWeight: item.grossWeight,
+      netWeight: item.netWeight,
+
+      totalPacking: dc.netPackagingMaterialWeight,
+      totalPackingAmount: dc.totalPackagingMaterialAmount,
+      totalNetProduct: dc.netProductWeight,
+      totalProduct: dc.totalProductAmount,
+
+      driverName: dc.driverName,
+      licenseNo: dc.licenseNo,
+      contactNo: dc.contactNo,
+      vehicleNo: dc.vehicleNo,
+      receiverName: dc.receiverName,
+      rmName: dc.createdBy?.firstName,
+      approvedBy: approvedBy
+    });
+
+    /*
+    STATUS COLOR STYLE
+    */
+
+    const statusCell = row.getCell(2);
+
+    statusCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: statusInfo.color }
+    };
+
+    statusCell.font = {
+      bold: true,
+      color: { argb: "FFFFFFFF" }
+    };
+
+    statusCell.alignment = {
+    //  horizontal: "center",
+      vertical: "middle"
+    };
+  }
+
+  const challanEndRow = dataSheet.rowCount;
+
+  /*
+  MERGE CHALLAN LEVEL COLUMNS
+  */
+
+  if (challanEndRow > challanStartRow) {
+
+    const columnsToMerge = [
+      1,2,3,4,5,6,7,8,
+      24,25,26,27,28,29,30,31,32,33,34
+    ];
+
+    columnsToMerge.forEach((col) => {
+
+      dataSheet.mergeCells(challanStartRow, col, challanEndRow, col);
+
+      const cell = dataSheet.getRow(challanStartRow).getCell(col);
+
+      cell.alignment = {
+       // horizontal: "center",
+        vertical: "middle",
+        wrapText: true
       };
     });
   }
+}
 
-  private formatAddress(address: any): string {
-    if (!address) return '';
-    const parts = [
-      address.addressLine1,
-      address.addressLine2,
-      address.city,
-      address.state,
-      address.pincode,
-    ].filter(Boolean);
-    return parts.join(', ');
+this.autoAdjustColumnWidth(dataSheet);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return buffer as unknown as Buffer;
   }
 
-  async generateDeliveryChallanExcelReport(
-    filters: IDeliveryChallanReportFilters, 
-    loggedInUser?: any
-  ): Promise<Buffer | null> {
-    try {
-      const reportData = await this.getReport(filters);
 
-      if (!reportData || reportData.length === 0) {
-        return null;
-      }
+autoAdjustColumnWidth(sheet: ExcelJS.Worksheet) {
+  sheet.columns?.forEach((column) => {
+    let maxLength = 0;
 
-      // Helper function to get status color
-      const getStatusColor = (status: string): string => {
-        const statusLower = status?.toLowerCase() || '';
-        switch (statusLower) {
-          case 'hold':
-          case 'pending':
-            return 'FFFF5700'; // Orange
-          case 'verified':
-            return 'FF6A00FF'; // Indigo
-          case 'approved':
-            return 'FF40BF40'; // Light Green
-          case 'finalizing':
-            return 'FF0063B1'; // Blue
-          case 'complete':
-            return 'FF006600'; // Dark Green
-          case 'reject':
-          case 'rejected':
-            return 'FFAF0606'; // Red
-          default:
-            return 'FFFFFFFF'; // White (no color)
-        }
-      };
+    column.eachCell?.({ includeEmpty: true }, (cell) => {
+      const cellValue = cell.value ? cell.value.toString() : "";
+      maxLength = Math.max(maxLength, cellValue.length);
+    });
 
-      const formatDate = (dateValue: any): string => {
-        if (!dateValue) return '';
-        try {
-          const date = new Date(dateValue);
-          if (isNaN(date.getTime())) return '';
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = date.getFullYear();
-          return `${day}/${month}/${year}`;
-        } catch (error) {
-          return '';
-        }
-      };
+    column.width = maxLength + 2; // padding
+  });
+}
 
-      const toExcelDate = (dateValue: any): Date | null => {
-        if (!dateValue) return null;
-        try {
-          if (typeof dateValue === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateValue)) {
-            const [day, month, year] = dateValue.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
-            if (isNaN(date.getTime())) return null;
-            return date;
-          }
-          const date = new Date(dateValue);
-          if (isNaN(date.getTime())) return null;
-          return date;
-        } catch (error) {
-          return null;
-        }
-      };
-
-      const ExcelJS = require('exceljs');
-      const workbook = new ExcelJS.Workbook();
-
-      // ==================== SHEET 1: REPORT SUMMARY ====================
-      const filterSheet = workbook.addWorksheet('Report_Summary');
-      let filterRow = 1;
-
-      // Title
-      filterSheet.mergeCells(`A${filterRow}:B${filterRow}`);
-      const titleCell = filterSheet.getCell(`A${filterRow}`);
-      titleCell.value = 'Delivery Challan Report for Customer';
-      titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-      titleCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF0070C0' },
-      };
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      filterRow++;
-
-      const addParameter = (label: string, value: any, isBold = false) => {
-        const labelCell = filterSheet.getCell(`A${filterRow}`);
-        const valueCell = filterSheet.getCell(`B${filterRow}`);
-        
-        labelCell.value = label;
-        labelCell.font = { bold: true, size: 11 };
-        
-        valueCell.value = value || 'All';
-        valueCell.font = { bold: isBold, size: 11 };
-        valueCell.alignment = { wrapText: true };
-        
-        labelCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-        valueCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-        
-        filterRow++;
-      };
-
-      const addSectionHeader = (title: string) => {
-        filterSheet.mergeCells(`A${filterRow}:B${filterRow}`);
-        const headerCell = filterSheet.getCell(`A${filterRow}`);
-        headerCell.value = title;
-        headerCell.font = { bold: true, size: 12 };
-        headerCell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFD9E1F2' },
-        };
-        headerCell.alignment = { horizontal: 'left', vertical: 'middle' };
-        headerCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-        filterRow++;
-      };
-
-      // Report Header Information
-      const companies = [...new Set(reportData.map((r: any) => r.companyName).filter(Boolean))];
-      const companyName = companies.length > 0 ? companies[0] : 'All Companies';
-      addParameter('Company Name:', companyName);
-      
-      const periodText = `${formatDate(filters.startDate)} to ${formatDate(filters.endDate)}`;
-      addParameter('Reporting Period:', periodText);
-
-      const generatedByName = loggedInUser 
-        ? `${loggedInUser.firstName || ''} ${loggedInUser.lastName || ''}`.trim() || 'Admin User'
-        : 'Admin User';
-      addParameter('Generated By:', generatedByName);
-      
-      const generatedDate = new Date().toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric'
-      });
-      addParameter('Generated Date:', generatedDate);
-      
-      filterRow++;
-
-      // Applied Filters Section
-      addSectionHeader('Applied Filters');
-      
-      addParameter('Start Date', formatDate(filters.startDate));
-      addParameter('End Date', formatDate(filters.endDate));
-      addParameter('Period', periodText);
-      
-      addParameter('Company', 
-        (filters.company && filters.company.length > 0) ? companies.join(', ') : 'All');
-      
-      const offices = [...new Set(reportData.map((r: any) => r.officeName).filter(Boolean))];
-      addParameter('Office', 
-        (filters.office && filters.office.length > 0) ? offices.join(', ') : 'All');
-      
-      const customers = [...new Set(reportData.map((r: any) => r.customerName).filter(Boolean))];
-      addParameter('Customer', 
-        (filters.customer && filters.customer.length > 0) ? customers.join(', ') : 'All');
-      
-      const fromLocations = [...new Set(reportData.map((r: any) => r.fromLocation).filter(Boolean))];
-      addParameter('From Location', 
-        (filters.fromLocation && filters.fromLocation.length > 0) ? fromLocations.join(', ') : 'All');
-      
-      const employees = [...new Set(reportData.map((r: any) => r.createdBy).filter(Boolean))];
-      addParameter('Created By', 
-        (filters.createdBy && filters.createdBy.length > 0) ? employees.join(', ') : 'All');
-      
-      const products = [...new Set(reportData.flatMap((r: any) => 
-        r.deliveryChallanProducts?.map((p: any) => p.productName).filter(Boolean) || []
-      ))];
-      addParameter('Product', 
-        (filters.product && filters.product.length > 0) ? products.join(', ') : 'All');
-
-      addParameter('Challan No', filters.challanNo || 'All');
-      addParameter('GRN No', filters.grnNo || 'All');
-      addParameter('Approval Status', filters.approvalStatus || 'All');
-      addParameter('Requesting Department', filters.requestingDepartment || 'All');
-      addParameter('Driver Name', filters.driverName || 'All');
-      addParameter('Vehicle No', filters.vehicleNo || 'All');
-      addParameter('License No', filters.licenseNo || 'All');
-      addParameter('RMN', filters.rmn || 'All');
-      addParameter('Receiver Name', filters.receiverName || 'All');
-
-      if (filters.totalProductAmount !== undefined && filters.totalProductAmountOperator) {
-        addParameter('Total Product Amount', 
-          `${filters.totalProductAmountOperator} ${filters.totalProductAmount}`);
-      } else {
-        addParameter('Total Product Amount', 'All');
-      }
-      
-      if (filters.netProductWeight !== undefined && filters.netProductWeightOperator) {
-        addParameter('Net Product Weight', 
-          `${filters.netProductWeightOperator} ${filters.netProductWeight}`);
-      } else {
-        addParameter('Net Product Weight', 'All');
-      }
-
-      addParameter('Invoice Generated', filters.invoiceGenerated || 'All');
-      addParameter('Invoice Type', filters.invoiceType || 'All');
-      addParameter('Is Returned', filters.isReturned !== undefined ? (filters.isReturned ? 'Yes' : 'No') : 'All');
-      
-      filterRow++;
-
-      // Summary Section
-      addSectionHeader('Summary');
-      
-      const totalDCs = reportData.length;
-      const totalQuantity = reportData.reduce((sum: number, r: any) => sum + (parseFloat(r.totalQty) || 0), 0);
-      const totalAmount = reportData.reduce((sum: number, r: any) => sum + (parseFloat(r.totalProductAmount) || 0), 0);
-      const totalWithInvoice = reportData.filter((r: any) => r.invoiceGenerated === 'Yes').length;
-      const totalReturned = reportData.filter((r: any) => r.isReturned).length;
-      
-      addParameter('Total Delivery Challans', totalDCs);
-      addParameter('Total Quantity (KG)', totalQuantity.toFixed(2));
-      addParameter('Total Amount (INR)', totalAmount.toFixed(2));
-      addParameter('Delivery Challans with Invoice', totalWithInvoice);
-      addParameter('Returned Delivery Challans', totalReturned);
-
-      filterSheet.getColumn(1).width = 35;
-      filterSheet.getColumn(2).width = 60;
-
-      // ==================== SHEET 2: REPORT DATA ====================
-      const recordSheet = workbook.addWorksheet('Report_Data');
-      let currentRow = 1;
-
-      const headerRow = currentRow;
-      const headers = [
-        'Date',
-        'Challan No',
-        'GRN No',
-        'Company',
-        'Office',
-        'Customer Name',
-        'From Location',
-        'PO Number',
-        'Product Name',
-        'Variant',
-        'UOM',
-        'Quantity',
-        'Unit Price',
-        'Amount',
-        'Total Quantity',
-        'Total Product Amount',
-        'Net Product Weight',
-        'Approval Status',
-        'Invoice Generated',
-        'Invoice No',
-        'Invoice Date',
-        'Invoice Type',
-        'Invoice Amount',
-        'Driver Name',
-        'Vehicle No',
-        'License No',
-        'RMN',
-        'Receiver Name',
-        'Is Returned',
-        'Created By',
-        'Billing Address',
-        'Delivery Address'
-      ];
-
-      headers.forEach((header, index) => {
-        const cell = recordSheet.getCell(headerRow, index + 1);
-        cell.value = header;
-        cell.font = { bold: true };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFFFFF00' },
-        };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-      });
-
-      currentRow++;
-
-      // Data Rows
-      reportData.forEach((dc: any) => {
-        const dcProducts = dc.deliveryChallanProducts || [];
-        
-        if (dcProducts.length === 0) {
-          const row = recordSheet.getRow(currentRow);
-          const createdAtDate = toExcelDate(dc.createdAt);
-          const invoiceDate = toExcelDate(dc.invoiceDate);
-          
-          row.getCell(1).value = createdAtDate;
-          row.getCell(2).value = dc.challanNo || '';
-          row.getCell(3).value = dc.grnNo || '';
-          row.getCell(4).value = dc.companyName || '';
-          row.getCell(5).value = dc.officeName || '';
-          row.getCell(6).value = dc.customerName || '';
-          row.getCell(7).value = dc.fromLocation || '';
-          row.getCell(8).value = dc.poNumber || '';
-          row.getCell(9).value = '';
-          row.getCell(10).value = '';
-          row.getCell(11).value = '';
-          row.getCell(12).value = '';
-          row.getCell(13).value = '';
-          row.getCell(14).value = '';
-          row.getCell(15).value = dc.totalQty || 0;
-          row.getCell(16).value = dc.totalProductAmount || 0;
-          row.getCell(17).value = dc.netProductWeight || 0;
-          row.getCell(18).value = dc.approvalStatus ? dc.approvalStatus.toUpperCase() : '';
-          row.getCell(19).value = dc.invoiceGenerated || 'No';
-          row.getCell(20).value = dc.invoiceNo || '';
-          row.getCell(21).value = invoiceDate;
-          row.getCell(22).value = dc.invoiceType || '';
-          row.getCell(23).value = dc.invoiceAmount || '';
-          row.getCell(24).value = dc.driverName || '';
-          row.getCell(25).value = dc.vehicleNo || '';
-          row.getCell(26).value = dc.licenseNo || '';
-          row.getCell(27).value = dc.rmn || '';
-          row.getCell(28).value = dc.receiverName || '';
-          row.getCell(29).value = dc.isReturned ? 'Yes' : 'No';
-          row.getCell(30).value = dc.createdBy || '';
-          row.getCell(31).value = dc.billingAddress || '';
-          row.getCell(32).value = dc.deliveryAddress || '';
-
-          // Apply status color
-          const statusColor = getStatusColor(dc.approvalStatus);
-          row.getCell(18).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: statusColor },
-          };
-          // Always use white text for colored backgrounds, black for no color
-          row.getCell(18).font = {
-            color: { argb: statusColor === 'FFFFFFFF' ? 'FF000000' : 'FFFFFFFF' },
-            bold: true,
-          };
-          row.getCell(18).alignment = { horizontal: 'center', vertical: 'middle' };
-
-          row.getCell(12).numFmt = '#,##0.00';
-          row.getCell(13).numFmt = '#,##0.00';
-          row.getCell(14).numFmt = '#,##0.00';
-          row.getCell(15).numFmt = '#,##0.00';
-          row.getCell(16).numFmt = '#,##0.00';
-          row.getCell(17).numFmt = '#,##0.00';
-          row.getCell(23).numFmt = '#,##0.00';
-          
-          if (createdAtDate) row.getCell(1).numFmt = 'dd/mm/yyyy';
-          if (invoiceDate) row.getCell(21).numFmt = 'dd/mm/yyyy';
-
-          for (let i = 1; i <= 32; i++) {
-            row.getCell(i).border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' },
-            };
-          }
-          currentRow++;
-        } else {
-          const startRow = currentRow;
-          const productCount = dcProducts.length;
-          
-          const createdAtDate = toExcelDate(dc.createdAt);
-          const invoiceDate = toExcelDate(dc.invoiceDate);
-          
-          dcProducts.forEach((product: any, index: number) => {
-            const row = recordSheet.getRow(currentRow);
-            
-            if (index === 0) {
-              row.getCell(1).value = createdAtDate;
-              row.getCell(2).value = dc.challanNo || '';
-              row.getCell(3).value = dc.grnNo || '';
-              row.getCell(4).value = dc.companyName || '';
-              row.getCell(5).value = dc.officeName || '';
-              row.getCell(6).value = dc.customerName || '';
-              row.getCell(7).value = dc.fromLocation || '';
-              row.getCell(8).value = dc.poNumber || '';
-              row.getCell(15).value = dc.totalQty || 0;
-              row.getCell(16).value = dc.totalProductAmount || 0;
-              row.getCell(17).value = dc.netProductWeight || 0;
-              row.getCell(18).value = dc.approvalStatus ? dc.approvalStatus.toUpperCase() : '';
-              row.getCell(19).value = dc.invoiceGenerated || 'No';
-              row.getCell(20).value = dc.invoiceNo || '';
-              row.getCell(21).value = invoiceDate;
-              row.getCell(22).value = dc.invoiceType || '';
-              row.getCell(23).value = dc.invoiceAmount || '';
-              row.getCell(24).value = dc.driverName || '';
-              row.getCell(25).value = dc.vehicleNo || '';
-              row.getCell(26).value = dc.licenseNo || '';
-              row.getCell(27).value = dc.rmn || '';
-              row.getCell(28).value = dc.receiverName || '';
-              row.getCell(29).value = dc.isReturned ? 'Yes' : 'No';
-              row.getCell(30).value = dc.createdBy || '';
-              row.getCell(31).value = dc.billingAddress || '';
-              row.getCell(32).value = dc.deliveryAddress || '';
-
-              // Apply status color
-              const statusColor = getStatusColor(dc.approvalStatus);
-              row.getCell(18).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: statusColor },
-              };
-              // Always use white text for colored backgrounds, black for no color
-              row.getCell(18).font = {
-                color: { argb: statusColor === 'FFFFFFFF' ? 'FF000000' : 'FFFFFFFF' },
-                bold: true,
-              };
-              row.getCell(18).alignment = { horizontal: 'center', vertical: 'middle' };
-            }
-            
-            row.getCell(9).value = product.productName || '';
-            row.getCell(10).value = product.variant || '';
-            row.getCell(11).value = product.uom || '';
-            row.getCell(12).value = product.quantity || 0;
-            row.getCell(13).value = product.unitPrice || 0;
-            row.getCell(14).value = product.amount || 0;
-
-            row.getCell(12).numFmt = '#,##0.00';
-            row.getCell(13).numFmt = '#,##0.00';
-            row.getCell(14).numFmt = '#,##0.00';
-            row.getCell(15).numFmt = '#,##0.00';
-            row.getCell(16).numFmt = '#,##0.00';
-            row.getCell(17).numFmt = '#,##0.00';
-            row.getCell(23).numFmt = '#,##0.00';
-
-            for (let i = 1; i <= 32; i++) {
-              row.getCell(i).border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' },
-              };
-            }
-            
-            currentRow++;
-          });
-
-          if (productCount > 1) {
-            const endRow = currentRow - 1;
-            const mergeCols = [1, 2, 3, 4, 5, 6, 7, 8, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
-            
-            mergeCols.forEach((colIndex) => {
-              try {
-                const startCell = recordSheet.getCell(startRow, colIndex);
-                recordSheet.mergeCells(startRow, colIndex, endRow, colIndex);
-                startCell.alignment = { vertical: 'middle', horizontal: 'center' };
-                
-                if (colIndex === 1 && createdAtDate) {
-                  startCell.numFmt = 'dd/mm/yyyy';
-                }
-                if (colIndex === 21 && invoiceDate) {
-                  startCell.numFmt = 'dd/mm/yyyy';
-                }
-              } catch (error) {
-                console.log(`Merge error for column ${colIndex}:`, error);
-              }
-            });
-          }
-        }
-      });
-
-      // Set column widths
-      recordSheet.getColumn(1).width = 12;
-      recordSheet.getColumn(2).width = 15;
-      recordSheet.getColumn(3).width = 15;
-      recordSheet.getColumn(4).width = 20;
-      recordSheet.getColumn(5).width = 20;
-      recordSheet.getColumn(6).width = 25;
-      recordSheet.getColumn(7).width = 20;
-      recordSheet.getColumn(8).width = 15;
-      recordSheet.getColumn(9).width = 25;
-      recordSheet.getColumn(10).width = 15;
-      recordSheet.getColumn(11).width = 10;
-      recordSheet.getColumn(12).width = 12;
-      recordSheet.getColumn(13).width = 12;
-      recordSheet.getColumn(14).width = 12;
-      recordSheet.getColumn(15).width = 15;
-      recordSheet.getColumn(16).width = 18;
-      recordSheet.getColumn(17).width = 18;
-      recordSheet.getColumn(18).width = 15;
-      recordSheet.getColumn(19).width = 15;
-      recordSheet.getColumn(20).width = 15;
-      recordSheet.getColumn(21).width = 12;
-      recordSheet.getColumn(22).width = 12;
-      recordSheet.getColumn(23).width = 15;
-      recordSheet.getColumn(24).width = 20;
-      recordSheet.getColumn(25).width = 15;
-      recordSheet.getColumn(26).width = 15;
-      recordSheet.getColumn(27).width = 12;
-      recordSheet.getColumn(28).width = 20;
-      recordSheet.getColumn(29).width = 12;
-      recordSheet.getColumn(30).width = 20;
-      recordSheet.getColumn(31).width = 35;
-      recordSheet.getColumn(32).width = 35;
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      return Buffer.from(buffer);
-    } catch (error) {
-      console.error('Error generating delivery challan Excel report:', error);
-      throw error;
-    }
-  }
 }

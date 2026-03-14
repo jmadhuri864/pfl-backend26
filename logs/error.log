@@ -660,3 +660,20 @@
 Cannot read properties of undefined (reading 'city') 
 2026-03-11 03:32:16 PM [error]: Error fetching invoice for PDF with ID: 94fc48c3-5138-406f-a11d-c2c9b5c102c2 
 2026-03-11 03:32:16 PM [error]: Unhandled Error: Failed to fetch invoice for PDF generation 
+2026-03-12 11:53:17 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 94fc48c3-5138-406f-a11d-c2c9b5c102c2 not found 
+2026-03-12 12:12:52 PM [error]: AppError: Invoice has already been created for this delivery challan 
+2026-03-12 12:26:38 PM [error]: Unhandled Error: Failed to create Final Invoice 
+2026-03-12 12:36:30 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:40:59 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:46:17 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-12 12:54:45 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:59:48 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 01:14:47 PM [error]: AppError: Invoice has already been created for this delivery challan 
+2026-03-12 04:09:01 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-12 04:30:50 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-12 06:25:17 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:25:19 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:34:47 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:34:49 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:35:47 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:35:48 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 

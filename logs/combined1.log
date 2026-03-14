@@ -16256,3 +16256,355 @@ Cannot read properties of undefined (reading 'city')
 2026-03-11 05:15:08 PM [info]: Database connected successfully 
 2026-03-11 05:15:21 PM [info]: Database connected successfully 
 2026-03-11 05:21:06 PM [info]: Database connected successfully 
+2026-03-12 09:46:05 AM [info]: Database connected successfully 
+2026-03-12 10:34:22 AM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-12 10:34:22 AM [info]: Login request received 
+2026-03-12 10:34:26 AM [info]: System log saved 
+2026-03-12 10:34:26 AM [info]: User logged in successfully 
+2026-03-12 10:52:42 AM [info]: Database connected successfully 
+2026-03-12 10:54:41 AM [info]: Database connected successfully 
+2026-03-12 10:58:13 AM [info]: Database connected successfully 
+2026-03-12 10:58:59 AM [info]: Database connected successfully 
+2026-03-12 10:59:18 AM [info]: Database connected successfully 
+2026-03-12 11:01:51 AM [info]: Database connected successfully 
+2026-03-12 11:03:49 AM [info]: Database connected successfully 
+2026-03-12 11:06:29 AM [info]: Database connected successfully 
+2026-03-12 11:11:24 AM [info]: Database connected successfully 
+2026-03-12 11:52:11 AM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-12 11:52:11 AM [info]: Login request received 
+2026-03-12 11:52:13 AM [info]: System log saved 
+2026-03-12 11:52:13 AM [info]: User logged in successfully 
+2026-03-12 11:53:17 AM [info]: Received GET request on /final-invoice/view/94fc48c3-5138-406f-a11d-c2c9b5c102c2 [IP: ::1]
+2026-03-12 11:53:17 AM [error]: Unhandled Error: Error fetching document: Error: Document with ID 94fc48c3-5138-406f-a11d-c2c9b5c102c2 not found 
+2026-03-12 11:53:18 AM [info]: Activity logged: ERROR - INVOICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 11:53:40 AM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 12:12:49 PM [info]: Received POST request on /final-invoice/05cf5355-6cba-4839-964c-20960680db3c [IP: ::1]
+2026-03-12 12:12:52 PM [error]: AppError: Invoice has already been created for this delivery challan 
+2026-03-12 12:12:52 PM [info]: Activity logged: ERROR - INVOICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:26:36 PM [info]: Received POST request on /final-invoice/05cf5355-6cba-4839-964c-20960680db3c [IP: ::1]
+2026-03-12 12:26:38 PM [error]: Unhandled Error: Failed to create Final Invoice 
+2026-03-12 12:26:38 PM [info]: Activity logged: ERROR - INVOICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:30:54 PM [info]: Received GET request on / [IP: 52.112.49.156]
+2026-03-12 12:30:54 PM [info]: Request received 
+2026-03-12 12:30:54 PM [info]: Received GET request on / [IP: 52.112.49.156]
+2026-03-12 12:30:54 PM [info]: Request received 
+2026-03-12 12:34:04 PM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-12 12:34:04 PM [info]: Login request received 
+2026-03-12 12:34:05 PM [info]: Active session stored 
+2026-03-12 12:34:06 PM [info]: System log saved 
+2026-03-12 12:34:06 PM [info]: User logged in successfully 
+2026-03-12 12:35:33 PM [info]: Received POST request on /final-invoice/05cf5355-6cba-4839-964c-20960680db3c [IP: ::1]
+2026-03-12 12:35:40 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 12:36:07 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 12:36:30 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56 [IP: ::1]
+2026-03-12 12:36:30 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:36:31 PM [info]: Activity logged: ERROR - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 12:38:33 PM [info]: Database connected successfully 
+2026-03-12 12:39:41 PM [info]: Database connected successfully 
+2026-03-12 12:40:47 PM [info]: Database connected successfully 
+2026-03-12 12:40:59 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56 [IP: ::1]
+2026-03-12 12:40:59 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:41:02 PM [info]: Activity logged: ERROR - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 12:46:17 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:46:17 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-12 12:46:21 PM [info]: Received POST request on /auth/refresh-token [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:46:21 PM [info]: Received request to refresh access token 
+2026-03-12 12:46:24 PM [info]: Access token refreshed successfully 
+2026-03-12 12:46:24 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:46:25 PM [info]: Getting All Employee 
+2026-03-12 12:46:26 PM [info]: Employee Getting successfully 
+2026-03-12 12:46:27 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:47:06 PM [info]: Database connected successfully 
+2026-03-12 12:47:06 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:48:13 PM [info]: Database connected successfully 
+2026-03-12 12:48:25 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:48:26 PM [info]: Getting All Employee 
+2026-03-12 12:48:26 PM [info]: Employee Getting successfully 
+2026-03-12 12:48:27 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:48:29 PM [info]: Received GET request on /employee/?search=sagar&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:48:29 PM [info]: Getting All Employee 
+2026-03-12 12:48:29 PM [info]: Employee Getting successfully 
+2026-03-12 12:48:30 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:48:58 PM [info]: Received GET request on /employee/?search=sudhan&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:48:58 PM [info]: Getting All Employee 
+2026-03-12 12:48:58 PM [info]: Employee Getting successfully 
+2026-03-12 12:49:01 PM [info]: Received GET request on /employee/?search=sudhanshu&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:49:01 PM [info]: Getting All Employee 
+2026-03-12 12:49:01 PM [info]: Employee Getting successfully 
+2026-03-12 12:49:01 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:49:01 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:49:30 PM [info]: Received GET request on /employee/?search=ashok&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:49:30 PM [info]: Getting All Employee 
+2026-03-12 12:49:30 PM [info]: Employee Getting successfully 
+2026-03-12 12:49:33 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:49:53 PM [info]: Received GET request on /employee/?search=hiren&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:49:53 PM [info]: Getting All Employee 
+2026-03-12 12:49:53 PM [info]: Employee Getting successfully 
+2026-03-12 12:49:55 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:50:58 PM [info]: Database connected successfully 
+2026-03-12 12:53:38 PM [info]: Database connected successfully 
+2026-03-12 12:53:59 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:54:23 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:54:23 PM [info]: Getting All Employee 
+2026-03-12 12:54:23 PM [info]: Employee Getting successfully 
+2026-03-12 12:54:24 PM [info]: Received GET request on /employee/?search=kishor&page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 12:54:24 PM [info]: Getting All Employee 
+2026-03-12 12:54:24 PM [info]: Employee Getting successfully 
+2026-03-12 12:54:24 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:54:24 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 12:54:45 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56 [IP: ::1]
+2026-03-12 12:54:45 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:54:47 PM [info]: Activity logged: ERROR - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 12:55:40 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56 [IP: ::1]
+2026-03-12 12:55:54 PM [info]: Shutting down gracefully... 
+2026-03-12 12:58:33 PM [info]: Database connected successfully 
+2026-03-12 12:59:48 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56 [IP: ::1]
+2026-03-12 12:59:48 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "ec29d246-b6dc-4534-adc6-79eb45e2e56" 
+2026-03-12 12:59:51 PM [info]: Activity logged: ERROR - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 01:04:07 PM [info]: Database connected successfully 
+2026-03-12 01:04:18 PM [info]: Database connected successfully 
+2026-03-12 01:04:24 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56c [IP: ::1]
+2026-03-12 01:04:26 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 01:05:16 PM [info]: Database connected successfully 
+2026-03-12 01:05:44 PM [info]: Received GET request on /final-invoice/view/ec29d246-b6dc-4534-adc6-79eb45e2e56c [IP: ::1]
+2026-03-12 01:05:46 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 01:13:14 PM [info]: Database connected successfully 
+2026-03-12 01:14:45 PM [info]: Received POST request on /final-invoice/05cf5355-6cba-4839-964c-20960680db3c [IP: ::1]
+2026-03-12 01:14:47 PM [error]: AppError: Invoice has already been created for this delivery challan 
+2026-03-12 01:14:47 PM [info]: Activity logged: ERROR - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 01:15:32 PM [info]: Received POST request on /final-invoice/05cf5355-6cba-4839-964c-20960680db3c [IP: ::1]
+2026-03-12 01:15:41 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 01:15:59 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 01:16:47 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 01:16:49 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:15:39 PM [info]: Database connected successfully 
+2026-03-12 02:16:10 PM [info]: Database connected successfully 
+2026-03-12 02:18:20 PM [info]: Received GET request on /final-invoice/download-pdf/8b9c875b-9ca0-4479-adbe-7e53797990ac [IP: ::1]
+2026-03-12 02:18:50 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:26:55 PM [info]: Database connected successfully 
+2026-03-12 02:27:30 PM [info]: Received GET request on /final-invoice/download-pdf/8b9c875b-9ca0-4479-adbe-7e53797990ac [IP: ::1]
+2026-03-12 02:27:35 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:29:29 PM [info]: Received GET request on /final-invoice/download-pdf/8b9c875b-9ca0-4479-adbe-7e53797990ac [IP: ::1]
+2026-03-12 02:29:35 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:32:19 PM [info]: Received GET request on /final-invoice/download-pdf/8b9c875b-9ca0-4479-adbe-7e53797990ac [IP: ::1]
+2026-03-12 02:32:27 PM [info]: Activity logged: CREATE - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:34:08 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 02:35:28 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 02:40:26 PM [info]: Database connected successfully 
+2026-03-12 02:41:10 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 02:41:13 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 02:42:20 PM [info]: Database connected successfully 
+2026-03-12 03:13:28 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 03:13:32 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 03:54:04 PM [info]: Database connected successfully 
+2026-03-12 03:54:25 PM [info]: Database connected successfully 
+2026-03-12 03:54:36 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 03:59:33 PM [info]: Database connected successfully 
+2026-03-12 04:03:22 PM [info]: Database connected successfully 
+2026-03-12 04:03:37 PM [info]: Database connected successfully 
+2026-03-12 04:07:34 PM [info]: Database connected successfully 
+2026-03-12 04:09:00 PM [info]: Database connected successfully 
+2026-03-12 04:09:01 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-12 04:09:09 PM [info]: Database connected successfully 
+2026-03-12 04:10:58 PM [info]: Database connected successfully 
+2026-03-12 04:11:00 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:17:13 PM [info]: Database connected successfully 
+2026-03-12 04:18:22 PM [info]: Database connected successfully 
+2026-03-12 04:18:30 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:21:47 PM [info]: Database connected successfully 
+2026-03-12 04:21:55 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:23:01 PM [info]: Database connected successfully 
+2026-03-12 04:23:22 PM [info]: Database connected successfully 
+2026-03-12 04:23:32 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:24:27 PM [info]: Database connected successfully 
+2026-03-12 04:24:28 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:26:03 PM [info]: Database connected successfully 
+2026-03-12 04:26:11 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 04:30:50 PM [info]: Received GET request on /sales-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /sales-target/sales-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /sales-target/sales-per-customer//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /procurement-target/procurement-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /procurement-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /procurement-target/procurement-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /sales-target/sales-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received GET request on /employee/all/partial [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-12 04:30:50 PM [info]: Received POST request on /auth/refresh-token [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:50 PM [info]: Received request to refresh access token 
+2026-03-12 04:30:51 PM [info]: Access token refreshed successfully 
+2026-03-12 04:30:51 PM [info]: Received GET request on /sales-target/sales-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /procurement-target/procurement-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /sales-target/sales-per-customer//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /procurement-target/procurement-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /sales-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /procurement-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:51 PM [info]: Received GET request on /sales-target/sales-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:52 PM [info]: Received GET request on /employee/all/partial [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:30:52 PM [info]: Employee Getting successfully 
+2026-03-12 04:30:52 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:30:57 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /procurement-target/procurement-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /sales-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /sales-target/sales-per-customer//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /procurement-target/performance//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /sales-target/sales-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /sales-target/sales-summary//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /employee/all/partial [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /procurement-target/procurement-per-product//2/2026 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:31:16 PM [info]: Employee Getting successfully 
+2026-03-12 04:31:16 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:31:40 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:29 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /packingMaterial/ [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /customers/names/all [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /products/partial/data [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /company/partial/details [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDCForCustomerCreated=false&overAllStatus=COMPLETE [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:36:38 PM [info]: Fetching all packing materials 
+2026-03-12 04:36:38 PM [info]: Fetching all products 
+2026-03-12 04:36:38 PM [info]: Fetching all products 
+2026-03-12 04:36:38 PM [info]: Fetched undefined products successfully 
+2026-03-12 04:36:38 PM [info]: Fetched undefined products successfully 
+2026-03-12 04:36:38 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:36:38 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:36:42 PM [info]: Activity logged: VIEW - GRN by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:36:42 PM [info]: Activity logged: VIEW - GRN by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:56:11 PM [info]: Received GET request on /returns/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /customer-delivery-challan/ [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /company/partial/details [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /customers/names/all [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:14 PM [info]: Fetching all products 
+2026-03-12 04:56:14 PM [info]: Fetched undefined products successfully 
+2026-03-12 04:56:19 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:56:19 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:56:32 PM [info]: Received GET request on /customer-delivery-challan/update/05cf5355-6cba-4839-964c-20960680db3c [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:38 PM [info]: Received GET request on /products/partial/ff02087e-da0f-4df6-8744-1a698b97d558 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:38 PM [info]: Received GET request on /products/getall/getvarient/ff02087e-da0f-4df6-8744-1a698b97d558 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:56:38 PM [info]: Fetching all products 
+2026-03-12 04:56:38 PM [info]: Fetching product with ID 
+2026-03-12 04:56:38 PM [info]: Fetched undefined products successfully 
+2026-03-12 04:56:38 PM [info]: Product with ID fetched successfully 
+2026-03-12 04:56:40 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:56:59 PM [info]: Received GET request on /returns/?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 04:57:03 PM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 04:57:37 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 05:00:47 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 05:04:40 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:57c4:3698:132:c1a8:1ed3:2524]
+2026-03-12 05:13:37 PM [info]: Database connected successfully 
+2026-03-12 05:14:18 PM [info]: Database connected successfully 
+2026-03-12 05:22:01 PM [info]: Database connected successfully 
+2026-03-12 05:23:05 PM [info]: Database connected successfully 
+2026-03-12 05:23:15 PM [info]: Received GET request on /final-invoice/ [IP: ::1]
+2026-03-12 05:23:32 PM [info]: Received GET request on /final-invoice/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 05:23:48 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 05:23:53 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 05:25:29 PM [info]: Database connected successfully 
+2026-03-12 05:25:35 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 05:25:37 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 05:27:43 PM [info]: Database connected successfully 
+2026-03-12 05:35:34 PM [info]: Database connected successfully 
+2026-03-12 05:35:46 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: ::1]
+2026-03-12 05:35:48 PM [info]: Activity logged: VIEW - INVOICE by user c3a14fe3-0f7d-4324-a9f0-5b2de53cbbe0 
+2026-03-12 05:55:47 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 05:55:47 PM [info]: Received GET request on /employee/?search=kishor&page=1&limit=10 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 05:55:47 PM [info]: Getting All Employee 
+2026-03-12 05:55:47 PM [info]: Employee Getting successfully 
+2026-03-12 05:55:48 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 05:59:17 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 05:59:17 PM [info]: Received GET request on /employee/?search=kishor&page=1&limit=10 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 05:59:17 PM [info]: Getting All Employee 
+2026-03-12 05:59:17 PM [info]: Employee Getting successfully 
+2026-03-12 05:59:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-12 06:25:17 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:25:17 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:25:18 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:25:18 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:25:19 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:25:19 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:34:47 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:34:47 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:34:49 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:34:49 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:34:49 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:34:50 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:35:47 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:35:47 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:35:47 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:35:48 PM [info]: Received GET request on /final-invoice/view/0 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-12 06:35:48 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-12 06:35:49 PM [info]: Activity logged: ERROR - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-12 06:35:55 PM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:79d5:a98c:a02e:8a6:29af:9a13]
+2026-03-13 09:27:40 AM [info]: Database connected successfully 
+2026-03-13 09:47:26 AM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-13 09:47:26 AM [info]: Login request received 
+2026-03-13 09:47:29 AM [info]: System log saved 
+2026-03-13 09:47:29 AM [info]: User logged in successfully 
+2026-03-13 09:57:26 AM [info]: Received POST request on /delivery-challan-report/download [IP: ::1]
+2026-03-13 09:57:28 AM [info]: Activity logged: CREATE - OTHER_DELIVERY_CHALLAN by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-13 10:07:41 AM [info]: Database connected successfully 
+2026-03-13 10:17:49 AM [info]: Database connected successfully 
+2026-03-13 10:20:45 AM [info]: Database connected successfully 
+2026-03-13 10:25:35 AM [info]: Database connected successfully 
+2026-03-13 10:26:02 AM [info]: Database connected successfully 
+2026-03-13 10:26:22 AM [info]: Database connected successfully 
+2026-03-13 10:52:13 AM [info]: Received GET request on / [IP: 52.112.49.157]
+2026-03-13 10:52:13 AM [info]: Request received 
+2026-03-13 10:52:13 AM [info]: Received GET request on / [IP: 52.112.49.157]
+2026-03-13 10:52:13 AM [info]: Request received 
+2026-03-13 11:08:35 AM [info]: Received GET request on /sales-target/sales-per-product//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /procurement-target/procurement-per-product//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /sales-target/performance//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /procurement-target/procurement-summary//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /sales-target/sales-per-customer//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /sales-target/sales-summary//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /employee/all/partial [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Received GET request on /procurement-target/performance//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:35 AM [info]: Employee Getting successfully 
+2026-03-13 11:08:35 AM [info]: Activity logged: VIEW - OTHER by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-13 11:08:36 AM [info]: Received GET request on /sales-target/sales-per-product//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /procurement-target/procurement-per-product//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /sales-target/performance//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /procurement-target/procurement-summary//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /sales-target/sales-per-customer//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /procurement-target/performance//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:36 AM [info]: Received GET request on /sales-target/sales-summary//2/2026 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:08:44 AM [info]: Received GET request on /final-invoice?page=1&limit=10 [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:09:07 AM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:09:13 AM [info]: Activity logged: VIEW - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-13 11:13:48 AM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 11:13:51 AM [info]: Activity logged: VIEW - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-13 11:46:57 AM [info]: Database connected successfully 
+2026-03-13 11:50:36 AM [info]: Database connected successfully 
+2026-03-13 11:57:28 AM [info]: Database connected successfully 
+2026-03-13 11:58:54 AM [info]: Database connected successfully 
+2026-03-13 11:59:54 AM [info]: Database connected successfully 
+2026-03-13 12:36:23 PM [info]: Database connected successfully 
+2026-03-13 12:38:04 PM [info]: Database connected successfully 
+2026-03-13 12:59:40 PM [info]: Received GET request on /final-invoice/view/2d128849-4cf7-48e4-b0d0-4eec61acc8be [IP: 2401:4900:561c:ee2f:d907:24c2:1de4:3281]
+2026-03-13 12:59:45 PM [info]: Activity logged: VIEW - INVOICE by user c4e181f5-d728-49b2-af54-192f518eb855 
+2026-03-13 02:20:37 PM [info]: Received GET request on /delivery-challan-report/download [IP: ::1]
+2026-03-13 02:20:43 PM [info]: Activity logged: CREATE - OTHER_DELIVERY_CHALLAN by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-13 02:22:51 PM [info]: Database connected successfully 
+2026-03-13 02:23:37 PM [info]: Database connected successfully 
+2026-03-13 02:56:10 PM [info]: Database connected successfully 
+2026-03-13 02:56:43 PM [info]: Database connected successfully 
+2026-03-13 04:45:46 PM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-13 04:45:46 PM [info]: Login request received 
+2026-03-13 04:45:48 PM [info]: System log saved 
+2026-03-13 04:45:48 PM [info]: User logged in successfully 
+2026-03-14 09:46:25 AM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-14 09:46:26 AM [info]: Login request received 
+2026-03-14 09:46:27 AM [info]: System log saved 
+2026-03-14 09:46:27 AM [info]: User logged in successfully 
+2026-03-14 09:47:47 AM [info]: Received POST request on /auth/login [IP: ::1]
+2026-03-14 09:47:47 AM [info]: Login request received 
+2026-03-14 09:47:47 AM [info]: System log saved 
+2026-03-14 09:47:47 AM [info]: User logged in successfully 

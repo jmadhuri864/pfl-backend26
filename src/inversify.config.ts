@@ -1279,6 +1279,8 @@ import { ReturnToVendorService } from "./services/retrunToVendor.service";
 import { ReturnToVendorRepository } from "./repositories/returnToVendor.repository";
 import { ReturnToVendor } from "./entities/returnToVendor.entity";
 import { ReturnToVendorController } from "./controllers/returnToVendor.controller";
+import { FinalInvoiceReportController } from "./controllers/finalInvoiceReport.controller";
+import { FinalInvoiceReportService } from "./services/finalInvoiceReport.service";
 
 // import { RegistrationReportService } from "./services/registrationReport.service";
 // import { RegistrationReportController } from "./controllers/registrationReport.controller";
@@ -1377,5 +1379,7 @@ container.bind<RfpaPaymentInfoRepository>(TYPES.RfpaPaymentInfoRepository).toDyn
 }).inRequestScope();
 container.bind<ReturnToVendorController>(TYPES.ReturnToVendorController).to(ReturnToVendorController).inSingletonScope();
 container.bind<FinalInvoiceService>(TYPES.FinalInvoiceService).to(FinalInvoiceService).inSingletonScope();
-container.bind<FinalInvoiceController>(TYPES.FinalInvoiceController).to(FinalInvoiceController).inSingletonScope()
+container.bind<FinalInvoiceController>(TYPES.FinalInvoiceController).to(FinalInvoiceController).inSingletonScope();
+container.bind<FinalInvoiceReportService>(TYPES.FinalInvoiceReportService).to(FinalInvoiceReportService).inSingletonScope();
+container.bind<FinalInvoiceReportController>(TYPES.FinalInvoiceReportController).to(FinalInvoiceReportController).inSingletonScope()
 export { container };
