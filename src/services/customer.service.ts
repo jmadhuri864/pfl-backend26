@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import * as XLSX from 'xlsx';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { Customer } from '../entities/customer.entity';
 import { CustomerCategoryService } from './customerCategory.service';
@@ -240,7 +240,7 @@ export class CustomerService {
     });
   }
 
-  async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
+async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
   const queryBuilder = this.customerRepository
     .createQueryBuilder('customer')
     .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
@@ -279,7 +279,7 @@ export class CustomerService {
   //   return { createdDate: formattedDate, createdTime: formattedTime };
   // }
 
-  const formattedData = customers.data.map((cust: any) => {
+  const formattedData = customers.data.map((cust) => {
     const { createdDate, createdTime } = formatDateTime(cust.createdAt);
 
     return {
@@ -287,50 +287,67 @@ export class CustomerService {
       createdBy: cust.createdBy 
         ? `${cust.createdBy.firstName} ${cust.createdBy.lastName}`
         : 'Unknown User',
-      customerTypes: cust.customerTypes?.name || null,
+      customerTypes: {
+        id:cust.customerTypes.id,
+        name:cust.customerTypes?.name || null
+      },
       createdDate,
       createdTime,
       status: cust.status.charAt(0).toUpperCase() + cust.status.slice(1),
       customerCode: cust.customerCode.toUpperCase(),
       organisationName: cust.organisationName,
       organisationType: cust.organisationType,
-      customerCategory: cust.customerCategory?.name || null,
-      primaryContactNo: cust.primaryContactNo,
-      secondaryContactNo: cust.secondaryContactNo,
-      emailPrimary: cust.emailPrimary,
-      emailSecondary: cust.emailSecondary,
-      customerAddress: cust.customerAddress 
-        ? `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()
-        : null,
-      billingDetails:{
-        billingName: cust.billingDetails?.billingName || null,
-        contactPersonFName: cust.billingDetails?.contactPersonFName || null,
-        contactPersonLName: cust.billingDetails?.contactPersonLName || null,
-        contactPersonMName: cust.billingDetails?.contactPersonMName || null,
-        billingAddress: cust.billingDetails?.billingAddress 
-          ? `${cust.billingDetails.billingAddress.address1 || ''} ${cust.billingDetails.billingAddress.address2 || ''} ${cust.billingDetails.billingAddress.city || ''} ${cust.billingDetails.billingAddress.state || ''} ${cust.billingDetails.billingAddress.pincode || ''}`.trim()
-          : null,
-        primaryContactNo: cust.billingDetails?.primaryContactNo || null,
-        emailPrimary: cust.billingDetails?.emailPrimary || null,
+      customerCategory: {
+        id:cust.customerCategory.id,
+        name:cust.customerCategory?.name || null
       },
-        deliveryDetails:{
-        receivingPersonFName: cust.deliveryDetails?.receivingPersonFName || null,
-        receivingPersonLName: cust.deliveryDetails?.receivingPersonLName || null,
-        receivingPersonMName: cust.deliveryDetails?.receivingPersonMName || null,
-        deliveryAddress: cust.deliveryDetails?.deliveryAddress 
-          ? `${cust.deliveryDetails.deliveryAddress.address1 || ''} ${cust.deliveryDetails.deliveryAddress.address2 || ''} ${cust.deliveryDetails.deliveryAddress.city || ''} ${cust.deliveryDetails.deliveryAddress.state || ''} ${cust.deliveryDetails.deliveryAddress.pincode || ''}`.trim()
-          : null,
-        primaryContactNo: cust.deliveryDetails?.primaryContactNo || null,
-        emailPrimary: cust.deliveryDetails?.emailPrimary || null,
-        },
+      primaryContactNo: cust.primaryContactNo,
+      emailPrimary: cust.emailPrimary,
+      refferdBy:{
+        id:cust.keyMobileNumbers.id,
+        refferdBy:`${cust.keyMobileNumbers?.ref1FName??''} ${cust.keyMobileNumbers?.ref1MName??''} ${cust.keyMobileNumbers?.ref1LName??''}`
+      },
+      customerAddress: {
+        id:cust.customerAddress.id,
+        customerAddress:cust.customerAddress 
+        ? `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()
+        : null},
+      contactPersonName:{
+        id:cust.billingDetails.id,
+        //billingName: cust.billingDetails?.billingName || null,
+        // contactPersonFName: cust.billingDetails?.contactPersonFName || null,
+        // contactPersonLName: cust.billingDetails?.contactPersonLName || null,
+        // contactPersonMName: cust.billingDetails?.contactPersonMName || null,
+        contactPersonName:`${cust.billingDetails?.contactPersonFName??''} ${cust.billingDetails?.contactPersonMName??''} ${cust.billingDetails?.contactPersonLName??''}`
+      }
+
+      //   billingAddress: cust.billingDetails?.billingAddress 
+      //     ? `${cust.billingDetails.billingAddress.address1 || ''} ${cust.billingDetails.billingAddress.address2 || ''} ${cust.billingDetails.billingAddress.city || ''} ${cust.billingDetails.billingAddress.state || ''} ${cust.billingDetails.billingAddress.pincode || ''}`.trim()
+      //     : null,
+      //   primaryContactNo: cust.billingDetails?.primaryContactNo || null,
+      //   emailPrimary: cust.billingDetails?.emailPrimary || null,
+      // },
+        // deliveryDetails:{
+        // receivingPersonFName: cust.deliveryDetails?.receivingPersonFName || null,
+        // receivingPersonLName: cust.deliveryDetails?.receivingPersonLName || null,
+        // receivingPersonMName: cust.deliveryDetails?.receivingPersonMName || null,
+        // deliveryAddress: cust.deliveryDetails?.deliveryAddress 
+        //   ? `${cust.deliveryDetails.deliveryAddress.address1 || ''} ${cust.deliveryDetails.deliveryAddress.address2 || ''} ${cust.deliveryDetails.deliveryAddress.city || ''} ${cust.deliveryDetails.deliveryAddress.state || ''} ${cust.deliveryDetails.deliveryAddress.pincode || ''}`.trim()
+        //   : null,
+        // primaryContactNo: cust.deliveryDetails?.primaryContactNo || null,
+        // emailPrimary: cust.deliveryDetails?.emailPrimary || null,
+        // },
     };
   });
+
+  console.log("customer data",customers)
 
   return {
     ...customers,
     data: formattedData,
   };
 }
+
 
 
 
@@ -1465,4 +1482,12 @@ export class CustomerService {
     console.log(`Customer with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
+  async softDeleteCustomers(userIds: string[]) {
+
+  const result = await this.customerRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
 }

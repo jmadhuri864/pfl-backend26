@@ -20,7 +20,7 @@ import AppError from "../utils/appError";
 import { UOMService } from "../services/UOM.service";
 import { NotificationService } from "../services/notification.service";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
@@ -61,13 +61,13 @@ export class UOMController {
       ControllerLogger.logList('UOM', req, res);
 
       // Send notification for UOM list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'UOM records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'UOM records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -81,6 +81,7 @@ export class UOMController {
       next(err);
     }
   }
+
 
   @httpGet("/getAll/partialdata")
   public async getAllPartialData(@response() res: Response, 
@@ -120,13 +121,13 @@ export class UOMController {
       ControllerLogger.logView('UOM', id, req, res);
 
       // Send notification for UOM view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `UOM viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `UOM viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -153,7 +154,7 @@ export class UOMController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `UOM created successfully: ${uom.id}`,
+          `UOM created successfully`,
           userId
         );
       }
@@ -191,7 +192,7 @@ export class UOMController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `UOM updated successfully: ${id}`,
+          `UOM updated successfully`,
           userId
         );
       }
@@ -228,7 +229,7 @@ export class UOMController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `UOM deleted successfully: ${id}`,
+            `UOM deleted successfully`,
             userId
           );
         }

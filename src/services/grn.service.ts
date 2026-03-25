@@ -459,6 +459,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     const related = doc.relatedData;
 
     return {
+      id: related?.id || null,
       documentId: doc.id,
       overAllStatus: doc.status,
       createdBy: doc.lastActionBy
@@ -466,8 +467,6 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         : null,
       createdDate: formatDateTime(doc.createdAt).createdDate,
       createdTime: formatDateTime(doc.createdAt).createdTime,
-
-      id: related?.id || null,
       companyName: related?.companyName?.name || null,
       grnType: related?.grnType || null,
       purchaseType:related?.purchaseType || null,
@@ -488,12 +487,11 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
      securityPerson:related?.securityPerson|| null,
      deliveryReceivingPerson:related?.deliveryReceivingPerson || null,
      rmn:related?.rmn || null,
-   
       purchaseLocation: related?.purchaseLocation?.name || null,
       purchaseForSalesLocation: related?.purchaseForSalesLocation?.name || null,
-      otherPurchaseForSalesLoc: related?.otherPurchaseForSalesLoc || null,
-      otherPurchaseLoc: related?.otherPurchaseLoc || null,
-      purchaseInstructionsBy: related?.purchaseInstructionsBy || null,
+      // otherPurchaseForSalesLoc: related?.otherPurchaseForSalesLoc || null,
+      // otherPurchaseLoc: related?.otherPurchaseLoc || null,
+     // purchaseInstructionsBy: related?.purchaseInstructionsBy || null,
       grnNo: related?.grnNo || null,
 paymentInfo: {
   id: related?.paymentInfo?.id || null,
@@ -503,24 +501,24 @@ paymentInfo: {
     creditPeriod:related?.paymentInfo?.creditPeriod || null,
     dueDate:related?.paymentInfo?.dueDate || null,
     advancePaidAmt:related?.paymentInfo?.advancePaidAmt || null,
-    remainingAmt:related?.paymentInfo?.remainingAmt || null,
+    //remainingAmt:related?.paymentInfo?.remainingAmt || null,
 },
-      grnProducts:
-        related?.grnProducts?.map((product: any) => ({
-          id: product.id,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          productName: product.productName?.id,
-          variant: product.variant?.id || null,
-          uom: product.uom?.id,
-          amount: product.amount,
-          rtv: product.rtv,
-          purchaseDate: product.purchaseDate,
-          dispatchDate: product.dispatchDate,
-          deliveryDate: product.deliveryDate,
-          deliveryLocation: product.deliveryLocation,
-          expectedHarvestDate: product.expectedHarvestDate,
-        })) || [],
+      // grnProducts:
+      //   related?.grnProducts?.map((product: any) => ({
+      //     id: product.id,
+      //     quantity: product.quantity,
+      //     unitPrice: product.unitPrice,
+      //     productName: product.productName?.id,
+      //     variant: product.variant?.id || null,
+      //     uom: product.uom?.id,
+      //     amount: product.amount,
+      //     rtv: product.rtv,
+      //     purchaseDate: product.purchaseDate,
+      //     dispatchDate: product.dispatchDate,
+      //     deliveryDate: product.deliveryDate,
+      //     deliveryLocation: product.deliveryLocation,
+      //     expectedHarvestDate: product.expectedHarvestDate,
+      //   })) || [],
     };
   });
 

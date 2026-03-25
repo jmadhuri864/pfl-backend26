@@ -7,6 +7,7 @@ import {
   requestParam,
   response,
   next,
+  httpDelete,
 } from 'inversify-express-utils';
 import { inject } from 'inversify';
 import { TYPES } from '../types';
@@ -98,18 +99,18 @@ export class FinalInvoiceController {
       }
 
       // 🔔 Send notification for invoice view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const invoiceNo = invoice.data?.invoiceNo || 'Invoice';
-          await this.notificationService.createNoti(
-            `Viewed final invoice "${invoiceNo}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Final invoice view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     const invoiceNo = invoice.data?.invoiceNo || 'Invoice';
+      //     await this.notificationService.createNoti(
+      //       `Viewed final invoice "${invoiceNo}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Final invoice view notification error:', notifError);
+      // }
 
       ControllerLogger.logView('Final Invoice', id, req, res);
       res.status(200).json({
@@ -153,17 +154,17 @@ export class FinalInvoiceController {
       }
 
       // 🔔 Send notification for get all invoices
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${invoices.meta.total} final invoices`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all final invoices notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${invoices.meta.total} final invoices`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all final invoices notification error:', notifError);
+      // }
 
       ControllerLogger.logGetAllRecords('Final Invoices', req, res);
       res.status(200).json({
@@ -206,7 +207,7 @@ export class FinalInvoiceController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Final invoice with ID ${id} updated successfully`,
+            `Final invoice updated successfully`,
             userId
           );
         }
@@ -225,21 +226,22 @@ export class FinalInvoiceController {
     }
   }
 
-  @httpGet('/download-pdf/:id')
+  @httpPost('/pdf/download')
   public async downloadInvoicePdf(
-    @requestParam('id') id: string,
+    
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      console.log(`📥 Downloading invoice PDF for ID: ${id}`);
+      const invoiceId=req.body.id;
+      console.log(`📥 Downloading invoice PDF for ID: ${invoiceId}`);
 
       // Fetch invoice data with all relations
-      const invoiceData = await this.finalInvoiceService.getByIdForPdf(id);
+      const invoiceData = await this.finalInvoiceService.getByIdForPdf(invoiceId);
 
       if (!invoiceData) {
-        ControllerLogger.logNotFound('Final Invoice', id, req, res);
+        ControllerLogger.logNotFound('Final Invoice', invoiceId, req, res);
         return next(new AppError(404, 'Final invoice not found'));
       }
 
@@ -267,7 +269,7 @@ export class FinalInvoiceController {
       }
 
       console.log('✅ Invoice PDF generated successfully:', pdfUrl);
-      ControllerLogger.logSuccess('Invoice PDF generated', id, req, res);
+      ControllerLogger.logSuccess('Invoice PDF generated', invoiceId, req, res);
       
       res.status(200).json({
         status: 'success',
@@ -280,6 +282,42 @@ export class FinalInvoiceController {
     } catch (err) {
       ControllerLogger.logError('Download Invoice PDF', err, req, res);
       next(err);
+    }
+  }
+   //TODO:Delete Multiple
+@httpDelete('/delete/multiple')
+  public async deleteMultipleFinalInvoices(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return next(new AppError(400, 'An array of FinalInvoice IDs is required'));
+      }
+      const result = await this.finalInvoiceService.deleteMultipleFinalInvoices(ids);
+
+      // 🔔 Send notification for bulk AQR deletion
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `Final Invoices deleted successfully`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
+      res.status(200).json({
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
+      });
+    }
+      catch (error) {
+       ControllerLogger.logError('Final Invoices deleteed', error, req, res);
+      next(error);
     }
   }
 }

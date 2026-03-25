@@ -29,6 +29,8 @@ export class Aqr extends Model {
 
   @Column({ nullable: true })
   arrivedQty: string;
+  @Column({ nullable: true })
+  aqrNo: string;
   
   @Column({ nullable: true })
   samplingQty: string;

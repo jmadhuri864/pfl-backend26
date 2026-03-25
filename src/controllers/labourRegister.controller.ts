@@ -51,7 +51,7 @@ import { NotificationService } from "../services/notification.service";
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Labour Register record created successfully: ${labor.id}`,
+            `Labour Register record created successfully`,
             userId
           );
         }
@@ -96,13 +96,13 @@ import { NotificationService } from "../services/notification.service";
         ControllerLogger.logList('Labour Register', req, res);
 
         // Send notification for labour register list access
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            'Labour Register records list accessed successfully',
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     'Labour Register records list accessed successfully',
+        //     userId
+        //   );
+        // }
   
         res.status(200).json({
           status: "success",
@@ -136,13 +136,13 @@ import { NotificationService } from "../services/notification.service";
         }
 
         // Send notification for labour register view
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Labour Register record viewed: ${id}`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `Labour Register record viewed: ${id}`,
+        //     userId
+        //   );
+        // }
   
         res.status(200).json({
           status: "success",
@@ -179,7 +179,7 @@ import { NotificationService } from "../services/notification.service";
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Labour Register record updated successfully: ${id}`,
+            `Labour Register record updated successfully`,
             userId
           );
         }
@@ -216,7 +216,7 @@ import { NotificationService } from "../services/notification.service";
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Labour Register record deleted successfully: ${id}`,
+            `Labour Register record deleted successfully`,
             userId
           );
         }

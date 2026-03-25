@@ -6,6 +6,7 @@ import { TYPES } from "../types";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { In } from "typeorm";
 
 
 @injectable()
@@ -45,15 +46,26 @@ export class VendorCategoryService {
   //   // Return paginated results using the paginateQuery utility
   //  // return await paginateQuery(queryBuilder, queryOptions);
   // }
-  public async getCategories(queryOptions:PaginationOptions): Promise<any> {
+ public async getCategories(queryOptions:PaginationOptions): Promise<any> {
    
 
     let baseQuery = await this.vendorCategoryRepository.createQueryBuilder('vendorCategory')
         .leftJoinAndSelect('vendorCategory.vendorSubcategories', 'vendorSubcategories')
         .orderBy('vendorCategory.createdAt', 'DESC'); 
 
-return await buildQuery(baseQuery, queryOptions, 'vendorCategory');
+ const result=await buildQuery(baseQuery, queryOptions, 'vendorCategory');
+ return{
+  data:result.data.map((category)=>{
+    return{
+      id:category.id,
+      name:category.name,
+
+    }
+  }),
+  meta:result.meta
+ }
   }
+  
   
   public async getById(id: string): Promise<VendorCategory | null> {
     return this.vendorCategoryRepository.findOne({
@@ -132,4 +144,12 @@ return await buildQuery(baseQuery, queryOptions, 'vendorCategory');
     );
     return true;
   }
+  async softDeleteCategory(userIds: string[]) {
+
+  const result = await this.vendorCategoryRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
 }

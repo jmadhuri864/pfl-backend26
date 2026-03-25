@@ -125,18 +125,18 @@ export class DealSlipController {
         });
       }
 
-      // 🔔 Send notification for get all deal slips
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${dealSlips.meta.total} deal slips`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all deal slips notification error:', notifError);
-      }
+      // // 🔔 Send notification for get all deal slips
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${dealSlips.meta.total} deal slips`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all deal slips notification error:', notifError);
+      // }
 
       ControllerLogger.logGetAllRecords('Deal Slips', req, res);
       res.status(200).json({
@@ -168,17 +168,17 @@ export class DealSlipController {
       }
       
       // 🔔 Send notification for deal slip view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed deal slip "${dealSlip.dealSlipNo}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Deal slip view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed deal slip "${dealSlip.dealSlipNo}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Deal slip view notification error:', notifError);
+      // }
       
       ControllerLogger.logView('Deal Slip', id, req, res);
       res.status(200).json({
@@ -323,17 +323,17 @@ export class DealSlipController {
       }
       
       // 🔔 Send notification for deal slip approval
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Deal slip approved with status: ${approvalStatus}`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Deal slip approval notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Deal slip approved with status: ${approvalStatus}`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Deal slip approval notification error:', notifError);
+      // }
       
       ControllerLogger.logSuccess('Deal Slip approved', dealSlipId, req, res);
       res.status(200).json({
@@ -516,7 +516,20 @@ export class DealSlipController {
   ) {
     try {
       const result = await this.dealSlipService.deleteMultipleDealSlips(ids.ids);
-      
+
+      // 🔔 Send notification for multiple deal slips deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `${ids.ids.length} Deal Slip(s) deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Delete multiple deal slips notification error:', notifError);
+      }
+
       ControllerLogger.logSuccess('Multiple Deal Slips deleted', `${ids.ids.length} items`, req, res);
       res.status(200).json({
         message: result.message,

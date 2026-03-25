@@ -148,7 +148,7 @@ if (input.departments && input.departments.length > 0) {
       .leftJoinAndSelect('user.currentOfficeLocation', 'currentOfficeLocation')
       .leftJoinAndSelect('user.accessLocation','accessLocation')
 
-      .leftJoinAndSelect('user.companyName', 'companyName')
+      //.leftJoinAndSelect('user.companyName', 'companyName')
 
       //.leftJoinAndSelect('user.currentLevel', 'currentLevel')
       .orderBy('user.createdAt', 'DESC');
@@ -179,10 +179,10 @@ if (input.departments && input.departments.length > 0) {
       primaryEmail: user.primaryEmail,
       secondaryEmail: user.secondaryEmail,
       joiningDate: user.joiningDate,
-      designation: user.designation,
+      //designation: user.designation,
       cugNo: user.cugNo,
-      otherWorkLocationInput: user.otherWorkLocationInput,
-      workEmail: user.workEmail,
+      //otherWorkLocationInput: user.otherWorkLocationInput,
+     workEmail: user.workEmail,
       employeeId: user.employeeId,
       status: user.status,
       password: user.tempPlainPassword,
@@ -208,6 +208,7 @@ if (input.departments && input.departments.length > 0) {
       meta,
     };
   }
+
 
   async findUserById(userId: string): Promise<any> {
     const user = await this.userRepository.findOne({
@@ -1014,6 +1015,13 @@ isAddressSame:user.isAddressSame,
     return formattedHierarchy;
   }
 
+async softDeleteEmployees(userIds: string[]) {
 
+  const result = await this.userRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
   
 }

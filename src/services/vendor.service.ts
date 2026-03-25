@@ -995,8 +995,8 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     //.leftJoinAndSelect('vendor.ref2Address', 'ref2Address')
     .leftJoinAndSelect('vendor.mainProduct','product')
     .leftJoinAndSelect('vendor.listOfAllProducts','listOfAllProducts')
-    .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
-    .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
+    // .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
+    // .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
     .leftJoinAndSelect('vendor.category', 'category')
     .orderBy('vendor.createdAt', 'DESC');
@@ -1004,7 +1004,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
   const vendors = await buildQuery(queryBuilder, queryOptions, 'vendor');
 
   
-  const formattedData = vendors.data.map((vendor: any) => {
+  const formattedData = vendors.data.map((vendor) => {
     const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
 
     return {
@@ -1014,40 +1014,46 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       status:vendor.status,
       vendorCode:`${vendor.vendorCode}`.toUpperCase(),
       companyName:vendor.companyName,
-      classification:vendor.classification,
-      category:vendor.category.name,
-      subcategory:vendor.subcategory.name,
-      officeAddress:vendor.officeAddress? formatAddress(vendor.officeAddress) : '',
+      category:{
+        id:vendor.category.id,
+        name:vendor.category.name},
+      subcategory:{
+        id:vendor.subcategory.id,
+        name:vendor.subcategory.name},
+      officeAddress:{
+        id:vendor.officeAddress.id,
+        address:vendor.officeAddress? formatAddress(vendor.officeAddress) : ''},
       officeContactNo:vendor.officeContactNo,
-      officeEmail:vendor.officeEmail,
-      gstn:`${vendor.gstn}`.toUpperCase(),
-      panNo:`${vendor.panNo}`.toUpperCase() ,
-      msmeNo:`${vendor.msmeNo}`.toUpperCase(),
-      tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
-      paymentMode:vendor.paymentMode,
-      proposedPaymentTerms:vendor.proposedPaymentTerms,
-      creditTerms:vendor.creditTerms,
       listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
                         .map((product:Product)=>product?.name)
                         .join(','):'',
       mainProduct:vendor.mainProduct?.name || '', 
-      listOfAllPackingMaterials:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
-                                 .map((material:PackingMaterial)=>material?.packagingMaterialName)
-                                 .join(',') : '',
-      mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
       dispatchCenter:vendor.dispatchCenter,
       wareHouseLocation:vendor.warehouseLocations,
       packingCenterLocation:vendor.packingCenterLocation,
-      vendorSalesInfo:{
-        contactFName:vendor.vendorSaleInfo.contactFName ,
-        contactMName:vendor.vendorSaleInfo.contactMName ,
-        contactLName:vendor.vendorSaleInfo.contactLName ,
-        directContactNumber:vendor.vendorSaleInfo.directContactNumber ,
-        mobileNumber:vendor.vendorSaleInfo.mobileNumber,
-        email:vendor.vendorSaleInfo.email
-      },
       createdDate,
       createdTime,
+     // classification:vendor.classification,
+      //officeEmail:vendor.officeEmail,
+      //gstn:`${vendor.gstn}`.toUpperCase(),
+      // panNo:`${vendor.panNo}`.toUpperCase() ,
+      // msmeNo:`${vendor.msmeNo}`.toUpperCase(),
+      // tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
+      // paymentMode:vendor.paymentMode,
+      // proposedPaymentTerms:vendor.proposedPaymentTerms,
+      //creditTerms:vendor.creditTerms,
+      // listOfAllPackingMaterials:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
+      //                            .map((material:PackingMaterial)=>material?.packagingMaterialName)
+      //                            .join(',') : '',
+      // mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
+      // vendorSalesInfo:{
+      //   contactFName:vendor.vendorSaleInfo.contactFName ,
+      //   contactMName:vendor.vendorSaleInfo.contactMName ,
+      //   contactLName:vendor.vendorSaleInfo.contactLName ,
+      //   directContactNumber:vendor.vendorSaleInfo.directContactNumber ,
+      //   mobileNumber:vendor.vendorSaleInfo.mobileNumber,
+      //   email:vendor.vendorSaleInfo.email
+      // }, 
     };
   });
 
@@ -1679,6 +1685,14 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
   
 }
 
+async softDeleteVendors(vendorIds: string[]) {
+
+  const result = await this.userRepository.softDelete({
+    id: In(vendorIds)
+  });
+
+  return result;
+}
 
 
 

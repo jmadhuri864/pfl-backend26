@@ -1,5 +1,5 @@
 import { inject } from "inversify";
-import { controller, httpGet, next, response,request, requestParam, httpPost, requestBody, httpPatch } from "inversify-express-utils";
+import { controller, httpGet, next, response,request, requestParam, httpPost, requestBody, httpPatch, httpDelete } from "inversify-express-utils";
 import { TYPES } from "../types";
 import { PostReturnByCustomerService } from "../services/postReturnByCustomer.service";
 import { NextFunction,Request,Response } from "express";
@@ -48,12 +48,12 @@ console.log("User ID:", userId);
       ControllerLogger.logList("Post Return By Customer", req, res);
 
       
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Post Return By Customer records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Post Return By Customer records list accessed successfully',
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -84,13 +84,13 @@ console.log("User ID:", userId);
       ControllerLogger.logView("Post Return By Customer", id, req, res);
 
       // Send notification for post return view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Post Return By Customer viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Post Return By Customer viewed: ${id}`,
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -154,7 +154,41 @@ console.log("User ID:", userId);
     }
   }
 
+@httpDelete('/delete/multiple')
+  public async deleteMultipleRBC(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return next(new AppError(400, 'An array of RBC IDs is required'));
+      }
+      const result = await this.postReturnByCustomerService.deleteMultipleRBC(ids);
 
+      // 🔔 Send notification for bulk AQR deletion
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `RBCs deleted successfully`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
+      res.status(200).json({
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
+      });
+    }
+      catch (error) {
+       ControllerLogger.logError('RBC deleteed', error, req, res);
+      next(error);
+    }
+  }
 
   @httpPost("/")
   public async createPostReturn(
@@ -177,7 +211,7 @@ console.log("User ID:", userId);
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Post Return By Customer created successfully: ${newPostReturn.id}`,
+          `Post Return By Customer created successfully`,
           userId
         );
       }
@@ -224,7 +258,7 @@ console.log("User ID:", userId);
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Post Return By Customer updated successfully: ${id}`,
+            `Post Return By Customer updated successfully`,
             userId
           );
         }
@@ -239,5 +273,41 @@ console.log("User ID:", userId);
         ControllerLogger.logError('Post Return By Customer update', err, req, res);
         next(err);
       }
+    }
+    @httpPost('/export-report')
+  async exportReport(@request() req: Request,
+      @response() res: Response,
+      @next() next: NextFunction,) {
+  
+        try{
+          console.log("Filter :"+ req.body);
+          
+          const buffer = await this.postReturnByCustomerService.generateReturnByCustomerReport(req.body);
+  
+          if (!buffer) {
+          ControllerLogger.logOperationFailed('Export', 'Final Invoice Report', 'No data found for the given filters', req, res);
+          return res.status(404).json({
+            status: 'error',
+            message: 'No data found for the given filters',
+          });
+        }
+  
+  
+        res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=ReturnBYCustomer_Report.xlsx',
+      );
+  
+      res.send(buffer);
+  
+  
+        }catch(err){
+          ControllerLogger.logError('Export Excel to Spaces', err, req, res);
+        next(err);
+        }
     }
 }

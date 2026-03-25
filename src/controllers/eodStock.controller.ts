@@ -50,7 +50,7 @@ export class EodStockController {
       }
 
       await this.notificationService.createNoti(
-        `New stock created: ${stock}`,
+        `New EOD Stock created`,
         res.locals.user.id,
       );
       
@@ -81,10 +81,10 @@ export class EodStockController {
         return next(new AppError(404, 'Stock report not found'));
       }
 
-      await this.notificationService.createNoti(
-        `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('EOD Stock', docId, req, res);
       return res.status(200).json({
@@ -113,10 +113,10 @@ export class EodStockController {
         return next(new AppError(404, 'Stock report not found'));
       }
 
-      await this.notificationService.createNoti(
-        `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('EOD Stock (for update)', id, req, res);
       return res.status(200).json({
@@ -145,10 +145,10 @@ export class EodStockController {
         return next(new AppError(404, 'Stock report not found'));
       }
 
-      await this.notificationService.createNoti(
-        `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('EOD Stock', stockId, req, res);
       return res.status(200).json({
@@ -201,16 +201,16 @@ export class EodStockController {
       }
 
       // 🔔 Send notification for get all EOD stocks
-      try {
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${stocks.meta.total} EOD stock reports`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all EOD stocks notification error:', notifError);
-      }
+      // try {
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${stocks.meta.total} EOD stock reports`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all EOD stocks notification error:', notifError);
+      // }
 
       ControllerLogger.logGetAllRecords('EOD Stocks', req, res);
       return res.status(200).json({
@@ -256,7 +256,7 @@ export class EodStockController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `EOD stock report with ID ${id} updated successfully`,
+            `EOD stock report updated successfully`,
             userId
           );
         }
@@ -354,7 +354,7 @@ export class EodStockController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `EOD stock report with ID ${id} deleted successfully`,
+            `EOD stock report deleted successfully`,
             userId
           );
         }
@@ -369,4 +369,41 @@ export class EodStockController {
       next(err);
     }
   }
+   //TODO:Delete Multiple
+@httpDelete('/delete/multiple')
+  public async deleteMultipleEodStock(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return next(new AppError(400, 'An array of EODStock IDs is required'));
+      }
+      const result = await this.eodStockService.deleteMultipleEodStock(ids);
+
+      // 🔔 Send notification for bulk AQR deletion
+      try {
+        const userId = res.locals.user.id;
+        await this.notificationService.createNoti(
+          `EodStock deleted successfully`,
+          userId
+        );
+      } catch (notifError) {
+        console.log('Notification error:', notifError);
+      }
+
+      res.status(200).json({
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
+      });
+    }
+      catch (error) {
+       ControllerLogger.logError('EODStock deleteed', error, req, res);
+      next(error);
+    }
+  }
+
 }

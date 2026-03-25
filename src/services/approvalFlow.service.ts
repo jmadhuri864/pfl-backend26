@@ -147,7 +147,7 @@ export class ApprovalFlowService {
     return await this.approvalFlowRepository.save(approvalFlow);
   }
 
-  async getAll(type?: string): Promise<any> {
+ async getAll(type?: string): Promise<any> {
     const query = await this.approvalFlowRepository
       .createQueryBuilder('approvalflows')
       .leftJoinAndSelect('approvalflows.creator', 'creator')
@@ -163,8 +163,8 @@ export class ApprovalFlowService {
       .leftJoinAndSelect('fourthApprover.users', 'fourthApproverUsers')
       .leftJoinAndSelect('approvers.fifthApprover', 'fifthApprover')
       .leftJoinAndSelect('fifthApprover.users', 'fifthApproverUsers')
-      .leftJoinAndSelect('approvers.sixthApprover', 'sixthApprover')
-      .leftJoinAndSelect('sixthApprover.users', 'sixthApproverUsers')
+      // .leftJoinAndSelect('approvers.sixthApprover', 'sixthApprover')
+      // .leftJoinAndSelect('sixthApprover.users', 'sixthApproverUsers')
       .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
       .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
       .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers');
@@ -249,9 +249,9 @@ export class ApprovalFlowService {
                 fifthApprover: result.approvers.fifthApprover
                   ? mapApprover(result.approvers.fifthApprover)
                   : null,
-                sixthApprover: result.approvers.sixthApprover
-                  ? mapApprover(result.approvers.sixthApprover)
-                  : null,
+                // sixthApprover: result.approvers.sixthApprover
+                //   ? mapApprover(result.approvers.sixthApprover)
+                //   : null,
               }
             : null,
 

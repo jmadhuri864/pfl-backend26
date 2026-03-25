@@ -84,11 +84,21 @@ public async getAllVouchers(
           createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
           createdDate: formatDateTime(doc.createdAt).createdDate,
           createdTime: formatDateTime(doc.createdAt).createdTime,
-          ...doc.relatedData,
+          //...doc.relatedData,
          id: doc.relatedData.id,
         companyName: doc.relatedData.companyName?.name || null,
         grnNo: doc.relatedData.grnNo?.grnNo || null,
-        challanNo: doc.relatedData.challanNo?.challanNo || null,       
+        challanNo: doc.relatedData.challanNo?.challanNo || null,  
+            debitCreditTo:doc.relatedData.debitCreditTo,
+            voucherNo:doc.relatedData.voucherNo,
+            payReceivedFrom:doc.relatedData.payReceivedFrom,
+            location:doc.relatedData.location,
+            totalAmt:doc.relatedData.totalAmt,
+            amtWords:doc.relatedData.amtWords,
+            paymentMode:doc.relatedData.paymentMode,
+            receiverName:doc.relatedData.receiverName,
+            remark:doc.relatedData.remark,
+        
         }))
 // ✅ Helper to flatten objects into a searchable string
   const objectToString = (obj: any): string => {

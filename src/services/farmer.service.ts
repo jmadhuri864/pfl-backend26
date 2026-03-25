@@ -24,6 +24,7 @@ import { User } from '../entities/user.entity';
 import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
 import { CreateBranchBodySchema } from '../schemas/branch.schema';
+import { In } from 'typeorm';
 
 @injectable()
 export class FarmerService {
@@ -116,24 +117,43 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       email: farmer.email,
       gender:farmer.gender,
       dob: farmer.dob,
-      residensialAddress: farmer.residensialAddress.address1+" "+farmer.residensialAddress.address2+" "+farmer.residensialAddress.location+" "+farmer.residensialAddress.city+" "+farmer.residensialAddress.state+" "+farmer.residensialAddress.pincode,
-      farmAddress: farmer.farmAddress.address1+" "+farmer.farmAddress.address2+" "+farmer.farmAddress.location+" "+farmer.farmAddress.city+" "+farmer.farmAddress.state+" "+farmer.farmAddress.pincode,
+      // residensialAddress: farmer.residensialAddress.address1+" "+farmer.residensialAddress.address2+" "+farmer.residensialAddress.location+" "+farmer.residensialAddress.city+" "+farmer.residensialAddress.state+" "+farmer.residensialAddress.pincode,
+      // farmAddress: farmer.farmAddress.address1+" "+farmer.farmAddress.address2+" "+farmer.farmAddress.location+" "+farmer.farmAddress.city+" "+farmer.farmAddress.state+" "+farmer.farmAddress.pincode,
+      residensialAddress: [
+      farmer.residensialAddress?.address1,
+      farmer.residensialAddress?.address2,
+      farmer.residensialAddress?.location,
+      farmer.residensialAddress?.city,
+        farmer.residensialAddress?.state,
+        farmer.residensialAddress?.pincode
+      ].filter(Boolean).join(' '),
+
+      farmAddress: [
+        farmer.farmAddress?.address1,
+        farmer.farmAddress?.address2,
+        farmer.farmAddress?.location,
+        farmer.farmAddress?.city,
+        farmer.farmAddress?.state,
+        farmer.farmAddress?.pincode
+      ].filter(Boolean).join(' '),
       totalLandArea: farmer.totalLandArea,
       cultivationArea: farmer.cultivationArea,
       landHoldingStatus: farmer.landHoldingStatus,
       landStatus: farmer.landStatus,
       idProofNo: farmer.idProofNo.toUpperCase(),
-      sevenTwelveNo: farmer.sevenTwelveNo,
+      //sevenTwelveNo: farmer.sevenTwelveNo,
     };
   });
 
   // ✅ Return final structured response
   return {
-    ...farmers,
+   // ...farmers,
 
     data: formattedData,
+    meta:farmers.meta
   };
 }
+
 
 
   public async getAllFarmerCodes(): Promise<string[]> {
@@ -249,7 +269,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       currentPage: meta.page,
       totalPages: meta.pages,
     };}
-  public async getAllFarmer(
+   public async getAllFarmer(
     queryOptions: PaginationOptions,
   ): Promise<{ data1: any[]; meta: any }> {
     const queryBuilder = this.farmerRepository
@@ -532,7 +552,7 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     };
   }
 
-  public async getAllFarmerWithFilter(filter: string): Promise<any[]> {
+ public async getAllFarmerWithFilter(filter: string): Promise<any[]> {
     const query = this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoin('farmer.residensialAddress', 'residensialAddress')
@@ -1274,6 +1294,14 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
       .getOne();
 
     return farmer;
+  }
+  async softDeleteFarmers(farmerIds: string[]) {
+  
+    const result = await this.farmerRepository.softDelete({
+      id: In(farmerIds)
+    });
+  
+    return result;
   }
     
   }

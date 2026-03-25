@@ -36,6 +36,8 @@ import { toZonedTime } from "date-fns-tz";
   
     @Column({ nullable: true })
     driverName: string;
+     @Column({ nullable: true })
+  vehicleDispatchNo: string;
   
     @Column({ type: "float", nullable: true })
     paymentDiscussed: number;

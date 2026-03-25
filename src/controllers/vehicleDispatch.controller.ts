@@ -14,7 +14,7 @@ import { TYPES } from "../types";
 import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
-import { uploadNone } from "../middleware/multerConfig";
+
 import { ControllerLogger } from "../utils/controllerLogger"; // if needed for file upload
 import { VehicleDispatchService } from "../services/vehicleDispatch.service";
 import { NotificationService } from "../services/notification.service";
@@ -79,7 +79,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vehicle Dispatch created successfully: ${vehicleDispatch.id}`,
+          `Vehicle Dispatch created successfully`,
           userId
         );
       }
@@ -274,7 +274,7 @@ try {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vehicle Dispatch updated successfully: ${updatedDispatch.id}`,
+          `Vehicle Dispatch updated successfully`,
           userId
         );
       }
@@ -317,7 +317,7 @@ try {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vehicle Dispatch deleted successfully: ${id}`,
+          `Vehicle Dispatch deleted successfully`,
           userId
         );
       }
@@ -387,12 +387,12 @@ try {
       //  logger.info(Total Vehical Dispatch fetched: ${vehicalDispatch.data.length});
     
         // Send notification for vehicle dispatch list access
-        if (userId) {
-          await this.notificationService.createNoti(
-            'Vehicle Dispatch records list accessed successfully',
-            userId
-          );
-        }
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     'Vehicle Dispatch records list accessed successfully',
+        //     userId
+        //   );
+        // }
 
         ControllerLogger.logList('Vehicle Dispatch', req, res);
         res.status(200).json({

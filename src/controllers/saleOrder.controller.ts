@@ -45,7 +45,7 @@ export class SaleOrderController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Sale Order created successfully: ${saleOrder.id}`,
+          `Sale Order created successfully`,
           userId
         );
       }
@@ -82,13 +82,13 @@ export class SaleOrderController {
       ControllerLogger.logView('Sale Order', id, req, res);
 
       // Send notification for sale order view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Sale Order viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Sale Order viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -114,13 +114,13 @@ export class SaleOrderController {
       ControllerLogger.logList('Sale Order', req, res);
 
       // Send notification for sale order list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Sale Order records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Sale Order records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -159,7 +159,7 @@ export class SaleOrderController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Sale Order updated successfully: ${id}`,
+          `Sale Order updated successfully`,
           userId
         );
       }
@@ -193,7 +193,7 @@ export class SaleOrderController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Sale Order deleted successfully: ${id}`,
+          `Sale Order deleted successfully`,
           userId
         );
       }

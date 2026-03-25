@@ -52,9 +52,9 @@ console.log(aqrData)
       // 🔔 Send notification for AQR creation
       try {
         const userId = res.locals.user.id;
-        const aqrId = createdAqr.aqrId || createdAqr.id;
+        
         await this.notificationService.createNoti(
-          `AQR ${aqrId} created successfully and submitted for approval`,
+          `AQR  created successfully and submitted for approval`,
           userId
         );
       } catch (notifError) {
@@ -168,10 +168,10 @@ console.log(aqrData)
       try {
         const userId = res.locals.user.id;
         const aqrId = aqr.aqrId || id;
-        await this.notificationService.createNoti(
-          `Viewed AQR ${aqrId} details`,
-          userId
-        );
+        // await this.notificationService.createNoti(
+        //   `Viewed AQR ${aqrId} details`,
+        //   userId
+        // );
       } catch (notifError) {
         console.log('Notification error:', notifError);
       }
@@ -207,10 +207,10 @@ console.log(aqrData)
       try {
         const userId = res.locals.user.id;
         const aqrId = aqr.aqrId || id;
-        await this.notificationService.createNoti(
-          `Opened AQR ${aqrId} for editing`,
-          userId
-        );
+        // await this.notificationService.createNoti(
+        //   `Opened AQR ${aqrId} for editing`,
+        //   userId
+        // );
       } catch (notifError) {
         console.log('Notification error:', notifError);
       }
@@ -258,7 +258,7 @@ console.log(aqrData)
         const userId = res.locals.user.id;
         const aqrId = updatedAqr.aqrId || id;
         await this.notificationService.createNoti(
-          `AQR ${aqrId} updated successfully`,
+          `AQR updated successfully`,
           userId
         );
       } catch (notifError) {
@@ -339,15 +339,15 @@ console.log(aqrData)
       }
 
       // 🔔 Send notification for AQR search
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `Searched for AQR: "${search}" - ${Array.isArray(aqr) ? aqr.length : 1} result(s) found`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `Searched for AQR: "${search}" - ${Array.isArray(aqr) ? aqr.length : 1} result(s) found`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
       
       // Log successful search
       ControllerLogger.logView('AQR', search, req, res);
@@ -410,14 +410,14 @@ console.log(aqrData)
         }
 
         // 🔔 Send notification for accessing AQR list
-        try {
-          await this.notificationService.createNoti(
-            `Accessed AQR list (${aqrs.data.length} items found)`,
-            userId
-          );
-        } catch (notifError) {
-          console.log('Notification error:', notifError);
-        }
+        // try {
+        //   await this.notificationService.createNoti(
+        //     `Accessed AQR list (${aqrs.data.length} items found)`,
+        //     userId
+        //   );
+        // } catch (notifError) {
+        //   console.log('Notification error:', notifError);
+        // }
     
         logger.info(`Total AQR fetched: ${aqrs.data.length}`);
         
@@ -464,15 +464,15 @@ console.log(aqrData)
       }
 
       // 🔔 Send notification for AQR view access
-      try {
-        const aqrId = aqr.aqrId || docid;
-        await this.notificationService.createNoti(
-          `Viewed AQR ${aqrId} for review`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const aqrId = aqr.aqrId || docid;
+      //   await this.notificationService.createNoti(
+      //     `Viewed AQR ${aqrId} for review`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('AQR', docid, req, res);
@@ -518,16 +518,16 @@ try {
       const result = await this.aqrService.filterAqrs(page, limit, filters);
 
       // 🔔 Send notification for AQR filtering
-      try {
-        const userId = res.locals.user.id;
-        const filterCount = Object.keys(filters).length;
-        await this.notificationService.createNoti(
-          `Applied ${filterCount} filter(s) to AQR list - ${result.data?.length || 0} results found`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   const filterCount = Object.keys(filters).length;
+      //   await this.notificationService.createNoti(
+      //     `Applied ${filterCount} filter(s) to AQR list - ${result.data?.length || 0} results found`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.json({
         success: true,

@@ -1,13 +1,13 @@
 import "@aws-sdk/crc64-nvme-crt";
 import 'reflect-metadata';
+import dotenv from 'dotenv';
+dotenv.config();
 
 import express, { Request, Response, NextFunction } from 'express';
 import { InversifyExpressServer } from 'inversify-express-utils';
 import { container } from './inversify.config';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
-
 import { AppDataSource } from './utils/data-source';
 import { seedAdmin } from './seed';
 import { seedDatabase } from './seed/companyseed';
@@ -134,25 +134,18 @@ const startServer = async () => {
         next();
       });
 
-      // SSE-specific middleware
-      app.use("/sse", (req, res, next) => {
+      // SSE-specific middleware - only for the streaming endpoint
+      app.use("/sse/notifications", (req, res, next) => {
         const origin = req.headers.origin as string;
-        //console.log('🔍 SSE Middleware - Origin:', origin);
-        
-        // Ensure CORS headers are set for SSE
         if (origin && allowedOrigins.includes(origin)) {
           res.setHeader("Access-Control-Allow-Origin", origin);
           res.setHeader("Access-Control-Allow-Credentials", "true");
-         // console.log('✅ SSE - Set origin to:', origin);
         }
-
-        // SSE-specific headers
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Connection", "keep-alive");
         res.setHeader("X-Accel-Buffering", "no");
-        
-       // console.log('🔍 SSE Final Headers:', res.getHeaders());
+        res.flushHeaders(); // flush immediately so browser fires onopen
         next();
       });
 

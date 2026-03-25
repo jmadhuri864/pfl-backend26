@@ -59,17 +59,18 @@ export class ProductController {
       };
       logger.info('Fetching all products');
       const products = await this.productService.getAll(queryOptions);
+      console.log("products...",products)
       logger.info(`Fetched ${products.length} products successfully`);
       ControllerLogger.logList('Product', req, res);
 
       // Send notification for product list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Product records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Product records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res
         .status(200)
@@ -219,13 +220,13 @@ export class ProductController {
       ControllerLogger.logView('Product', id, req, res);
 
       // Send notification for product view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ status: 'success', data: product });
     } catch (err) {
@@ -284,7 +285,7 @@ export class ProductController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product created successfully: ${product.id}`,
+          `Product created successfully: ${product.name}`,
           userId
         );
       }
@@ -385,7 +386,7 @@ export class ProductController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product updated successfully: ${id}`,
+          `Product updated successfully`,
           userId
         );
       }
@@ -402,6 +403,55 @@ export class ProductController {
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleProducts(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { productIds } = req.body;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      ControllerLogger.logError(
+        "Product bulk deletion",
+        new AppError(400, "productIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "productIds must be a non-empty array"));
+    }
+
+    const result = await this.productService.softDeleteProducts(productIds);
+
+    ControllerLogger.logSuccess(
+      "Product bulk soft deleted",
+      productIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple product soft deleted: ${productIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Products soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Product bulk deletion", err, req, res);
+    next(err);
+  }
+}
 
   @httpPost("/upload-product", uploadSingle.single('file'))
   public async uploadProductsExcel(
@@ -519,7 +569,7 @@ export class ProductController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product deleted successfully: ${id}`,
+          `Product deleted successfully`,
           userId
         );
       }

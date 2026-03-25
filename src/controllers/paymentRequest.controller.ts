@@ -4,7 +4,7 @@ import { inject } from "inversify";
 import { TYPES } from "../types";
 import { PaymentRequestService } from "../services/paymentRequest.service";
 import { NextFunction,Response,Request } from "express";
-import { uploadAny, uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
@@ -39,13 +39,13 @@ export class PaymentRequestController {
       ControllerLogger.logList("Payment Request", req, res);
 
       // Send notification for payment request list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Payment Request records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Payment Request records list accessed successfully',
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -79,13 +79,13 @@ public async getPaymentRequestById(
     ControllerLogger.logView("Payment Request", id, req, res);
 
     // Send notification for payment request view
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Payment Request viewed: ${id}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Payment Request viewed: ${id}`,
+    //     userId
+    //   );
+    // }
     
     res.status(200).json({
       status: "success",
@@ -120,7 +120,7 @@ public async createPaymentRequest(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Payment Request created successfully: ${newPaymentRequest.id}`,
+        `Payment Request created successfully`,
         userId
       );
     }
@@ -163,7 +163,7 @@ public async updatePaymentRequest(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Payment Request updated successfully: ${id}`,
+        `Payment Request updated successfully`,
         userId
       );
     }
@@ -198,7 +198,7 @@ public async deletePaymentRequest(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Payment Request deleted successfully: ${id}`,
+        `Payment Request deleted successfully`,
         userId
       );
     }

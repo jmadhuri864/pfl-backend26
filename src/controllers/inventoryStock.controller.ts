@@ -53,13 +53,13 @@ export class InventoryStockController {
           ControllerLogger.logList('Inventory Stock', req, res);
           
           // Send notification for inventory stock access
-          const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              'Inventory stock list accessed successfully',
-              userId
-            );
-          }
+          // const userId = res.locals.user?.id;
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     'Inventory stock list accessed successfully',
+          //     userId
+          //   );
+          // }
          
           res.status(200).json({
             status: "success",
@@ -93,12 +93,12 @@ export class InventoryStockController {
           
           // Send notification for inventory stock view
           const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              `Inventory stock item viewed: ${id}`,
-              userId
-            );
-          }
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     `Inventory stock item viewed: ${id}`,
+          //     userId
+          //   );
+          // }
          
           res.status(200).json({
             status: "success",
@@ -141,13 +141,13 @@ export class InventoryStockController {
         ControllerLogger.logList('Inventory Stock (Search)', req, res);
         
         // Send notification for inventory stock search
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            'Inventory stock search performed successfully',
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     'Inventory stock search performed successfully',
+        //     userId
+        //   );
+        // }
        
         return res.status(200).json({
           status: "success",

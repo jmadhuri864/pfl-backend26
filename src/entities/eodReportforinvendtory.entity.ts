@@ -29,6 +29,9 @@ export class StockReportEod extends Model {
   @Column({ nullable: true })
   submission: string; 
 
+   @Column({ nullable: true })
+    eodNo: string;
+
   @Column({ name: 'comments', nullable: true })
   comments: string; 
 

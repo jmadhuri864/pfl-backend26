@@ -3,6 +3,7 @@ import { TYPES } from '../types';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { SSEService } from './sse.service';
 import { UserService } from '../services/user.service';
+import logger from '../utils/logger';
 
 
 @injectable()
@@ -17,68 +18,44 @@ export class NotificationService {
   ) {}
 
   async createNoti(message: string, userId: string): Promise<void> {
-    if (!message) throw new Error('Message is required');
+    try {
+      if (!message || !userId) return;
 
+      // Send SSE immediately if user is connected — no DB wait
+      if (this.sseService.isUserConnected(userId)) {
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        let hours = now.getHours();
+        const minutes = pad(now.getMinutes());
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+
+        this.sseService.sendToUser(userId, {
+          type: 'notification',
+          message,
+          date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+          time: `${pad(hours)}:${minutes} ${ampm}`,
+          isRead: false,
+          userId,
+          timestamp: now.toISOString(),
+        });
+      }
+
+      // Save to DB in background — don't await, don't block the API
+      this.saveNotificationToDb(message, userId).catch((err) =>
+        logger.error(`createNoti DB save failed for user ${userId}:`, err)
+      );
+
+    } catch (error) {
+      logger.error(`createNoti failed for user ${userId}:`, error);
+    }
+  }
+
+  private async saveNotificationToDb(message: string, userId: string): Promise<void> {
     const user = await this.userService.findUserById(userId);
-    if (!user) throw new Error('User not found');
-
+    if (!user) return;
     const notification = this.notificationRepository.create({ message, user });
     await this.notificationRepository.save(notification);
-
-    const createdAt = notification.createdAt;
-
-    // Pad single digits to two digits
-    const pad = (n: number) => n.toString().padStart(2, '0');
-
-    // Date part
-    const year = createdAt.getFullYear();
-    const month = pad(createdAt.getMonth() + 1); // Month is 0-based
-    const day = pad(createdAt.getDate());
-    const formattedDate = `${year}-${month}-${day}`; // yyyy-mm-dd
-
-    // Time part
-    let hours = createdAt.getHours();
-    const minutes = pad(createdAt.getMinutes());
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // hour '0' should be '12'
-    const formattedTime = `${pad(hours)}:${minutes} ${ampm}`; // hh:mm AM/PM
-
-    // console.log('Date:', formattedDate);
-    // console.log('Time:', formattedTime);
-
-    //const socketId = userSocketMap.get(userId.toString());
-    // Prepare notification data for SSE
-    const notificationData = {
-      type: 'notification',
-      id: notification.id,
-      message: message,
-      date: formattedDate,
-      time: formattedTime,
-      isRead: notification.isRead,
-      userId: userId,
-      timestamp: notification.createdAt.toISOString(),
-      userName: `${user.firstName} ${user.lastName}`.trim(),
-    };
-
-    console.log('✅ Notification created:', {
-      id: notificationData.id,
-      message: notificationData.message,
-      userId: notificationData.userId,
-      timestamp: notificationData.timestamp,
-    });
-
-    // Send notification via SSE
-    if (this.sseService.isUserConnected(userId)) {
-      this.sseService.sendToUser(userId, notificationData);
-      console.log(
-        `📤 SSE notification sent to ${user.firstName} ${user.lastName} (${userId})`,
-      );
-    } else {
-      console.log(
-        `⚠️  User ${user.firstName} ${user.lastName} (${userId}) not connected to SSE - notification saved to database`,
-      );
-    }
   }
 
   async getAllNoti(): Promise<any> {
@@ -87,6 +64,7 @@ export class NotificationService {
       .leftJoinAndSelect('notification.user', 'user')
       // .where('user.id = :userId', { userId })
       .select(['notification.id', 'notification.message', 'user.id'])
+      .orderBy('notification.createdAt', 'ASC')
       .getRawMany();
 
     return rawNotifications.map((item) => ({
@@ -102,6 +80,7 @@ export class NotificationService {
       .createQueryBuilder('notification')
       .leftJoin('notification.user', 'user')
       .where('user.id = :userId', { userId })
+      .orderBy('notification.createdAt', 'ASC')
       .select([
         'notification.id',
         'notification.message',
@@ -131,11 +110,30 @@ export class NotificationService {
       const formattedTime = `${pad(hours)}:${minutes} ${ampm}`;
 
       return {
+        id: item.notification_id,
         message: item.notification_message,
         date: formattedDate,
         time: formattedTime,
         isRead: item.notification_isRead,
       };
     });
+  }
+
+  async markAsRead(notificationId: string, userId: string): Promise<void> {
+    await this.notificationRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isRead: true })
+      .where('id = :notificationId AND user_id = :userId', { notificationId, userId })
+      .execute();
+  }
+
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.notificationRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isRead: true })
+      .where('user_id = :userId AND "isRead" = false', { userId })
+      .execute();
   }
 }

@@ -69,7 +69,7 @@ export class SecondSaleController {
 
       // Trigger a notification
       await this.notificationService.createNoti(
-        `New second sale created with ID: ${secondSale.id}`,
+        `New second sale created successfully`,
         res.locals.user.id,
       );
 
@@ -106,10 +106,10 @@ export class SecondSaleController {
       logger.info('Second sale details retrieved successfully', { secondSale });
 
       // Trigger a notification
-      await this.notificationService.createNoti(
-        `Second sale details retrieved for ID: ${secondSale.id}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Second sale details retrieved for ID: ${secondSale.id}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('Second Sale', id, req, res);
       res.status(200).json({
@@ -146,10 +146,10 @@ export class SecondSaleController {
       logger.info('Second sale details retrieved successfully', { secondSale });
 
       // Trigger a notification
-      await this.notificationService.createNoti(
-        `Second sale details retrieved for ID: ${secondSale.id}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Second sale details retrieved for ID: ${secondSale.id}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('Second Sale (for view)', id, req, res);
       res.status(200).json({
@@ -185,10 +185,10 @@ export class SecondSaleController {
       logger.info('Second sale details retrieved successfully', { secondSale });
 
       // Trigger a notification
-      await this.notificationService.createNoti(
-        `Second sale details retrieved for ID: ${secondSale.id}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Second sale details retrieved for ID: ${secondSale.id}`,
+      //   res.locals.user.id,
+      // );
 
       ControllerLogger.logView('Second Sale (for update)', id, req, res);
       res.status(200).json({
@@ -240,10 +240,10 @@ export class SecondSaleController {
       logger.info('Second sales retrieved successfully');
 
       // Send notification for second sale list access
-      await this.notificationService.createNoti(
-        'Second Sale records list accessed successfully',
-        userId
-      );
+      // await this.notificationService.createNoti(
+      //   'Second Sale records list accessed successfully',
+      //   userId
+      // );
 
       ControllerLogger.logList('Second Sale', req, res);
       res.status(200).json({
@@ -293,7 +293,7 @@ export class SecondSaleController {
 
       // Trigger a notification
       await this.notificationService.createNoti(
-        `Second sale updated for ID: ${secondSale.id}`,
+        `Second sale updated`,
         res.locals.user.id,
       );
 
@@ -340,7 +340,7 @@ export class SecondSaleController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Second Sale deleted successfully: ${id}`,
+          `Second Sale deleted successfully`,
           userId
         );
       }

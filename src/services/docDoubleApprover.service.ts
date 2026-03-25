@@ -46,6 +46,7 @@ export class DocDoubleApproverService {
        'approvalInfo',
        'approvalInfo.firstApproved',
         'approvalInfo.secondApproved',
+      'lastActionBy',
     ],
   });
 
@@ -100,6 +101,19 @@ export class DocDoubleApproverService {
     document.status = DocumentStatus.REJECT;
     await this.documentApprovalFlowRepository.save(info);
     await this.documentbRepository.save(document);
+
+    // 🔔 Notify approver
+    await this.notificationService.createNoti(
+      `${document.type} was rejected by ${userName}`,
+      userId,
+    );
+    // 🔔 Notify creator
+    if (document.lastActionBy?.id) {
+      await this.notificationService.createNoti(
+        `Your ${document.type} was rejected by ${userName}`,
+        document.lastActionBy.id,
+      );
+    }
     return;
   }
 
@@ -123,6 +137,12 @@ export class DocDoubleApproverService {
 
     await this.documentApprovalFlowRepository.save(info);
 
+    // 🔔 Notify approver of their action
+    await this.notificationService.createNoti(
+      `${document.type} approved by ${userName}`,
+      userId,
+    );
+
     // Check if both levels approved
     const firstApproved = info.firstApproved?.status === ApproverStatus.APPROVED;
     const secondApproved = info.secondApproved?.status === ApproverStatus.APPROVED;
@@ -131,6 +151,14 @@ export class DocDoubleApproverService {
       document.status = DocumentStatus.COMPLETE;
       document.remarks = `${document.type} Approved by Required Approvers`;
       await this.documentbRepository.save(document);
+
+      // 🔔 Notify creator that document is fully approved
+      if (document.lastActionBy?.id) {
+        await this.notificationService.createNoti(
+          `Your ${document.type} has been approved by ${userName}`,
+          document.lastActionBy.id,
+        );
+      }
     }
 
     return;

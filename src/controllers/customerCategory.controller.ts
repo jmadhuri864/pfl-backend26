@@ -62,17 +62,17 @@ export class CustomerCategoryController {
       }
       
       // 🔔 Send notification for get all customer categories
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${categories.meta.total} customer categories`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all customer categories notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${categories.meta.total} customer categories`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all customer categories notification error:', notifError);
+      // }
       
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Customer Category', req, res);
@@ -106,17 +106,17 @@ export class CustomerCategoryController {
       }
       
       // 🔔 Send notification for customer category view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed customer category "${category.name}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer category view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed customer category "${category.name}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer category view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Customer Category', id, req, res);
@@ -246,7 +246,7 @@ export class CustomerCategoryController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Customer category with ID ${id} deleted successfully`,
+            `Customer category  deleted successfully`,
             userId
           );
         }
@@ -266,4 +266,53 @@ export class CustomerCategoryController {
       next(err);
     }
   }
+  @httpDelete("/delete/multiple")
+public async softDeleteMultipleCustomerCategory(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { customerCategoryIds } = req.body;
+
+    if (!Array.isArray(customerCategoryIds) || customerCategoryIds.length === 0) {
+      ControllerLogger.logError(
+        "CustomerCategory bulk deletion",
+        new AppError(400, "customerCategoryIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "customerCategoryIds must be a non-empty array"));
+    }
+
+    const result = await this.customerCategoryService.softDeleteCustomerCategory(customerCategoryIds);
+
+    ControllerLogger.logSuccess(
+      "CustomerCategory bulk soft deleted",
+      customerCategoryIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple customerCategory soft deleted: ${customerCategoryIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "CustomerCategory soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("CustomerCategory bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

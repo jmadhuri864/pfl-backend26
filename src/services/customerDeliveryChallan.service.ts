@@ -22,6 +22,7 @@ import { ProductVarientsRepository } from '../repositories/productVarients.repos
 import { ProductRepository } from '../repositories/product.repository';
 import { ProductVarientService } from './productVarient.service';
 import { ProductVarientRepository } from '../repositories/varients.repository';
+import { DocumentbRepository } from '../repositories/documentb.repository';
 
 @injectable()
 export class CustomerDeliveryChallanService {
@@ -52,6 +53,8 @@ export class CustomerDeliveryChallanService {
     private readonly inventoryStockRepository: InventoryStockRepository,
     @inject(TYPES.DitemRepository)
     private readonly deliveryChallanProductRepository: DitemRepository,
+     @inject(TYPES.DocumentbRepository)
+    private readonly documentbRepository: DocumentbRepository,
   ) { }
   async create(data: any, requestedBy: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -818,6 +821,45 @@ export class CustomerDeliveryChallanService {
       return false;
     }
   }
+  public async deleteMultipleCustomerDC(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  const success: string[] = [];
+  const failed: { id: string; reason: string }[] = [];
+  for (const id of ids) {
+    try {
+      const customerDC = await this.challanRepository.findOne({
+        where: { id },
+      });
+      if (!customerDC) {
+        failed.push({ id, reason: 'customerDC not found' });
+        continue;
+      }
+      const relatedDocument = await this.documentbRepository.findOne({
+        where: { document_type_id: customerDC.id }
+      });
+
+      if (!relatedDocument) {
+        throw new Error(`Something went wrong`);
+      }
+
+      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
+      if (!deleteDocument) {
+        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      }
+
+      const deleteAqr = await this.challanRepository.delete(customerDC.id);
+      if (!deleteAqr) {
+        throw new Error(`Failed to delete customerDC with ID ${id}`);
+      }
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
+    }
+  }
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
+
+
 
   /**
    * Update delivery challan products with aggregated return data

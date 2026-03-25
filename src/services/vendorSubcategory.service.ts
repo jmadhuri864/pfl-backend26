@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { inject, injectable } from "inversify";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { VendorSubcategoryRepository } from "../repositories/vendorSubcategory.repository";
 import { VendorSubcategory } from "../entities/vendorSubcategory.entity";
 import { TYPES } from "../types";
@@ -51,7 +51,7 @@ export class VendorSubcategoryService {
     return this.vendorSubcategoryRepository.save(subcategory);
   }
 
-  public async getSubcategories(
+ public async getSubcategories(
     categoryIdOrName?: string
   ): Promise<Partial<VendorSubcategory>[]> {
     const queryBuilder =
@@ -180,4 +180,14 @@ return await buildQuery(baseQuery, queryOptions, 'vendorSubcategory');
     );
     return true;
   }
+  async softDeleteSubcategory(userIds: string[]) {
+
+  const result = await this.vendorSubcategoryRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
+
+
 }

@@ -124,14 +124,14 @@ export class RfpaController {
       logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
       ControllerLogger.logView('RFPA (for view)', rfpaId, req, res);
 
-      // Send notification for RFPA view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `RFPA viewed: ${rfpaId}`,
-          userId
-        );
-      }
+      // // Send notification for RFPA view
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `RFPA viewed: ${rfpaId}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -312,12 +312,16 @@ public async getRecycleBinRfpa(
       ControllerLogger.logSuccess('RFPA created', newRfpa.id, req, res);
 
       // Send notification for RFPA creation
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `RFPA created successfully: ${newRfpa.id}`,
-          userId
-        );
+      const userId = res.locals.user.id;
+      try {
+        if (userId) {
+          await this.notificationService.createNoti(
+            `RFPA created successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        logger.warn('RFPA create notification failed:', notifError);
       }
 
       res.status(201).json({
@@ -365,7 +369,7 @@ public async getRecycleBinRfpa(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `RFPA updated successfully: ${rfpaId}`,
+          `RFPA updated successfully`,
           userId
         );
       }
@@ -503,7 +507,7 @@ public async getRecycleBinRfpa(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `RFPA deleted successfully: ${id}`,
+          `RFPA deleted successfully`,
           userId
         );
       }
@@ -753,12 +757,12 @@ public async getAllRfpa(
     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
 
    
-    if (userId) {
-      await this.notificationService.createNoti(
-        'RFPA records list accessed successfully',
-        userId
-      );
-    }
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     'RFPA records list accessed successfully',
+    //     userId
+    //   );
+    // }
 
     res.status(200).json({
       status: 'success',
@@ -871,6 +875,7 @@ try {
         return next(new AppError(400, 'An array of RFPA IDs is required'));
       }
       const result = await this.rfpaService.deleteMultipleRFPA(ids);
+      
       
       ControllerLogger.logSuccess('RFPA multiple deletion', `${ids.length} records`, req, res);
       res.status(200).json({

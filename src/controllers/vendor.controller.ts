@@ -56,13 +56,13 @@ export class VendorController {
       ControllerLogger.logView('Vendor', id, req, res);
 
       // Send notification for vendor view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vendor viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -173,13 +173,13 @@ public async getAllVendors(
     console .log(vendors);
 
     // Send notification for vendor list access
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        'Vendor records list accessed successfully',
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     'Vendor records list accessed successfully',
+    //     userId
+    //   );
+    // }
 
     ControllerLogger.logList('Vendor', req, res);
     res.status(200).json({
@@ -337,7 +337,7 @@ console.log(req.body)
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor created successfully: ${newVendor.id}`,
+          `Vendor created successfully`,
           userId
         );
       }
@@ -441,7 +441,7 @@ console.log(req.body)
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor updated successfully: ${id}`,
+          `Vendor updated successfully`,
           userId
         );
       }
@@ -496,7 +496,7 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor deleted successfully: ${id}`,
+          `Vendor deleted successfully`,
           userId
         );
       }
@@ -647,5 +647,54 @@ public async filterVendors(req: Request, res: Response, next: NextFunction) {
       next(error);
     }
 
+}
+ @httpDelete("/delete/multiple")
+public async softDeleteMultipleVendors(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { vendorIds } = req.body;
+
+    if (!Array.isArray(vendorIds) || vendorIds.length === 0) {
+      ControllerLogger.logError(
+        "Vendor bulk deletion",
+        new AppError(400, "vendorIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "vendorIds must be a non-empty array"));
+    }
+
+    const result = await this.vendorService.softDeleteVendors(vendorIds);
+
+    ControllerLogger.logSuccess(
+      "Vendor bulk soft deleted",
+      vendorIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple vendor soft deleted: ${vendorIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Vendor soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Vendor bulk deletion", err, req, res);
+    next(err);
+  }
 }
 }

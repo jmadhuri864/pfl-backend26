@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { TYPES } from "../types";
 import { ProductSubcategoryRepository } from "../repositories/product_subcategory.repository";
 import { ProductSubcategory } from "../entities/product_subcategory.entity";
@@ -27,7 +27,7 @@ export class ProductSubcategoryService {
   //   });
   // }
 
-  async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
+async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
     let baseQuery = await this.productSubcategoryRepository.createQueryBuilder('productSubcategory')
         .leftJoinAndSelect('productSubcategory.category', 'category')
         .leftJoinAndSelect('category.productClassification', 'productClassification')
@@ -46,16 +46,17 @@ export class ProductSubcategoryService {
                     name: subcategory.category.name,
                 }
                 : null, // Handle case where category is null
-            classification: subcategory.category?.productClassification
-                ? {
-                    id: subcategory.category.productClassification.id,
-                    name: subcategory.category.productClassification.name,
-                }
-                : null, // Handle case where productClassification is null
+            // classification: subcategory.category?.productClassification
+            //     ? {
+            //         id: subcategory.category.productClassification.id,
+            //         name: subcategory.category.productClassification.name,
+            //     }
+            //     : null, // Handle case where productClassification is null
         })),
         meta: subcategories.meta, // Ensure meta data is returned properly
     };
 }
+
 
 
   
@@ -147,5 +148,13 @@ export class ProductSubcategoryService {
     console.log(`Product subcategory with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
+  async softDeleteSubcategory(userIds: string[]) {
+
+  const result = await this.productSubcategoryRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
   
 }

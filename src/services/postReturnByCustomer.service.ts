@@ -3,16 +3,52 @@ import { TYPES } from '../types';
 import { PostReturnByCustomerRepository } from '../repositories/postReturnByCustomer.repository';
 import { DeliveryChallanRepository } from '../repositories/deliveryChallan.repository';
 import { AuditLogService } from './auditLog.service';
+import * as ExcelJS from 'exceljs';
 import { PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
-import { DocumentTypeEnum } from '../entities/docuemnt.entity';
+import { DocumentTypeEnum, Documentb } from '../entities/docuemnt.entity';
 import { UserLogger } from '../utils/logger';
 import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
-import { DataSource } from 'typeorm';
-
+import { DataSource, ILike, In } from 'typeorm';
+import { CustomerRepository } from '../repositories/customer.repository';
+import { UserRepository } from '../repositories/user.repository';
+import { ProductRepository } from '../repositories/product.repository';
+import { CompanyRepository } from '../repositories/company.repository';
+import { BranchessRepository } from '../repositories/branches.repository';
+import { DocumentbRepository } from '../repositories/documentb.repository';
+export interface ReturnByCustomerReportFilter {
+  startDate?: string;
+  endDate?: string;
+  referredDeliveryChallan?: string | string[];
+  company?: string | string[];
+  deliverFromLocation?: string | string[];
+  poNumber?: string;
+  customers?: string | string[];
+  createdBy?: string | string[];
+  product?: string | string[];
+  totalQuantity?: number;
+  totalQuantityOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  returneQuantity?: number;
+  returneQuantityOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  returnedAmount?: number;
+  returnedAmountOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  totalAmount?: number;
+  totalAmountOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  rejectedQuantity?: number;
+  rejectedQuantityOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  rejectedAmount?: number;
+  rejectedAmountOperator?: '>' | '<' | '=' | '>=' | '<=' | '!=';
+  driverName?: string | string[];
+  driverLicenseNumber?: string | string[];
+  vehicleNumber?: string | string[];
+  receiverName?: string | string[];
+  status?: string | string[];
+  rmName?: string;
+  approvedBy?: string;
+}
 @injectable()
 export class PostReturnByCustomerService {
   constructor(
@@ -22,12 +58,24 @@ export class PostReturnByCustomerService {
     private readonly deliveryChallanRepository: DeliveryChallanRepository,
     @inject(TYPES.AuditLogService) 
     private readonly auditLogService: AuditLogService,
+      @inject(TYPES.CustomerRepository) 
+    private readonly customerRepo: CustomerRepository,
+      @inject(TYPES.CompanyRepository) 
+    private readonly companyRepository: CompanyRepository,
+      @inject(TYPES.BranchessRepository) 
+    private readonly branchesRepository: BranchessRepository,
+     @inject(TYPES.UserRepository) 
+    private readonly userRepository: UserRepository,
+     @inject(TYPES.ProductRepository) 
+    private readonly productRepository: ProductRepository,
     @inject(TYPES.DocumentbService)
     private readonly documentbService: DocumentbService,
     @inject(TYPES.DocDoubleApproverService)
     private readonly docDoubleApproverService: DocDoubleApproverService,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+     @inject(TYPES.DocumentbRepository)
+    private readonly documentbRepository: DocumentbRepository,
   ) {}
 
   /**
@@ -52,6 +100,20 @@ export class PostReturnByCustomerService {
    * - Cascade save for returnedProducts (no manual save needed)
    * - Efficient SQL aggregation for quantity updates
    */
+  private async generateSerialNo(prefix: string): Promise<string> {
+    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+    const count = await this.postReturnByCustomerRepository.count({
+      where: { rbcNo: ILike(`${prefix}%`) },
+    });
+    console.log(count);
+    // Generate the serial number in the format "PREFIX-001"
+    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+    return serialNo;
+  }
+
+
+
+
   async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -117,6 +179,8 @@ export class PostReturnByCustomerService {
           }
         }
       }
+      const serialNo = await this.generateSerialNo("RBC");
+      returnData.rbcNo = serialNo;
 
       // 5️⃣ Create return entity with returnedProducts (cascade will auto-save products)
       const newReturn = queryRunner.manager.create(
@@ -128,6 +192,7 @@ export class PostReturnByCustomerService {
           customerName: returnData.customerName,
           date: returnData.date,
           remark: returnData.remark,
+          createdBy: { id: requestedBy },
           returnedProducts: returnData.returnedProducts?.map((product: any) => ({
             productName: product.productName,
             variant: product.variant || null,
@@ -392,6 +457,7 @@ export class PostReturnByCustomerService {
       .leftJoinAndSelect('returnedProduct.variant','variant')
       .leftJoinAndSelect('returnedProduct.saleUoM', 'saleUoM')
       .leftJoinAndSelect('postReturn.customerName', 'customerName')
+      .leftJoinAndSelect('postReturn.createdBy', 'createdByUser')
 
       .where('postReturn.id = :id', { id })
       .getOne();
@@ -583,6 +649,44 @@ export class PostReturnByCustomerService {
       })),
     };
   }
+   //TODO:Delte Multiple
+public async deleteMultipleRBC(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  const success: string[] = [];
+  const failed: { id: string; reason: string }[] = [];
+  for (const id of ids) {
+    try {
+      const rbc = await this.postReturnByCustomerRepository.findOne({
+        where: { id },
+      });
+      if (!rbc) {
+        failed.push({ id, reason: 'RBC not found' });
+        continue;
+      }
+      const relatedDocument = await this.documentbRepository.findOne({
+        where: { document_type_id: rbc.id }
+      });
+
+      if (!relatedDocument) {
+        throw new Error(`Something went wrong`);
+      }
+
+      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
+      if (!deleteDocument) {
+        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      }
+
+      const deleteAqr = await this.postReturnByCustomerRepository.delete(rbc.id);
+      if (!deleteAqr) {
+        throw new Error(`Failed to delete RBC with ID ${id}`);
+      }
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
+    }
+  }
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
   async updatePostReturnByCustomer(
     id: string,
     returnData: any,
@@ -693,5 +797,607 @@ export class PostReturnByCustomerService {
       userId,
       changeCount
     })).sort((a, b) => b.changeCount - a.changeCount); // Sort by most active users
+  }
+
+  async generateReturnByCustomerReport(filter: ReturnByCustomerReportFilter): Promise<Buffer> {
+
+  const toArray = (val: any) =>
+    Array.isArray(val) ? val : String(val).split(',');
+
+  // const formatDate = (date: any) => {
+  //   if (!date) return '';
+  //   const d = new Date(date);
+  //   const day = String(d.getDate()).padStart(2, '0');
+  //   const month = String(d.getMonth() + 1).padStart(2, '0');
+  //   const year = d.getFullYear();
+  //   return `${day}-${month}-${year}`;
+  // };
+
+  const formatDate = (date: any) => {
+  if (!date) return '';
+
+  const d = new Date(date);
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
+
+  let companyNames = 'All';
+  let locationNames = 'All';
+  let customerNames = 'All';
+  let productNames = 'All';
+  let challanNos = 'All';
+  let createdByNames = 'All';
+  let approvedByNames = 'All';
+  
+
+  /*
+  ==========================
+  QUERY
+  ==========================
+  */
+
+  const qb = this.postReturnByCustomerRepository
+    .createQueryBuilder('ret')
+
+    .leftJoinAndSelect('ret.companyName', 'company')
+    .leftJoinAndSelect('ret.location', 'branch')
+    .leftJoinAndSelect('ret.customerName', 'customer')
+    .leftJoinAndSelect('ret.deliveryChallanNo', 'dc')
+    .leftJoinAndSelect('ret.createdBy', 'createdByUser')
+
+    .leftJoinAndSelect('ret.returnedProducts', 'item')
+    .leftJoinAndSelect('item.productName', 'product')
+    .leftJoinAndSelect('item.variant', 'variant')
+    .leftJoinAndSelect('item.saleUoM', 'uom')
+    .leftJoin(
+            Documentb,
+            'doc',
+            'doc.document_type_id::uuid = ret.id'
+          )
+              .leftJoin('doc.lastActionBy', 'lastActionBy')
+          
+              .addSelect([
+                'doc.id',
+                'doc.status',
+                'lastActionBy.id',
+                'lastActionBy.firstName',
+                'lastActionBy.lastName'
+              ]);
+    
+
+  /*
+  ==========================
+  FILTERS
+  ==========================
+  */
+
+  if (filter.referredDeliveryChallan) {
+  const ids = toArray(filter.referredDeliveryChallan);
+
+  qb.andWhere('dc.id IN (:...ids)', { ids });
+
+  const data = await this.deliveryChallanRepository.findBy({ id: In(ids) });
+  challanNos = data.map(d => d.challanNo).join(', ');
+}
+
+
+if (filter.createdBy) {
+  const ids = toArray(filter.createdBy);
+
+  qb.andWhere('ret.createdBy IN (:...cb)', { cb: ids });
+
+  const users = await this.userRepository.findBy({ id: In(ids) });
+  createdByNames = users.map(u => `${u.firstName} ${u.lastName || ''}`).join(', ');
+}
+
+if (filter.approvedBy) {
+  const ids = toArray(filter.approvedBy);
+
+  qb.andWhere('lastActionBy.id IN (:...ids)', { ids });
+
+  const users = await this.userRepository.findBy({ id: In(ids) });
+  approvedByNames = users.map(u => `${u.firstName} ${u.lastName || ''}`).join(', ');
+}
+
+if (filter.status) {
+  const statuses = toArray(filter.status);
+
+  qb.andWhere('doc.status IN (:...statuses)', { statuses });
+}
+
+  if (filter.startDate && filter.endDate) {
+    qb.andWhere('ret.createdAt BETWEEN :start AND :end', {
+      start: filter.startDate,
+      end: filter.endDate,
+    });
+  }
+
+  if (filter.company) {
+    const ids = toArray(filter.company);
+    qb.andWhere('company.id IN (:...comp)', { comp: ids });
+
+    const data = await this.companyRepository.findBy({ id: In(ids) });
+    companyNames = data.map(d => d.name).join(', ');
+  }
+
+  if (filter.deliverFromLocation) {
+    const ids = toArray(filter.deliverFromLocation);
+    qb.andWhere('branch.id IN (:...branch)', { branch: ids });
+
+    const data = await this.branchesRepository.findBy({ id: In(ids) });
+    locationNames = data.map(d => d.name).join(', ');
+  }
+
+  if (filter.customers) {
+    const ids = toArray(filter.customers);
+    qb.andWhere('customer.id IN (:...cust)', { cust: ids });
+
+    const data = await this.customerRepo.findBy({ id: In(ids) });
+    customerNames = data.map(d => d.organisationName).join(', ');
+  }
+
+  if (filter.product) {
+    const ids = toArray(filter.product);
+    qb.andWhere('product.id IN (:...p)', { p:ids });
+
+    const data = await this.productRepository.findBy({ id: In(ids) });
+    productNames = data.map(d => d.name).join(', ');
+  }
+
+  // if (filter.returnedQty && filter.operatorQty) {
+  //   qb.andWhere(`item.returnedQty ${filter.operatorQty} :qty`, {
+  //     qty: filter.returnedQty,
+  //   });
+  // }
+
+  if (filter.returneQuantity !== undefined && filter.returneQuantityOperator) {
+      const operator = filter.returneQuantityOperator;
+
+      qb.andWhere(`item.returnedQty ${operator} :qty`, {
+        qty: filter.returneQuantity,
+      });
+    }
+
+  if (filter.returnedAmount && filter.returnedAmountOperator) {
+
+    const operator = filter.returnedAmountOperator;
+
+      qb.andWhere(`item.returnedQtyAmt ${operator} :amt`, {
+        amt: filter.returnedAmount,
+      });
+  }
+
+  if (filter.rejectedQuantity !== undefined && filter.rejectedQuantityOperator) {
+    const operator = filter.rejectedQuantityOperator;
+  qb.andWhere(`item.rejectedQty ${operator} :rqty`, {
+    rqty: filter.rejectedQuantity,
+  });
+
+  if (filter.rejectedAmount !== undefined && filter.rejectedAmountOperator) {
+    const operator = filter.rejectedAmountOperator;
+  qb.andWhere(`item.rejectedQtyAmt ${operator} :ramt`, {
+    ramt: filter.rejectedAmount,
+  });
+}
+
+  
+}
+
+  const { entities, raw } = await qb.getRawAndEntities();
+
+    const docMap: Record<string, any> = {};
+
+  raw.forEach(r => {
+    docMap[r.ret_id] = {
+      status: r.doc_status,
+      approvedBy: `${r.lastActionBy_firstName || ''} ${r.lastActionBy_lastName || ''}`.trim()
+    };
+  });
+
+  const returns = entities;
+
+  
+  /*
+  ==========================
+  SUMMARY
+  ==========================
+  */
+
+  let totalQty = 0;
+  let totalAmt = 0;
+  let totalRejectedQty = 0;
+  let totalRejectedAmt = 0;
+
+  returns.forEach(r => {
+    r.returnedProducts?.forEach(i => {
+      totalQty += Number(i.returnedQty || 0);
+      totalAmt += Number(i.returnedQtyAmt || 0);
+      totalRejectedQty += Number(i.rejectedQty || 0);
+      totalRejectedAmt += Number(i.rejectedQtyAmt || 0);
+    });
+  });
+
+  /*
+  EXCEL
+  ==========================
+  */
+
+  const workbook = new ExcelJS.Workbook();
+
+  /*
+  --------------------------
+  SHEET 1 (SUMMARY)
+  --------------------------
+  */
+
+  const sheet1 = workbook.addWorksheet('Return_Summary');
+
+  sheet1.columns = [{ width: 30 }, { width: 40 }];
+
+  sheet1.mergeCells('A1:B1');
+  const title = sheet1.getCell('A1');
+
+  title.value = 'Returned By Customer Detailed Report';
+
+  title.font = {
+      bold: true,
+      size: 14,
+      color: { argb: 'FFFFFFFF' },
+    };
+
+    title.alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+    };
+
+    title.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF00B050' },
+    };
+
+  
+
+  sheet1.addRow([]);
+
+  const reportDetails = [
+      ['Company Name:', 'Prime Fresh Limited'],
+      ['Generated By:', `${returns[0]?.createdBy?.firstName || ''} ${returns[0]?.createdBy?.lastName || ''}`.trim() || 'System'],
+      ['Generated Date:', new Date().toLocaleDateString()],
+    ];
+
+    reportDetails.forEach((r) => {
+      const row = sheet1.addRow(r);
+
+      row.eachCell((cell, col) => {
+        if (col === 1) cell.font = { bold: true };
+
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        cell.alignment = {
+          wrapText: true,
+          vertical: 'middle',
+        };
+      });
+    });
+
+  sheet1.addRow([]);
+
+  const filterHeader = sheet1.addRow(['Applied Filters']);
+  sheet1.mergeCells(`A${filterHeader.number}:B${filterHeader.number}`);
+
+  filterHeader.font = { bold: true };
+
+    filterHeader.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD9E1F2' },
+      };
+
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+  const filters = [
+  ['Start Date', formatDate(filter.startDate) || 'All'],
+  ['End Date', formatDate(filter.endDate) || 'All'],
+
+  [
+    'Period',
+    filter.startDate && filter.endDate
+      ? `${formatDate(filter.startDate)} to ${formatDate(filter.endDate)}`
+      : 'All',
+  ],
+
+  ['Referred Delivery Challan', challanNos],
+  ['Company', companyNames],
+  ['Returned To Location', locationNames],
+  ['Customers', customerNames],
+  ['Created By', createdByNames],
+  ['Products', productNames],
+
+  [
+    'Returned Quantity',
+    filter.returneQuantity !== undefined
+      ? `${filter.returneQuantityOperator} ${filter.returneQuantity}`
+      : 'All',
+  ],
+
+  [
+    'Returned Amount',
+    filter.returnedAmount !== undefined
+      ? `${filter.returnedAmountOperator} ${filter.returnedAmount}`
+      : 'All',
+  ],
+
+  ['Rejected Quantity', filter.rejectedQuantity !== undefined && filter.rejectedQuantityOperator
+          ? `${filter.rejectedQuantityOperator} ${filter.rejectedQuantity}`
+          : 'All'],
+  ['Rejected Amount', filter.rejectedAmount !== undefined && filter.rejectedAmountOperator
+          ? `${filter.rejectedAmountOperator} ${filter.rejectedAmount}`
+          : 'All'],
+
+  ['Approved By', approvedByNames],
+  ['Status', filter.status || 'All'],
+];
+
+  filters.forEach((f) => {
+      const row = sheet1.addRow(f);
+
+      row.eachCell((cell, col) => {
+        if (col === 1) cell.font = { bold: true };
+
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        cell.alignment = {
+          wrapText: true,
+          vertical: 'middle',
+        };
+      });
+    });
+
+  sheet1.addRow([]);
+
+  const summaryHeader = sheet1.addRow(['Summary']);
+  sheet1.mergeCells(`A${summaryHeader.number}:B${summaryHeader.number}`);
+
+  summaryHeader.font = { bold: true };
+
+    summaryHeader.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD9E1F2' },
+      };
+
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+  
+  
+
+  const summaryRows = [
+      ['Total Returned Records', returns.length],
+      ['Total Returned Qty', totalQty],
+      ['Total Returned Amount', totalAmt],
+      ['Total Rejected Qty', totalRejectedQty],
+      ['Total Rejected Amount', totalRejectedAmt]
+    ];
+
+    summaryRows.forEach((s) => {
+      const row = sheet1.addRow(s);
+
+      row.eachCell((cell, col) => {
+        if (col === 1) cell.font = { bold: true };
+
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+  /*
+  --------------------------
+  SHEET 2 (DATA)
+  --------------------------
+  */
+
+  const sheet2 = workbook.addWorksheet('Return_Data');
+
+  sheet2.columns = [
+    { header: 'Status', key: 'status', width: 12 },
+    { header: 'Created By', key: 'createdBy', width: 12 },
+    { header: 'Created Date', key: 'date', width: 12 },
+    { header: 'Challan No', key: 'challan', width: 15 },
+    { header: 'Return Date', key: 'retDate', width: 12 },
+    { header: 'Company Name', key: 'company', width: 20 },
+    { header: 'Location', key: 'location', width: 18 },
+    { header: 'Customer Name', key: 'customer', width: 20 },
+    
+
+    { header: 'Product Name', key: 'product', width: 18 },
+    { header: 'Variant', key: 'variant', width: 18 },
+    { header: 'UOM', key: 'uom', width: 10 },
+    { header: 'Unit Price', key: 'unitPrice', width: 10 },
+    
+
+    { header: 'Returned Qty', key: 'qty', width: 12 },
+    { header: 'Returned Amount', key: 'amt', width: 15 },
+    { header: 'Returned Gross Wt', key: 'grossWt', width: 15 },
+    { header: 'Returned Net Wt', key: 'netWt', width: 15 },
+    
+
+    { header: 'Rejected Qty', key: 'rejQty', width: 12 },
+    { header: 'Rejected Amount', key: 'rejAmt', width: 15 },
+    { header: 'Reject Gross Wt', key: 'rejGrossWt', width: 15 },
+    { header: 'Reject Net Wt', key: 'rejNetWt', width: 15 },
+
+    { header: 'Remark', key: 'remark', width: 25 },
+  ];
+
+
+  const headerRow = sheet2.getRow(1);
+  headerRow.eachCell((cell) => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFDE21' },
+    };
+    cell.font = { bold: true };
+    cell.alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+    };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } },
+    };
+  });
+
+  /*
+  DATA ROWS
+  */
+
+  const STATUS_MAP: Record<string, { label: string; color: string }> = {
+      hold: { label: 'Hold', color: 'FFFF5700' },
+      VERIFIED: { label: 'Verified', color: 'FF6A00FF' },
+      approved: { label: 'Approved', color: 'FF40BF40' },
+      FINALIZING: { label: 'Finalized', color: 'FF0063B1' },
+      COMPLETE: { label: 'Complete', color: 'FF006600' },
+      REJECT: { label: 'Reject', color: 'FFAF0606' },
+    };
+
+
+    const safe = (val: any) => (val === null || val === undefined ? '' : val);
+
+
+
+  for (const r of returns) {
+    const start = sheet2.rowCount + 1;
+    const documentb = docMap[r.id]
+    const statusValue = documentb?.status || '';
+    // console.log("status"+statusValue+"--------------------");
+    const statusInfo = STATUS_MAP[statusValue] || {
+      label: statusValue,
+      color: 'FFE7E6E6',
+    };
+    const approvedBy = documentb?.approvedBy || '';
+
+    for (const i of r.returnedProducts || []) {
+      const row = sheet2.addRow({
+        status: statusInfo.label,
+        createdBy: `${r.createdBy?.firstName || ''} ${r.createdBy?.lastName || ''}`.trim(),
+        date: formatDate(r.createdAt),
+        challan: r.deliveryChallanNo?.challanNo,
+        company: r.companyName?.name,
+        location: r.location?.name,
+        customer: r.customerName?.organisationName,
+        product: i.productName?.name,
+        variant: i.variant?.variantName,
+        uom: i.saleUoM?.unit,
+        unitPrice: i.unitPrice,
+        qty: i.returnedQty,
+        amt: i.returnedQtyAmt,
+        grossWt: i.returnedGrossWt,
+        netWt: i.returnedNetWt,
+        rejQty: i.rejectedQty,
+        rejAmt: i.rejectedQtyAmt,
+        rejGrossWt: i.rejectedGrossWt,
+        rejNetWt: i.rejectedNetWt,
+        remark: r.remark
+      });
+
+      row.getCell('retDate').value = r.date
+        ? String(r.date).split(' ')[0]
+        : '';
+
+      const statusCell = row.getCell(1);
+      statusCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: statusInfo.color },
+      };
+      statusCell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+      };
+      statusCell.alignment = {
+        //   horizontal: 'center',
+        vertical: 'middle',
+      };
+
+      row.alignment = {
+        // horizontal: 'center',
+        vertical: 'middle',
+      };
+
+      // Add black border to all cells in this row
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } },
+        };
+      });
+    }
+
+    const end = sheet2.rowCount;
+    if (end > start) {
+      const mergeCols = [15];
+      mergeCols.forEach((col) => {
+        sheet2.mergeCells(start, col, end, col);
+      });
+    }
+  }
+
+  this.autoAdjustColumnWidth(sheet2);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  return buffer as unknown as Buffer;
+}
+
+
+autoAdjustColumnWidth(sheet: ExcelJS.Worksheet) {
+    sheet.columns?.forEach((column) => {
+      let maxLength = 0;
+
+      column.eachCell?.({ includeEmpty: true }, (cell) => {
+        const cellValue = cell.value ? cell.value.toString() : '';
+        maxLength = Math.max(maxLength, cellValue.length);
+      });
+
+      column.width = maxLength + 2; // padding
+    });
   }
 }

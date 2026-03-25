@@ -10,6 +10,7 @@ import AppError from "../utils/appError";
 import { format } from "date-fns";
 import { classToPlain } from "class-transformer";
 import { buildQuery,  PaginationOptions } from "../utils/pagination";
+import { In } from "typeorm";
 
 @injectable()
 export class BranchessService {
@@ -102,7 +103,16 @@ const originalBranch = { ...branch };
    return updatedBranch;
 }
 
+async softDeleteBranches(userIds: string[],branchType:BranchType) {
 
+  const result = await this.branchesRepository.softDelete({
+     id: In(userIds),
+    type: branchType,
+    
+  });
+
+  return result;
+}
   
 
   async getBranchByIdAndType(id: string): Promise<any> {
@@ -120,7 +130,7 @@ const originalBranch = { ...branch };
     
   }
 
-  async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
+async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
     console.log(`Fetching branches with type: ${branchType}`);
 
     let queryBuilder = this.branchesRepository.createQueryBuilder('branch')
@@ -131,22 +141,52 @@ const originalBranch = { ...branch };
    
     const result = await buildQuery(queryBuilder, queryOptions, "branch");
     //const result = await buildQuery1(queryBuilder, queryOptions, "branch", Branches);
-    const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
+  //   const objectToString = (obj: any): string => {
+  //   if (obj == null) return '';
+  //   if (typeof obj === 'object') {
+  //     return Object.values(obj).map((v) => objectToString(v)).join(' ');
+  //   }
+  //   return String(obj);
+  // };
 
-  if ( queryOptions.search&&  queryOptions.search.trim()) {
-    const term =  queryOptions.search.toLowerCase();
-    result.data = result.data.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
+  // if ( queryOptions.search&&  queryOptions.search.trim()) {
+  //   const term =  queryOptions.search.toLowerCase();
+  //   result.data = result.data.filter((item) =>
+  //     objectToString(item).toLowerCase().includes(term)
+  //   );
+  // }
+
+  return{
+    data:result.data.map((branch)=>{
+      return{
+        id:branch.id,
+        address:{
+          id:branch.address.id,
+          address1:branch.address.address1,
+          address2:branch.address.address2,
+          city:branch.address.city,
+          location:branch.address.location,
+          pincode:branch.address.pincode,
+          state:branch.address.state
+        },
+        contactPerson: [
+        branch.cFirstName || '',
+        branch.cMiddleName || '',
+        branch.cLastName || ''
+      ].filter(Boolean).join(' '),
+        //contactPerson:`${branch.cFirstName} ${branch.cMiddleName} ${branch.cLastName}`,
+        contact:branch.contactNumber?branch.contactNumber:'',
+        name:branch.name,
+       totalCapacity:branch.totalCapacity,
+       currentCapacity:branch.currentCapacity,
+       balanceCapacity:branch.balanceCapacity
+      }
+    }),
+    meta:result.meta
   }
-    return result;
+   // return result;
 }
+
 
 
   async deleteBranch(id: string, branchType: BranchType): Promise<boolean> {

@@ -27,12 +27,6 @@ public streamNotifications(
   @request() req: Request,
   @response() res: Response
 ) {
-  // Set SSE headers first
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader("X-Accel-Buffering", "no"); 
-
   const token = req.query.token as string;
 
   if (!token) {
@@ -42,7 +36,7 @@ public streamNotifications(
 
   const userId = getUserIdFromToken(token);
   if (!userId) {
-    logger.warn("SSE unauthorized");
+    logger.warn(`SSE unauthorized - token verification failed`);
     res.write(`event: error\ndata: Unauthorized\n\n`);
     return res.end();
   }
@@ -52,7 +46,6 @@ public streamNotifications(
 
   this.sseService.addClient(userId, clientId, res);
 
-  // heartbeat every 30 sec
   const heartbeat: NodeJS.Timeout = setInterval(() => {
     if (res.writableEnded) return clearInterval(heartbeat);
     this.sseService.sendHeartbeat();

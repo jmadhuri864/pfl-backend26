@@ -3,7 +3,6 @@ import {
   controller,
   httpPost,
   httpGet,
-  
   httpDelete,
   request,
   requestParam,
@@ -45,8 +44,6 @@ export class BranchessController {
   ) {
     try {
       const branchType = req.params.branchType as BranchType;
-      
-
       const branchData = req.body;
       branchData.type = branchType;
 
@@ -80,6 +77,56 @@ export class BranchessController {
       next(err);
     }
   }
+  @httpDelete("/delete/multiple")
+public async softDeleteMultipleBranches(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { branchIds } = req.body;
+      const branchType = req.query.branchType as BranchType;
+
+    if (!Array.isArray(branchIds) || branchIds.length === 0) {
+      ControllerLogger.logError(
+        "Branch bulk deletion",
+        new AppError(400, "branchIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "branchIds must be a non-empty array"));
+    }
+
+    const result = await this.branchesService.softDeleteBranches(branchIds,branchType);
+
+    ControllerLogger.logSuccess(
+      "Branch bulk soft deleted",
+      branchIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Branches deleted: ${branchIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Branches soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Branch bulk deletion", err, req, res);
+    next(err);
+  }
+}
 
   @httpGet('/:id')
   public async getBranch(
@@ -98,17 +145,17 @@ export class BranchessController {
       }
       
       // 🔔 Send notification for branch view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed ${branch.type} "${branch.name}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Branch view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed ${branch.type} "${branch.name}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Branch view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Branch', id, req, res);
@@ -154,17 +201,17 @@ console.log("serach data is ",search)
       }
       
       // 🔔 Send notification for get all branches
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${branch.meta.total} ${branchType} records`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all branches notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${branch.meta.total} ${branchType} records`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all branches notification error:', notifError);
+      // }
       
       // Log successful data retrieval
       ControllerLogger.logGetAllRecords('Branch', req, res);
@@ -200,17 +247,17 @@ console.log("serach data is ",search)
       }
 
       // 🔔 Send notification for filter data retrieval
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${branches.length} branches filter data`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Filter branches notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${branches.length} branches filter data`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Filter branches notification error:', notifError);
+      // }
 
       // Log successful data retrieval
       ControllerLogger.logGetAllRecords('Branch', req, res);
@@ -325,4 +372,5 @@ console.log("serach data is ",search)
       next(err);
     }
   }
+  
 }

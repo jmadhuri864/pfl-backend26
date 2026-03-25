@@ -339,7 +339,7 @@ export class TPVoucherService {
     //   meta,
     // };
  // }
- public async getAllTPVouchers(
+public async getAllTPVouchers(
     queryOptions: PaginationOptions,userId: string,
   ): Promise<{ data: any[]; meta: any }> {
     const { search } = queryOptions;
@@ -373,16 +373,31 @@ export class TPVoucherService {
          //  .filter((d) => d)
             .map((doc) => ({
               documentId: doc.id,
-              // documentType: doc.type,
-              // documentTypeId: doc.document_type_id,
               overAllStatus: doc.status,
               createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
               createdDate: formatDateTime(doc.createdAt).createdDate,
               createdTime: formatDateTime(doc.createdAt).createdTime,
-              ...doc.relatedData,
              id: doc.relatedData.id,
             companyName: doc.relatedData.companyName?.name || null,
-            grnNo: doc.relatedData.grnNo?.grnNo || null    
+            grnNo: doc.relatedData.grnNo?.grnNo || null , 
+            altContactNo:doc.relatedData.altContactNo,
+            amtWords:doc.relatedData.amtWords,
+            contactNo:doc.relatedData.contactNo,
+            debitCreditTo:doc.relatedData.debitCreditTo,
+            destinationLocation:doc.relatedData.destinationLocation,
+            dispatchLocation:doc.relatedData.dispatchLocation,
+            driverName:doc.relatedData.driverName,
+            kyc:doc.relatedData.kyc,
+            location:doc.relatedData.location,
+            payReceivedFrom:doc.relatedData.payReceivedFrom,
+            paymentMode:doc.relatedData.paymentMode,
+            receiverName:doc.relatedData.receiverName,
+            remark:doc.relatedData.remark,
+            totalAmt:doc.relatedData.totalPayableAmt,
+            vehicleNo:doc.relatedData.vehicleNo,
+            voucherNo:doc.relatedData.voucherNo,
+            freightAmt:doc.relatedData.freightAmt
+            
             }))
     // ✅ Helper to flatten objects into a searchable string
   const objectToString = (obj: any): string => {
@@ -432,6 +447,7 @@ export class TPVoucherService {
   } 
         };
       }
+
 
   public async getTPVoucherById(id: string): Promise<any> {
     const voucher = await this.tpVoucherRepository

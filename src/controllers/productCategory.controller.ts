@@ -16,7 +16,7 @@ import AppError from "../utils/appError";
 import { NextFunction, Response, Request } from "express";
 import { ProductCategoryService } from "../services/product_category.service";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
@@ -62,13 +62,13 @@ export class ProductCategoryController {
       ControllerLogger.logList('Product Category', req, res);
 
       // Send notification for product category list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Product Category records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Product Category records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ status: "success",
          data: categories.data ,
@@ -104,13 +104,13 @@ export class ProductCategoryController {
       ControllerLogger.logView('Product Category', id, req, res);
 
       // Send notification for product category view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product Category viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product Category viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ status: "success", data: category });
     } catch (err) {
@@ -137,7 +137,7 @@ export class ProductCategoryController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Category created successfully: ${category.id}`,
+          `Product Category created successfully`,
           userId
         );
       }
@@ -180,7 +180,7 @@ export class ProductCategoryController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Category updated successfully: ${id}`,
+          `Product Category updated successfully`,
           userId
         );
       }
@@ -215,7 +215,7 @@ export class ProductCategoryController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Product Category deleted successfully: ${id}`,
+            `Product Category deleted successfully`,
             userId
           );
         }
@@ -235,4 +235,53 @@ export class ProductCategoryController {
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleProductCategory(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { productCategoryIds } = req.body;
+
+    if (!Array.isArray(productCategoryIds) || productCategoryIds.length === 0) {
+      ControllerLogger.logError(
+        "ProductCategory bulk deletion",
+        new AppError(400, "productCategoryIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "productCategoryIds must be a non-empty array"));
+    }
+
+    const result = await this.productCategoryService.softDeleteCategory(productCategoryIds);
+
+    ControllerLogger.logSuccess(
+      "ProductCategory bulk soft deleted",
+      productCategoryIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple ProductCategory soft deleted: ${productCategoryIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "ProductCategory soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("ProductCategory bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

@@ -112,51 +112,51 @@ export class OtherDeliveryChallanController {
         // Don't fail the main operation if notification fails
       }
 
-      // 🔔 Notify approvers if approval flow exists
-      try {
-        // Get the Document record for this Other Delivery Challan with approval flow
-        const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
+      // // 🔔 Notify approvers if approval flow exists
+      // try {
+      //   // Get the Document record for this Other Delivery Challan with approval flow
+      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
 
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          const approvers: string[] = [];
+      //   if (document && document.approvalFlow) {
+      //     const flow = document.approvalFlow;
+      //     const approvers: string[] = [];
 
-          // Collect verifiers
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            flow.verifiers.forEach((verifier: any) => {
-              if (verifier.id) approvers.push(verifier.id);
-            });
-          }
+      //     // Collect verifiers
+      //     if (flow.verifiers && flow.verifiers.length > 0) {
+      //       flow.verifiers.forEach((verifier: any) => {
+      //         if (verifier.id) approvers.push(verifier.id);
+      //       });
+      //     }
 
-          // Collect approvers from approval levels
-          if (flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
+      //     // Collect approvers from approval levels
+      //     if (flow.approvers) {
+      //       const levels = [
+      //         flow.approvers.firstApprover,
+      //         flow.approvers.secondApprover,
+      //         flow.approvers.thirdApprover
+      //       ];
 
-            levels.forEach((level: any) => {
-              if (level && level.users && level.users.length > 0) {
-                level.users.forEach((user: any) => {
-                  if (user.id) approvers.push(user.id);
-                });
-              }
-            });
-          }
+      //       levels.forEach((level: any) => {
+      //         if (level && level.users && level.users.length > 0) {
+      //           level.users.forEach((user: any) => {
+      //             if (user.id) approvers.push(user.id);
+      //           });
+      //         }
+      //       });
+      //     }
 
-          // Send notifications to all approvers
-          for (const approverId of approvers) {
-            await this.notificationService.createNoti(
-              `New Other Delivery Challan ${otherDeliveryChallan.id} requires your approval`,
-              approverId
-            );
-          }
-        }
-      } catch (approverNotifError) {
-        console.error('Approver notification error:', approverNotifError);
-        // Don't fail the main operation
-      }
+      //     // Send notifications to all approvers
+      //     for (const approverId of approvers) {
+      //       await this.notificationService.createNoti(
+      //         `New Other Delivery Challan ${otherDeliveryChallan.id} requires your approval`,
+      //         approverId
+      //       );
+      //     }
+      //   }
+      // } catch (approverNotifError) {
+      //   console.error('Approver notification error:', approverNotifError);
+      //   // Don't fail the main operation
+      // }
 
       // 📊 Log user activity
       try {
@@ -259,50 +259,50 @@ export class OtherDeliveryChallanController {
       const accessedBy = res.locals.user.id;
 
       // 🔔 Send SSE notification when Other Delivery Challan is accessed
-      try {
-        const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.data.id);
+      // try {
+      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.data.id);
 
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          let isApprover = false;
+      //   if (document && document.approvalFlow) {
+      //     const flow = document.approvalFlow;
+      //     let isApprover = false;
 
-          // Check if accessor is a verifier
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
-          }
+      //     // Check if accessor is a verifier
+      //     if (flow.verifiers && flow.verifiers.length > 0) {
+      //       isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
+      //     }
 
-          // Check if accessor is an approver
-          if (!isApprover && flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
+      //     // Check if accessor is an approver
+      //     if (!isApprover && flow.approvers) {
+      //       const levels = [
+      //         flow.approvers.firstApprover,
+      //         flow.approvers.secondApprover,
+      //         flow.approvers.thirdApprover
+      //       ];
 
-            for (const level of levels) {
-              if (level && level.users && level.users.length > 0) {
-                if (level.users.some((u: any) => u.id === accessedBy)) {
-                  isApprover = true;
-                  break;
-                }
-              }
-            }
-          }
+      //       for (const level of levels) {
+      //         if (level && level.users && level.users.length > 0) {
+      //           if (level.users.some((u: any) => u.id === accessedBy)) {
+      //             isApprover = true;
+      //             break;
+      //           }
+      //         }
+      //       }
+      //     }
 
-          // If accessor is an approver, notify the creator
-          if (isApprover && otherDeliveryChallan.data.createdBy?.id && otherDeliveryChallan.data.createdBy.id !== accessedBy) {
-            const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
-            const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
+      //     // If accessor is an approver, notify the creator
+      //     if (isApprover && otherDeliveryChallan.data.createdBy?.id && otherDeliveryChallan.data.createdBy.id !== accessedBy) {
+      //       const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
+      //       const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
 
-            await this.notificationService.createNoti(
-              `${accessorName} viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
-              otherDeliveryChallan.data.createdBy.id
-            );
-          }
-        }
-      } catch (notifError) {
-        console.error('Notification error:', notifError);
-      }
+      //       await this.notificationService.createNoti(
+      //         `${accessorName} viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
+      //         otherDeliveryChallan.data.createdBy.id
+      //       );
+      //     }
+      //   }
+      // } catch (notifError) {
+      //   console.error('Notification error:', notifError);
+      // }
 
       // 📊 Log activity
       await this.logUserActivity(req, res, ActivityAction.VIEW,
@@ -343,50 +343,50 @@ export class OtherDeliveryChallanController {
       const viewedBy = res.locals.user.id;
 
       // 🔔 Send SSE notification when Other Delivery Challan is viewed by approver
-      try {
-        const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
+      // try {
+      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
 
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          let isApprover = false;
+      //   if (document && document.approvalFlow) {
+      //     const flow = document.approvalFlow;
+      //     let isApprover = false;
 
-          // Check if viewer is a verifier
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            isApprover = flow.verifiers.some((v: any) => v.id === viewedBy);
-          }
+      //     // Check if viewer is a verifier
+      //     if (flow.verifiers && flow.verifiers.length > 0) {
+      //       isApprover = flow.verifiers.some((v: any) => v.id === viewedBy);
+      //     }
 
-          // Check if viewer is an approver
-          if (!isApprover && flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
+      //     // Check if viewer is an approver
+      //     if (!isApprover && flow.approvers) {
+      //       const levels = [
+      //         flow.approvers.firstApprover,
+      //         flow.approvers.secondApprover,
+      //         flow.approvers.thirdApprover
+      //       ];
 
-            for (const level of levels) {
-              if (level && level.users && level.users.length > 0) {
-                if (level.users.some((u: any) => u.id === viewedBy)) {
-                  isApprover = true;
-                  break;
-                }
-              }
-            }
-          }
+      //       for (const level of levels) {
+      //         if (level && level.users && level.users.length > 0) {
+      //           if (level.users.some((u: any) => u.id === viewedBy)) {
+      //             isApprover = true;
+      //             break;
+      //           }
+      //         }
+      //       }
+      //     }
 
-          // If viewer is an approver, notify the creator
-          if (isApprover && otherDeliveryChallan.createdBy?.id && otherDeliveryChallan.createdBy.id !== viewedBy) {
-            const viewer = await this.userRepository.findOne({ where: { id: viewedBy } });
-            const viewerName = viewer ? `${viewer.firstName} ${viewer.lastName}` : 'An approver';
+      //     // If viewer is an approver, notify the creator
+      //     if (isApprover && otherDeliveryChallan.createdBy?.id && otherDeliveryChallan.createdBy.id !== viewedBy) {
+      //       const viewer = await this.userRepository.findOne({ where: { id: viewedBy } });
+      //       const viewerName = viewer ? `${viewer.firstName} ${viewer.lastName}` : 'An approver';
 
-            await this.notificationService.createNoti(
-              `${viewerName} is reviewing Other Delivery Challan ${otherDeliveryChallan.id}`,
-              res.locals.user.id
-            );
-          }
-        }
-      } catch (notifError) {
-        console.error('Notification error:', notifError);
-      }
+      //       await this.notificationService.createNoti(
+      //         `${viewerName} is reviewing Other Delivery Challan ${otherDeliveryChallan.id}`,
+      //         res.locals.user.id
+      //       );
+      //     }
+      //   }
+      // } catch (notifError) {
+      //   console.error('Notification error:', notifError);
+      // }
 
       // Log the successful view
       ControllerLogger.logView('Other Delivery Challan', otherDeliveryChallan.id, req, res);
@@ -417,59 +417,59 @@ export class OtherDeliveryChallanController {
       const requestedBy = res.locals.user.id;
 
       // 🔔 Send SSE notification when Other Delivery Challan is opened for editing
-      try {
-        const challanId = otherDeliveryChallan.id || id;
+      // try {
+      //   const challanId = otherDeliveryChallan.id || id;
 
-        // Notify creator if someone else is editing
-        if (otherDeliveryChallan.createdBy?.id && otherDeliveryChallan.createdBy.id !== requestedBy) {
-          const editor = await this.userRepository.findOne({ where: { id: requestedBy } });
-          const editorName = editor ? `${editor.firstName} ${editor.lastName}` : 'Someone';
+      //   // Notify creator if someone else is editing
+      //   if (otherDeliveryChallan.createdBy?.id && otherDeliveryChallan.createdBy.id !== requestedBy) {
+      //     const editor = await this.userRepository.findOne({ where: { id: requestedBy } });
+      //     const editorName = editor ? `${editor.firstName} ${editor.lastName}` : 'Someone';
 
-          await this.notificationService.createNoti(
-            `${editorName} is editing Other Delivery Challan ${challanId}`,
-            otherDeliveryChallan.createdBy.id
-          );
-        }
+      //     await this.notificationService.createNoti(
+      //       `${editorName} is editing Other Delivery Challan ${challanId}`,
+      //       otherDeliveryChallan.createdBy.id
+      //     );
+      //   }
 
-        // Notify approvers that Other Delivery Challan is being edited
-        const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          const approvers: string[] = [];
+      //   // Notify approvers that Other Delivery Challan is being edited
+      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
+      //   if (document && document.approvalFlow) {
+      //     const flow = document.approvalFlow;
+      //     const approvers: string[] = [];
 
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            flow.verifiers.forEach((verifier: any) => {
-              if (verifier.id && verifier.id !== requestedBy) approvers.push(verifier.id);
-            });
-          }
+      //     if (flow.verifiers && flow.verifiers.length > 0) {
+      //       flow.verifiers.forEach((verifier: any) => {
+      //         if (verifier.id && verifier.id !== requestedBy) approvers.push(verifier.id);
+      //       });
+      //     }
 
-          if (flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
+      //     if (flow.approvers) {
+      //       const levels = [
+      //         flow.approvers.firstApprover,
+      //         flow.approvers.secondApprover,
+      //         flow.approvers.thirdApprover
+      //       ];
 
-            levels.forEach((level: any) => {
-              if (level && level.users && level.users.length > 0) {
-                level.users.forEach((user: any) => {
-                  if (user.id && user.id !== requestedBy) approvers.push(user.id);
-                });
-              }
-            });
-          }
+      //       levels.forEach((level: any) => {
+      //         if (level && level.users && level.users.length > 0) {
+      //           level.users.forEach((user: any) => {
+      //             if (user.id && user.id !== requestedBy) approvers.push(user.id);
+      //           });
+      //         }
+      //       });
+      //     }
 
-          // Send notification to approvers
-          for (const approverId of approvers) {
-            await this.notificationService.createNoti(
-              `Other Delivery Challan ${challanId} is being edited and may require re-approval`,
-              approverId
-            );
-          }
-        }
-      } catch (notifError) {
-        console.error('Notification error:', notifError);
-      }
+      //     // Send notification to approvers
+      //     for (const approverId of approvers) {
+      //       await this.notificationService.createNoti(
+      //         `Other Delivery Challan ${challanId} is being edited and may require re-approval`,
+      //         approverId
+      //       );
+      //     }
+      //   }
+      // } catch (notifError) {
+      //   console.error('Notification error:', notifError);
+      // }
 
       // Log the successful view for update
       ControllerLogger.logView('Other Delivery Challan (for update)', otherDeliveryChallan.id, req, res);
@@ -602,61 +602,61 @@ export class OtherDeliveryChallanController {
       }
 
       // 🔔 Send SSE notification to deleter
-      try {
-        await this.notificationService.createNoti(
-          `Other Delivery Challan ${challanId} deleted successfully`,
-          deletedBy
-        );
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `Other Delivery Challan ${challanId} deleted successfully`,
+      //     deletedBy
+      //   );
 
         // 🔔 Notify relevant users about deletion
-        if (challan?.data) {
-          // Notify creator if different from deleter
-          if (challan.data.createdBy?.id && challan.data.createdBy.id !== deletedBy) {
-            await this.notificationService.createNoti(
-              `Other Delivery Challan ${challanId} has been deleted`,
-              challan.data.createdBy.id
-            );
-          }
+      //   if (challan?.data) {
+      //     // Notify creator if different from deleter
+      //     if (challan.data.createdBy?.id && challan.data.createdBy.id !== deletedBy) {
+      //       await this.notificationService.createNoti(
+      //         `Other Delivery Challan ${challanId} has been deleted`,
+      //         challan.data.createdBy.id
+      //       );
+      //     }
 
-          // Notify approvers about deletion
-          const document = await this.documentbService.getDocumentByTypeId(id);
-          if (document && document.approvalFlow) {
-            const flow = document.approvalFlow;
-            const notifyUsers: string[] = [];
+      //     // Notify approvers about deletion
+      //     const document = await this.documentbService.getDocumentByTypeId(id);
+      //     if (document && document.approvalFlow) {
+      //       const flow = document.approvalFlow;
+      //       const notifyUsers: string[] = [];
 
-            if (flow.verifiers && flow.verifiers.length > 0) {
-              flow.verifiers.forEach((verifier: any) => {
-                if (verifier.id && verifier.id !== deletedBy) notifyUsers.push(verifier.id);
-              });
-            }
+      //       if (flow.verifiers && flow.verifiers.length > 0) {
+      //         flow.verifiers.forEach((verifier: any) => {
+      //           if (verifier.id && verifier.id !== deletedBy) notifyUsers.push(verifier.id);
+      //         });
+      //       }
 
-            if (flow.approvers) {
-              const levels = [
-                flow.approvers.firstApprover,
-                flow.approvers.secondApprover,
-                flow.approvers.thirdApprover
-              ];
+      //       if (flow.approvers) {
+      //         const levels = [
+      //           flow.approvers.firstApprover,
+      //           flow.approvers.secondApprover,
+      //           flow.approvers.thirdApprover
+      //         ];
 
-              levels.forEach((level: any) => {
-                if (level && level.users && level.users.length > 0) {
-                  level.users.forEach((user: any) => {
-                    if (user.id && user.id !== deletedBy) notifyUsers.push(user.id);
-                  });
-                }
-              });
-            }
+      //         levels.forEach((level: any) => {
+      //           if (level && level.users && level.users.length > 0) {
+      //             level.users.forEach((user: any) => {
+      //               if (user.id && user.id !== deletedBy) notifyUsers.push(user.id);
+      //             });
+      //           }
+      //         });
+      //       }
 
-            for (const userId of notifyUsers) {
-              await this.notificationService.createNoti(
-                `Other Delivery Challan ${challanId} has been deleted`,
-                userId
-              );
-            }
-          }
-        }
-      } catch (notifError) {
-        console.error('Notification error:', notifError);
-      }
+      //       for (const userId of notifyUsers) {
+      //         await this.notificationService.createNoti(
+      //           `Other Delivery Challan ${challanId} has been deleted`,
+      //           userId
+      //         );
+      //       }
+      //     }
+      //   }
+      // } catch (notifError) {
+      //   console.error('Notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Other Delivery Challan deleted', id, req, res);
 
@@ -699,68 +699,68 @@ export class OtherDeliveryChallanController {
       const successCount = results.filter(result => result).length;
 
       // 🔔 Send SSE notification to deleter
-      try {
-        await this.notificationService.createNoti(
-          `${ids.length} Other Delivery Challans deleted successfully`,
-          deletedBy
-        );
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `${ids.length} Other Delivery Challans deleted successfully`,
+      //     deletedBy
+      //   );
 
-        // 🔔 Notify relevant users about bulk deletion
-        const notifiedUsers = new Set<string>();
+      //   // 🔔 Notify relevant users about bulk deletion
+      //   const notifiedUsers = new Set<string>();
 
-        for (const challan of challans) {
-          if (!challan?.data) continue;
+      //   for (const challan of challans) {
+      //     if (!challan?.data) continue;
 
-          const challanId = challan.data.id || 'Unknown';
+      //     const challanId = challan.data.id || 'Unknown';
 
-          // Notify creator
-          if (challan.data.createdBy?.id && challan.data.createdBy.id !== deletedBy && !notifiedUsers.has(challan.data.createdBy.id)) {
-            await this.notificationService.createNoti(
-              `Multiple Other Delivery Challans including ${challanId} have been deleted`,
-              challan.data.createdBy.id
-            );
-            notifiedUsers.add(challan.data.createdBy.id);
-          }
+      //     // Notify creator
+      //     if (challan.data.createdBy?.id && challan.data.createdBy.id !== deletedBy && !notifiedUsers.has(challan.data.createdBy.id)) {
+      //       await this.notificationService.createNoti(
+      //         `Multiple Other Delivery Challans including ${challanId} have been deleted`,
+      //         challan.data.createdBy.id
+      //       );
+      //       notifiedUsers.add(challan.data.createdBy.id);
+      //     }
 
-          // Notify approvers
-          const document = await this.documentbService.getDocumentByTypeId(challan.data.id);
-          if (document && document.approvalFlow) {
-            const flow = document.approvalFlow;
+      //     // Notify approvers
+      //     const document = await this.documentbService.getDocumentByTypeId(challan.data.id);
+      //     if (document && document.approvalFlow) {
+      //       const flow = document.approvalFlow;
 
-            if (flow.verifiers && flow.verifiers.length > 0) {
-              flow.verifiers.forEach((verifier: any) => {
-                if (verifier.id && verifier.id !== deletedBy) notifiedUsers.add(verifier.id);
-              });
-            }
+      //       if (flow.verifiers && flow.verifiers.length > 0) {
+      //         flow.verifiers.forEach((verifier: any) => {
+      //           if (verifier.id && verifier.id !== deletedBy) notifiedUsers.add(verifier.id);
+      //         });
+      //       }
 
-            if (flow.approvers) {
-              const levels = [
-                flow.approvers.firstApprover,
-                flow.approvers.secondApprover,
-                flow.approvers.thirdApprover
-              ];
+      //       if (flow.approvers) {
+      //         const levels = [
+      //           flow.approvers.firstApprover,
+      //           flow.approvers.secondApprover,
+      //           flow.approvers.thirdApprover
+      //         ];
 
-              levels.forEach((level: any) => {
-                if (level && level.users && level.users.length > 0) {
-                  level.users.forEach((user: any) => {
-                    if (user.id && user.id !== deletedBy) notifiedUsers.add(user.id);
-                  });
-                }
-              });
-            }
-          }
-        }
+      //         levels.forEach((level: any) => {
+      //           if (level && level.users && level.users.length > 0) {
+      //             level.users.forEach((user: any) => {
+      //               if (user.id && user.id !== deletedBy) notifiedUsers.add(user.id);
+      //             });
+      //           }
+      //         });
+      //       }
+      //     }
+      //   }
 
-        // Send bulk notification to all affected users
-        for (const userId of notifiedUsers) {
-          await this.notificationService.createNoti(
-            `${ids.length} Other Delivery Challans have been deleted`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.error('Notification error:', notifError);
-      }
+      //   // Send bulk notification to all affected users
+      //   for (const userId of notifiedUsers) {
+      //     await this.notificationService.createNoti(
+      //       `${ids.length} Other Delivery Challans have been deleted`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.error('Notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess(`${ids.length} Other Delivery Challans deleted`, ids.join(', '), req, res);
 

@@ -314,14 +314,14 @@ export class GrnController {
       }
 
       // 🔔 Send notification for accessing recycle bin
-      try {
-        await this.notificationService.createNoti(
-          `Accessed GRN recycle bin (${grns.data.length} items)`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `Accessed GRN recycle bin (${grns.data.length} items)`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
       
       ControllerLogger.logList('GRN Recycle Bin', req, res);
 
@@ -380,14 +380,14 @@ export class GrnController {
       
       
       // � Soend notification for accessing main GRN list
-      try {
-        await this.notificationService.createNoti(
-          `Accessed GRN list (${grns.data.length} items found)`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `Accessed GRN list (${grns.data.length} items found)`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       // 📊 Log activity
       await this.logUserActivity(req, res, ActivityAction.VIEW,
@@ -470,10 +470,10 @@ export class GrnController {
             const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
             const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
 
-            await this.notificationService.createNoti(
-              `${accessorName} viewed GRN ${grn.grnNo}`,
-              grn.createdBy.id
-            );
+            // await this.notificationService.createNoti(
+            //   `${accessorName} viewed GRN ${grn.grnNo}`,
+            //   grn.createdBy.id
+            // );
             
           }
         }
@@ -526,51 +526,7 @@ export class GrnController {
       console.log('user is ', viewedBy);
 
       // 🔔 Send SSE notification when GRN is viewed by approver
-      try {
-        const document = await this.documentbService.getDocumentByTypeId(grn.id);
-
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          let isApprover = false;
-
-          // Check if viewer is a verifier
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            isApprover = flow.verifiers.some((v: any) => v.id === viewedBy);
-          }
-
-          // Check if viewer is an approver
-          if (!isApprover && flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
-
-            for (const level of levels) {
-              if (level && level.users && level.users.length > 0) {
-                if (level.users.some((u: any) => u.id === viewedBy)) {
-                  isApprover = true;
-                  break;
-                }
-              }
-            }
-          }
-
-          // If viewer is an approver, notify the creator
-          if (isApprover && grn.createdBy?.id && grn.createdBy.id !== viewedBy) {
-            const viewer = await this.userRepository.findOne({ where: { id: viewedBy } });
-            const viewerName = viewer ? `${viewer.firstName} ${viewer.lastName}` : 'An approver';
-
-            await this.notificationService.createNoti(
-              `${viewerName} is reviewing GRN ${grn.grnNo}`,
-              res.locals.user.id
-            );
-            
-          }
-        }
-      } catch (notifError) {
-        
-      }
+    
 
       ControllerLogger.logView('GRN', grn.id, req, res);
 
@@ -606,61 +562,11 @@ export class GrnController {
       const requestedBy = res.locals.user.id;
       console.log('user is ', requestedBy);
 
-      // 🔔 Send SSE notification when GRN is opened for editing
-      try {
-        const grnNo = grn.grnNo || id;
-
-        // Notify creator if someone else is editing
-        if (grn.createdBy?.id && grn.createdBy.id !== requestedBy) {
-          const editor = await this.userRepository.findOne({ where: { id: requestedBy } });
-          const editorName = editor ? `${editor.firstName} ${editor.lastName}` : 'Someone';
-
-          await this.notificationService.createNoti(
-            `${editorName} is editing GRN ${grnNo}`,
-            grn.createdBy.id
-          );
-          
-        }
+     
 
         // Notify approvers that GRN is being edited
         const document = await this.documentbService.getDocumentByTypeId(grn.id);
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          const approvers: string[] = [];
-
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            flow.verifiers.forEach((verifier: any) => {
-              if (verifier.id && verifier.id !== requestedBy) approvers.push(verifier.id);
-            });
-          }
-
-          if (flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
-
-            levels.forEach((level: any) => {
-              if (level && level.users && level.users.length > 0) {
-                level.users.forEach((user: any) => {
-                  if (user.id && user.id !== requestedBy) approvers.push(user.id);
-                });
-              }
-            });
-          }
-
-          // Send notification to approvers
-          for (const approverId of approvers) {
-            await this.notificationService.createNoti(
-              `GRN ${grnNo} is being edited and may require re-approval`,
-              approverId
-            );
-          }
-        }
-      } catch (notifError) {
-        
-      }
+      
 
       ControllerLogger.logView('GRN (for update)', grn.id, req, res);
 
@@ -745,15 +651,15 @@ export class GrnController {
       }
 
       // 🔔 Send notification for accessing GRN numbers
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `Retrieved all GRN numbers (${grns.length} items)`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `Retrieved all GRN numbers (${grns.length} items)`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
      
       ControllerLogger.logList('GRN Numbers', req, res);
 
@@ -808,55 +714,14 @@ export class GrnController {
       }
 
       // 🔔 Send SSE notification to updater
-      try {
+      
         await this.notificationService.createNoti(
           `GRN ${updatedGrn.grnNo} updated successfully`,
           updatedBy
         );
         
 
-        // 🔔 Notify approvers about the update
-        const document = await this.documentbService.getDocumentByTypeId(updatedGrn.id);
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          const approvers: string[] = [];
-
-          // Collect verifiers
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            flow.verifiers.forEach((verifier: any) => {
-              if (verifier.id) approvers.push(verifier.id);
-            });
-          }
-
-          // Collect approvers from approval levels
-          if (flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
-
-            levels.forEach((level: any) => {
-              if (level && level.users && level.users.length > 0) {
-                level.users.forEach((user: any) => {
-                  if (user.id && user.id !== updatedBy) approvers.push(user.id);
-                });
-              }
-            });
-          }
-
-          // Send notifications to approvers
-          for (const approverId of approvers) {
-            await this.notificationService.createNoti(
-              `GRN ${updatedGrn.grnNo} has been updated and requires re-approval`,
-              approverId
-            );
-          }
-        }
-      } catch (notifError) {
-       
-      }
-
+        
       ControllerLogger.logSuccess('GRN updated', updatedGrn.id, req, res);
 
       res.status(200).json({
@@ -892,62 +757,14 @@ export class GrnController {
       }
 
       // 🔔 Send SSE notification to deleter
-      try {
+      
         await this.notificationService.createNoti(
           `GRN ${grnNo} deleted successfully`,
           deletedBy
         );
         
 
-        // 🔔 Notify relevant users about deletion
-        if (grn) {
-          // Notify creator if different from deleter
-          if (grn.createdBy?.id && grn.createdBy.id !== deletedBy) {
-            await this.notificationService.createNoti(
-              `GRN ${grnNo} has been deleted`,
-              grn.createdBy.id
-            );
-          }
-
-          // Notify approvers about deletion
-          const document = await this.documentbService.getDocumentByTypeId(id);
-          if (document && document.approvalFlow) {
-            const flow = document.approvalFlow;
-            const notifyUsers: string[] = [];
-
-            if (flow.verifiers && flow.verifiers.length > 0) {
-              flow.verifiers.forEach((verifier: any) => {
-                if (verifier.id && verifier.id !== deletedBy) notifyUsers.push(verifier.id);
-              });
-            }
-
-            if (flow.approvers) {
-              const levels = [
-                flow.approvers.firstApprover,
-                flow.approvers.secondApprover,
-                flow.approvers.thirdApprover
-              ];
-
-              levels.forEach((level: any) => {
-                if (level && level.users && level.users.length > 0) {
-                  level.users.forEach((user: any) => {
-                    if (user.id && user.id !== deletedBy) notifyUsers.push(user.id);
-                  });
-                }
-              });
-            }
-
-            for (const userId of notifyUsers) {
-              await this.notificationService.createNoti(
-                `GRN ${grnNo} has been deleted`,
-                userId
-              );
-            }
-          }
-        }
-      } catch (notifError) {
         
-      }
 
       ControllerLogger.logSuccess('GRN deleted', id, req, res);
 
@@ -977,16 +794,16 @@ export class GrnController {
       }
 
       // 🔔 Send notification for accessing GRN details
-      try {
-        const userId = res.locals.user.id;
-        const grnNo = grnDetails.grnNo || id;
-        await this.notificationService.createNoti(
-          `Viewed detailed information for GRN ${grnNo}`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   const grnNo = grnDetails.grnNo || id;
+      //   await this.notificationService.createNoti(
+      //     `Viewed detailed information for GRN ${grnNo}`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
       
       ControllerLogger.logView('GRN Details', id, req, res);
 
@@ -1058,15 +875,15 @@ export class GrnController {
       const grns = await this.documentbService.getAllHoldGrnDocuments();
 
       // 🔔 Send notification for accessing hold GRNs
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `Accessed hold GRNs (${grns.length} items)`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `Accessed hold GRNs (${grns.length} items)`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       ControllerLogger.logList('Hold GRNs', req, res);
       res.status(200).json({ status: 'success', data: grns });
@@ -1083,15 +900,15 @@ export class GrnController {
       const resutl = await this.grnRepository.find();
 
       // 🔔 Send notification for accessing all GRNs
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `Retrieved all GRNs from database (${resutl.length} items)`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `Retrieved all GRNs from database (${resutl.length} items)`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       ControllerLogger.logList('All GRNs', req, res);
       res.status(200).json({ status: 'success', data: resutl });
@@ -1121,71 +938,12 @@ export class GrnController {
       );
 
       const result = await this.grnService.deleteMultipleGrns(ids);
-
-      // 🔔 Send SSE notification to deleter
-      try {
-        await this.notificationService.createNoti(
+await this.notificationService.createNoti(
           `${ids.length} GRNs deleted successfully`,
           deletedBy
         );
-       
-
-        // 🔔 Notify relevant users about bulk deletion
-        const notifiedUsers = new Set<string>();
-
-        for (const grn of grns) {
-          if (!grn) continue;
-
-          const grnNo = grn.grnNo || 'Unknown';
-
-          // Notify creator
-          if (grn.createdBy?.id && grn.createdBy.id !== deletedBy && !notifiedUsers.has(grn.createdBy.id)) {
-            await this.notificationService.createNoti(
-              `Multiple GRNs including ${grnNo} have been deleted`,
-              grn.createdBy.id
-            );
-            notifiedUsers.add(grn.createdBy.id);
-          }
-
-          // Notify approvers
-          const document = await this.documentbService.getDocumentByTypeId(grn.id);
-          if (document && document.approvalFlow) {
-            const flow = document.approvalFlow;
-
-            if (flow.verifiers && flow.verifiers.length > 0) {
-              flow.verifiers.forEach((verifier: any) => {
-                if (verifier.id && verifier.id !== deletedBy) notifiedUsers.add(verifier.id);
-              });
-            }
-
-            if (flow.approvers) {
-              const levels = [
-                flow.approvers.firstApprover,
-                flow.approvers.secondApprover,
-                flow.approvers.thirdApprover
-              ];
-
-              levels.forEach((level: any) => {
-                if (level && level.users && level.users.length > 0) {
-                  level.users.forEach((user: any) => {
-                    if (user.id && user.id !== deletedBy) notifiedUsers.add(user.id);
-                  });
-                }
-              });
-            }
-          }
-        }
-
-        // Send bulk notification to all affected users
-        for (const userId of notifiedUsers) {
-          await this.notificationService.createNoti(
-            `${ids.length} GRNs have been deleted`,
-            userId
-          );
-        }
-      } catch (notifError) {
-       
-      }
+      // 🔔 Send SSE notification to deleter
+    
 
       ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
 

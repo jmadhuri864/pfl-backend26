@@ -87,13 +87,13 @@ export class LabourPaymentVoucherController {
       ControllerLogger.logView('Labour Payment Voucher', id, req, res);
 
       // Send notification for labour payment voucher view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Labour Payment Voucher viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Labour Payment Voucher viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -193,7 +193,7 @@ export class LabourPaymentVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Payment Voucher created successfully: ${newVoucher[0].id}`,
+          `Labour Payment Voucher created successfully`,
           userId
         );
       }
@@ -245,7 +245,7 @@ export class LabourPaymentVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Payment Voucher updated successfully: ${id}`,
+          `Labour Payment Voucher updated successfully`,
           userId
         );
       }
@@ -279,7 +279,7 @@ export class LabourPaymentVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Payment Voucher deleted successfully: ${id}`,
+          `Labour Payment Voucher deleted successfully`,
           userId
         );
       }

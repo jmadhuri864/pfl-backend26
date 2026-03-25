@@ -17,7 +17,7 @@ import { AuditLogService } from "../services/auditLog.service";
 import AppError from "../utils/appError";
 import { LaborAttendancesService } from "../services/labourAttendence.service";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadAny, uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from '../utils/controllerLogger';
@@ -56,13 +56,13 @@ export class LaborAttendancesController {
       ControllerLogger.logList('Labour Attendance', req, res);
 
       // Send notification for labour attendance list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Labour Attendance records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Labour Attendance records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -92,13 +92,13 @@ export class LaborAttendancesController {
       ControllerLogger.logView('Labour Attendance', id, req, res);
 
       // Send notification for labour attendance view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Labour Attendance record viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Labour Attendance record viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -136,7 +136,7 @@ export class LaborAttendancesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Attendance record created successfully: ${attendance.id}`,
+          `Labour Attendance record created successfully`,
           userId
         );
       }
@@ -176,7 +176,7 @@ export class LaborAttendancesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Attendance record updated successfully: ${id}`,
+          `Labour Attendance record updated successfully`,
           userId
         );
       }
@@ -214,7 +214,7 @@ export class LaborAttendancesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labour Attendance record deleted successfully: ${id}`,
+          `Labour Attendance record deleted successfully`,
           userId
         );
       }

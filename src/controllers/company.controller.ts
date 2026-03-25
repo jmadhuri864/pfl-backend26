@@ -32,17 +32,17 @@ export class CompanyController {
       }
       
       // 🔔 Send notification for get all companies
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${companies.length} companies`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all companies notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${companies.length} companies`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all companies notification error:', notifError);
+      // }
       
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Company', req, res);
@@ -71,17 +71,17 @@ export class CompanyController {
       }
       
       // 🔔 Send notification for get companies update list
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${companies.length} companies for update`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get companies update list notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${companies.length} companies for update`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get companies update list notification error:', notifError);
+      // }
       
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Company', req, res);
@@ -112,17 +112,17 @@ export class CompanyController {
       }
       
       // 🔔 Send notification for company view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed company "${companies.name}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Company view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed company "${companies.name}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Company view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Company', id, req, res);
@@ -151,17 +151,17 @@ export class CompanyController {
       }
       
       // 🔔 Send notification for partial company details
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${companies.length} company partial details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Company partial details notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${companies.length} company partial details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Company partial details notification error:', notifError);
+      // }
       
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Company', req, res);

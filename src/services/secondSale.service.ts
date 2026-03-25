@@ -5,7 +5,7 @@ import { SecondSaleRepository } from "../repositories/secondSale.repository";
 import { SecondSale } from "../entities/secondSale.entity";
 import AppError from "../utils/appError";
 import { AuditLogService } from "./auditLog.service";
-import { DataSource, EntityManager, getManager, In } from "typeorm";
+import { DataSource, EntityManager, getManager, ILike, In } from "typeorm";
 import { SecondSaleProduct } from "../entities/secondSaleProduct.entity";
 
 import logger from "../utils/logger";
@@ -44,6 +44,21 @@ export class SecondSaleService {
 
   ) { }
 
+  private async generateSerialNo(prefix: string): Promise<string> {
+    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+    const count = await this.secondSaleRepository.count({
+      where: { secondSaleNO: ILike(`${prefix}%`) },
+    });
+    console.log(count);
+    // Generate the serial number in the format "PREFIX-001"
+    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+    return serialNo;
+  }
+
+
+
+
+
   public async createSecondSale(secondSaleData: any, requestedBy: any): Promise<any> {
     const queryRunner = this.AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -73,7 +88,8 @@ export class SecondSaleService {
 
       // 3. Extract product IDs from variants
       const productIds = variants.map(v => v.product?.id).filter(Boolean);
-
+const serialNo = await this.generateSerialNo("SSL");
+      secondSaleData.secondSaleNO = serialNo;
       const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
         ...secondSaleData,
         variants: variants.map(v => ({ id: v.id })), // only IDs

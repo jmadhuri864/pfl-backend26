@@ -62,7 +62,7 @@ export class OfficesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Office ${office.type} created successfully: ${office.id}`,
+          `Office ${office.type} created successfully`,
           userId
         );
       }
@@ -98,13 +98,13 @@ export class OfficesController {
       ControllerLogger.logView('Office', id, req, res);
 
       // Send notification for office view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Office ${office.type} viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Office ${office.type} viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -134,13 +134,13 @@ export class OfficesController {
       ControllerLogger.logList('Office (Filter)', req, res);
 
       // Send notification for office filter list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Office filter list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Office filter list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -153,7 +153,7 @@ export class OfficesController {
     }
   }
 
-  @httpGet('/get/all/offices')
+ @httpGet('/get/all/offices')
   public async getAllOffice(
     @request() req: Request<{}, {}, any>,
     @response() res: Response,
@@ -168,13 +168,13 @@ export class OfficesController {
       ControllerLogger.logList('Office (All)', req, res);
 
       // Send notification for all offices list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'All offices list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'All offices list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -185,6 +185,7 @@ export class OfficesController {
       next(err);
     }
   }
+
   @httpGet('/:officeType')
   public async getOfficesByType(
     @request() req: Request,
@@ -213,13 +214,13 @@ export class OfficesController {
       ControllerLogger.logList('Office (By Type)', req, res);
 
       // Send notification for offices by type list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Offices by type ${officeType} list accessed successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Offices by type ${officeType} list accessed successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -252,13 +253,13 @@ export class OfficesController {
       ControllerLogger.logList('Office (Search)', req, res);
 
       // Send notification for office search
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Office search for type ${officeType} completed successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Office search for type ${officeType} completed successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -301,7 +302,7 @@ export class OfficesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Office ${office.type} updated successfully: ${id}`,
+          `Office ${office.type} updated successfully`,
           userId
         );
       }
@@ -339,7 +340,7 @@ export class OfficesController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Office ${officeType} deleted successfully: ${id}`,
+          `Office ${officeType} deleted successfully`,
           userId
         );
       }
@@ -354,4 +355,54 @@ export class OfficesController {
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleOffices(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { officeIds } = req.body;
+      const officeType = req.query.officeType as OFFICE_TYPE;
+
+    if (!Array.isArray(officeIds) || officeIds.length === 0) {
+      ControllerLogger.logError(
+        "Office bulk deletion",
+        new AppError(400, "officeIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "officeIds must be a non-empty array"));
+    }
+
+    const result = await this.officesService.softDeleteOffices(officeIds,officeType);
+
+    ControllerLogger.logSuccess(
+      "Office bulk soft deleted",
+      officeIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple Offices soft deleted: ${officeIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Offices soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Office bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

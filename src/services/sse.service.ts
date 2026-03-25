@@ -17,12 +17,6 @@ export class SSEService {
    * Add a new SSE client connection
    */
   addClient(userId: string, clientId: string, res: Response): void {
-    // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
-
     // Get existing clients for this user
     const userClients = this.clients.get(userId) || [];
     
@@ -118,9 +112,11 @@ export class SSEService {
         ...data,
         timestamp: data.timestamp || new Date().toISOString(),
       };
-
-      // Format as SSE
       res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+      // Force flush — required with compression middleware
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
     } catch (error) {
       logger.error('Error sending SSE message:', error);
     }
@@ -134,6 +130,9 @@ export class SSEService {
       userClients.forEach(client => {
         try {
           client.response.write(': heartbeat\n\n');
+          if (typeof (client.response as any).flush === 'function') {
+            (client.response as any).flush();
+          }
         } catch (error) {
           logger.error('Error sending heartbeat:', error);
         }

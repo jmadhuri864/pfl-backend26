@@ -47,7 +47,7 @@ export class DumpRegisterController {
       }
 
       await this.notificationService.createNoti(
-        `New dump register created with ID: ${dumpRegister.id}`,
+        `New dump register created`,
         res.locals.user.id
       );
 
@@ -80,17 +80,17 @@ export class DumpRegisterController {
       }
 
       // 🔔 Send notification for dump register view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed dump register with ID ${id} details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Dump register view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed dump register with ID ${id} details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Dump register view notification error:', notifError);
+      // }
 
       ControllerLogger.logView('Dump Register', id, req, res);
       res.status(200).json({
@@ -232,17 +232,17 @@ export class DumpRegisterController {
       }
 
       // 🔔 Send notification for get all dump registers
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${dumpRegisters.meta.total} dump registers`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all dump registers notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${dumpRegisters.meta.total} dump registers`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all dump registers notification error:', notifError);
+      // }
 
       ControllerLogger.logGetAllRecords('Dump Registers', req, res);
       res.status(200).json({
@@ -276,7 +276,7 @@ export class DumpRegisterController {
       }
 
       await this.notificationService.createNoti(
-        `Dump register updated with ID: ${dumpRegister.id}`,
+        `Dump register updated`,
         res.locals.user.id
       );
 
@@ -312,7 +312,7 @@ export class DumpRegisterController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Dump register with ID ${id} deleted successfully`,
+            `Dump register deleted successfully`,
             userId
           );
         }

@@ -10,7 +10,7 @@ import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { SelectQueryBuilder } from 'typeorm';
+import { ILike, SelectQueryBuilder } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 
 @injectable()
@@ -29,6 +29,19 @@ export class VehicleDispatchService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService
   ) {}
+private async generateSerialNo(prefix: string): Promise<string> {
+    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+    const count = await this.vehicleDispatchRepository.count({
+      where: { vehicleDispatchNo: ILike(`${prefix}%`) },
+    });
+    console.log(count);
+    // Generate the serial number in the format "PREFIX-001"
+    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+    return serialNo;
+  }
+
+
+
 
   async create(data: any): Promise<any> {
 
@@ -40,7 +53,8 @@ export class VehicleDispatchService {
       throw new Error('Approval flow not found');
     }
 
-
+const serialNo = await this.generateSerialNo("VEHD");
+      data.vehicleDispatchNo = serialNo;
     const vehicleDispatch = this.vehicleDispatchRepository.create(data);
     console.log(vehicleDispatch);
     const savedVehicalDispatch=await this.vehicleDispatchRepository.save(vehicleDispatch);

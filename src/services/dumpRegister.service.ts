@@ -5,7 +5,7 @@ import { TYPES } from "../types";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
-import { DataSource, EntityManager, In, IsNull } from "typeorm";
+import { DataSource, EntityManager, ILike, In, IsNull } from "typeorm";
 import { DumpProductRepository } from "../repositories/dumpProduct.repository";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { formatDateTime } from "../utils/dateUtils";
@@ -42,7 +42,20 @@ export class DumpRegisterService{
     @inject(TYPES.DataSource)
     private readonly dataSource: DataSource
     ) {}
-      
+      private async generateSerialNo(prefix: string): Promise<string> {
+    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+    const count = await this.dumpRegisterRepository.count({
+      where: { dumpRegisterNO: ILike(`${prefix}%`) },
+    });
+    console.log(count);
+    // Generate the serial number in the format "PREFIX-001"
+    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+    return serialNo;
+  }
+
+
+
+
 
     async createDumpRegister(data: any): Promise<any> {
       const queryRunner = this.dataSource.createQueryRunner();
@@ -64,8 +77,10 @@ export class DumpRegisterService{
         const companyId = data.companyId || data.companyName;
         const locationId = data.locationId || data.location;
         const grnId = data.grnId || data.grn;
+const serialNo = await this.generateSerialNo("DUMR");
 
         const dumpRegister = queryRunner.manager.create(this.dumpRegisterRepository.target, {
+          dumpRegisterNO: serialNo,
           companyName: companyId ? { id: companyId } : undefined,
           location: locationId ? { id: locationId } : undefined,
           date: data.date,

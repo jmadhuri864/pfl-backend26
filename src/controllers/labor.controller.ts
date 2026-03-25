@@ -15,7 +15,7 @@ import { NextFunction, Response, Request } from "express";
 import logger from "../utils/logger";
 import AppError from "../utils/appError";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadNone } from "../middleware/multerConfig";
+
 import { PaginationOptions } from "../utils/pagination";
 import { NotificationService } from "../services/notification.service";
 
@@ -47,7 +47,7 @@ export class LaborController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labor record created successfully: ${labor.id}`,
+          `Labor record created successfully`,
           userId
         );
       }
@@ -77,13 +77,13 @@ export class LaborController {
       }
 
       // Send notification for labor view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Labor record viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Labor record viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -117,13 +117,13 @@ export class LaborController {
       const labors = await this.laborService.getAllLabors(queryOptions);
       
       // Send notification for labor list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Labor records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Labor records list accessed successfully',
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -163,7 +163,7 @@ export class LaborController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labor record updated successfully: ${id}`,
+          `Labor record updated successfully`,
           userId
         );
       }
@@ -202,7 +202,7 @@ export class LaborController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Labor record deleted successfully: ${id}`,
+          `Labor record deleted successfully`,
           userId
         );
       }

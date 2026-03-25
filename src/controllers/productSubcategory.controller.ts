@@ -18,7 +18,7 @@ import { TYPES } from "../types";
 import AppError from "../utils/appError";
 import { NextFunction, Response,Request } from "express";
 import { ProductSubcategoryService } from "../services/product_subcategory";
-import { uploadNone } from "../middleware/multerConfig";
+
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
@@ -59,13 +59,13 @@ export class ProductSubcategoryController {
       ControllerLogger.logList('Product Subcategory', req, res);
 
       // Send notification for product subcategory list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Product Subcategory records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Product Subcategory records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ status: "success",
          data: subcategories.data,
@@ -94,13 +94,13 @@ export class ProductSubcategoryController {
       ControllerLogger.logView('Product Subcategory', id, req, res);
 
       // Send notification for product subcategory view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product Subcategory viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product Subcategory viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ status: "success", data: subcategory });
     } catch (err) {
@@ -128,7 +128,7 @@ export class ProductSubcategoryController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Subcategory created successfully: ${subcategory.id}`,
+          `Product Subcategory created successfully`,
           userId
         );
       }
@@ -172,7 +172,7 @@ export class ProductSubcategoryController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Subcategory updated successfully: ${id}`,
+          `Product Subcategory updated successfully`,
           userId
         );
       }
@@ -205,7 +205,7 @@ export class ProductSubcategoryController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Product Subcategory deleted successfully: ${id}`,
+            `Product Subcategory deleted successfully`,
             userId
           );
         }
@@ -223,4 +223,53 @@ export class ProductSubcategoryController {
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleProductSubcategory(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { productSubcategoryIds } = req.body;
+
+    if (!Array.isArray(productSubcategoryIds) || productSubcategoryIds.length === 0) {
+      ControllerLogger.logError(
+        "ProductSubcategory bulk deletion",
+        new AppError(400, "productSubcategoryIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "productSubcategoryIds must be a non-empty array"));
+    }
+
+    const result = await this.productSubcategoryService.softDeleteSubcategory(productSubcategoryIds);
+
+    ControllerLogger.logSuccess(
+      "ProductSubcategory bulk soft deleted",
+      productSubcategoryIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple ProductSubcategory soft deleted: ${productSubcategoryIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "ProductSubcategory soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("ProductSubcategory bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

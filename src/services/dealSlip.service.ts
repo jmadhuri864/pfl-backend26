@@ -95,7 +95,7 @@ export class DealSlipService {
     // }
 
 
-    async findAllDealSlip(queryOptions: PaginationOptions): Promise<{ data: any[]; total: number; page: number; totalPages: number }> {
+  async findAllDealSlip(queryOptions: PaginationOptions): Promise<{ data: any[]; total: number; page: number; totalPages: number }> {
       console.log(queryOptions);
   
      
@@ -162,6 +162,7 @@ export class DealSlipService {
           totalPages
       };
   }
+  
   
 
    async findDealSlipByIdforView(id: string): Promise<any> {
@@ -936,14 +937,14 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
       id: rd.id || null,
       rfpa: rd.rfpa.rfpaId || null, //Omkar
       lotNo: rd.lotNo || null,
-      approvalNote: rd.approvalNote || null,
+      // approvalNote: rd.approvalNote || null,
       loadingLocation: rd.loadingLocation || null,
       remark: rd.remark || null,
       specialRequest: rd.specialRequest || null,
-      requestingDepartment: rd.requestingDepartment || null,
-      approvalStatus: rd.approvalStatus || null,
-      dealSlipCreatedAt: rd.dealSlipCreatedAt || null,
-      dealSlipApprovedAt: rd.dealSlipApprovedAt || null,
+     // requestingDepartment: rd.requestingDepartment || null,
+      //approvalStatus: rd.approvalStatus || null,
+      // dealSlipCreatedAt: rd.dealSlipCreatedAt || null,
+      // dealSlipApprovedAt: rd.dealSlipApprovedAt || null,
       dealSlipNo: rd.dealSlipNo || null,
     };
   });
@@ -997,7 +998,6 @@ console.log(relatedDataOnly.length)
     }
   };
 }
-
 
 public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: string): Promise<{
   data: any[];

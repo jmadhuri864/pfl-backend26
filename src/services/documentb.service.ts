@@ -427,6 +427,7 @@ console.log("Document for starting approval flow: ", document?.type);
       where: { id: documentId },
       relations: [
         'approvalFlow',
+        'approvalFlow.creator',
         'approvalFlow.verifiers',
         'approvalFlow.approvers.firstApprover.users',
         'approvalFlow.approvers.secondApprover.users',
@@ -488,6 +489,10 @@ console.log(userName);
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by Verifier`;
             await this.documentbRepository.save(document);
+            // 🔔 Notify verifier
+            await this.notificationService.createNoti(`${document.type} was rejected by you at Verifier stage`, userId);
+            // 🔔 Notify creator
+            await this.notifyCreator(document, `Your ${document.type} was rejected by the verifier`);
             return;
           }
 
@@ -564,6 +569,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected at Approver Level 1`;
             await this.documentbRepository.save(document);
+            // 🔔 Notify approver
+            await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
+            // 🔔 Notify creator
+            await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
             return;
           }
 
@@ -579,10 +588,13 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             document.status = DocumentStatus.APPROVED;
             document.remarks = `${document.type} Approved by Required Approvers`;
             await this.documentbRepository.save(document);
+            await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
             await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
             return;
           }
 
+          // 🔔 Notify approver of their action
+          await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
           return;
 
         } else {
@@ -612,6 +624,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 2`;
               await this.documentbRepository.save(document);
+              // 🔔 Notify approver
+              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
+              // 🔔 Notify creator
+              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
               return;
             }
 
@@ -626,11 +642,13 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by Required Approvers`;
               await this.documentbRepository.save(document);
+              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
 
-
+            // 🔔 Notify approver of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
             return;
 
           }
@@ -654,6 +672,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 2`;
               await this.documentbRepository.save(document);
+              // 🔔 Notify approver
+              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 2`, userId);
+              // 🔔 Notify creator
+              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 2 by ${userName}`);
               return;
             }
 
@@ -669,11 +691,13 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by Required Approvers`;
               await this.documentbRepository.save(document);
+              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
 
-
+            // 🔔 Notify approver of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 2`, userId);
             return;
 
           } else {
@@ -703,6 +727,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
+              // 🔔 Notify approver
+              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
+              // 🔔 Notify creator
+              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
               return;
             }
 
@@ -714,9 +742,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
+              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
+            // 🔔 Notify approver of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
             return;
           } else {
             throw new Error('First approver has already acted on this document');
@@ -736,6 +767,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
+              // 🔔 Notify approver
+              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 2`, userId);
+              // 🔔 Notify creator
+              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 2 by ${userName}`);
               return;
             }
             const a1 = info.firstApproved?.status === ApproverStatus.APPROVED;
@@ -745,9 +780,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
+              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
+            // 🔔 Notify approver of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 2`, userId);
             return;
           } else {
             throw new Error('Second approver has already acted on this document');
@@ -767,6 +805,10 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
+              // 🔔 Notify approver
+              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 3`, userId);
+              // 🔔 Notify creator
+              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 3 by ${userName}`);
               return;
             }
             const a1 = info.firstApproved?.status === ApproverStatus.APPROVED;
@@ -776,9 +818,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
+              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
+            // 🔔 Notify approver of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 3`, userId);
             return;
           } else {
             throw new Error('Third approver has already acted on this document');
@@ -825,9 +870,15 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           if (action === ApproverStatus.REJECTED) {
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by First Finalizer`;
+            // 🔔 Notify finalizer
+            await this.notificationService.createNoti(`${document.type} was rejected by you at Finalizer Level 1`, userId);
+            // 🔔 Notify creator
+            await this.notifyCreator(document, `Your ${document.type} was rejected at Finalizer Level 1 by ${userName}`);
           } else {
             document.status = DocumentStatus.FINALIZING;
             document.remarks = `${document.type} Approved by First Finalizer`;
+            // 🔔 Notify finalizer of their action
+            await this.notificationService.createNoti(`${document.type} approved by you at Finalizer Level 1`, userId);
             await this.assignToUsers(documentId, flow.finalizers.secondFinalizers, 'finalizer');
           }
 
@@ -859,9 +910,16 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           if (action === ApproverStatus.REJECTED) {
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by Second Finalizer`;
+            // 🔔 Notify finalizer
+            await this.notificationService.createNoti(`${document.type} was rejected by you at Finalizer Level 2`, userId);
+            // 🔔 Notify creator
+            await this.notifyCreator(document, `Your ${document.type} was rejected at Finalizer Level 2 by ${userName}`);
           } else {
             document.status = DocumentStatus.COMPLETE;
             document.remarks = `${document.type} Fully Approved and Finalized`;
+            await this.documentbRepository.save(document);
+            await this.notifyCreator(document, `Your ${document.type} has been fully approved and finalized by ${userName}`);
+            return;
           }
 
           await this.documentbRepository.save(document);
@@ -1174,6 +1232,16 @@ function isWithinRange(min: number | string | null, max: number | string | null,
 
 
   //Todo:Send Nottification to related Approval Flow User
+  private async notifyCreator(document: any, message: string): Promise<void> {
+    const creatorId = document?.approvalFlow?.creator?.id;
+    if (!creatorId) return;
+    try {
+      await this.notificationService.createNoti(message, creatorId);
+    } catch (err) {
+      console.error(`Failed to notify creator ${creatorId}:`, err);
+    }
+  }
+
   async assignToUsers(
     documentId: string,
     users: User[],
@@ -1230,7 +1298,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
       // ➕ Add more cases as needed
     }
 
-    const message = `You have been assigned as a ${role} for ${document?.type} type document with ${document?.type}No=${documentTypeNo}`;
+    const message = `You have been assigned as a ${role} for ${document?.type} type document`;
 
     // Send notifications in parallel for better performance
     const notificationPromises = users.map(async (user) => {

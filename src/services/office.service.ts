@@ -6,6 +6,7 @@ import { OFFICE_TYPE, OfficesData } from "../entities/offices.entity";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { In } from "typeorm";
 
 @injectable()
 export class OfficesService {
@@ -89,7 +90,16 @@ export class OfficesService {
     // Step 5: Save the updated office
     return this.officesRepository.save(office);
   }
+async softDeleteOffices(userIds: string[],officeType:OFFICE_TYPE) {
 
+  const result = await this.officesRepository.softDelete({
+     id: In(userIds),
+    type: officeType,
+    
+  });
+
+  return result;
+}
   async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<OfficesData | null> {
     return this.officesRepository.findOne({
       where: {

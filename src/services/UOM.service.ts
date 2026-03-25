@@ -14,12 +14,23 @@ export class UOMService {
 ) {
     this.UOMRepository = this.dataSource.getRepository(UOM) as UOMRepository;
   }
-  public async getAll( queryOptions:PaginationOptions): Promise<any> {
+ public async getAll( queryOptions:PaginationOptions): Promise<any> {
     
     let queryBuilder = await  this.UOMRepository.createQueryBuilder('uom')
     .orderBy('uom.createdAt', 'DESC');
   const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
-  return result;
+  return{
+    data:result.data.map((unit)=>{
+      return{
+          id:unit.id,
+          unit:unit.unit,
+          abbreviation:unit.abbreviation,
+          description:unit.description
+      }
+    }),
+    meta:result.meta
+  }
+  //return result;
   }
   public async getAllPartial():Promise<any>{
     const uoms = await this.UOMRepository.find({select:{

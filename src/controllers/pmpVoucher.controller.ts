@@ -49,12 +49,12 @@ export class PMPVoucherController {
 
       // Send notification for PMP voucher list access
      
-      if (userId) {
-        await this.notificationService.createNoti(
-          'PMP Voucher records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'PMP Voucher records list accessed successfully',
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -129,13 +129,13 @@ export class PMPVoucherController {
       ControllerLogger.logView("PMP Voucher", id, req, res);
 
       // Send notification for PMP voucher view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `PMP Voucher viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `PMP Voucher viewed: ${id}`,
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({
         status: "success",
@@ -239,7 +239,7 @@ export class PMPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `PMP Voucher created successfully: ${newVoucher.id}`,
+          `PMP Voucher created successfully`,
           userId
         );
       }
@@ -293,7 +293,7 @@ export class PMPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `PMP Voucher updated successfully: ${id}`,
+          `PMP Voucher updated successfully`,
           userId
         );
       }
@@ -333,7 +333,7 @@ export class PMPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `PMP Voucher deleted successfully: ${id}`,
+          `PMP Voucher deleted successfully`,
           userId
         );
       }

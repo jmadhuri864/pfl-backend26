@@ -42,7 +42,7 @@ export class  LevelsController {
           const userId = res.locals.user?.id;
           if (userId) {
             await this.notificationService.createNoti(
-              `Level created successfully: ${level.id}`,
+              `Level created successfully`,
               userId
             );
           }
@@ -84,7 +84,7 @@ export class  LevelsController {
           const userId = res.locals.user?.id;
           if (userId) {
             await this.notificationService.createNoti(
-              `Level updated successfully: ${id}`,
+              `Level updated successfully`,
               userId
             );
           }
@@ -120,7 +120,7 @@ export class  LevelsController {
                  const userId = res.locals.user?.id;
                  if (userId) {
                    await this.notificationService.createNoti(
-                     `Level deleted successfully: ${id}`,
+                     `Level deleted successfully`,
                      userId
                    );
                  }
@@ -155,13 +155,13 @@ export class  LevelsController {
           ControllerLogger.logView('Level', id, req, res);
 
           // Send notification for level view
-          const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              `Level viewed: ${id}`,
-              userId
-            );
-          }
+          // const userId = res.locals.user?.id;
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     `Level viewed: ${id}`,
+          //     userId
+          //   );
+          // }
     
           res.status(200).json({
             status: "success",
@@ -192,13 +192,13 @@ export class  LevelsController {
           ControllerLogger.logList('Level', req, res);
 
           // Send notification for levels list access
-          const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              'Levels list accessed successfully',
-              userId
-            );
-          }
+          // const userId = res.locals.user?.id;
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     'Levels list accessed successfully',
+          //     userId
+          //   );
+          // }
     
           res.status(200).json({
             status: "success",

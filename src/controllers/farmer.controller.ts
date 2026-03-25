@@ -151,10 +151,10 @@ console.log(files)
         return next(new AppError(404, 'Farmer not found'));
       }
       
-      await this.notificationService.createNoti(
-        `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
+      //   res.locals.user.id,
+      // );
       
       ControllerLogger.logView('Farmer', id, req, res);
       res.status(200).json({
@@ -182,10 +182,10 @@ console.log(files)
         return next(new AppError(404, 'Farmer not found'));
       }
       
-      await this.notificationService.createNoti(
-        `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
+      //   res.locals.user.id,
+      // );
       
       ControllerLogger.logView('Farmer', id, req, res);
       res.status(200).json({
@@ -213,10 +213,10 @@ console.log(files)
         return next(new AppError(404, 'Farmer not found'));
       }
       
-      await this.notificationService.createNoti(
-        `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
-        res.locals.user.id,
-      );
+      // await this.notificationService.createNoti(
+      //   `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
+      //   res.locals.user.id,
+      // );
       
       ControllerLogger.logView('Farmer (for update)', id, req, res);
       res.status(200).json({
@@ -302,17 +302,17 @@ console.log(files)
       }
       
       // 🔔 Send notification for get all farmers
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${farmers.meta.total} farmers`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all farmers notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${farmers.meta.total} farmers`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all farmers notification error:', notifError);
+      // }
       
       ControllerLogger.logGetAllRecords('Farmers', req, res);
       res.status(200).json({
@@ -508,7 +508,7 @@ console.log(files)
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Farmer with ID ${id} deleted successfully`,
+            `Farmer deleted successfully`,
             userId
           );
         }
@@ -690,6 +690,57 @@ console.log(files)
       });
     } catch (err) {
       ControllerLogger.logError('Get Filtered Farmers', err, req, res);
+      next(err);
+    }
+  }
+
+  //TODO:Delete Mutilple
+   @httpDelete("/delete/multiple")
+  public async softDeleteMultipleFarmers(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+  
+      const { farmerIds } = req.body;
+  
+      if (!Array.isArray(farmerIds) || farmerIds.length === 0) {
+        ControllerLogger.logError(
+          "Farmer bulk deletion",
+          new AppError(400, "farmerIds must be a non-empty array"),
+          req,
+          res
+        );
+        return next(new AppError(400, "farmerIds must be a non-empty array"));
+      }
+  
+      const result = await this.farmerService.softDeleteFarmers(farmerIds);
+  
+      ControllerLogger.logSuccess(
+        "Farmers bulk soft deleted",
+        farmerIds.join(","),
+        req,
+        res
+      );
+  
+      // Send notification
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Multiple farmers soft deleted: ${farmerIds.length}`,
+          userId
+        );
+      }
+  
+      return res.status(200).json({
+        status: "success",
+        message: "Employees soft deleted successfully",
+        affected: result.affected,
+      });
+  
+    } catch (err) {
+      ControllerLogger.logError("Employee bulk deletion", err, req, res);
       next(err);
     }
   }

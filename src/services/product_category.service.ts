@@ -10,6 +10,7 @@ import { ProductClassificationRepository } from "../repositories/product_classif
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { In } from "typeorm";
 
 
 @injectable()
@@ -35,9 +36,25 @@ export class ProductCategoryService {
      .orderBy('productCategory.createdAt', 'DESC');
     
         const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
-    
-        return result;
-  }
+        return{
+            data:result.data.map((pro)=>{
+              return{
+                id:pro.id,
+                name:pro.name,
+                classification: pro?.productClassification
+                ? {
+                    id: pro.productClassification.id,
+                    name: pro.productClassification.name,
+                }
+                : null,
+              }
+            }
+          ),
+          meta:result.meta
+          }
+
+        //return result;
+      }
 
   async getById(id: string): Promise<ProductCategory | null> {
     return this.productCategoryRepository.findOne({
@@ -146,7 +163,14 @@ export class ProductCategoryService {
     console.log(`Product category with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
-  
+  async softDeleteCategory(userIds: string[]) {
+
+  const result = await this.productCategoryRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
 }
 
 

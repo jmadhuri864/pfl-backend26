@@ -4,7 +4,7 @@ import { InwardRepository } from '../repositories/inwardRegister.repository';
 import { InwardRegister } from '../entities/inwardRegister.entity';
 import AppError from '../utils/appError';
 
-import { LessThanOrEqual, DataSource, SelectQueryBuilder, In, IsNull } from 'typeorm';
+import { LessThanOrEqual, DataSource, SelectQueryBuilder, In, IsNull, ILike } from 'typeorm';
 import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 
@@ -52,6 +52,19 @@ export class InwardRegisterService {
      
   ) {}
 
+  private async generateSerialNo(prefix: string): Promise<string> {
+      // Get the count of existing GRNs for the branch (or use another unique mechanism)
+      const count = await this.inwardRegisterRepo.count({
+        where: { inwardNo: ILike(`${prefix}%`) },
+      });
+      console.log(count);
+      // Generate the serial number in the format "PREFIX-001"
+      const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+      return serialNo;
+    }
+
+
+
 public async createInwardRegister(data: any): Promise<any> {
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
@@ -74,7 +87,8 @@ public async createInwardRegister(data: any): Promise<any> {
 
     // 3. Extract product IDs from variants
     const productIds = variants.map(v => v.product?.id).filter(Boolean);
-
+const serialNo = await this.generateSerialNo("INWR");
+      data.inwardNo = serialNo;
     // 4. Create Inward Register
     const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
       ...data,

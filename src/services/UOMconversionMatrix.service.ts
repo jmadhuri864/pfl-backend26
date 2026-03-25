@@ -1,7 +1,7 @@
 import { inject, injectable } from "inversify";
 import { UOMConversionMatrixRepository } from "../repositories/uomMatrix.repository";
 import { TYPES } from "../types";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { AuditLogService } from "./auditLog.service";
 import { UOMConversionMatrix } from "../entities/uom_matrix.entity";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
@@ -25,7 +25,29 @@ export class UOMConversionMatrixService {
     .leftJoinAndSelect('uomConversionMatrix.toUOM', 'toUOM')
     .orderBy('uomConversionMatrix.createdAt', 'DESC');
   const result = await buildQuery(queryBuilder, queryOptions, 'uomConversionMatrix');
-  return result ;
+
+  return{
+    data:result.data.map((uom)=>{
+      return{
+        id:uom.id,
+        conversionFactor:uom.conversionFactor,
+        fromUOM:uom.fromUOM ?
+        {
+          id:uom?.fromUOM.id,
+          unit:uom?.fromUOM.unit
+        }:null,
+        toUOM:uom.toUOM
+        ?
+        {
+          id:uom?.toUOM.id,
+          unit:uom?.toUOM.unit
+        }:null
+      }
+    }),
+    meta:result.meta
+  }
+
+ // return result ;
   }
 
   public async getById(id: string): Promise<UOMConversionMatrix | null> {
@@ -117,6 +139,14 @@ export class UOMConversionMatrixService {
  
     console.log(`UOM Conversion Matrix with ID ${id} marked for deletion in 6 months.`);
     return true;
+}
+async softDeleteConversion(userIds: string[]) {
+
+  const result = await this.uomConversionMatrixRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
 }
 
 }

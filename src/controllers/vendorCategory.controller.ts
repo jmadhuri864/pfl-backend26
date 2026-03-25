@@ -19,7 +19,7 @@ import { NotificationService } from "../services/notification.service";
 import { VendorCategory } from "../entities/vendorCategory.entity";
 import AppError from "../utils/appError";
 import { TYPES } from "../types";
-import { uploadAny, uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
@@ -63,7 +63,7 @@ export class VendorCategoryController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor Category created successfully: ${category.id}`,
+          `Vendor Category created successfully`,
           userId
         );
       }
@@ -106,13 +106,13 @@ export class VendorCategoryController {
       ControllerLogger.logList('Vendor categories', req, res);
 
       // Send notification for vendor categories list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Vendor Category records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Vendor Category records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -143,13 +143,13 @@ export class VendorCategoryController {
       ControllerLogger.logView('Vendor category', id, req, res);
 
       // Send notification for vendor category view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor Category viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vendor Category viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -189,7 +189,7 @@ public async updateCategory(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Vendor Category updated successfully: ${id}`,
+        `Vendor Category updated successfully`,
         userId
       );
     }
@@ -227,7 +227,7 @@ public async updateCategory(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor Category deleted successfully: ${id}`,
+          `Vendor Category deleted successfully`,
           userId
         );
       }
@@ -241,4 +241,53 @@ public async updateCategory(
       next(err);
     }
   }
+    @httpDelete("/delete/multiple")
+public async softDeleteMultipleVendorCategory(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { categoryIds } = req.body;
+
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+      ControllerLogger.logError(
+        "VendorCategory bulk deletion",
+        new AppError(400, "categoryIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "categoryIds must be a non-empty array"));
+    }
+
+    const result = await this.vendorCategoryService.softDeleteCategory(categoryIds);
+
+    ControllerLogger.logSuccess(
+      "VendorCategory bulk soft deleted",
+      categoryIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple VendorCategory soft deleted: ${categoryIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "VendorCategory soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("VendorCategory bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

@@ -56,7 +56,7 @@ export class TPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Transport Payment Voucher created successfully: ${createdVoucher.id}`,
+          `Transport Payment Voucher created successfully`,
           userId
         );
       }
@@ -100,12 +100,12 @@ export class TPVoucherController {
       ControllerLogger.logList('Transport Payment Voucher', req, res);
 
       // Send notification for transport payment voucher list access
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Transport Payment Voucher records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Transport Payment Voucher records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -178,12 +178,12 @@ export class TPVoucherController {
 
       // Send notification for transport payment voucher view
       const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Transport Payment Voucher viewed: ${id}`,
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Transport Payment Voucher viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -282,7 +282,7 @@ export class TPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Transport Payment Voucher updated successfully: ${id}`,
+          `Transport Payment Voucher updated successfully`,
           userId
         );
       }
@@ -326,7 +326,7 @@ export class TPVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Transport Payment Voucher deleted successfully: ${id}`,
+          `Transport Payment Voucher deleted successfully`,
           userId
         );
       }

@@ -41,6 +41,8 @@ export class DumpRegister extends Model {
   dumpType: DumpType;
   @Column({ nullable: true })
   batchNo: string; 
+   @Column({ nullable: true })
+    dumpRegisterNO: string;
   @Column({ nullable: true })
   totalQty: number; 
   @Column({ nullable: true })

@@ -6,7 +6,7 @@ import { ProductClassification } from "../entities/product_classification.entity
 import AppError from "../utils/appError";
 import { controller, httpGet, httpPost, httpPatch, httpDelete, request, response, requestParam, requestBody, next } from "inversify-express-utils";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { uploadNone } from "../middleware/multerConfig";
+
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
@@ -47,13 +47,13 @@ export class ProductClassificationController {
       ControllerLogger.logList('Product Classification', req, res);
 
       // Send notification for product classification list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Product Classification records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Product Classification records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -85,13 +85,13 @@ export class ProductClassificationController {
       ControllerLogger.logView('Product Classification', id, req, res);
 
       // Send notification for product classification view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product Classification viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product Classification viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -118,7 +118,7 @@ export class ProductClassificationController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Classification created successfully: ${newClassification.id}`,
+          `Product Classification created successfully`,
           userId
         );
       }
@@ -155,7 +155,7 @@ export class ProductClassificationController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Classification updated successfully: ${id}`,
+          `Product Classification updated successfully`,
           userId
         );
       }
@@ -190,7 +190,7 @@ export class ProductClassificationController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Product Classification deleted successfully: ${id}`,
+          `Product Classification deleted successfully`,
           userId
         );
       }
@@ -204,4 +204,53 @@ export class ProductClassificationController {
       next(new AppError(500, "Error deleting classification"));
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleProductClassification(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { productClassificationIds } = req.body;
+
+    if (!Array.isArray(productClassificationIds) || productClassificationIds.length === 0) {
+      ControllerLogger.logError(
+        "Classification bulk deletion",
+        new AppError(400, "productClassificationIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "productClassificationIds must be a non-empty array"));
+    }
+
+    const result = await this.productClassificationService.softDeleteClassification(productClassificationIds);
+
+    ControllerLogger.logSuccess(
+      "Classification bulk soft deleted",
+      productClassificationIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple classification soft deleted: ${productClassificationIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "ProductClassification soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("ProductClassification bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

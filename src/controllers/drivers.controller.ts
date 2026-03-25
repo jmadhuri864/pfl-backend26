@@ -31,17 +31,17 @@ export class DriverController {
       }
       
       // 🔔 Send notification for get all drivers
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${driver.length} drivers`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all drivers notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${driver.length} drivers`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all drivers notification error:', notifError);
+      // }
       
       res.status(200).json({
         status: 'success',
@@ -100,17 +100,17 @@ export class DriverController {
       }
       
       // 🔔 Send notification for driver view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed driver "${driver.firstName}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Driver view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed driver "${driver.firstName}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Driver view notification error:', notifError);
+      // }
       
       res.status(200).json({
         status: 'success',

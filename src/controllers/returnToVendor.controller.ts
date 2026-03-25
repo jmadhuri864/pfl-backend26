@@ -35,7 +35,7 @@ export class ReturnToVendorController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Post Return By Customer created successfully: ${newPostReturn.id}`,
+          `Post Return By Customer created successfully`,
           userId
         );
       }
@@ -192,6 +192,19 @@ export class ReturnToVendorController {
 
       ControllerLogger.logSuccess('Return to vendor updated', id, req, res);
 
+      // 🔔 Send notification for return to vendor update
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Return to vendor with ID ${id} updated successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Return to vendor update notification error:', notifError);
+      }
+
       res.status(200).json({
         status: "success",
         data: updatedReturn.id,
@@ -213,6 +226,19 @@ export class ReturnToVendorController {
     try {
       const { id } = req.params;
       const result = await this.returnToVendorService.softDeleteReturn(id);
+
+      // 🔔 Send notification for return to vendor deletion
+      try {
+        const userId = res.locals.user?.id;
+        if (userId) {
+          await this.notificationService.createNoti(
+            `Return to vendor with ID ${id} deleted successfully`,
+            userId
+          );
+        }
+      } catch (notifError) {
+        console.log('Return to vendor delete notification error:', notifError);
+      }
 
       return res.status(200).json({
         success: true,

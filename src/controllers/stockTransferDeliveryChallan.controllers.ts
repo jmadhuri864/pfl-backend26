@@ -49,7 +49,7 @@ export class StockTranferDeliveryChallanController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Stock Transfer Delivery Challan created successfully: ${challan.id}`,
+          `Stock Transfer Delivery Challan created successfully`,
           userId
         );
       }
@@ -83,13 +83,13 @@ export class StockTranferDeliveryChallanController {
       ControllerLogger.logView('Stock Transfer Delivery Challan', id, req, res);
 
       // Send notification for stock transfer delivery challan view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Stock Transfer Delivery Challan viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Stock Transfer Delivery Challan viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -219,12 +219,12 @@ export class StockTranferDeliveryChallanController {
       ControllerLogger.logList('Stock Transfer Delivery Challan', req, res);
 
       // Send notification for stock transfer delivery challan list access
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Stock Transfer Delivery Challan records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Stock Transfer Delivery Challan records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -265,7 +265,7 @@ export class StockTranferDeliveryChallanController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Stock Transfer Delivery Challan updated successfully: ${id}`,
+          `Stock Transfer Delivery Challan updated successfully`,
           userId
         );
       }
@@ -302,7 +302,7 @@ export class StockTranferDeliveryChallanController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Stock Transfer Delivery Challan deleted successfully: ${id}`,
+          `Stock Transfer Delivery Challan deleted successfully`,
           userId
         );
       }

@@ -14,6 +14,7 @@ import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { toWords } from 'number-to-words';
+import { DocumentbRepository } from '../repositories/documentb.repository';
 
 @injectable()
 export class FinalInvoiceService {
@@ -29,6 +30,8 @@ export class FinalInvoiceService {
     private documentService: DocumentbService,
     @inject(TYPES.DocDoubleApproverService)
     private docDoubleApproverService: DocDoubleApproverService,
+     @inject(TYPES.DocumentbRepository)
+    private readonly documentbRepository: DocumentbRepository,
   ) {
     this.invoiceRepository = this.dataSource.getRepository(Invoice);
     this.invoiceProductRepository = this.dataSource.getRepository(InvoiceProduct);
@@ -749,5 +752,42 @@ console.log(items)
         throw new Error(`Failed to fetch invoice for PDF generation: ${error.message}`);
       }
     }
+    public async deleteMultipleFinalInvoices(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  const success: string[] = [];
+  const failed: { id: string; reason: string }[] = [];
+  for (const id of ids) {
+    try {
+      const finalInvoice = await this.invoiceRepository.findOne({
+        where: { id },
+      });
+      if (!finalInvoice) {
+        failed.push({ id, reason: 'FinalInvoice not found' });
+        continue;
+      }
+      const relatedDocument = await this.documentbRepository.findOne({
+        where: { document_type_id: finalInvoice.id }
+      });
+
+      if (!relatedDocument) {
+        throw new Error(`Something went wrong`);
+      }
+
+      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
+      if (!deleteDocument) {
+        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      }
+
+      const deleteAqr = await this.invoiceRepository.delete(finalInvoice.id);
+      if (!deleteAqr) {
+        throw new Error(`Failed to delete FinalInvoice with ID ${id}`);
+      }
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
+    }
+  }
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 
 }

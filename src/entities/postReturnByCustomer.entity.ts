@@ -8,6 +8,7 @@ import { Invoice } from "./invoice.entity";
 import { format, toZonedTime } from "date-fns-tz";
 import { Branches } from "./branches.entity";
 import { Customer } from "./customer.entity";
+import { User } from "./user.entity";
 
 @Entity("return_by_customer")
 export class PostReturnByCustomer extends Model {
@@ -70,6 +71,12 @@ export class PostReturnByCustomer extends Model {
   // totalPrice: number;
   // @Column({ type: "decimal", precision: 10, scale: 2 ,nullable:true})
   // totalQty: number;
+   @Column({nullable:true })
+  rbcNo: string;
   @Column({ type: "text",nullable:true })
   remark: string;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'createdby_id' })
+  createdBy: User;
 }

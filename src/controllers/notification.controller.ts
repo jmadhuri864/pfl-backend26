@@ -1,4 +1,4 @@
-import { controller, httpGet, httpPost, request, response } from "inversify-express-utils";
+import { controller, httpGet, httpPatch, request, response, requestParam } from "inversify-express-utils";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { inject } from "inversify";
 import { TYPES } from "../types";
@@ -47,12 +47,23 @@ export class NotificationController {
   //Todo:Get Notifications BY User
   @httpGet("/getbyuserid")
   public async getNotiByUserId(@request() req: Request, @response() res: Response): Promise<void> {
-    // Get all rooms
-
-    const userId=res.locals.user.id
-    console.log(userId)
-    const data = await this.notificationService.getNotiByUserId(userId)
+    const userId = res.locals.user.id;
+    const data = await this.notificationService.getNotiByUserId(userId);
     res.status(200).json({ data });
+  }
+
+  @httpPatch("/mark-read/:id")
+  public async markAsRead(@requestParam('id') id: string, @request() req: Request, @response() res: Response): Promise<void> {
+    const userId = res.locals.user.id;
+    await this.notificationService.markAsRead(id, userId);
+    res.status(200).json({ message: 'Notification marked as read' });
+  }
+
+  @httpPatch("/mark-all-read")
+  public async markAllAsRead(@request() req: Request, @response() res: Response): Promise<void> {
+    const userId = res.locals.user.id;
+    await this.notificationService.markAllAsRead(userId);
+    res.status(200).json({ message: 'All notifications marked as read' });
   }
 }
 

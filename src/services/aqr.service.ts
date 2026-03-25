@@ -12,7 +12,7 @@ import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { DocumentbService, DocumentWithRelatedData } from "./documentb.service";
 import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
 import { ApprovalFlowService } from "./approvalFlow.service";
-import { SelectQueryBuilder } from "typeorm";
+import { ILike, SelectQueryBuilder } from "typeorm";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 
 
@@ -32,6 +32,20 @@ export class AqrService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService
   ) { }
+  private async generateSerialNo(prefix: string): Promise<string> {
+      // Get the count of existing GRNs for the branch (or use another unique mechanism)
+      const count = await this.aqrRepo.count({
+        where: { aqrNo: ILike(`${prefix}%`) },
+      });
+      console.log(count);
+      // Generate the serial number in the format "PREFIX-001"
+      const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+      return serialNo;
+    }
+
+
+
+
 
   public async createAqr(data: any): Promise<any> {
   
@@ -43,7 +57,8 @@ export class AqrService {
     //   throw new Error('Approval flow not found');
     // }
 
-
+const serialNO = await this.generateSerialNo("AQR")
+ data.aqrNo = serialNO;
     console.log("in create aqr service ",data)
     const aqr = this.aqrRepo.create(data);
     console.log("it will create aqr");

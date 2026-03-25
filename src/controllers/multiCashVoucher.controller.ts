@@ -54,7 +54,7 @@ export class  MultiCashVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Multi Cash Voucher created successfully: ${newVoucher.id}`,
+          `Multi Cash Voucher created successfully`,
           userId
         );
       }
@@ -133,12 +133,12 @@ export class  MultiCashVoucherController {
       ControllerLogger.logList('Multi Cash Voucher', req, res);
 
       // Send notification for multi cash voucher list access
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Multi Cash Voucher records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Multi Cash Voucher records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -174,13 +174,13 @@ export class  MultiCashVoucherController {
       ControllerLogger.logView('Multi Cash Voucher', id, req, res);
 
       // Send notification for multi cash voucher view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Multi Cash Voucher viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multi Cash Voucher viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -287,7 +287,7 @@ export class  MultiCashVoucherController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Multi Cash Voucher updated successfully: ${id}`,
+          `Multi Cash Voucher updated successfully`,
           userId
         );
       }
@@ -323,7 +323,7 @@ export class  MultiCashVoucherController {
              const userId = res.locals.user?.id;
              if (userId) {
                await this.notificationService.createNoti(
-                 `Multi Cash Voucher deleted successfully: ${id}`,
+                 `Multi Cash Voucher deleted successfully`,
                  userId
                );
              }

@@ -677,3 +677,216 @@ Cannot read properties of undefined (reading 'city')
 2026-03-12 06:34:49 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
 2026-03-12 06:35:47 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
 2026-03-12 06:35:48 PM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "0" 
+2026-03-16 11:32:33 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 03:41:20 PM [error]: Unhandled Error: Unexpected token '"', ""d65e9788-"... is not valid JSON 
+2026-03-16 03:41:22 PM [error]: Unhandled Error: Unexpected token '"', ""d65e9788-"... is not valid JSON 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:20:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:21:10 PM [error]: Unhandled Error: Failed to create Final Invoice 
+2026-03-16 05:22:27 PM [error]: Unhandled Error: Failed to create Final Invoice 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:29:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:31 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:31 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:31 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-16 05:44:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 11:53:21 AM [error]: Unhandled Error: Cannot set headers after they are sent to the client 
+2026-03-17 11:53:24 AM [error]: Unhandled Error: Cannot set headers after they are sent to the client 
+2026-03-17 11:53:24 AM [error]: Unhandled Error: Cannot set headers after they are sent to the client 
+2026-03-17 11:53:27 AM [error]: Unhandled Error: Cannot set headers after they are sent to the client 
+2026-03-17 11:53:27 AM [error]: Unhandled Error: Cannot set headers after they are sent to the client 
+2026-03-17 01:03:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:02 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:03 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:03 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:05 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:06 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:03:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-17 01:08:54 PM [error]: Error creating RFPA: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 01:08:54 PM [error]: Unhandled Error: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 01:10:32 PM [error]: Error creating RFPA: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 01:10:32 PM [error]: Unhandled Error: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 01:12:01 PM [error]: Error creating RFPA: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 01:12:01 PM [error]: Unhandled Error: Failed to create RFPA: Error creating document: Error: lastActionBy user is required to fetch approval flow. 
+2026-03-17 02:06:16 PM [error]: Unhandled Error: logger is not defined 
+2026-03-17 02:06:20 PM [error]: Unhandled Error: logger is not defined 
+2026-03-17 02:19:07 PM [error]: Error creating RFPA: Failed to create RFPA: insert or update on table "rfpa" violates foreign key constraint "FK_b58d9f3439bb5ec45434f9b18c5" 
+2026-03-17 02:19:07 PM [error]: Unhandled Error: Failed to create RFPA: insert or update on table "rfpa" violates foreign key constraint "FK_b58d9f3439bb5ec45434f9b18c5" 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:40:59 PM [error]: Error while refreshing access token 
+2026-03-24 12:40:59 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:00 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:00 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:00 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:00 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:00 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:00 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:00 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:01 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:01 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:04 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:04 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:05 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:05 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:05 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:08 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:08 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 12:41:09 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-24 12:41:09 PM [error]: Error while refreshing access token 
+2026-03-24 12:41:09 PM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-24 03:45:45 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-25 11:18:48 AM [error]: Unexpected error during login process 
+2026-03-25 11:18:48 AM [error]: AppError: Wrong password 
+2026-03-25 11:18:49 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:19:00 AM [error]: Unexpected error during login process 
+2026-03-25 11:19:00 AM [error]: AppError: Wrong password 
+2026-03-25 11:19:00 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:25 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:25 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:25 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:25 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:27 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:27 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:27 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:27 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-25 11:50:43 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-25 12:56:06 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-25 02:37:48 PM [error]: AppError: No RFPAs found 
+2026-03-25 02:37:50 PM [error]: AppError: No RFPAs found 

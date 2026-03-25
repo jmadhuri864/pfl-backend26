@@ -35,7 +35,8 @@ export class InwardRegister extends Model {
     enum: InwardType,
   })
   inwardType: InwardType;
-
+@Column({ nullable: true })
+  inwardNo: string;
 
   @ManyToOne(() => Company, {
     cascade: true,

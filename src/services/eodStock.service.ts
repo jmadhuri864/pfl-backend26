@@ -12,6 +12,8 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { StockReportEod } from '../entities/eodReportforinvendtory.entity';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { ApprovalFlowService } from './approvalFlow.service';
+import { DocumentbRepository } from '../repositories/documentb.repository';
+import { ILike } from 'typeorm';
 
 @injectable() // Ensure this decorator is applied
 export class EodStockService {
@@ -24,8 +26,24 @@ export class EodStockService {
     @inject(TYPES.DocDoubleApproverService)
     private readonly docDoubleApproverService: DocDoubleApproverService,
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+     @inject(TYPES.DocumentbRepository)
+    private readonly documentbRepository: DocumentbRepository,
   ) {}
+
+  private async generateSerialNo(prefix: string): Promise<string> {
+    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+    const count = await this.eodRepository.count({
+      where: { eodNo: ILike(`${prefix}%`) },
+    });
+    console.log(count);
+    // Generate the serial number in the format "PREFIX-001"
+    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+    return serialNo;
+  }
+
+
+
 
   async createEodStock(data: any): Promise<any> {
 
@@ -36,7 +54,8 @@ export class EodStockService {
     if (!approvalFlowExit) {
       throw new Error('Approval flow not found');
     }
-
+const serialNo = await this.generateSerialNo("EOD");
+      data.eodNo = serialNo;
 
     const stock = this.eodRepository.create(data);
     const savedStock = await this.eodRepository.save(stock);
@@ -617,6 +636,43 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
     );
     return true;
   }
+public async deleteMultipleEodStock(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  const success: string[] = [];
+  const failed: { id: string; reason: string }[] = [];
+  for (const id of ids) {
+    try {
+      const eodstock = await this.eodRepository.findOne({
+        where: { id },
+      });
+      if (!eodstock) {
+        failed.push({ id, reason: 'eodstock not found' });
+        continue;
+      }
+      const relatedDocument = await this.documentbRepository.findOne({
+        where: { document_type_id: eodstock.id }
+      });
+
+      if (!relatedDocument) {
+        throw new Error(`Something went wrong`);
+      }
+
+      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
+      if (!deleteDocument) {
+        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      }
+
+      const deleteAqr = await this.eodRepository.delete(eodstock.id);
+      if (!deleteAqr) {
+        throw new Error(`Failed to delete eodstock with ID ${id}`);
+      }
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
+    }
+  }
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 
   
 }

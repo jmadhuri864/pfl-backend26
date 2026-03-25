@@ -120,17 +120,17 @@ export class ReportController {
       }
 
       // Send notification for report generation
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Report generated successfully for ${filters.reportBased}`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Report generation notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Report generated successfully for ${filters.reportBased}`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Report generation notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Report generated', `${filters.reportBased}_report`, req, res);
 
@@ -171,17 +171,17 @@ export class ReportController {
       }
 
       // Send notification for summary generation
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Report summary generated for ${filters.reportBased}`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Report summary notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Report summary generated for ${filters.reportBased}`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Report summary notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Report summary generated', `${filters.reportBased}_summary`, req, res);
 
@@ -228,17 +228,17 @@ export class ReportController {
       }
 
       // Send notification for Excel export
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Excel report exported successfully for ${filters.reportBased}`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Excel export notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Excel report exported successfully for ${filters.reportBased}`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Excel export notification error:', notifError);
+      // }
 
       // Set headers for Excel file download
       const fileName = `Procurement_Report_${filters.reportBased}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -307,17 +307,17 @@ export class ReportController {
       const fileUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${s3Key}`;
 
       // Send notification for Excel export
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Excel report stored in cloud for ${filters.reportBased}: ${fileName}`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Excel export notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Excel report stored in cloud for ${filters.reportBased}: ${fileName}`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Excel export notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Excel report stored in DigitalOcean Spaces', fileName, req, res);
 

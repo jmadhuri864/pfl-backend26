@@ -53,17 +53,17 @@ export class CustomerTypeController {
       }
      
       // 🔔 Send notification for get all customer types
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${customerTypes.meta.total} customer types`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all customer types notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${customerTypes.meta.total} customer types`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all customer types notification error:', notifError);
+      // }
      
       ControllerLogger.logGetAllRecords('Customer Types', req, res);
       res.status(200).json({
@@ -95,17 +95,17 @@ export class CustomerTypeController {
       }
      
       // 🔔 Send notification for customer type view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed customer type "${customerType.name}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer type view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed customer type "${customerType.name}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer type view notification error:', notifError);
+      // }
      
       ControllerLogger.logView('Customer Type', id, req, res);
       res.status(200).json({
@@ -225,7 +225,7 @@ export class CustomerTypeController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Customer type with ID ${id} deleted successfully`,
+            `Customer type  deleted successfully`,
             userId
           );
         }
@@ -244,4 +244,53 @@ export class CustomerTypeController {
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleCustomerType(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { customerTypeIds } = req.body;
+
+    if (!Array.isArray(customerTypeIds) || customerTypeIds.length === 0) {
+      ControllerLogger.logError(
+        "CustomerType bulk deletion",
+        new AppError(400, "customerTypeIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "customerTypeIds must be a non-empty array"));
+    }
+
+    const result = await this.customerTypeService.softDeleteCustomerType(customerTypeIds);
+
+    ControllerLogger.logSuccess(
+      "CustomerType bulk soft deleted",
+      customerTypeIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple CustomerType soft deleted: ${customerTypeIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "CustomerType soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("CustomerType bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

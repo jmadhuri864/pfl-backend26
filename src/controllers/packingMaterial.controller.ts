@@ -50,13 +50,13 @@ export class PackingMaterialController {
       ControllerLogger.logList("Packing Material", req, res);
 
       // Send notification for packing material list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Packing Material records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Packing Material records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -99,7 +99,7 @@ export class PackingMaterialController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Packing Material created successfully: ${materials.id}`,
+          `Packing Material created successfully`,
           userId
         );
       }
@@ -136,13 +136,13 @@ export class PackingMaterialController {
       ControllerLogger.logView("Packing Material", id, req, res);
 
       // Send notification for packing material view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Packing Material viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Packing Material viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -195,7 +195,7 @@ export class PackingMaterialController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Packing Material updated successfully: ${id}`,
+          `Packing Material updated successfully`,
           userId
         );
       }
@@ -229,13 +229,13 @@ export class PackingMaterialController {
       ControllerLogger.logList("Packing Material Partial", req, res);
 
       // Send notification for packing material partial list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Packing Material partial list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Packing Material partial list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',

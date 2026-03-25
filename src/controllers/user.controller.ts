@@ -119,7 +119,7 @@ console.log("joining office",result.joiningOffice)
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Employee created successfully: ${user.id}`,
+          `Employee created successfully`,
           userId
         );
       }
@@ -166,13 +166,13 @@ console.log("joining office",result.joiningOffice)
       ControllerLogger.logList('Employee', req, res);
 
       // Send notification for employee list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Employee records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Employee records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -207,13 +207,13 @@ console.log("joining office",result.joiningOffice)
       ControllerLogger.logView('Employee', id, req, res);
 
       // Send notification for employee view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Employee viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Employee viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -354,7 +354,7 @@ public async updateUser(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Employee updated successfully: ${id}`,
+        `Employee updated successfully`,
         userId
       );
     }
@@ -399,7 +399,7 @@ public async updateUser(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Employee deleted successfully: ${id}`,
+          `Employee deleted successfully`,
           userId
         );
       }
@@ -624,4 +624,55 @@ public async upload(req: Request, res: Response) {
       return res.status(500).json({ message: "Internal server error" });
     }
   };
+
+   //TODO:Delete Mutilple
+  @httpDelete("/delete/multiple")
+public async softDeleteMultipleEmployees(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      ControllerLogger.logError(
+        "Employee bulk deletion",
+        new AppError(400, "userIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "userIds must be a non-empty array"));
+    }
+
+    const result = await this.userService.softDeleteEmployees(userIds);
+
+    ControllerLogger.logSuccess(
+      "Employee bulk soft deleted",
+      userIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple employees soft deleted: ${userIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Employees soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Employee bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

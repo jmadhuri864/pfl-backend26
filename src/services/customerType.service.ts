@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 
 import { TYPES } from '../types';
 import { CustomerType } from '../entities/customerType.entity';
@@ -22,7 +22,7 @@ export class CustomerTypeService {
       CustomerType,
     ) as CustomerTypeRepository;
   }
-  async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<any> {
+ async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<any> {
     let queryBuilder = await this.customerTypeRepository
       .createQueryBuilder('customerType')
       .orderBy('customerType.createdAt', 'DESC');
@@ -32,8 +32,20 @@ export class CustomerTypeService {
       'productClassification',
     );
 
-    return result;
+    //TODO:New Added code 
+    const formattedData = result.data.map((cust: any) => {
+      return{
+      id:cust.id,
+      name:cust.name
+      } 
+    })
+    return {
+    ...result,
+    data: formattedData,
+  };
+    //return result;
   }
+
 
   async getCustomerTypeById(id: string): Promise<CustomerType | null> {
     return this.customerTypeRepository.findOneBy({ id });
@@ -101,4 +113,12 @@ export class CustomerTypeService {
     console.log(`Customer Type with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
+  async softDeleteCustomerType(typeIds: string[]) {
+
+  const result = await this.customerTypeRepository.softDelete({
+    id: In(typeIds)
+  });
+
+  return result;
+}
 }

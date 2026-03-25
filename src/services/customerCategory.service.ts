@@ -2,7 +2,7 @@
 import { inject, injectable } from 'inversify';
 import { CustomerCategoryRepository } from '../repositories/customerCategory.repository';
 import { CustomerCategory } from '../entities/customerCategory.entity';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import { TYPES } from '../types';
 import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
@@ -22,7 +22,7 @@ export class CustomerCategoryService {
     ) as CustomerCategoryRepository;
   }
 
-  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+ public async getAll(queryOptions: PaginationOptions): Promise<any> {
     // return await this.customerCategoryRepository.find({
     //   order: {
     //     createdAt: 'DESC', // Assuming createdAt is a timestamp field
@@ -36,8 +36,17 @@ export class CustomerCategoryService {
       queryOptions,
       'customerCategory',
     );
-    return result;
+    return {
+      data:result.data.map((category)=>{
+        return{
+         id:category.id,
+         name:category.name
+        }
+      }),
+      meta:result.meta
+    }
   }
+
 
   public async getById(id: string): Promise<CustomerCategory | null> {
     return await this.customerCategoryRepository.findOneBy({ id });
@@ -103,4 +112,13 @@ export class CustomerCategoryService {
     );
     return true;
   }
+
+  async softDeleteCustomerCategory(userIds: string[]) {
+
+  const result = await this.customerCategoryRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
 }

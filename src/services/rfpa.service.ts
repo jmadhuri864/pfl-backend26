@@ -264,14 +264,14 @@ export class RfpaService {
     
     // Handle both single entity and array return types
     const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
-
+console.log(rfpaData.createdBy)
     // Create document & start approval flow
     const document = await this.documentbService.createDocument({
       type: DocumentTypeEnum.RFPA,
       docDef: DocDefEnum.PROCUREMENT,
       status: DocumentStatus.HOLD,
       remarks: 'Document auto-created with RFPA',
-      lastActionBy: { id: rfpaData.requestedBy } as any,
+      lastActionBy: { id: rfpaData.createdBy } as any,
       document_type_id: savedRfpa.id,
     });
 
@@ -1901,7 +1901,7 @@ public async getAllRFPANumbers(
 
   //Todo:Get All RFPA..By Vaishali
    //Todo:Get All RFPA..By Vaishali
-   public async getAllRfpa(queryOptions: PaginationOptions, userId: string): Promise<{
+  public async getAllRfpa(queryOptions: PaginationOptions, userId: string): Promise<{
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
@@ -1964,31 +1964,31 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
       rfpaId: rd.rfpaId || null,
       remark: rd.remark || null,
       source:rd.source || null,
-      specialRequest: rd.specialRequest || null,
-      requestingDepartment: rd.requestingDepartment || null,
-      otherPurchaseLoc: rd.otherPurchaseLoc || null,
-      otherPurchaseForSalesLoc: rd.otherPurchaseForSalesLoc || null,
+      //specialRequest: rd.specialRequest || null,
+      //requestingDepartment: rd.requestingDepartment || null,
+     // otherPurchaseLoc: rd.otherPurchaseLoc || null,
+      //otherPurchaseForSalesLoc: rd.otherPurchaseForSalesLoc || null,
  deliveryReceivingPerson:rd.deliveryReceivingPerson,
  packingInstruction:rd.packingInstruction,
       // Vendor details
-      vendor: rd.selectedVendor ? {
-        selectedParty:rd.selectedParty || null,
-        companyName: rd.selectedVendor.companyName || null,
-        gstn: rd.selectedVendor.gstn || null,
-        panNo: rd.selectedVendor.panNo || null,
-        officeAddress: rd.selectedVendor.officeAddress || null,
-      } : null,
+      // vendor: rd.selectedVendor ? {
+      //   selectedParty:rd.selectedParty || null,
+      //   companyName: rd.selectedVendor.companyName || null,
+      //   gstn: rd.selectedVendor.gstn || null,
+      //   panNo: rd.selectedVendor.panNo || null,
+      //   officeAddress: rd.selectedVendor.officeAddress || null,
+      // } : null,
 
       // Farmer details
-      farmer: rd.selectedFarmer ? {
-        selectedParty:rd.selectedParty || null,
-        fullName: `${rd.selectedFarmer.farmerfName ?? ''} ${rd.selectedFarmer.farmermName ?? ''} ${rd.selectedFarmer.farmerlName ?? ''}`.trim(),
-        primaryMobileNo: rd.selectedFarmer.primaryMobileNo || null,
-        landStatus: rd.selectedFarmer.landStatus || null,
-        totalLandArea: rd.selectedFarmer.totalLandArea || null,
-        residensialAddress: rd.selectedFarmer.residensialAddress || null,
-        farmAddress: rd.selectedFarmer.farmAddress || null,
-      } : null,
+      // farmer: rd.selectedFarmer ? {
+      //   selectedParty:rd.selectedParty || null,
+      //   fullName: `${rd.selectedFarmer.farmerfName ?? ''} ${rd.selectedFarmer.farmermName ?? ''} ${rd.selectedFarmer.farmerlName ?? ''}`.trim(),
+      //   primaryMobileNo: rd.selectedFarmer.primaryMobileNo || null,
+      //   landStatus: rd.selectedFarmer.landStatus || null,
+      //   totalLandArea: rd.selectedFarmer.totalLandArea || null,
+      //   residensialAddress: rd.selectedFarmer.residensialAddress || null,
+      //   farmAddress: rd.selectedFarmer.farmAddress || null,
+      // } : null,
 
       // Payment info
       paymentInfo: rd.paymentInfo ? {
@@ -2002,21 +2002,21 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
       } : null,
 
       // Products
-      rfpaProducts: rd.rfpaProducts ? rd.rfpaProducts.map((p: any) => ({
-        productName: p.productName?.name || null,
-        variant:p.variant?.variantName || null,
-        grade: p.grade || null,
-        quantity: p.quantity || null,
-        uom: p.uom?.unit || null,
-        unitPrice: p.unitPrice || null,
-        amount: p.amount || null,
-        purchaseDate: p.purchaseDate || null,
-        expectedHarvestDate: p.expectedHarvestDate || null,
-        dispatchDate: p.dispatchDate || null,
-        deliveryDate: p.deliveryDate || null,
-        deliveryLocation: p.deliveryLocation || null,
+      // rfpaProducts: rd.rfpaProducts ? rd.rfpaProducts.map((p: any) => ({
+      //   productName: p.productName?.name || null,
+      //   variant:p.variant?.variantName || null,
+      //   grade: p.grade || null,
+      //   quantity: p.quantity || null,
+      //   uom: p.uom?.unit || null,
+      //   unitPrice: p.unitPrice || null,
+      //   amount: p.amount || null,
+      //   purchaseDate: p.purchaseDate || null,
+      //   expectedHarvestDate: p.expectedHarvestDate || null,
+      //   dispatchDate: p.dispatchDate || null,
+      //   deliveryDate: p.deliveryDate || null,
+      //   deliveryLocation: p.deliveryLocation || null,
        
-      })) : [],
+      // })) : [],
 
       // Company & branches
       companyName: rd.companyName?.name || null,
@@ -2072,6 +2072,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
       }
     };
   }
+
 
 
   //TODO:Get RFPA By Id For View.. BY Vaishali

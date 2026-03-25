@@ -1,7 +1,7 @@
 // src/services/product_classification.service.ts
 import { inject, injectable } from "inversify";
 import { TYPES } from "../types";
-import { DataSource } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { ProductClassificationRepository } from "../repositories/product_classification.repository";
 import { ProductClassification } from "../entities/product_classification.entity";
 import { AuditLogService } from "./auditLog.service";
@@ -19,15 +19,25 @@ export class ProductClassificationService {
   ) {}
 
   
-  async findAll(queryOptions: PaginationOptions): Promise<any> {
+ async findAll(queryOptions: PaginationOptions): Promise<any> {
     const queryBuilder = await this.productClassificationRepository.createQueryBuilder('productClassification');
 //console.log(queryBuilder)
     // Use the buildQuery function to apply pagination, filters, search, and sorting
     const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
 //console.log("result is ",result)
-    return result;
-  }
 
+return{
+  data:result.data.map((pro)=>{
+    return{
+      id:pro.id,
+      name:pro.name
+    }
+  }
+),
+meta:result.meta
+}
+    //return result;
+  }
   async findById(id: string): Promise<ProductClassification | null> {
     return this.productClassificationRepository.findOne({
       where: { id },
@@ -106,5 +116,13 @@ export class ProductClassificationService {
     console.log(`Product classification with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
+  async softDeleteClassification(userIds: string[]) {
+
+  const result = await this.productClassificationRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
   
 }

@@ -19,7 +19,7 @@ import { VendorSubcategoryService } from "../services/vendorSubcategory.service"
 import { NotificationService } from "../services/notification.service";
 
 import { TYPES } from "../types";
-import { uploadAny, uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
@@ -55,7 +55,7 @@ if(!subcategory) {
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Vendor Subcategory created successfully: ${subcategory.id}`,
+        `Vendor Subcategory created successfully`,
         userId
       );
     }
@@ -98,13 +98,13 @@ public async getAllSubcategories(
     ControllerLogger.logList('Vendor subcategories', req, res);
 
     // Send notification for vendor subcategories list access
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        'Vendor Subcategory records list accessed successfully',
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     'Vendor Subcategory records list accessed successfully',
+    //     userId
+    //   );
+    // }
 
     res.status(200).json({
       status: "success",
@@ -162,13 +162,13 @@ public async getAllSubcategories1(
       ControllerLogger.logView('Vendor subcategory', id, req, res);
 
       // Send notification for vendor subcategory view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor Subcategory viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vendor Subcategory viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -204,7 +204,7 @@ public async getAllSubcategories1(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor Subcategory updated successfully: ${id}`,
+          `Vendor Subcategory updated successfully`,
           userId
         );
       }
@@ -242,7 +242,7 @@ public async getAllSubcategories1(
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Vendor Subcategory deleted successfully: ${id}`,
+          `Vendor Subcategory deleted successfully`,
           userId
         );
       }
@@ -256,4 +256,53 @@ public async getAllSubcategories1(
       next(err);
     }
   }
+   @httpDelete("/delete/multiple")
+public async softDeleteMultipleVendorSubcategory(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { subCategoryIds } = req.body;
+
+    if (!Array.isArray(subCategoryIds) || subCategoryIds.length === 0) {
+      ControllerLogger.logError(
+        "VendorSubcategory bulk deletion",
+        new AppError(400, "subCategoryIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "subCategoryIds must be a non-empty array"));
+    }
+
+    const result = await this.subcategoryService.softDeleteSubcategory(subCategoryIds);
+
+    ControllerLogger.logSuccess(
+      "VendorSubcategory bulk soft deleted",
+      subCategoryIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple VendorSubcategory soft deleted: ${subCategoryIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "VendorSubcategory soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("VendorSubcategory bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

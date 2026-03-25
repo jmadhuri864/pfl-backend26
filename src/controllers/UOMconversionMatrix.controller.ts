@@ -20,7 +20,7 @@ import AppError from "../utils/appError";
 import { UOMConversionMatrixService } from "../services/UOMconversionMatrix.service";
 import { NotificationService } from "../services/notification.service";
 import { UOMConversionMatrix } from "../entities/uom_matrix.entity";
-import { uploadNone } from "../middleware/multerConfig";
+
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
@@ -35,7 +35,7 @@ export class UOMConversionMatrixController {
     private notificationService: NotificationService
   ) {}
 
-  @httpGet("/")
+ @httpGet("/")
   public async getAll(@response() res: Response, @next() next: NextFunction,@request() req : Request) {
     try {
       const { page, limit, search, sort,uomConversionMatrixId} = req.query;
@@ -58,13 +58,13 @@ export class UOMConversionMatrixController {
       ControllerLogger.logList('UOM Conversion Matrix', req, res);
 
       // Send notification for UOM conversion matrix list access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          'UOM Conversion Matrix records list accessed successfully',
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'UOM Conversion Matrix records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -78,6 +78,7 @@ export class UOMConversionMatrixController {
       next(err);
     }
   }
+
 
   @httpGet("/:id")
   public async getById(
@@ -96,13 +97,13 @@ export class UOMConversionMatrixController {
       ControllerLogger.logView('UOM Conversion Matrix', id, req, res);
 
       // Send notification for UOM conversion matrix view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `UOM Conversion Matrix viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `UOM Conversion Matrix viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -159,7 +160,7 @@ export class UOMConversionMatrixController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `UOM Conversion Matrix created successfully: ${conversion.id}`,
+          `UOM Conversion Matrix created successfully`,
           userId
         );
       }
@@ -203,7 +204,7 @@ export class UOMConversionMatrixController {
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `UOM Conversion Matrix updated successfully: ${id}`,
+          `UOM Conversion Matrix updated successfully`,
           userId
         );
       }
@@ -255,6 +256,55 @@ export class UOMConversionMatrixController {
       }
     } catch (err) {
       ControllerLogger.logError('UOM Conversion Matrix deletion', err, req, res);
+      next(err);
+    }
+  }
+   @httpDelete("/delete/multiple")
+  public async softDeleteMultipleUOMConversion(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+  
+      const { uomConversionIds } = req.body;
+  
+      if (!Array.isArray(uomConversionIds) || uomConversionIds.length === 0) {
+        ControllerLogger.logError(
+          "UOMConversion bulk deletion",
+          new AppError(400, "uomConversionIds must be a non-empty array"),
+          req,
+          res
+        );
+        return next(new AppError(400, "uomConversionIds must be a non-empty array"));
+      }
+  
+      const result = await this.uomConversionMatrixService.softDeleteConversion(uomConversionIds);
+  
+      ControllerLogger.logSuccess(
+        "UOMConversion bulk soft deleted",
+        uomConversionIds.join(","),
+        req,
+        res
+      );
+  
+      // Send notification
+      const userId = res.locals.user?.id;
+      if (userId) {
+        await this.notificationService.createNoti(
+          `Multiple UOMConversion soft deleted: ${uomConversionIds.length}`,
+          userId
+        );
+      }
+  
+      return res.status(200).json({
+        status: "success",
+        message: "UOMConversion soft deleted successfully",
+        affected: result.affected,
+      });
+  
+    } catch (err) {
+      ControllerLogger.logError("UOMConversion bulk deletion", err, req, res);
       next(err);
     }
   }

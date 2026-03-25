@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import * as fs from 'fs';
 import * as XLSX from "xlsx";
 import { TYPES } from '../types';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
 
 import { AuditLogService } from './auditLog.service';
@@ -154,7 +154,7 @@ export class ProductService {
     return savedProduct;
   }
 
-  async getAll(options: PaginationOptions): Promise<any> {
+ async getAll(options: PaginationOptions): Promise<any> {
     const queryBuilder = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.classification', 'classification')
@@ -164,8 +164,40 @@ export class ProductService {
       .leftJoinAndSelect('product.qualityParameters', 'qualityParameters')
       .orderBy('product.createdAt', 'DESC');
 
-    return await buildQuery(queryBuilder, options, 'product');
+    //return await buildQuery(queryBuilder, options, 'product');
+    let data1=await buildQuery(queryBuilder, options, 'product');
+    return{
+     data:data1.data.map((pro:any)=>{
+      return{
+        id:pro.id,
+         name:pro.name,
+     packingType:pro.packingType,
+     productCode:pro.productCode,
+     shelfLife:pro.shelfLife || '',
+     storageTemp:pro.storageTemp,
+      category: {
+                id:pro.category.id,
+                name:pro.category.name 
+            },
+      classification:{
+              id:pro.classification?.id,
+                name:pro.classification?.name 
+            },
+      uom:{
+        id:pro.uom.id,
+        unit:pro.uom.unit
+      },
+      subcategory:{
+        id:pro.subcategory.id,
+        name:pro.subcategory.name 
+      },
+     
+     }
+    
+    }),
+    meta:data1.meta
   }
+}
 
   async getAllwithSearch(search?: string): Promise<any> {
     console.log(search);
@@ -1151,4 +1183,12 @@ export class ProductService {
 
     return formattedproduct;
   }
+  async softDeleteProducts(userIds: string[]) {
+
+  const result = await this.productRepository.softDelete({
+    id: In(userIds)
+  });
+
+  return result;
+}
 }

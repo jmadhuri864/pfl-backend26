@@ -261,7 +261,7 @@ async approveCustomer(
     next(error);
   }
 }
-  @httpGet('/')
+ @httpGet('/')
   public async getAllCustomers(
     @request() req: Request,
     @response() res: Response,
@@ -294,17 +294,17 @@ async approveCustomer(
       }
 
       // 🔔 Send notification for get all customers
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${customers.meta.total} customers`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all customers notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${customers.meta.total} customers`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all customers notification error:', notifError);
+      // }
 
       // Log successful retrieval with specific message
       ControllerLogger.logGetAllRecords('Customer', req, res);
@@ -321,6 +321,7 @@ async approveCustomer(
       next(err);
     }
   }
+
 
   @httpGet('/names/all')
   public async getAllCustomersNames(
@@ -340,17 +341,17 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer names retrieval
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${customers.length} customer names`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer names notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${customers.length} customer names`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer names notification error:', notifError);
+      // }
       
       // Log successful retrieval
       ControllerLogger.logGetAllRecords('Customer', req, res);
@@ -424,18 +425,18 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customer?.organisationName || 'Customer';
-          await this.notificationService.createNoti(
-            `Viewed details of "${customerName}"`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     const customerName = customer?.organisationName || 'Customer';
+      //     await this.notificationService.createNoti(
+      //       `Viewed details of "${customerName}"`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Customer', id, req, res);
@@ -468,18 +469,18 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customer?.organisationName || 'Customer';
-          await this.notificationService.createNoti(
-            `Viewed full details of "${customerName}"`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     const customerName = customer?.organisationName || 'Customer';
+      //     await this.notificationService.createNoti(
+      //       `Viewed full details of "${customerName}"`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Customer', id, req, res);
@@ -513,18 +514,18 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer update view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customer?.organisationName || 'Customer';
-          await this.notificationService.createNoti(
-            `Opened "${customerName}" for editing`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer update view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     const customerName = customer?.organisationName || 'Customer';
+      //     await this.notificationService.createNoti(
+      //       `Opened "${customerName}" for editing`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer update view notification error:', notifError);
+      // }
       
       // Log successful view for update
       ControllerLogger.logView('Customer', id, req, res);
@@ -717,17 +718,17 @@ async approveCustomer(
                 await this.customerService.upload((req.file as any).location);
                 
                 // 🔔 Send notification for file upload
-                try {
-                  const userId = res.locals.user?.id;
-                  if (userId) {
-                    await this.notificationService.createNoti(
-                      `Customer data file "${req.file.filename}" uploaded successfully`,
-                      userId
-                    );
-                  }
-                } catch (notifError) {
-                  console.log('Customer file upload notification error:', notifError);
-                }
+                // try {
+                //   const userId = res.locals.user?.id;
+                //   if (userId) {
+                //     await this.notificationService.createNoti(
+                //       `Customer data file "${req.file.filename}" uploaded successfully`,
+                //       userId
+                //     );
+                //   }
+                // } catch (notifError) {
+                //   console.log('Customer file upload notification error:', notifError);
+                // }
                 
                 // Log successful upload
                 ControllerLogger.logSuccess('Customer file uploaded', req.file.filename || 'unknown', req, res);
@@ -786,4 +787,53 @@ async approveCustomer(
       next(error);
     }
   }
+  @httpDelete("/delete/multiple")
+public async softDeleteMultipleCustomers(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction
+) {
+  try {
+
+    const { customerIds } = req.body;
+
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      ControllerLogger.logError(
+        "Customer bulk deletion",
+        new AppError(400, "customerIds must be a non-empty array"),
+        req,
+        res
+      );
+      return next(new AppError(400, "customerIds must be a non-empty array"));
+    }
+
+    const result = await this.customerService.softDeleteCustomers(customerIds);
+
+    ControllerLogger.logSuccess(
+      "Customer bulk soft deleted",
+      customerIds.join(","),
+      req,
+      res
+    );
+
+    // Send notification
+    const userId = res.locals.user?.id;
+    if (userId) {
+      await this.notificationService.createNoti(
+        `Multiple customers soft deleted: ${customerIds.length}`,
+        userId
+      );
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customers soft deleted successfully",
+      affected: result.affected,
+    });
+
+  } catch (err) {
+    ControllerLogger.logError("Customer bulk deletion", err, req, res);
+    next(err);
+  }
+}
 }

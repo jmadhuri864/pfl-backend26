@@ -13,7 +13,7 @@ export class PackingMaterialService {
     @inject(TYPES.AuditLogService)
         private readonly auditLogService: AuditLogService,
   ) {}
-  async findAllPackingMaterial(): Promise<{ id: string; name: string }[]> {
+ async findAllPackingMaterial(): Promise<{ id: string; name: string }[]> {
     const materials = await this.packingMaterialRepository.find();
 
     return materials.map((mat) => ({
@@ -60,13 +60,14 @@ export class PackingMaterialService {
       packagingMaterialName: material.packagingMaterialName,
       packagingMaterialWeight: material.packagingMaterialWeight,
       packagingMaterialDescription: material.packagingMaterialDescription,
-      useFor: material.useFor,
+      //useFor: material.useFor,
       uom: material.uom?.unit||null ,
       containsQuantity: material.containsQuantity,
     }));
   const data1=data.meta;
     return {formatResponse,data1}
     };
+
 
 
     async updatePackingMaterial(

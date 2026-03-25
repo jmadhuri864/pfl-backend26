@@ -65,6 +65,7 @@ export class DocSingalApproverService {
         'approvalFlow.finalizers',
         'approvalFlow.finalizers.firstFinalizers',
         'approvalFlow.finalizers.secondFinalizers',
+        'lastActionBy',
       ],
     });
 
@@ -124,19 +125,35 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+          // 🔔 Notify approver
           await this.notificationService.createNoti(
-            `Document ${documentId} was disapproved by ${userId}`,
+            `${document.type} was rejected by ${userName}`,
             userId,
           );
+          // 🔔 Notify creator
+          if (document.lastActionBy?.id) {
+            await this.notificationService.createNoti(
+              `Your ${document.type} was rejected by ${userName}`,
+              document.lastActionBy.id,
+            );
+          }
         } else if (action === 'approved') {
           const remark = `${document.type} Document Aprroved By Aprrovers`;
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+          // 🔔 Notify approver
           await this.notificationService.createNoti(
-            `Document ${documentId} was Approved by ${userId}`,
+            `${document.type} was Approved by ${userName}`,
             userId,
           );
+          // 🔔 Notify creator that document is fully approved
+          if (document.lastActionBy?.id) {
+            await this.notificationService.createNoti(
+              `Your ${document.type} has been approved by ${userName}`,
+              document.lastActionBy.id,
+            );
+          }
         }
 
         return;
