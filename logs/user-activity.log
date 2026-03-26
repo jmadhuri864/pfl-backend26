@@ -17076,3 +17076,1070 @@ Cannot read properties of undefined (reading 'city')
 2026-03-25 03:09:24 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
 2026-03-25 03:09:29 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
 2026-03-25 03:09:32 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:23 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:24 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:24 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:52 PM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:52 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:55 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:55 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:19:56 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:00 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:04 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:04 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:04 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:04 PM [info-Vaibhav Ahire]: Product list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:04 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Product list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:06 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:10 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:10 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:10 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:11 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: 60e2f2d5-f9e2-4edd-bf7d-e13c7eecc183 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:11 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:20 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: 98fbaa0f-c0c2-4a9b-a165-e1a1dff55f97 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:20 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:33 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: ff02087e-da0f-4df6-8744-1a698b97d558 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:20:33 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:22:53 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: 6238051b-af16-4002-bc9d-db87e3152a13 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:22:53 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Product list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: 6238051b-af16-4002-bc9d-db87e3152a13 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:38 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:38 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:38 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:23:43 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:43 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:43 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:48 PM [info-Sudhanshu Singh]: AQR data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:49 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:49 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:49 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:49 PM [info-Sudhanshu Singh]: Product list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:49 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:53 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: 98fbaa0f-c0c2-4a9b-a165-e1a1dff55f97 [IP: ::ffff:192.168.1.52]
+2026-03-25 05:23:53 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Product list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:23 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:32 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: 98fbaa0f-c0c2-4a9b-a165-e1a1dff55f97 [IP: ::ffff:192.168.1.52]
+2026-03-25 05:24:32 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:42 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Product list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: 98fbaa0f-c0c2-4a9b-a165-e1a1dff55f97 [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:28:42 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: 6238051b-af16-4002-bc9d-db87e3152a13 [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:42 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:43 PM [info-Vaibhav Ahire]: Product list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:28:43 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Product list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:00 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:09 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: 98fbaa0f-c0c2-4a9b-a165-e1a1dff55f97 [IP: ::ffff:192.168.1.52]
+2026-03-25 05:29:09 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:20 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:52:20 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:52:20 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:52:20 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:20 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:52:20 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:20 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:20 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:30 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:30 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:30 PM [info-Sudhanshu Singh]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:30 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:30 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:54 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: e61be0b4-71ba-483c-86c2-5f96038ef7c3 [IP: ::ffff:192.168.1.52]
+2026-03-25 05:52:54 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-25 05:53:52 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:53:52 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:53:52 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:53:52 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:53:52 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:09 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:23 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:23 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:23 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:23 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:26 PM [info-Vaibhav Ahire]: Product viewed successfully with ID: f6cd3fa6-5ce3-4bee-a3e0-a0e4e706c65f [IP: ::ffff:192.168.1.63]
+2026-03-25 05:54:26 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-25 06:02:06 PM [info-Sudhanshu Singh]: Product viewed successfully with ID: f46f9547-2937-40a5-9436-72a834fa1032 [IP: ::ffff:192.168.1.52]
+2026-03-25 06:02:06 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /products/partial/data?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /employee/all/partial?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /customers/names/all: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /userreport/user-counts: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /admin/dashboard/active-users: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /userreport/total-purchase: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /userreport/total-sale: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:26 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 10:20:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:27 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:27 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /employee/all/partial?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /products/partial/data?page=1&limit=6: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /userreport/user-counts: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /customers/names/all: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /admin/dashboard/active-users: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /userreport/total-purchase: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in GET /userreport/total-sale: You need to re-authenticate. Please log in.
+2026-03-26 10:20:28 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:20:28 AM [error-System]: Error in POST /auth/refresh-token: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found
+2026-03-26 10:20:28 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [info-Prashil Vora]: User logout successful [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /employee/all/partial?page=1&limit=6: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /company/partial/details: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /userreport/user-counts: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /admin/dashboard/active-users: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=6: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /location-branches/filterData/filter/all: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=6: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /customers/names/all: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:03 AM [error-System]: Error in GET /products/partial/data?page=1&limit=6: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:03 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:04 AM [error-System]: Error in GET /userreport/total-sale: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:04 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:04 AM [error-System]: Error in GET /userreport/total-purchase: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:22:04 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:22 AM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:22 AM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Branch data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Customer data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Company data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:26 AM [info-Sandeep Yadav]: User counts report list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:22:26 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:14 AM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:14 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:17 AM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:17 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:34 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:47 AM [info-Sandeep Yadav]: Farmer viewed successfully with ID: ff63d407-dd27-4e59-b4a6-cb17669ced07 [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:47 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:52 AM [info-Sandeep Yadav]: Farmer approved successfully with ID: ff63d407-dd27-4e59-b4a6-cb17669ced07 [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:52 AM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:52 AM [info-Sandeep Yadav]: Farmer viewed successfully with ID: ff63d407-dd27-4e59-b4a6-cb17669ced07 [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:52 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:24:58 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:34 AM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:34 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:36 AM [info-Sandeep Yadav]: Farmer viewed successfully with ID: 040a6cb6-0153-4c09-9116-147e034d249f [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:36 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:41 AM [info-Sandeep Yadav]: Farmer approved successfully with ID: 040a6cb6-0153-4c09-9116-147e034d249f [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:41 AM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:42 AM [info-Sandeep Yadav]: Farmer viewed successfully with ID: 040a6cb6-0153-4c09-9116-147e034d249f [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:42 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:48 AM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:48 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:48 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:48 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:48 AM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:56 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:25:56 AM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:25:56 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:03 AM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:03 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:05 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:19 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:28 AM [info-Prashil Vora]: User logout successful [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:28 AM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:29 AM [error-System]: Error in GET /notification/getbyuserid: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 10:26:29 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 10:26:36 AM [info-Sandeep Yadav]: Vendor categories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:36 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:41 AM [info-Sandeep Yadav]: Vendor subcategories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:41 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:43 AM [info-Sandeep Yadav]: Vendor categories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:26:43 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:27:30 AM [info-Sandeep Yadav]: Vendor categories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:27:30 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:28:10 AM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:10 AM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:18 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:28:18 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:28:18 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:28:21 AM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:21 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:21 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:28 AM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:28 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:29 AM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:29 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:32 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:41 AM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:41 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:47 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: UOM (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:57 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:28:59 AM [info-Vaibhav Ahire]: Branch data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 10:33:02 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:33:02 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:33:02 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:33:56 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:33:56 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:33:56 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:34:05 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:34:05 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:34:05 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:34:17 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:34:17 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:34:17 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:35:51 AM [info-Sandeep Yadav]: Vendor subcategories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:35:51 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:36:09 AM [error-Sandeep Yadav]: VendorSubcategory bulk deletion failed: subCategoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:36:09 AM [error-Sandeep Yadav]: Error in DELETE /vendor-subcategories/delete/multiple: subCategoryIds must be a non-empty array
+2026-03-26 10:36:09 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:36:33 AM [error-Sandeep Yadav]: VendorSubcategory bulk deletion failed: subCategoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:36:33 AM [error-Sandeep Yadav]: Error in DELETE /vendor-subcategories/delete/multiple: subCategoryIds must be a non-empty array
+2026-03-26 10:36:33 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:36:51 AM [info-Sandeep Yadav]: Customer Types data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:37:24 AM [error-Sandeep Yadav]: CustomerType bulk deletion failed: customerTypeIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:37:24 AM [error-Sandeep Yadav]: Error in DELETE /customerType/delete/multiple: customerTypeIds must be a non-empty array
+2026-03-26 10:37:24 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:41:31 AM [info-Sandeep Yadav]: Vendor categories list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:41:31 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 10:41:38 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: categoryIds must be a non-empty array [IP: ::ffff:192.168.1.52]
+2026-03-26 10:41:39 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: categoryIds must be a non-empty array
+2026-03-26 10:41:39 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:43:50 AM [error-Sandeep Yadav]: VendorCategory bulk deletion failed: Entity "VendorCategory" does not have delete date columns. [IP: ::ffff:192.168.1.52]
+2026-03-26 10:43:50 AM [error-Sandeep Yadav]: Error in DELETE /vendor-categories/delete/multiple: Entity "VendorCategory" does not have delete date columns.
+2026-03-26 10:43:50 AM [info-Sandeep Yadav]: Failed to delete record [IP: ::ffff:192.168.1.52]
+2026-03-26 10:56:01 AM [warn-Prashil Vora]: User login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:01 AM [error-System]: Error in POST /auth/login: Wrong password
+2026-03-26 10:56:01 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:01 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 10:56:01 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:23 AM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:23 AM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:27 AM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:27 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 10:56:27 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 10:58:23 AM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 10:58:23 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:05:20 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:05:24 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:05:25 AM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:06:16 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:10:35 AM [info-Sandeep Yadav]: Farmers data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:20:33 AM [error-System]: Error in GET /rfpa/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:20:34 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:34 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:20:34 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:35 AM [error-System]: Error in GET /rfpa/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:20:35 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:36 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:20:36 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:45 AM [info-Admin Admin]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:45 AM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:47 AM [error-System]: Error in GET /rfpa/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:20:47 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:50 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:20:50 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:20:53 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:20:53 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:21:01 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:21:01 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:21:31 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:21:31 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:21:49 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:21:49 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:22:34 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:22:34 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /products/partial/data?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /products/partial/data: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in GET /uoms/getAll/partialdata: You need to re-authenticate. Please log in.
+2026-03-26 11:23:05 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:05 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:23:05 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:23:19 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:23:19 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:23:37 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:23:37 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:23:44 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:23:44 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:23:59 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:23:59 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /uoms/getAll/partialdata: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /products/partial/data: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /products/partial/data?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:18 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:18 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:24:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:24:19 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:24:19 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:24:21 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:24:21 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:25:11 AM [warn-Admin Admin]: User login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:25:11 AM [error-System]: Error in POST /auth/login: Wrong password
+2026-03-26 11:25:11 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:25:12 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:25:12 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:25:40 AM [warn-Admin Admin]: User login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:25:40 AM [error-System]: Error in POST /auth/login: Wrong password
+2026-03-26 11:25:40 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:25:40 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:25:40 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:08 AM [warn-Admin Admin]: User login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:08 AM [error-System]: Error in POST /auth/login: Wrong password
+2026-03-26 11:26:08 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:08 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:26:08 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:14 AM [warn-Admin Admin]: User login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:14 AM [error-System]: Error in POST /auth/login: Wrong password
+2026-03-26 11:26:14 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:14 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:26:14 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.46]
+2026-03-26 11:26:46 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:26:47 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:28:20 AM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 11:28:20 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:20 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:28:20 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:20 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:28:20 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:20 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:28:20 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:21 AM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 11:28:21 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:21 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:28:21 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:21 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:28:21 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:28:21 AM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 11:28:21 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:07 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:29:07 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:29:10 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:29:10 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:29:18 AM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 11:29:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:18 AM [error-System]: Error in GET /products/partial/data?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:29:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:18 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:29:18 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:18 AM [error-System]: Error in GET /deliveryChallan/challanNos/getAllChallanNo: You need to re-authenticate. Please log in.
+2026-03-26 11:29:18 AM [info-System]: Failed to get Delivery Challan [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:29:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:29:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:29:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:29:19 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:29:19 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:24 AM [info-Admin Admin]: User logout successful [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:24 AM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /vendors/filterVendor/all?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /uoms/getAll/partialdata: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /farmers/filterFarmer/all?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /products/partial/data?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /company/partial/details: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /products/partial/data: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:26 AM [error-System]: Error in GET /location-branches/filterData/filter/all: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:30:26 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:30:41 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:30:41 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:30:58 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:30:58 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:31:15 AM [error-System]: Error in GET /employee/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:31:15 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:15 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:15 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:17 AM [error-System]: Error in GET /employee/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:31:17 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:17 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:17 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:41 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:31:41 AM [info-System]: Login failed [IP: ::ffff:192.168.1.63]
+2026-03-26 11:31:41 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:31:41 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:42 AM [error-System]: Error in GET /employee/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:31:42 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:42 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:42 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:42 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:42 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:43 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:31:43 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:43 AM [error-System]: Error in GET /employee/?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:31:43 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:43 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:43 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:31:43 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:31:43 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:32:11 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:32:11 AM [info-System]: Login failed [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:52 AM [info-Admin Admin]: User login successful [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:52 AM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [warn-Admin Admin]: Branches not found with ID: filter data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [error-Admin Admin]: Error in GET /location-branches/filterData/filter/all: Branches not found
+2026-03-26 11:39:55 AM [info-Admin Admin]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [warn-Admin Admin]: Customer not found with ID: names [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:55 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [info-Admin Admin]: User counts report list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [warn-Admin Admin]: Branches not found with ID: filter data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [error-Admin Admin]: Error in GET /location-branches/filterData/filter/all: Branches not found
+2026-03-26 11:39:56 AM [info-Admin Admin]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [warn-Admin Admin]: Customer not found with ID: names [IP: ::ffff:192.168.1.63]
+2026-03-26 11:39:56 AM [info-Admin Admin]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:11 AM [info-Admin Admin]: Employee list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:11 AM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:38 AM [error-System]: Error in GET /document-details/: You need to re-authenticate. Please log in.
+2026-03-26 11:40:38 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 11:40:38 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:40:38 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in GET /location-offices/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:40:38 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:38 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:38 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:38 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:38 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:38 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in GET /document-details/: You need to re-authenticate. Please log in.
+2026-03-26 11:40:39 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in GET /company/partial/details: You need to re-authenticate. Please log in.
+2026-03-26 11:40:39 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in GET /location-branches/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:40:39 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in GET /location-offices/filterData/filter/all: You need to re-authenticate. Please log in.
+2026-03-26 11:40:39 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:39 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:39 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:39 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:39 AM [error-System]: Error in POST /auth/refresh-token: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found
+2026-03-26 11:40:39 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 11:40:46 AM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 11:40:46 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in GET /products/partial/data?page=1&limit=10: You need to re-authenticate. Please log in.
+2026-03-26 11:40:46 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in GET /deliveryChallan/challanNos/getAllChallanNo: You need to re-authenticate. Please log in.
+2026-03-26 11:40:46 AM [info-System]: Failed to get Delivery Challan [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 11:40:46 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:40:46 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:40:46 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:40:46 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:40:46 AM [error-System]: Error in POST /auth/refresh-token: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found
+2026-03-26 11:40:46 AM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 11:41:14 AM [info-System]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 11:49:17 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:49:17 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:49:25 AM [error-System]: Error in POST /auth/login: Username or email is incorrect
+2026-03-26 11:49:25 AM [info-System]: Login failed [IP: ::ffff:192.168.1.46]
+2026-03-26 11:51:46 AM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 11:51:46 AM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:51:49 AM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:51:49 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:51:49 AM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:56:11 AM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 11:56:11 AM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 11:56:15 AM [error-System]: Error in GET /employee/all/partial: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 11:56:15 AM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 12:23:19 PM [info-Sandeep Yadav]: Document Definitions data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:23:19 PM [error-Sandeep Yadav]: Error in GET /location-offices/filterData/filter/all: Office not found
+2026-03-26 12:23:19 PM [info-Sandeep Yadav]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 12:23:19 PM [info-Sandeep Yadav]: Company data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:23:19 PM [info-Sandeep Yadav]: Branch data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:23:19 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:23:23 PM [error-Sandeep Yadav]: Error in GET /location-offices/filterData/filter/all: Office not found
+2026-03-26 12:23:23 PM [info-Sandeep Yadav]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 12:25:30 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:25:30 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:25:34 PM [error-System]: Error in GET /sales-target/sales-summary//2/2026: sorry, too many clients already
+2026-03-26 12:25:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:25:35 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:25:35 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:30:07 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:30:07 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:30:09 PM [error-System]: Error in GET /procurement-target/performance//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /procurement-target/procurement-summary//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /sales-target/performance//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /sales-target/sales-per-customer//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /sales-target/sales-per-product//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /procurement-target/procurement-per-product//2/2026: sorry, too many clients already
+2026-03-26 12:30:10 PM [error-System]: Error in GET /employee/all/partial: sorry, too many clients already
+2026-03-26 12:41:29 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:29 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:34 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:34 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:34 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:41 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:41 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:41:41 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:46:10 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:46:10 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:46:10 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Branch data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Customer data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:32 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:33 PM [info-Admin Admin]: User counts report list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:33 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:47:40 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:40 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:41 PM [error-System]: Error in GET /employee/all/partial: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 12:47:41 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:49 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:49 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:52 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:52 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:47:52 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:48:03 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:48:56 PM [info-Admin Admin]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:48:57 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:19 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:49:30 PM [info-Vaibhav Ahire]: Record updated successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:49:32 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:49:40 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:49:47 PM [info-Admin Admin]: Employee list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:47 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Document Definitions data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Branch data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Office (Filter) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Employee (for update) viewed successfully with ID: 9c640dcd-f56d-43f7-b471-de6687b6af8a [IP: ::ffff:192.168.1.63]
+2026-03-26 12:49:53 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:08 PM [info-Admin Admin]: Employee list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:08 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Document Definitions data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Office (Filter) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Branch data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Employee (for update) viewed successfully with ID: 35845c92-cb62-4dbb-baad-9bdd445c87ef [IP: ::ffff:192.168.1.63]
+2026-03-26 12:50:11 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:54:21 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:21 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Company data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Branch data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Customer data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:23 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: User counts report list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:24 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:40 PM [info-Sandeep Yadav]: Approval Flow data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:48 PM [info-Sandeep Yadav]: Approval Flow viewed successfully with ID: 2e40f89e-bced-4b1c-8011-96d9bb22e1ce [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:48 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:48 PM [info-Sandeep Yadav]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:54:48 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 12:55:30 PM [info-System]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:40 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:40 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:44 PM [info-Sandeep Yadav]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:44 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Company data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Branch data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Office (Filter) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Employee (for update) viewed successfully with ID: b9a28bc9-66d1-47fa-ac78-af258f1d51cf [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:47 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:56:48 PM [info-Sandeep Yadav]: Document Definitions data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:58:42 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:58:42 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:58:50 PM [info-Sandeep Yadav]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:58:50 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:58:53 PM [info-Sandeep Yadav]: Approval Flow data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:59:59 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:59:59 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 12:59:59 PM [info-Admin Admin]: Employee list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 12:59:59 PM [info-Admin Admin]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:00:06 PM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 01:00:06 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:06 PM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 01:00:06 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:06 PM [error-System]: Error in POST /auth/refresh-token: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found
+2026-03-26 01:00:06 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:06 PM [error-System]: Error in POST /auth/refresh-token: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found
+2026-03-26 01:00:06 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:07 PM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 01:00:07 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:07 PM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 01:00:07 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:07 PM [error-System]: Error in POST /auth/refresh-token: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found
+2026-03-26 01:00:07 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 01:00:07 PM [error-System]: Error in POST /auth/refresh-token: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found
+2026-03-26 01:00:07 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:45 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:45 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:46 PM [error-System]: Error in GET /employee/all/partial: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:01:46 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:55 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:55 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:58 PM [info-Sagar Pagar]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:58 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:01:58 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:05 PM [info-Sagar Pagar]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:05 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:11 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: UOM (partial) list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Branch data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:16 PM [info-Sagar Pagar]: Company data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:02:17 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:02:17 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:02:35 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:02:35 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:02:38 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:02:38 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:02 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:02 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:05 PM [error-System]: Error in GET /employee/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:03:05 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:17 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:17 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:20 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:20 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:39 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:39 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:42 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:42 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:03:47 PM [info-Vaibhav Ahire]: User login successful [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:47 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:51 PM [info-Prashil Vora]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:51 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:51 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:59 PM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 01:03:59 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:59 PM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 01:03:59 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:59 PM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 01:03:59 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 01:03:59 PM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 01:03:59 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:00 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:00 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:00 PM [error-System]: Error in GET /employee/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:04:00 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:01 PM [error-System]: Error in GET /employee/all/partial: You need to re-authenticate. Please log in.
+2026-03-26 01:04:01 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:01 PM [error-System]: Error in GET /notification/getbyuserid: You need to re-authenticate. Please log in.
+2026-03-26 01:04:01 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:01 PM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 01:04:01 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:01 PM [error-System]: Error in POST /auth/refresh-token: You need to re-authenticate. Please log in.
+2026-03-26 01:04:01 PM [info-System]: Failed to create record [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:07 PM [info-Vaibhav Ahire]: User logout successful [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:07 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:07 PM [error-System]: Error in GET /employee/all/partial: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:04:07 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:22 PM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:22 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:24 PM [info-Dhara Khatri]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:24 PM [info-Dhara Khatri]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:24 PM [info-Dhara Khatri]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:04:24 PM [info-Vaibhav Ahire]: Delivery Challan retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:24 PM [info-Vaibhav Ahire]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:24 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:24 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:24 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:04:30 PM [info-Dhara Khatri]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:27 PM [info-Prashil Vora]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:27 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:27 PM [error-System]: Error in GET /rfpa/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:05:27 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:46 PM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:46 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:48 PM [info-Khushbu Koshti]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:48 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:49 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:52 PM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.63]
+2026-03-26 01:05:52 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:05:55 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:05:55 PM [info-Sudhanshu Singh]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:05:55 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:05:55 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:06:01 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:01 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:15 PM [info-Khushbu Koshti]: Record updated successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:15 PM [info-Khushbu Koshti]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:20 PM [info-Prashil Vora]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:20 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:20 PM [error-System]: Error in GET /rfpa/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:06:20 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:35 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:06:37 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:06:39 PM [info-Prashil Vora]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:39 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:42 PM [info-Prashil Vora]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:42 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:42 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:45 PM [info-Prashil Vora]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:06:45 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:06:46 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:53 PM [info-Sandeep Yadav]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:53 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:06:53 PM [error-System]: Error in GET /rfpa/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:06:53 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:00 PM [info-Sandeep Yadav]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:00 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:02 PM [info-Sandeep Yadav]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:02 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:02 PM [info-Sandeep Yadav]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:02 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:03 PM [info-Sandeep Yadav]: Branch data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:03 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:03 PM [info-Sandeep Yadav]: Customer data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Company data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: User counts report list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:07 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:07 PM [info-Prashil Vora]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:07 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:12 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:12 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:12 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:17 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:17 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:23 PM [info-Prashil Vora]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:23 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:27 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:34 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:34 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:38 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:38 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:48 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:07:54 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:07:54 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:01 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:01 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:04 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:08:04 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:08:07 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:07 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:13 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:13 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:08:27 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:08:29 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:08:30 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:08:30 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:08:31 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:08:31 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:04 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:04 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:08 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:08 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:21 PM [info-Sagar Pagar]: RFPA created successfully with ID: 1d17e7af-c482-40f2-a246-682afa5ee78f [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:21 PM [info-Sagar Pagar]: Record created successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:21 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:21 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:26 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:29 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:29 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:32 PM [info-Sagar Pagar]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:32 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:09:44 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:44 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:47 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:47 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:09:58 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:09:58 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:01 PM [info-Sandeep Yadav]: User logout successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:01 PM [info-System]: User logged out successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:01 PM [error-System]: Error in GET /employee/?page=1&limit=10: Cannot read properties of undefined (reading 'access_token')
+2026-03-26 01:10:01 PM [info-System]: Failed to retrieve data [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:03 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:15 PM [info-Sudhanshu Singh]: Company data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:15 PM [info-Sudhanshu Singh]: RFPA (document view) viewed successfully with ID: 9833480a-50a4-4705-81e0-2717840c74d1 [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:15 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:29 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:29 PM [info-Sandeep Yadav]: User login successful [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:29 PM [info-System]: User logged in successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:30 PM [info-Sudhanshu Singh]: RFPA (document view) viewed successfully with ID: 9833480a-50a4-4705-81e0-2717840c74d1 [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:30 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:32 PM [info-Ashok Kori]: Employee (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:32 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:32 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:38 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:10:41 PM [info-Sagar Pagar]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:41 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:46 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:46 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:10:50 PM [info-Sagar Pagar]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:57 PM [info-Sagar Pagar]: RFPA Numbers list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:57 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:57 PM [info-Sagar Pagar]: RFPA Numbers list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:10:57 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:06 PM [info-Sagar Pagar]: RFPA (document view) viewed successfully with ID: 9833480a-50a4-4705-81e0-2717840c74d1 [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:06 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:29 PM [info-Sudhanshu Singh]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:11:34 PM [info-Sagar Pagar]: Deal Slip created successfully with ID: f8a791bb-6be7-463a-9a1d-d83e787b95fb [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:34 PM [info-Sagar Pagar]: Failed to create record [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:37 PM [info-Sagar Pagar]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:11:49 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:11:49 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:00 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:01 PM [info-Sudhanshu Singh]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:04 PM [info-Sudhanshu Singh]: Deal Slip viewed successfully with ID: 4cd068e9-7507-42b7-b625-ddc18e650a8a [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:04 PM [info-Sudhanshu Singh]: Deal Slip details viewed successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:13 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:14 PM [info-Sudhanshu Singh]: Deal Slip viewed successfully with ID: 4cd068e9-7507-42b7-b625-ddc18e650a8a [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:14 PM [info-Sudhanshu Singh]: Deal Slip details viewed successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:23 PM [info-Sudhanshu Singh]: Record updated successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:12:23 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:00 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:13:01 PM [info-Sagar Pagar]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:13:17 PM [info-Sudhanshu Singh]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:30 PM [info-Sudhanshu Singh]: Deal Slip viewed successfully with ID: 4cd068e9-7507-42b7-b625-ddc18e650a8a [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:30 PM [info-Sudhanshu Singh]: Deal Slip details viewed successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:40 PM [info-Sudhanshu Singh]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:41 PM [info-Sagar Pagar]: Record updated successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:13:41 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:13:52 PM [info-Sudhanshu Singh]: GRN list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:13:52 PM [info-Sudhanshu Singh]: GRN retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:34 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:41 PM [info-Ashok Kori]: Record updated successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:42 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:42 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:43 PM [info-Sandeep Yadav]: Employee list retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:18:43 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:18:43 PM [info-Sandeep Yadav]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:18:44 PM [info-Sagar Pagar]: Data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:18:44 PM [info-Sudhanshu Singh]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:44 PM [info-Sagar Pagar]: Deal Slips data retrieved successfully [IP: ::ffff:192.168.1.52]
+2026-03-26 01:18:45 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:45 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:47 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:47 PM [info-Sudhanshu Singh]: GRN list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:47 PM [info-Sudhanshu Singh]: GRN retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:47 PM [info-Prashil Vora]: Data retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:51 PM [info-Sudhanshu Singh]: GRN list retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:51 PM [info-Sudhanshu Singh]: GRN retrieved successfully [IP: ::ffff:192.168.1.63]
+2026-03-26 01:18:53 PM [info-Ashok Kori]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:59 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:59 PM [info-Vaibhav Ahire]: Company data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:18:59 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: Farmers (filtered) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: Branch data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: UOM (partial) list retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:00 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:43 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:44 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:50 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:19:50 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:20:38 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:20:42 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:20:42 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:21:07 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]
+2026-03-26 01:21:07 PM [info-Vaibhav Ahire]: Data retrieved successfully [IP: ::ffff:192.168.1.46]

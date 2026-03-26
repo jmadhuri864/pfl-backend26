@@ -145,11 +145,9 @@ export class VendorCategoryService {
     return true;
   }
   async softDeleteCategory(userIds: string[]) {
-
   const result = await this.vendorCategoryRepository.softDelete({
     id: In(userIds)
   });
-
   return result;
 }
 }

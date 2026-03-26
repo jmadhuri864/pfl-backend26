@@ -249,9 +249,11 @@ public async softDeleteMultipleVendorCategory(
 ) {
   try {
 
-    const { categoryIds } = req.body;
+    const {  ids } = req.body;
+    const resolvedIds =  ids;
+    console.log(req.body)
 
-    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+    if (!Array.isArray(resolvedIds) || resolvedIds.length === 0) {
       ControllerLogger.logError(
         "VendorCategory bulk deletion",
         new AppError(400, "categoryIds must be a non-empty array"),
@@ -261,11 +263,11 @@ public async softDeleteMultipleVendorCategory(
       return next(new AppError(400, "categoryIds must be a non-empty array"));
     }
 
-    const result = await this.vendorCategoryService.softDeleteCategory(categoryIds);
+    const result = await this.vendorCategoryService.softDeleteCategory(resolvedIds);
 
     ControllerLogger.logSuccess(
       "VendorCategory bulk soft deleted",
-      categoryIds.join(","),
+      resolvedIds.join(","),
       req,
       res
     );
@@ -274,7 +276,7 @@ public async softDeleteMultipleVendorCategory(
     const userId = res.locals.user?.id;
     if (userId) {
       await this.notificationService.createNoti(
-        `Multiple VendorCategory soft deleted: ${categoryIds.length}`,
+        `Multiple VendorCategory soft deleted: ${resolvedIds.length}`,
         userId
       );
     }

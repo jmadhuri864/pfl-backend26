@@ -1686,11 +1686,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 }
 
 async softDeleteVendors(vendorIds: string[]) {
-
-  const result = await this.userRepository.softDelete({
+  const result = await this.vendorRepository.softDelete({
     id: In(vendorIds)
   });
-
   return result;
 }
 

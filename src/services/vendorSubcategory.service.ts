@@ -181,11 +181,9 @@ return await buildQuery(baseQuery, queryOptions, 'vendorSubcategory');
     return true;
   }
   async softDeleteSubcategory(userIds: string[]) {
-
   const result = await this.vendorSubcategoryRepository.softDelete({
     id: In(userIds)
   });
-
   return result;
 }
 

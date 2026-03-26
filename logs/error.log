@@ -891,3 +891,344 @@ Cannot read properties of undefined (reading 'city')
 2026-03-25 02:37:48 PM [error]: AppError: No RFPAs found 
 2026-03-25 02:37:50 PM [error]: AppError: No RFPAs found 
 2026-03-26 10:19:29 AM [error]: Error starting the server: 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:26 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:27 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:27 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:20:28 AM [error]: Error while refreshing access token 
+2026-03-26 10:20:28 AM [error]: AppError: User with ID 8d33323f-942e-49f0-a648-0b8a036bb4ae not found 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:03 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:04 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:22:04 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:26:29 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 10:28:18 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:33:02 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:33:56 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:34:05 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:34:17 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:36:09 AM [error]: AppError: subCategoryIds must be a non-empty array 
+2026-03-26 10:36:33 AM [error]: AppError: subCategoryIds must be a non-empty array 
+2026-03-26 10:37:24 AM [error]: AppError: customerTypeIds must be a non-empty array 
+2026-03-26 10:41:39 AM [error]: AppError: categoryIds must be a non-empty array 
+2026-03-26 10:43:50 AM [error]: Unhandled Error: Entity "VendorCategory" does not have delete date columns. 
+2026-03-26 10:56:01 AM [error]: Unexpected error during login process 
+2026-03-26 10:56:01 AM [error]: AppError: Wrong password 
+2026-03-26 10:56:01 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:20:34 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:20:34 AM [error]: Error while refreshing access token 
+2026-03-26 11:20:34 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:20:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:20:36 AM [error]: Error while refreshing access token 
+2026-03-26 11:20:36 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:20:47 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:20:50 AM [error]: User not found during login 
+2026-03-26 11:20:50 AM [error]: Unexpected error during login process 
+2026-03-26 11:20:50 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:20:53 AM [error]: User not found during login 
+2026-03-26 11:20:53 AM [error]: Unexpected error during login process 
+2026-03-26 11:20:53 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:21:01 AM [error]: User not found during login 
+2026-03-26 11:21:01 AM [error]: Unexpected error during login process 
+2026-03-26 11:21:01 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:21:31 AM [error]: User not found during login 
+2026-03-26 11:21:31 AM [error]: Unexpected error during login process 
+2026-03-26 11:21:31 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:21:49 AM [error]: User not found during login 
+2026-03-26 11:21:49 AM [error]: Unexpected error during login process 
+2026-03-26 11:21:49 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:22:34 AM [error]: User not found during login 
+2026-03-26 11:22:34 AM [error]: Unexpected error during login process 
+2026-03-26 11:22:34 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:05 AM [error]: Error while refreshing access token 
+2026-03-26 11:23:05 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:23:19 AM [error]: User not found during login 
+2026-03-26 11:23:19 AM [error]: Unexpected error during login process 
+2026-03-26 11:23:19 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:23:37 AM [error]: User not found during login 
+2026-03-26 11:23:37 AM [error]: Unexpected error during login process 
+2026-03-26 11:23:37 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:23:44 AM [error]: User not found during login 
+2026-03-26 11:23:44 AM [error]: Unexpected error during login process 
+2026-03-26 11:23:44 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:23:59 AM [error]: User not found during login 
+2026-03-26 11:23:59 AM [error]: Unexpected error during login process 
+2026-03-26 11:23:59 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:18 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:18 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:24:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:24:19 AM [error]: User not found during login 
+2026-03-26 11:24:19 AM [error]: Unexpected error during login process 
+2026-03-26 11:24:19 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:24:21 AM [error]: Error while refreshing access token 
+2026-03-26 11:24:21 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:25:11 AM [error]: Unexpected error during login process 
+2026-03-26 11:25:11 AM [error]: AppError: Wrong password 
+2026-03-26 11:25:12 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:25:40 AM [error]: Unexpected error during login process 
+2026-03-26 11:25:40 AM [error]: AppError: Wrong password 
+2026-03-26 11:25:40 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:26:08 AM [error]: Unexpected error during login process 
+2026-03-26 11:26:08 AM [error]: AppError: Wrong password 
+2026-03-26 11:26:08 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:26:14 AM [error]: Unexpected error during login process 
+2026-03-26 11:26:14 AM [error]: AppError: Wrong password 
+2026-03-26 11:26:14 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:26:46 AM [error]: User not found during login 
+2026-03-26 11:26:46 AM [error]: Unexpected error during login process 
+2026-03-26 11:26:46 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:28:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:21 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:21 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:21 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:28:21 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:29:07 AM [error]: User not found during login 
+2026-03-26 11:29:07 AM [error]: Unexpected error during login process 
+2026-03-26 11:29:07 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:29:10 AM [error]: User not found during login 
+2026-03-26 11:29:10 AM [error]: Unexpected error during login process 
+2026-03-26 11:29:10 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:29:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:29:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:29:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:29:18 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:29:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:29:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:29:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:29:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:29:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:29:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:29:19 AM [error]: Error while refreshing access token 
+2026-03-26 11:29:19 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:26 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 11:30:41 AM [error]: User not found during login 
+2026-03-26 11:30:41 AM [error]: Unexpected error during login process 
+2026-03-26 11:30:41 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:30:58 AM [error]: User not found during login 
+2026-03-26 11:30:58 AM [error]: Unexpected error during login process 
+2026-03-26 11:30:58 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:31:15 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:15 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:15 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:31:17 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:17 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:17 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:31:41 AM [error]: User not found during login 
+2026-03-26 11:31:41 AM [error]: Unexpected error during login process 
+2026-03-26 11:31:41 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:31:41 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:42 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:42 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:42 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:31:42 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:42 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:31:43 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:43 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:31:43 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:43 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:31:43 AM [error]: Error while refreshing access token 
+2026-03-26 11:31:43 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:32:11 AM [error]: User not found during login 
+2026-03-26 11:32:11 AM [error]: Unexpected error during login process 
+2026-03-26 11:32:11 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:39:55 AM [error]: AppError: Branches not found 
+2026-03-26 11:39:56 AM [error]: AppError: Branches not found 
+2026-03-26 11:40:38 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:38 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:38 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:38 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:38 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:38 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:38 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:38 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:38 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:38 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:38 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:38 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:39 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:39 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:39 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:39 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:39 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:39 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:39 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:39 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:39 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:39 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:39 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:39 AM [error]: AppError: User with ID 4909d77a-70d7-47e8-96b7-81f01f5e2672 not found 
+2026-03-26 11:40:46 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:46 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:46 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:46 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 11:40:46 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:46 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:40:46 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:46 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:40:46 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:46 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:40:46 AM [error]: Error while refreshing access token 
+2026-03-26 11:40:46 AM [error]: AppError: User with ID 2fbf7e50-33cc-4590-bfc1-f7a8e8fae187 not found 
+2026-03-26 11:49:17 AM [error]: User not found during login 
+2026-03-26 11:49:17 AM [error]: Unexpected error during login process 
+2026-03-26 11:49:17 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:49:25 AM [error]: User not found during login 
+2026-03-26 11:49:25 AM [error]: Unexpected error during login process 
+2026-03-26 11:49:25 AM [error]: AppError: Username or email is incorrect 
+2026-03-26 11:56:15 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 12:23:19 PM [error]: AppError: Office not found 
+2026-03-26 12:23:23 PM [error]: AppError: Office not found 
+2026-03-26 12:25:34 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:09 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:30:10 PM [error]: Unhandled Error: sorry, too many clients already 
+2026-03-26 12:47:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:00:06 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:00:06 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:00:06 PM [error]: Error while refreshing access token 
+2026-03-26 01:00:06 PM [error]: AppError: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found 
+2026-03-26 01:00:06 PM [error]: Error while refreshing access token 
+2026-03-26 01:00:06 PM [error]: AppError: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found 
+2026-03-26 01:00:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:00:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:00:07 PM [error]: Error while refreshing access token 
+2026-03-26 01:00:07 PM [error]: AppError: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found 
+2026-03-26 01:00:07 PM [error]: Error while refreshing access token 
+2026-03-26 01:00:07 PM [error]: AppError: User with ID ec383c35-6c20-484d-9df1-1fb4f255248d not found 
+2026-03-26 01:01:46 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:03:05 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:03:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:03:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:03:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:03:59 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:04:00 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:04:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:04:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:04:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:04:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 01:04:07 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:05:27 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:06:20 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:06:53 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 01:10:01 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 

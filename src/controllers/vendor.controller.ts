@@ -656,7 +656,9 @@ public async softDeleteMultipleVendors(
 ) {
   try {
 
-    const { vendorIds } = req.body;
+    const  {  ids } = req.body;
+    const vendorIds  =  ids;
+   
 
     if (!Array.isArray(vendorIds) || vendorIds.length === 0) {
       ControllerLogger.logError(

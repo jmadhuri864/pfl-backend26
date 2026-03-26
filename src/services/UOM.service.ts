@@ -114,14 +114,14 @@ export class UOMService {
 
 public async multipledelete(ids: string[]): Promise<boolean> {
   try {
-    const result = await this.UOMRepository.softDelete(ids);
-
+    const result = await this.UOMRepository.softDelete({ id: In(ids) });
     return result.affected !== 0;
   } catch(err) {
-    console.log(err)
+    console.log(err);
     return false;
   }
 }
+
 
 
 

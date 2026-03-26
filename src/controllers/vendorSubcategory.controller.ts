@@ -263,8 +263,11 @@ public async softDeleteMultipleVendorSubcategory(
   @next() next: NextFunction
 ) {
   try {
+    const {  ids } = req.body;
+    const subCategoryIds =  ids;
+    console.log(req.body)
 
-    const { subCategoryIds } = req.body;
+    
 
     if (!Array.isArray(subCategoryIds) || subCategoryIds.length === 0) {
       ControllerLogger.logError(
