@@ -253,6 +253,9 @@ export class PMPVoucherController {
       logger.error("Error creating voucher", { error: err });
       console.log(err)
       ControllerLogger.logError('PMP Voucher creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

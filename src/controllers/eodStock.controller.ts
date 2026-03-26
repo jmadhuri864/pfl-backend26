@@ -62,6 +62,9 @@ export class EodStockController {
       });
     } catch (err) {
       ControllerLogger.logError('Create EOD Stock', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

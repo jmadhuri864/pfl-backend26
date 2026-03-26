@@ -206,6 +206,9 @@ export class LabourPaymentVoucherController {
     } catch (err) {
       logger.error("Error creating Labour Payment Voucher", { error: err });
       ControllerLogger.logError('Labour Payment Voucher creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

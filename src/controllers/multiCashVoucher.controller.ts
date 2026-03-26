@@ -68,6 +68,9 @@ export class  MultiCashVoucherController {
       console.log(err)
       logger.error("Error while creating Multi Cash Voucher", { error: err });
       ControllerLogger.logError('Multi Cash Voucher creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

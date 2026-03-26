@@ -70,6 +70,9 @@ export class TPVoucherController {
       logger.error('Error creating TPVoucher', { error });
       console.log(error);
       ControllerLogger.logError('Transport Payment Voucher creation', error, req, res);
+      if (error instanceof Error) {
+               return next(new AppError(400, error.message)); // ← sends 400 with real message
+             }
       next(error);
     }
   }

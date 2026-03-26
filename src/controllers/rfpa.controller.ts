@@ -12,7 +12,7 @@ import {
   httpDelete,
 } from 'inversify-express-utils';
 import { TYPES } from '../types';
-import { RfpaService } from "../services/rfpa.service";
+import { RfpaService } from '../services/rfpa.service';
 import { NextFunction, Request, Response } from 'express';
 import AppError from '../utils/appError';
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
@@ -23,7 +23,6 @@ import { checkPermission } from '../middleware/checkPermission';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
 
-
 @controller('/rfpa', deserializeUser, requireUser)
 export class RfpaController {
   constructor(
@@ -31,7 +30,6 @@ export class RfpaController {
     private readonly rfpaService: RfpaService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
-   
   ) {}
 
   // @httpGet('/')
@@ -104,7 +102,6 @@ export class RfpaController {
   //   }
   // }
 
-
   @httpGet('/:id/view')
   public async getRfpaByIdByView(
     @requestParam('id') rfpaId: string,
@@ -118,7 +115,12 @@ export class RfpaController {
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
-        ControllerLogger.logError('RFPA view', new AppError(404, 'RFPA not found'), req, res);
+        ControllerLogger.logError(
+          'RFPA view',
+          new AppError(404, 'RFPA not found'),
+          req,
+          res,
+        );
         throw new AppError(404, 'RFPA not found');
       }
       logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
@@ -146,74 +148,74 @@ export class RfpaController {
     }
   }
 
-  
   @httpGet('/recyclebin')
-public async getRecycleBinRfpa(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction,
-) {
-  try {
-    //logger.info('Fetching all RFPA...');
-    const {
-      page,
-      limit,
-      search,
-      sort,
-      selectedVendor,
-      source,
-      companyName,
-      requestingDepartment,
-      rfpaId
-    } = req.query;
+  public async getRecycleBinRfpa(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      //logger.info('Fetching all RFPA...');
+      const {
+        page,
+        limit,
+        search,
+        sort,
+        selectedVendor,
+        source,
+        companyName,
+        requestingDepartment,
+        rfpaId,
+      } = req.query;
 
-    const userId = res.locals.user.id;
+      const userId = res.locals.user.id;
 
-    const filters: any = {};
-    // if (selectedVendor) filters.selectedVendor = selectedVendor;
-    // if (source) filters.source = source;
-    // if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
-    // if (companyName) filters.companyName = companyName;
-    // if (rfpaId) filters.rfpaId = rfpaId;
+      const filters: any = {};
+      // if (selectedVendor) filters.selectedVendor = selectedVendor;
+      // if (source) filters.source = source;
+      // if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
+      // if (companyName) filters.companyName = companyName;
+      // if (rfpaId) filters.rfpaId = rfpaId;
 
-    const queryOptions: PaginationOptions = {
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 10,
-      //searchFields: [''],
-      filters,
-      sort: (sort as string) || undefined,
-      search: (search as string) || '',
-    };
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+        //searchFields: [''],
+        filters,
+        sort: (sort as string) || undefined,
+        search: (search as string) || '',
+      };
 
-    const rfpas = await this.rfpaService.getRecycleBinRfpa(queryOptions, userId);
+      const rfpas = await this.rfpaService.getRecycleBinRfpa(
+        queryOptions,
+        userId,
+      );
 
-    if (!rfpas || rfpas.data.length === 0) {
-      logger.warn('No RFPAS found for this user.');
-      return res.status(200).json({
+      if (!rfpas || rfpas.data.length === 0) {
+        logger.warn('No RFPAS found for this user.');
+        return res.status(200).json({
+          status: 'success',
+          data: [],
+          allRecords: 0,
+          totalPages: 0,
+          page: queryOptions.page,
+        });
+      }
+
+      logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+
+      res.status(200).json({
         status: 'success',
-        data: [],
-        allRecords: 0,
-        totalPages: 0,
-        page: queryOptions.page,
+        data: rfpas.data,
+        allRecords: rfpas.meta.total,
+        totalPages: rfpas.meta.pages,
+        page: rfpas.meta.page,
       });
+    } catch (error) {
+      console.error('Error fetching rfpas:', error);
+      next(error);
     }
-
-    logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
-
-   
-
-    res.status(200).json({
-      status: 'success',
-      data: rfpas.data,
-      allRecords: rfpas.meta.total,
-      totalPages: rfpas.meta.pages,
-      page: rfpas.meta.page,
-    });
-  } catch (error) {
-    console.error('Error fetching rfpas:', error);
-    next(error);
   }
-}
   @httpGet('/:id/update')
   public async getRfpaByIdByUpdate(
     @requestParam('id') rfpaId: string,
@@ -227,7 +229,12 @@ public async getRecycleBinRfpa(
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
-        ControllerLogger.logError('RFPA retrieval for update', new AppError(404, 'RFPA not found'), req, res);
+        ControllerLogger.logError(
+          'RFPA retrieval for update',
+          new AppError(404, 'RFPA not found'),
+          req,
+          res,
+        );
         throw new AppError(404, 'RFPA not found');
       }
       logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
@@ -261,7 +268,12 @@ public async getRecycleBinRfpa(
 
       if (!rfpaData) {
         logger.warn('Invalid RFPA data');
-        ControllerLogger.logError('RFPA creation', new AppError(400, 'RFPA could not be created, no data provided'), req, res);
+        ControllerLogger.logError(
+          'RFPA creation',
+          new AppError(400, 'RFPA could not be created, no data provided'),
+          req,
+          res,
+        );
         return next(
           new AppError(400, 'RFPA could not be created, no data provided'),
         );
@@ -274,7 +286,15 @@ public async getRecycleBinRfpa(
       if (rfpaData.source === Source.VENDOR) {
         if (!rfpaData.selectedParty) {
           logger.warn('Vendor source selected, but no vendor provided');
-          ControllerLogger.logError('RFPA creation', new AppError(400, 'Vendor must be provided when the source is vendor'), req, res);
+          ControllerLogger.logError(
+            'RFPA creation',
+            new AppError(
+              400,
+              'Vendor must be provided when the source is vendor',
+            ),
+            req,
+            res,
+          );
           return next(
             new AppError(
               400,
@@ -286,7 +306,15 @@ public async getRecycleBinRfpa(
       } else if (rfpaData.source === Source.FARMER) {
         if (!rfpaData.selectedParty) {
           logger.warn('Farmer source selected, but no farmer provided');
-          ControllerLogger.logError('RFPA creation', new AppError(400, 'Farmer must be provided when the source is farmer'), req, res);
+          ControllerLogger.logError(
+            'RFPA creation',
+            new AppError(
+              400,
+              'Farmer must be provided when the source is farmer',
+            ),
+            req,
+            res,
+          );
           return next(
             new AppError(
               400,
@@ -297,7 +325,15 @@ public async getRecycleBinRfpa(
         rfpaData.selectedFarmer = { id: rfpaData.selectedParty };
       } else {
         logger.warn('Invalid source provided');
-        ControllerLogger.logError('RFPA creation', new AppError(400, 'Invalid source: Either vendor or farmer must be provided'), req, res);
+        ControllerLogger.logError(
+          'RFPA creation',
+          new AppError(
+            400,
+            'Invalid source: Either vendor or farmer must be provided',
+          ),
+          req,
+          res,
+        );
         return next(
           new AppError(
             400,
@@ -317,7 +353,7 @@ public async getRecycleBinRfpa(
         if (userId) {
           await this.notificationService.createNoti(
             `RFPA created successfully`,
-            userId
+            userId,
           );
         }
       } catch (notifError) {
@@ -332,6 +368,11 @@ public async getRecycleBinRfpa(
     } catch (error) {
       logger.error('Error creating RFPA:', error);
       ControllerLogger.logError('RFPA creation', error, req, res);
+
+      if (error instanceof Error) {
+        return next(new AppError(400, error.message)); // ← sends 400 with real message
+      }
+
       next(error);
     }
   }
@@ -359,7 +400,12 @@ public async getRecycleBinRfpa(
       console.log(updatedRfpa);
       if (!updatedRfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
-        ControllerLogger.logError('RFPA update', new AppError(404, 'RFPA not found'), req, res);
+        ControllerLogger.logError(
+          'RFPA update',
+          new AppError(404, 'RFPA not found'),
+          req,
+          res,
+        );
         return next(new AppError(404, 'RFPA not found'));
       }
       logger.info(`RFPA with ID ${rfpaId} updated successfully`);
@@ -370,7 +416,7 @@ public async getRecycleBinRfpa(
       if (userId) {
         await this.notificationService.createNoti(
           `RFPA updated successfully`,
-          userId
+          userId,
         );
       }
 
@@ -455,24 +501,37 @@ public async getRecycleBinRfpa(
     try {
       logger.info('Fetching all RFPA numbers');
       console.log('rfpanumbers');
-      const isDealSlipCreated = req.query.isDealSlipCreated === 'true' ? true : req.query.isDealSlipCreated === 'false' ? false : undefined;
+      const isDealSlipCreated =
+        req.query.isDealSlipCreated === 'true'
+          ? true
+          : req.query.isDealSlipCreated === 'false'
+            ? false
+            : undefined;
       const userId = res.locals.user?.id;
       console.log('User ID:', userId);
-      const rfpas = await this.rfpaService.getAllRFPANumbers({ ...req.query, isDealSlipCreated }, userId);
+      const rfpas = await this.rfpaService.getAllRFPANumbers(
+        { ...req.query, isDealSlipCreated },
+        userId,
+      );
       if (!rfpas || !rfpas.data || rfpas.data.length === 0) {
         logger.warn('No RFPA numbers found');
-        ControllerLogger.logError('RFPA numbers retrieval', new AppError(404, 'No RFPAs found'), req, res);
+        ControllerLogger.logError(
+          'RFPA numbers retrieval',
+          new AppError(404, 'No RFPAs found'),
+          req,
+          res,
+        );
         return next(new AppError(404, 'No RFPAs found'));
       }
       logger.info(`Found ${rfpas.data.length} RFPA numbers`);
       ControllerLogger.logList('RFPA Numbers', req, res);
       res.status(200).json({
         status: 'success',
-        
+
         data: rfpas.data,
-      allRecords: rfpas.total,
-      totalPages: rfpas.totalPages,
-      page: rfpas.page,
+        allRecords: rfpas.total,
+        totalPages: rfpas.totalPages,
+        page: rfpas.page,
       });
     } catch (error) {
       logger.error('Error fetching RFPA numbers:', error);
@@ -492,13 +551,23 @@ public async getRecycleBinRfpa(
       const { id } = req.params;
       if (!id) {
         logger.warn('RFPA ID not provided');
-        ControllerLogger.logError('RFPA deletion', new AppError(400, 'RFPA ID is required'), req, res);
+        ControllerLogger.logError(
+          'RFPA deletion',
+          new AppError(400, 'RFPA ID is required'),
+          req,
+          res,
+        );
         return next(new AppError(400, 'RFPA ID is required'));
       }
       const success = await this.rfpaService.deleteRfpa(id);
       if (!success) {
         logger.warn('No RFPA numbers found');
-        ControllerLogger.logError('RFPA deletion', new AppError(404, 'No RFPAs found'), req, res);
+        ControllerLogger.logError(
+          'RFPA deletion',
+          new AppError(404, 'No RFPAs found'),
+          req,
+          res,
+        );
         return next(new AppError(404, 'No RFPAs found'));
       }
       ControllerLogger.logSuccess('RFPA deleted', id, req, res);
@@ -508,7 +577,7 @@ public async getRecycleBinRfpa(
       if (userId) {
         await this.notificationService.createNoti(
           `RFPA deleted successfully`,
-          userId
+          userId,
         );
       }
 
@@ -523,263 +592,259 @@ public async getRecycleBinRfpa(
     }
   }
 
+  //   //TODO:By Vaishali
+  //   //TODO: get All RFPA
+  // @httpGet('/')
+  // public async getAllRfpa(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     logger.info('Fetching all RFPA...');
+  //     const {
+  //       page,
+  //       limit,
+  //       search,
+  //       sort,
+  //       selectedVendor,
+  //       source,
+  //       companyName,
+  //       requestingDepartment,
+  //       rfpaId
+  //     } = req.query;
 
-//   //TODO:By Vaishali
-//   //TODO: get All RFPA
-// @httpGet('/')
-// public async getAllRfpa(
-//   @request() req: Request,
-//   @response() res: Response,
-//   @next() next: NextFunction,
-// ) {
-//   try {
-//     logger.info('Fetching all RFPA...');
-//     const {
-//       page,
-//       limit,
-//       search,
-//       sort,
-//       selectedVendor,
-//       source,
-//       companyName,
-//       requestingDepartment,
-//       rfpaId
-//     } = req.query;
+  //     const userId = res.locals.user.id;
 
-//     const userId = res.locals.user.id;
+  //     const filters: any = {};
+  //     if (selectedVendor) filters.selectedVendor = selectedVendor;
+  //     if (source) filters.source = source;
+  //     if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
+  //     if (companyName) filters.companyName = companyName;
+  //     if (rfpaId) filters.rfpaId = rfpaId;
 
-//     const filters: any = {};
-//     if (selectedVendor) filters.selectedVendor = selectedVendor;
-//     if (source) filters.source = source;
-//     if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
-//     if (companyName) filters.companyName = companyName;
-//     if (rfpaId) filters.rfpaId = rfpaId;
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : 1,
+  //       limit: limit ? Number(limit) : 10,
+  //       searchFields: ['rfpaId'],
+  //       filters,
+  //       sort: (sort as string) || undefined,
+  //       search: (search as string) || '',
+  //     };
 
-//     const queryOptions: PaginationOptions = {
-//       page: page ? Number(page) : 1,
-//       limit: limit ? Number(limit) : 10,
-//       searchFields: ['rfpaId'],
-//       filters,
-//       sort: (sort as string) || undefined,
-//       search: (search as string) || '',
-//     };
+  //     const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
 
-//     const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
+  //     if (!rfpas || rfpas.data.length === 0) {
+  //       logger.warn('No RFPAS found for this user.');
+  //       return res.status(200).json({
+  //         status: 'success',
+  //         data: [],
+  //         allRecords: 0,
+  //         totalPages: 0,
+  //         page: queryOptions.page,
+  //       });
+  //     }
 
-//     if (!rfpas || rfpas.data.length === 0) {
-//       logger.warn('No RFPAS found for this user.');
-//       return res.status(200).json({
-//         status: 'success',
-//         data: [],
-//         allRecords: 0,
-//         totalPages: 0,
-//         page: queryOptions.page,
-//       });
-//     }
+  //     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
 
-//     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: rfpas.data,
+  //       allRecords: rfpas.meta.total,
+  //       totalPages: rfpas.meta.pages,
+  //       page: rfpas.meta.page,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error fetching rfpas:', error);
+  //     next(error);
+  //   }
+  // }
 
-//     res.status(200).json({
-//       status: 'success',
-//       data: rfpas.data,
-//       allRecords: rfpas.meta.total,
-//       totalPages: rfpas.meta.pages,
-//       page: rfpas.meta.page,
-//     });
-//   } catch (error) {
-//     console.error('Error fetching rfpas:', error);
-//     next(error);
-//   }
-// }
+  // //TODO:By Vaishali
+  //  //TODO: RPFA get by id for view
+  //   @httpGet('/view/:docid')
+  //   public async getRfpaByIdForView(
+  //     @requestParam('docid') docid: string,
+  //     @response() res: Response,
+  //     @next() next: NextFunction,
+  //   ) {
+  //     try {
+  //       logger.info(`Fetching RFPA with Document ID`);
+  //       console.log("Shriiiiiiiiiii");
 
-// //TODO:By Vaishali
-//  //TODO: RPFA get by id for view
-//   @httpGet('/view/:docid')
-//   public async getRfpaByIdForView(
-//     @requestParam('docid') docid: string,
-//     @response() res: Response,
-//     @next() next: NextFunction,
-//   ) {
-//     try {
-//       logger.info(`Fetching RFPA with Document ID`);
-//       console.log("Shriiiiiiiiiii");
-      
-//       console.log(docid);
-//       const userId = res.locals.user.id;
-//       const rfpa = await this.rfpaService.getRfpaByIdForView(docid,userId);
-//       console.log(rfpa);
-//       if (!rfpa) {
-//         return res.status(403).json({
-//         status: 'fail',
-//         message: 'You do not have permission to view this RFPA',
-//       });
-//         //return next(new AppError(404, 'dealSlip not found'));
-//       }
-//       logger.info(`rfpa with ID fetched successfully.`);
-//       const requestedBy = res.locals.user.id;
-//       console.log('user is ', requestedBy);
-//       // Send a notification when the user logs in successfully
-//       // const message = Welcome back! You have successfully logged in.;
-//       // await this.notificationService.createNoti(message, requestedBy);
-//       res.status(200).json({
-//         status: 'success',
-//         data: rfpa,
-//       });
-//     } catch (error) {
-//       console.log(error);
-//       logger.error('Error fetching RFPA by ID:', error);
-//       next(error);
-//     }
-//   }
+  //       console.log(docid);
+  //       const userId = res.locals.user.id;
+  //       const rfpa = await this.rfpaService.getRfpaByIdForView(docid,userId);
+  //       console.log(rfpa);
+  //       if (!rfpa) {
+  //         return res.status(403).json({
+  //         status: 'fail',
+  //         message: 'You do not have permission to view this RFPA',
+  //       });
+  //         //return next(new AppError(404, 'dealSlip not found'));
+  //       }
+  //       logger.info(`rfpa with ID fetched successfully.`);
+  //       const requestedBy = res.locals.user.id;
+  //       console.log('user is ', requestedBy);
+  //       // Send a notification when the user logs in successfully
+  //       // const message = Welcome back! You have successfully logged in.;
+  //       // await this.notificationService.createNoti(message, requestedBy);
+  //       res.status(200).json({
+  //         status: 'success',
+  //         data: rfpa,
+  //       });
+  //     } catch (error) {
+  //       console.log(error);
+  //       logger.error('Error fetching RFPA by ID:', error);
+  //       next(error);
+  //     }
+  //   }
 
-
-   //TODO:By Vaishali
+  //TODO:By Vaishali
   //TODO: get All RFPA
-// @httpGet('/')
-// public async getAllRfpa(
-//   @request() req: Request,
-//   @response() res: Response,
-//   @next() next: NextFunction,
-// ) {
-//   try {
-//     logger.info('Fetching all RFPA...');
-//     const {
-//       page,
-//       limit,
-//       search,
-//       sort,
-//       selectedVendor,
-//       source,
-//       companyName,
-//       requestingDepartment,
-//       rfpaId
-//     } = req.query;
+  // @httpGet('/')
+  // public async getAllRfpa(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     logger.info('Fetching all RFPA...');
+  //     const {
+  //       page,
+  //       limit,
+  //       search,
+  //       sort,
+  //       selectedVendor,
+  //       source,
+  //       companyName,
+  //       requestingDepartment,
+  //       rfpaId
+  //     } = req.query;
 
-//     const userId = res.locals.user.id;
+  //     const userId = res.locals.user.id;
 
-//     const filters: any = {};
-//     if (selectedVendor) filters.selectedVendor = selectedVendor;
-//     if (source) filters.source = source;
-//     if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
-//     if (companyName) filters.companyName = companyName;
-//     if (rfpaId) filters.rfpaId = rfpaId;
+  //     const filters: any = {};
+  //     if (selectedVendor) filters.selectedVendor = selectedVendor;
+  //     if (source) filters.source = source;
+  //     if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
+  //     if (companyName) filters.companyName = companyName;
+  //     if (rfpaId) filters.rfpaId = rfpaId;
 
-//     const queryOptions: PaginationOptions = {
-//       page: page ? Number(page) : 1,
-//       limit: limit ? Number(limit) : 10,
-//       searchFields: ['rfpaId'],
-//       filters,
-//       sort: (sort as string) || undefined,
-//       search: (search as string) || '',
-//     };
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : 1,
+  //       limit: limit ? Number(limit) : 10,
+  //       searchFields: ['rfpaId'],
+  //       filters,
+  //       sort: (sort as string) || undefined,
+  //       search: (search as string) || '',
+  //     };
 
-//     const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
-// console.log("rrrrrfffffppppppaaaassss",rfpas)
-//     if (!rfpas || rfpas.data.length === 0) {
-//       logger.warn('No RFPAS found for this user.');
-//       return res.status(200).json({
-//         status: 'success',
-//         data: [],
-//         allRecords: 0,
-//         totalPages: 0,
-//         page: queryOptions.page,
-//       });
-//     }
+  //     const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
+  // console.log("rrrrrfffffppppppaaaassss",rfpas)
+  //     if (!rfpas || rfpas.data.length === 0) {
+  //       logger.warn('No RFPAS found for this user.');
+  //       return res.status(200).json({
+  //         status: 'success',
+  //         data: [],
+  //         allRecords: 0,
+  //         totalPages: 0,
+  //         page: queryOptions.page,
+  //       });
+  //     }
 
-//     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+  //     logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
 
-//     res.status(200).json({
-//       status: 'success',
-//       data: rfpas.data,
-//       allRecords: rfpas.meta.total,
-//       totalPages: rfpas.meta.pages,
-//       page: rfpas.meta.page,
-//     });
-//   } catch (error) {
-//     console.error('Error fetching rfpas:', error);
-//     next(error);
-//   }
-// }
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: rfpas.data,
+  //       allRecords: rfpas.meta.total,
+  //       totalPages: rfpas.meta.pages,
+  //       page: rfpas.meta.page,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error fetching rfpas:', error);
+  //     next(error);
+  //   }
+  // }
 
-//TODO:By Vaishali
+  //TODO:By Vaishali
   //TODO: get All RFPA
-@httpGet('/')
-public async getAllRfpa(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction,
-) {
-  try {
-    //logger.info('Fetching all RFPA...');
-    const {
-      page,
-      limit,
-      search,
-      sort,
-      selectedVendor,
-      source,
-      companyName,
-      requestingDepartment,
-      rfpaId
-    } = req.query;
+  @httpGet('/')
+  public async getAllRfpa(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      //logger.info('Fetching all RFPA...');
+      const {
+        page,
+        limit,
+        search,
+        sort,
+        selectedVendor,
+        source,
+        companyName,
+        requestingDepartment,
+        rfpaId,
+      } = req.query;
 
-    const userId = res.locals.user?.id;
+      const userId = res.locals.user?.id;
 
-    const filters: any = {};
-    // if (selectedVendor) filters.selectedVendor = selectedVendor;
-    // if (source) filters.source = source;
-    // if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
-    // if (companyName) filters.companyName = companyName;
-    // if (rfpaId) filters.rfpaId = rfpaId;
+      const filters: any = {};
+      // if (selectedVendor) filters.selectedVendor = selectedVendor;
+      // if (source) filters.source = source;
+      // if (requestingDepartment) filters.requestingDepartment = requestingDepartment;
+      // if (companyName) filters.companyName = companyName;
+      // if (rfpaId) filters.rfpaId = rfpaId;
 
-    const queryOptions: PaginationOptions = {
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 10,
-      //searchFields: [''],
-      filters,
-      sort: (sort as string) || undefined,
-      search: (search as string) || '',
-    };
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+        //searchFields: [''],
+        filters,
+        sort: (sort as string) || undefined,
+        search: (search as string) || '',
+      };
 
-    const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
+      const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
 
-    if (!rfpas || rfpas.data.length === 0) {
-      logger.warn('No RFPAS found for this user.');
-      return res.status(200).json({
+      if (!rfpas || rfpas.data.length === 0) {
+        logger.warn('No RFPAS found for this user.');
+        return res.status(200).json({
+          status: 'success',
+          data: [],
+          allRecords: 0,
+          totalPages: 0,
+          page: queryOptions.page,
+        });
+      }
+
+      logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
+
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'RFPA records list accessed successfully',
+      //     userId
+      //   );
+      // }
+
+      res.status(200).json({
         status: 'success',
-        data: [],
-        allRecords: 0,
-        totalPages: 0,
-        page: queryOptions.page,
+        data: rfpas.data,
+        allRecords: rfpas.meta.total,
+        totalPages: rfpas.meta.pages,
+        page: rfpas.meta.page,
       });
+    } catch (error) {
+      console.error('Error fetching rfpas:', error);
+      next(error);
     }
-
-    logger.info(`Total RFPAS fetched: ${rfpas.data.length}`);
-
-   
-    // if (userId) {
-    //   await this.notificationService.createNoti(
-    //     'RFPA records list accessed successfully',
-    //     userId
-    //   );
-    // }
-
-    res.status(200).json({
-      status: 'success',
-      data: rfpas.data,
-      allRecords: rfpas.meta.total,
-      totalPages: rfpas.meta.pages,
-      page: rfpas.meta.page,
-    });
-  } catch (error) {
-    console.error('Error fetching rfpas:', error);
-    next(error);
   }
-}
 
-
-//TODO:By Vaishali
- //TODO: RPFA get by id for view
+  //TODO:By Vaishali
+  //TODO: RPFA get by id for view
   @httpGet('/view/:docid')
   public async getRfpaByIdForView(
     @requestParam('docid') docid: string,
@@ -789,18 +854,23 @@ public async getAllRfpa(
   ) {
     try {
       logger.info(`Fetching RFPA with Document ID`);
-      console.log("Shriiiiiiiiiii");
-      
+      console.log('Shriiiiiiiiiii');
+
       console.log(docid);
       const userId = res.locals.user.id;
-      const rfpa = await this.rfpaService.getRfpaByIdForView(docid,userId);
+      const rfpa = await this.rfpaService.getRfpaByIdForView(docid, userId);
       console.log(rfpa);
       if (!rfpa) {
-        ControllerLogger.logError('RFPA view', new Error('You do not have permission to view this RFPA'), req, res);
+        ControllerLogger.logError(
+          'RFPA view',
+          new Error('You do not have permission to view this RFPA'),
+          req,
+          res,
+        );
         return res.status(403).json({
-        status: 'fail',
-        message: 'You do not have permission to view this RFPA',
-      });
+          status: 'fail',
+          message: 'You do not have permission to view this RFPA',
+        });
         //return next(new AppError(404, 'dealSlip not found'));
       }
       logger.info(`rfpa with ID fetched successfully.`);
@@ -822,14 +892,13 @@ public async getAllRfpa(
     }
   }
 
-
   @httpGet('/filter')
-public async filterRfpas(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction,
-) {
-try {
+  public async filterRfpas(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
       // Extract pagination
       const page = parseInt(req.query.page as string, 10) || 1;
       const limit = parseInt(req.query.limit as string, 10) || 10;
@@ -841,7 +910,7 @@ try {
       const filters: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== "") {
+        if (value !== undefined && value !== '') {
           filters[key] = value;
         }
       }
@@ -854,12 +923,12 @@ try {
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ success: false, message: "Server Error" });
+      res.status(500).json({ success: false, message: 'Server Error' });
     }
-}
+  }
 
-//pest in rfpa controller  
-@httpDelete('/delete/multiple')
+  //pest in rfpa controller
+  @httpDelete('/delete/multiple')
   public async deleteMultipleRfpas(
     @request() req: Request,
     @response() res: Response,
@@ -871,24 +940,29 @@ try {
       const { ids } = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         logger.warn('RFPA IDs not provided or invalid');
-        ControllerLogger.logError('RFPA multiple deletion', new AppError(400, 'An array of RFPA IDs is required'), req, res);
+        ControllerLogger.logError(
+          'RFPA multiple deletion',
+          new AppError(400, 'An array of RFPA IDs is required'),
+          req,
+          res,
+        );
         return next(new AppError(400, 'An array of RFPA IDs is required'));
       }
       const result = await this.rfpaService.deleteMultipleRFPA(ids);
-      
-      
-      ControllerLogger.logSuccess('RFPA multiple deletion', `${ids.length} records`, req, res);
+
+      ControllerLogger.logSuccess(
+        'RFPA multiple deletion',
+        `${ids.length} records`,
+        req,
+        res,
+      );
       res.status(200).json({
         message: result.message,
       });
-
     } catch (error) {
       logger.error('Error deleting multiple RFPAs:', error);
       ControllerLogger.logError('RFPA multiple deletion', error, req, res);
       next(error);
     }
   }
-
-
-
 }

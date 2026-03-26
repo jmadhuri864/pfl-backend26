@@ -285,7 +285,7 @@ console.log(rfpaData.createdBy)
     // Rollback transaction - undo all changes
     await queryRunner.rollbackTransaction();
     console.error('Error creating RFPA:', error);
-    throw new Error(`Failed to create RFPA: ${error.message}`);
+    throw error;
   } finally {
     // Release query runner
     await queryRunner.release();

@@ -284,7 +284,7 @@ export class CustomerDeliveryChallanService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new Error('Failed to create Customer Delivery Challan');
+      throw error;
     } finally {
       // Release query runner
       await queryRunner.release();
