@@ -29,13 +29,13 @@ export class ReturnToVendorController {
 
       const newPostReturn = await this.returnToVendorService.createReturn(postReturnData, requestedBy, clientIp);
 
-      ControllerLogger.logSuccess('Post Return By Customer created', newPostReturn.id, req, res);
+      ControllerLogger.logSuccess('Post Return By Vendor created', newPostReturn.id, req, res);
 
       //Send notification for post return creation
       const userId = res.locals.user?.id;
       if (userId) {
         await this.notificationService.createNoti(
-          `Post Return By Customer created successfully`,
+          `Return By Vendor created successfully`,
           userId
         );
       }
@@ -43,7 +43,7 @@ export class ReturnToVendorController {
       res.status(201).json({
         status: "success",
         data: newPostReturn.id,
-        message: "Post return created successfully",
+        message: "Return By Vendor created successfully",
       });
     } catch (error) {
       console.log(error)

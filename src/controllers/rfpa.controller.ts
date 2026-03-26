@@ -867,10 +867,10 @@ export class RfpaController {
           req,
           res,
         );
-        return res.status(403).json({
-          status: 'fail',
-          message: 'You do not have permission to view this RFPA',
-        });
+        // return res.status(403).json({
+        //   status: 'fail',
+        //   message: 'You do not have permission to view this RFPA',
+        // });
         //return next(new AppError(404, 'dealSlip not found'));
       }
       logger.info(`rfpa with ID fetched successfully.`);

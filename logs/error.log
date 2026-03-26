@@ -1232,3 +1232,87 @@ Cannot read properties of undefined (reading 'city')
 2026-03-26 01:06:20 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
 2026-03-26 01:06:53 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
 2026-03-26 01:10:01 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:19:26 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:27:07 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:40 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:40 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:40 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:29:41 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:33:51 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:40:34 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:41:47 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 02:46:00 PM [error]: Error updating RFPA with ID bf5a3bb8-0a5a-42b3-b4ea-f0ae7f7c0fbb: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:46:00 PM [error]: Unhandled Error: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:48:21 PM [error]: Error updating RFPA with ID bf5a3bb8-0a5a-42b3-b4ea-f0ae7f7c0fbb: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:48:21 PM [error]: Unhandled Error: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:51:37 PM [error]: Error updating RFPA with ID bf5a3bb8-0a5a-42b3-b4ea-f0ae7f7c0fbb: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:51:37 PM [error]: Unhandled Error: date/time field value out of range: "25-03-2026" 
+2026-03-26 02:51:55 PM [error]: Error updating RFPA with ID 76fe8b59-3516-4eb6-b501-45cbeab1c545: date/time field value out of range: "30-03-2026" 
+2026-03-26 02:51:55 PM [error]: Unhandled Error: date/time field value out of range: "30-03-2026" 
+2026-03-26 02:57:55 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:02:47 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:06:21 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:12:48 PM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-26 03:18:14 PM [error]: AppError: this.resolveDocumentTypeNo is not a function 
+2026-03-26 03:18:29 PM [error]: AppError: this.resolveDocumentTypeNo is not a function 
+2026-03-26 03:21:53 PM [error]: Error creating Labour Payment Voucher 
+2026-03-26 03:21:54 PM [error]: AppError: Cannot read properties of undefined (reading 'id') 
+2026-03-26 03:22:05 PM [error]: Error creating Labour Payment Voucher 
+2026-03-26 03:22:05 PM [error]: AppError: Cannot read properties of undefined (reading 'id') 
+2026-03-26 03:28:04 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:31:58 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:32:58 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:33:43 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:34:35 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:35:12 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:36:37 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:38:12 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-26 03:40:06 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:44:47 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:46:39 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 03:50:14 PM [error]: createNoti DB save failed for user [object Object]: invalid input syntax for type uuid: "{"id":"2fbf7e50-33cc-4590-bfc1-f7a8e8fae187","createdAt":"2025-09-11T12:11:48.870Z","updatedAt":"2025-09-11T12:11:48.870Z","deletionScheduledAt":null,"isDeleted":false,"deletedAt":null,"firstName":"Vaibhav","middleName":"Dayaram","lastName":"Ahire","username":"vaibhav-a","primaryMobNo":"7030629178","department":["purchase"],"roles":["employee"],"secondaryMobNo":"9943567210","primaryEmail":"vaibhav@primefresh.com","secondaryEmail":"vaibhav24@primefresh.com","joiningDate":"2025-09-10","designation":"manager","cugNo":"9921345610","workEmail":"vaibhavprimefresh@gmail.com","isAddressSame":true,"otherWorkLocationInput":null,"isOnline":false,"lastActivityAt":null,"employeeId":"PF000004","tempPlainPassword":"@RG$rIdu38","status":"ACTIVE"}" 
+2026-03-26 03:58:42 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:00:30 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:03:12 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:05:31 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:12:30 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:13:32 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:15:33 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 04:23:27 PM [error]: createNoti DB save failed for user [object Object]: invalid input syntax for type uuid: "{"id":"2fbf7e50-33cc-4590-bfc1-f7a8e8fae187","createdAt":"2025-09-11T12:11:48.870Z","updatedAt":"2025-09-11T12:11:48.870Z","deletionScheduledAt":null,"isDeleted":false,"deletedAt":null,"firstName":"Vaibhav","middleName":"Dayaram","lastName":"Ahire","username":"vaibhav-a","primaryMobNo":"7030629178","department":["purchase"],"roles":["employee"],"secondaryMobNo":"9943567210","primaryEmail":"vaibhav@primefresh.com","secondaryEmail":"vaibhav24@primefresh.com","joiningDate":"2025-09-10","designation":"manager","cugNo":"9921345610","workEmail":"vaibhavprimefresh@gmail.com","isAddressSame":true,"otherWorkLocationInput":null,"isOnline":false,"lastActivityAt":null,"employeeId":"PF000004","tempPlainPassword":"@RG$rIdu38","status":"ACTIVE"}" 
+2026-03-26 04:54:30 PM [error]: Error updating RFPA with ID f852a08e-2bc6-4376-a325-e5cd1b095b49: date/time field value out of range: "26-03-2026" 
+2026-03-26 04:54:30 PM [error]: Unhandled Error: date/time field value out of range: "26-03-2026" 
+2026-03-26 04:58:21 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:11:22 PM [error]: Error updating RFPA with ID f852a08e-2bc6-4376-a325-e5cd1b095b49: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:11:22 PM [error]: Unhandled Error: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:11:43 PM [error]: Error updating RFPA with ID f852a08e-2bc6-4376-a325-e5cd1b095b49: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:11:43 PM [error]: Unhandled Error: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:12:20 PM [error]: Error updating RFPA with ID f852a08e-2bc6-4376-a325-e5cd1b095b49: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:12:20 PM [error]: Unhandled Error: date/time field value out of range: "26-03-2026" 
+2026-03-26 05:15:58 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:21:22 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:21:59 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:22:28 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:26:31 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-26 05:26:32 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-26 05:35:06 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:36:55 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:36:55 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:38:04 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:43:54 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:44:49 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:46:20 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:46:20 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:47:27 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:47:27 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:50:23 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:52:15 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:52:15 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:54:02 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:54:02 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 

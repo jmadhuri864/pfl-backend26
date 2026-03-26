@@ -51,7 +51,7 @@ export class NotificationService {
     }
   }
 
-  private async saveNotificationToDb(message: string, userId: string): Promise<void> {
+  public async saveNotificationToDb(message: string, userId: string): Promise<void> {
     const user = await this.userService.findUserById(userId);
     if (!user) return;
     const notification = this.notificationRepository.create({ message, user });

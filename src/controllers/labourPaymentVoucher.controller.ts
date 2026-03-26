@@ -46,12 +46,12 @@ export class LabourPaymentVoucherController {
       ControllerLogger.logList('Labour Payment Voucher', req, res);
 
       // Send notification for labour payment voucher list access
-      if (userId) {
-        await this.notificationService.createNoti(
-          'Labour Payment Voucher records list accessed successfully',
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     'Labour Payment Voucher records list accessed successfully',
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -187,7 +187,7 @@ export class LabourPaymentVoucherController {
       const newVoucher = await this.lpVoucherService.createLPVoucher(voucherData);
       console.log(newVoucher);
       logger.info("Labour Payment Voucher created successfully");
-      ControllerLogger.logSuccess('Labour Payment Voucher created', newVoucher[0].id, req, res);
+      ControllerLogger.logSuccess('Labour Payment Voucher created', Array.isArray(newVoucher) ? newVoucher[0]?.id : newVoucher?.id, req, res);
 
       // Send notification for labour payment voucher creation
       const userId = res.locals.user?.id;

@@ -169,63 +169,63 @@ export class GrnController {
       
 
       // 🔔 Send SSE notification to creator
-      try {
-        await this.notificationService.createNoti(
-          `GRN ${newGrn.grnNo} created successfully and submitted for approval`,
-          requestedBy
-        );
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `GRN ${newGrn.grnNo} created successfully and submitted for approval`,
+      //     requestedBy
+      //   );
        
-      } catch (notifError) {
+      // } catch (notifError) {
         
-        // Don't fail the main operation if notification fails
-      }
+      //   // Don't fail the main operation if notification fails
+      // }
 
-      // 🔔 Notify approvers if approval flow exists
-      try {
-        // Get the Document record for this GRN with approval flow
-        const document = await this.documentbService.getDocumentByTypeId(newGrn.id);
+      // // 🔔 Notify approvers if approval flow exists
+      // try {
+      //   // Get the Document record for this GRN with approval flow
+      //   const document = await this.documentbService.getDocumentByTypeId(newGrn.id);
 
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          const approvers: string[] = [];
+      //   if (document && document.approvalFlow) {
+      //     const flow = document.approvalFlow;
+      //     const approvers: string[] = [];
 
-          // Collect verifiers
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            flow.verifiers.forEach((verifier: any) => {
-              if (verifier.id) approvers.push(verifier.id);
-            });
-          }
+      //     // Collect verifiers
+      //     if (flow.verifiers && flow.verifiers.length > 0) {
+      //       flow.verifiers.forEach((verifier: any) => {
+      //         if (verifier.id) approvers.push(verifier.id);
+      //       });
+      //     }
 
-          // Collect approvers from approval levels
-          if (flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
+      //     // Collect approvers from approval levels
+      //     if (flow.approvers) {
+      //       const levels = [
+      //         flow.approvers.firstApprover,
+      //         flow.approvers.secondApprover,
+      //         flow.approvers.thirdApprover
+      //       ];
 
-            levels.forEach((level: any) => {
-              if (level && level.users && level.users.length > 0) {
-                level.users.forEach((user: any) => {
-                  if (user.id) approvers.push(user.id);
-                });
-              }
-            });
-          }
+      //       levels.forEach((level: any) => {
+      //         if (level && level.users && level.users.length > 0) {
+      //           level.users.forEach((user: any) => {
+      //             if (user.id) approvers.push(user.id);
+      //           });
+      //         }
+      //       });
+      //     }
 
-          // Send notifications to all approvers
-          for (const approverId of approvers) {
-            await this.notificationService.createNoti(
-              `New GRN ${newGrn.grnNo} requires your approval`,
-              approverId
-            );
+      //     // Send notifications to all approvers
+      //     for (const approverId of approvers) {
+      //       await this.notificationService.createNoti(
+      //         `New GRN ${newGrn.grnNo} requires your approval`,
+      //         approverId
+      //       );
             
-          }
-        }
-      } catch (approverNotifError) {
+      //     }
+      //   }
+      // } catch (approverNotifError) {
        
-        // Don't fail the main operation
-      }
+      //   // Don't fail the main operation
+      // }
 
       // 📊 Log user activity
       try {
@@ -717,10 +717,11 @@ export class GrnController {
       }
 
       // 🔔 Send SSE notification to updater
-      
+      const user=res.locals.user?.id;
+      console.log(user)
         await this.notificationService.createNoti(
           `GRN ${updatedGrn.grnNo} updated successfully`,
-          updatedBy
+          user
         );
         
 

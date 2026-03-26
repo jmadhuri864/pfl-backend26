@@ -51,25 +51,23 @@ export class LabourPaymentVoucherService {
 
       const newLPVoucher = queryRunner.manager.create(this.lpVoucherRepository.target, data);
 
-      const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) //as LPVoucher | LPVoucher[];
+      const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) as LPVoucher | LPVoucher[];
 
+      // Commit transaction before starting approval flow
+      await queryRunner.commitTransaction();
+
+      // Create document and start approval flow (with notification) outside the transaction
       const document = await this.documentbService.createDocument({
               type: DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
               docDef: DocDefEnum.PROCUREMENT,
               totalAmt: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.totalAmt : (saveLPVoucher as LPVoucher).totalAmt,
               status: DocumentStatus.HOLD,
-              remarks: 'Document auto-created with GRN',
+              remarks: 'Document auto-created with LP Voucher',
               lastActionBy: { id: data.requestedBy },
               document_type_id: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.id : (saveLPVoucher as LPVoucher).id
             });
-      
-      //console.log('Document created:', docuemnt);
-        //const saved = await this.grnRepository.save(savedGrn);
 
-        await this.documentbService.startApprovalFlow(document.id);
-      
-      // Commit transaction - all operations succeeded
-      await queryRunner.commitTransaction();
+      await this.documentbService.startApprovalFlow(document.id);
             
       return saveLPVoucher;
     } catch (error: any) {

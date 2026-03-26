@@ -49,6 +49,15 @@ export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
 }
 
+// Converts DD-MM-YYYY to YYYY-MM-DD; returns null/undefined as-is
+function normalizeDateFormat(date: string | null | undefined): string | null | undefined {
+  if (!date) return date;
+  const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
+  const match = date.match(ddmmyyyy);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return date;
+}
+
 
 @injectable()
 export class RfpaService {
@@ -911,72 +920,83 @@ async getRFQByIdForUpdate(id: string) {
       if (rfpaData.source !== undefined) existingRfpa.source = rfpaData.source;
       if (rfpaData.remark !== undefined) existingRfpa.remark = rfpaData.remark;
 
+      // Helper: extract id from either a plain string UUID or an object with .id
+      const extractId = (value: any): string | null => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object' && value.id) return value.id;
+        return null;
+      };
+
       // Handle company relation
-      if (rfpaData.companyName && rfpaData.companyName.id) {
-        const company = await manager.findOne(Company, { where: { id: rfpaData.companyName.id } });
-        if (company) {
-          existingRfpa.companyName = company;
-        }
+      const companyId = extractId(rfpaData.companyName);
+      if (companyId) {
+        const company = await manager.findOne(Company, { where: { id: companyId } });
+        if (company) existingRfpa.companyName = company;
       } else if (rfpaData.companyName === null) {
         existingRfpa.companyName = null as any;
       }
 
       // Handle purchase location relation
-      if (rfpaData.purchaseLocation && rfpaData.purchaseLocation.id) {
-        const branch = await manager.findOne(Branches, { where: { id: rfpaData.purchaseLocation.id } });
-        if (branch) {
-          existingRfpa.purchaseLocation = branch;
-        }
+      const purchaseLocationId = extractId(rfpaData.purchaseLocation);
+      if (purchaseLocationId) {
+        const branch = await manager.findOne(Branches, { where: { id: purchaseLocationId } });
+        if (branch) existingRfpa.purchaseLocation = branch;
       } else if (rfpaData.purchaseLocation === null) {
         existingRfpa.purchaseLocation = null as any;
       }
 
       // Handle purchase for sales location relation
-      if (rfpaData.purchaseForSalesLocation && rfpaData.purchaseForSalesLocation.id) {
-        const branch = await manager.findOne(Branches, { where: { id: rfpaData.purchaseForSalesLocation.id } });
-        if (branch) {
-          existingRfpa.purchaseForSalesLocation = branch;
-        }
+      const purchaseForSalesLocationId = extractId(rfpaData.purchaseForSalesLocation);
+      if (purchaseForSalesLocationId) {
+        const branch = await manager.findOne(Branches, { where: { id: purchaseForSalesLocationId } });
+        if (branch) existingRfpa.purchaseForSalesLocation = branch;
       } else if (rfpaData.purchaseForSalesLocation === null) {
         existingRfpa.purchaseForSalesLocation = null as any;
       }
 
-      // Handle vendor relation
-      if (rfpaData.selectedVendor && rfpaData.selectedVendor.id) {
-        const vendor = await manager.findOne(Vendor, { where: { id: rfpaData.selectedVendor.id } });
+      // Handle vendor/farmer via selectedParty or explicit fields
+      const selectedPartyId = extractId(rfpaData.selectedParty);
+      const selectedVendorId = extractId(rfpaData.selectedVendor) || (rfpaData.source === 'vendor' ? selectedPartyId : null);
+      const selectedFarmerId = extractId(rfpaData.selectedFarmer) || (rfpaData.source === 'farmer' ? selectedPartyId : null);
+
+      if (selectedVendorId) {
+        const vendor = await manager.findOne(Vendor, { where: { id: selectedVendorId } });
         if (vendor) {
           existingRfpa.selectedVendor = vendor;
-          existingRfpa.selectedFarmer = null as any; // Clear farmer if vendor is selected
+          existingRfpa.selectedFarmer = null as any;
         }
-      } else if (rfpaData.selectedVendor === null) {
+      } else if (rfpaData.selectedVendor === null && !selectedPartyId) {
         existingRfpa.selectedVendor = null as any;
       }
 
-      // Handle farmer relation
-      if (rfpaData.selectedFarmer && rfpaData.selectedFarmer.id) {
-        const farmer = await manager.findOne(Farmer, { where: { id: rfpaData.selectedFarmer.id } });
+      if (selectedFarmerId) {
+        const farmer = await manager.findOne(Farmer, { where: { id: selectedFarmerId } });
         if (farmer) {
           existingRfpa.selectedFarmer = farmer;
-          existingRfpa.selectedVendor = null as any; // Clear vendor if farmer is selected
+          existingRfpa.selectedVendor = null as any;
         }
-      } else if (rfpaData.selectedFarmer === null) {
+      } else if (rfpaData.selectedFarmer === null && !selectedPartyId) {
         existingRfpa.selectedFarmer = null as any;
       }
 
       // Handle payment info
       if (rfpaData.paymentInfo) {
+        const normalizedPaymentInfo = {
+          ...rfpaData.paymentInfo,
+          paymentDate: normalizeDateFormat(rfpaData.paymentInfo.paymentDate),
+          dueDate: normalizeDateFormat(rfpaData.paymentInfo.dueDate),
+          validityOfQuote: normalizeDateFormat(rfpaData.paymentInfo.validityOfQuote),
+        };
         if (existingRfpa.paymentInfo) {
-          // Update existing payment info
-          Object.assign(existingRfpa.paymentInfo, rfpaData.paymentInfo);
+          Object.assign(existingRfpa.paymentInfo, normalizedPaymentInfo);
           await manager.save(PaymentInfoForRFPA, existingRfpa.paymentInfo);
         } else {
-          // Create new payment info
-          const paymentInfo = manager.create(PaymentInfoForRFPA, rfpaData.paymentInfo);
+          const paymentInfo = manager.create(PaymentInfoForRFPA, normalizedPaymentInfo);
           const savedPaymentInfo = await manager.save(PaymentInfoForRFPA, paymentInfo);
           existingRfpa.paymentInfo = savedPaymentInfo;
         }
       } else if (rfpaData.paymentInfo === null && existingRfpa.paymentInfo) {
-        // Remove payment info
         await manager.remove(PaymentInfoForRFPA, existingRfpa.paymentInfo);
         existingRfpa.paymentInfo = null as any;
       }
@@ -993,29 +1013,30 @@ async getRFQByIdForUpdate(id: string) {
         for (const productData of rfpaData.rfpaProducts) {
           const product = manager.create(RFPAProduct, {
             ...productData,
+            purchaseDate: normalizeDateFormat(productData.purchaseDate),
+            expectedHarvestDate: normalizeDateFormat(productData.expectedHarvestDate),
+            dispatchDate: normalizeDateFormat(productData.dispatchDate),
+            deliveryDate: normalizeDateFormat(productData.deliveryDate),
             rfpa: existingRfpa,
           });
           
-          // Handle product relations if needed
-          if (productData.productName && productData.productName.id) {
-            const productEntity = await manager.findOne(Product, { where: { id: productData.productName.id } });
-            if (productEntity) {
-              product.productName = productEntity;
-            }
+          // Handle product relations — support both plain UUID strings and objects with .id
+          const productNameId = extractId(productData.productName);
+          if (productNameId) {
+            const productEntity = await manager.findOne(Product, { where: { id: productNameId } });
+            if (productEntity) product.productName = productEntity;
           }
-          
-          if (productData.variant && productData.variant.id) {
-            const variantEntity = await manager.findOne(ProductVarient, { where: { id: productData.variant.id } });
-            if (variantEntity) {
-              product.variant = variantEntity;
-            }
+
+          const variantId = extractId(productData.variant);
+          if (variantId) {
+            const variantEntity = await manager.findOne(ProductVarient, { where: { id: variantId } });
+            if (variantEntity) product.variant = variantEntity;
           }
-          
-          if (productData.uom && productData.uom.id) {
-            const uomEntity = await manager.findOne(UOM, { where: { id: productData.uom.id } });
-            if (uomEntity) {
-              product.uom = uomEntity;
-            }
+
+          const uomId = extractId(productData.uom);
+          if (uomId) {
+            const uomEntity = await manager.findOne(UOM, { where: { id: uomId } });
+            if (uomEntity) product.uom = uomEntity;
           }
 
           const savedProduct = await manager.save(RFPAProduct, product);

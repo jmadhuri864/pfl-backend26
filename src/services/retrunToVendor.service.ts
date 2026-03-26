@@ -2,10 +2,13 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "../types";
 import { GrnRepository } from "../repositories/grn.repository";
 import { ProductVarientRepository } from "../repositories/varients.repository";
-import { In } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { UserLogger } from "../utils/logger";
 import { ReturnToVendorRepository } from "../repositories/returnToVendor.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
+import { DocumentbService } from "./documentb.service";
+import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
+import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
 
 @injectable()
 export class ReturnToVendorService {
@@ -14,103 +17,92 @@ export class ReturnToVendorService {
                @inject(TYPES.ProductVarientRepository)
                        private productVarientsRepository: ProductVarientRepository,
                     @inject(TYPES.ReturnToVendorRepository) private postReturnToVendorRepository: ReturnToVendorRepository,
-                    @inject(TYPES.InventoryStockRepository) private inventoryStockRepository: InventoryStockRepository
-        ) {
-        // Initialize any required services or dependencies here
-    }   
+                    @inject(TYPES.InventoryStockRepository) private inventoryStockRepository: InventoryStockRepository,
+                    @inject(TYPES.DocumentbService) private documentbService: DocumentbService,
+                    @inject(TYPES.DataSource) private dataSource: DataSource,
+        ) {}   
 
     public async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any>{
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
+      try {
           // 1️⃣ Validate required input
           if (!returnData.grnNo) {
             throw new Error('GRN number is required');
           }
-        returnData.isChanged=true;
-          // 2️⃣ Fetch challan
-          const grn = await this.grnRepository.findOne({
+          returnData.isChanged = true;
+
+          // 2️⃣ Fetch GRN
+          const grn = await queryRunner.manager.findOne(this.grnRepository.target, {
             where: { id: returnData.grnNo },
-            relations: ['selectedVendor','grnProducts','grnProducts.productName', 'grnProducts.variant'],
+            relations: ['selectedVendor', 'grnProducts', 'grnProducts.productName', 'grnProducts.variant'],
           });
-        
+
           if (!grn) {
             throw new Error('GRN not found');
           }
-        
+
           // 3️⃣ Normalize variants input
           let variantIds: string[] = [];
-        
           if (Array.isArray(returnData.variants)) {
             variantIds = returnData.variants;
           } else if (returnData.variants) {
             variantIds = [returnData.variants];
           }
-        
+
           // 4️⃣ Fetch variant entities
           const variants = await this.productVarientsRepository.find({
             where: { id: In(variantIds) },
             relations: ['product'],
           });
-        
+
           // 5️⃣ Extract product IDs
-          const productIds = variants.map(v => v.product?.id).filter(Boolean);
-        
-          // 6️⃣ Create return entity
-          const newReturn = this.postReturnToVendorRepository.create({
+          const productIds = variants.map((v: any) => v.product?.id).filter(Boolean);
+
+          // 6️⃣ Create and save return entity
+          const newReturn = queryRunner.manager.create(this.postReturnToVendorRepository.target, {
             ...returnData,
             createdBy: requestedBy,
-            variants: variants.map(v => ({ id: v.id })),
-            products: productIds.map(id => ({ id })),
+            variants: variants.map((v: any) => ({ id: v.id })),
+            products: productIds.map((id: any) => ({ id })),
           });
-        
-          // 7️⃣ Save challan & mark as returned
-          //grn.isReturned = true;
-          //await this.grnRepository.save(grn);
-        
-          // 8️⃣ Save return record
-          const savedNewReturn = await this.postReturnToVendorRepository.save(newReturn);
-          let savedreturn;
-    if (Array.isArray(savedNewReturn)) {
-      if (savedNewReturn.length === 1) {
-        savedreturn = savedNewReturn[0];
-      } else {
-        throw new Error(`Unexpected result: repository.save returned ${savedNewReturn.length} return records`);
+
+          const savedNewReturn = await queryRunner.manager.save(newReturn);
+          const savedreturn = Array.isArray(savedNewReturn) ? savedNewReturn[0] : savedNewReturn;
+
+          // 7️⃣ Commit transaction before starting approval flow
+          await queryRunner.commitTransaction();
+
+          // 8️⃣ Create document and start approval flow (outside transaction)
+          const document = await this.documentbService.createDocument({
+            type: DocumentTypeEnum.RETURN_TO_VENDOR,
+            docDef: DocDefEnum.PROCUREMENT,
+            status: DocumentStatus.HOLD,
+            remarks: 'Document auto-created with Return To Vendor',
+            lastActionBy: { id: requestedBy },
+            document_type_id: savedreturn.id,
+          });
+
+          await this.documentbService.startApprovalFlow(document.id);
+
+          // 9️⃣ Process inventory (outside transaction, non-critical)
+          if (Array.isArray(savedreturn.rtvProducts)) {
+            await this.processInventoryForReturn(savedreturn);
+          }
+
+          // 🔟 Log creation
+          UserLogger.logRfpaCreated(savedreturn.id, requestedBy, clientIp);
+
+          return savedreturn;
+
+      } catch (error: any) {
+          await queryRunner.rollbackTransaction();
+          throw error;
+      } finally {
+          await queryRunner.release();
       }
-    } else {
-      savedreturn = savedNewReturn;
-    }
-
-
-       
-        
-          // 9️⃣ Create approval document
-        //   const document = await this.documentbService.createDocument({
-        //     type: DocumentTypeEnum.RETURN_BY_CUSTOMER,
-        //     docDef: DocDefEnum.OPERATION,
-        //     status: DocumentStatus.HOLD,
-        //     remarks: 'Document auto-created with RBC',
-        //     lastActionBy: { id: requestedBy },
-        //     document_type_id: savedReturnEntity.id,
-        //   });
-        
-          // 🔟 Start approval flow
-        //  await this.documentbService.startApprovalFlow(document.id);
-        
-          // 1️⃣1️⃣ Update original challan product rows with returned & rejected qty
-        //   await this.updateDeliveryChallanItemsWithReturns(
-        //     returnData.deliveryChallanNo,
-        //     savedReturnEntity.returnedProducts
-        //   );
-
-        // 6. Process returned products and update inventory stock (subtract returned quantity/amount)
-        if (Array.isArray(savedreturn.rtvProducts)) {
-          await this.processInventoryForReturn(savedreturn);
-        }
-
-        // 1️⃣2️⃣ Log the creation
-        UserLogger.logRfpaCreated(savedreturn.id, requestedBy, clientIp);
-
-        // 1️⃣3️⃣ Return final saved entity
-        return savedreturn;
     }
 
     private async processInventoryForReturn(returnRecord: any): Promise<void> {

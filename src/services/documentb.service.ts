@@ -18,6 +18,7 @@ import { DealSlipRepository } from '../repositories/dealSlip.repository';
 import { log } from 'node:console';
 import { UserRepository } from '../repositories/user.repository';
 import { MultiCashVoucherRepository } from '../repositories/multicashVoucher.repository';
+import { LabourPaymentVoucherRepository } from '../repositories/labourPaymentVoucher.repository';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { ParsedQs } from 'qs';
 import { Brackets } from 'typeorm';
@@ -50,6 +51,8 @@ export class DocumentbService {
     @inject(TYPES.UserRepository) private userRepository: UserRepository,
     @inject(TYPES.MultiCashVoucherRepository)
     private cashVoucherRepository: MultiCashVoucherRepository,
+    @inject(TYPES.LabourPaymentVoucherRepository)
+    private lpVoucherRepository: LabourPaymentVoucherRepository,
   ) { }
 
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
@@ -1242,84 +1245,66 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     }
   }
 
+  private async resolveDocumentTypeNo(document: any): Promise<string | null> {
+    if (!document?.document_type_id) return null;
+    switch (document.type) {
+      case 'grn': {
+        const doc = await this.grnRepository.findOne({ where: { id: document.document_type_id } });
+        return doc?.grnNo ?? null;
+      }
+      case 'rfpa': {
+        const doc = await this.rfpaRepository.findOne({ where: { id: document.document_type_id } });
+        return doc?.rfpaId ?? null;
+      }
+      case 'deal-slip': {
+        const doc = await this.dealSlipRepository.findOne({ where: { id: document.document_type_id } });
+        return doc?.dealSlipNo ?? null;
+      }
+      case 'labor-payment-voucher': {
+        const doc = await this.lpVoucherRepository.findOne({ where: { id: document.document_type_id } });
+        return doc?.voucherNo ?? null;
+      }
+      case 'return-by-customer':
+      case 'return-to-vendor':
+        return `ID: ${document.document_type_id.substring(0, 8)}`;
+      default:
+        return null;
+    }
+  }
+
   async assignToUsers(
     documentId: string,
     users: User[],
     role: 'verifier' | 'approver' | 'finalizer',
   ): Promise<void> {
     if (!users || users.length === 0) {
-      console.warn(
-        `No users provided to assign for document ${documentId} as ${role}`,
-      );
+      console.warn(`No users provided to assign for document ${documentId} as ${role}`);
       return;
     }
 
-    console.log(
-      `Assigning document ${documentId} to ${role}s:`,
-      users.map((u) => u.id),
-    );
+    console.log(`Assigning document ${documentId} to ${role}s:`, users.map((u) => u.id));
 
-    const document = await this.documentbRepository.findOne({
-      where: { id: documentId },
-    });
+    const document = await this.documentbRepository.findOne({ where: { id: documentId } });
 
-    let documentType = null;
-    let documentTypeNo = null;
-    switch (document?.type) {
-      case 'grn':
-        documentType = await this.grnRepository.findOne({
-          where: { id: document.document_type_id },
-        });
-        documentTypeNo = documentType?.grnNo;
-        break;
-
-      case 'rfpa':
-        documentType = await this.rfpaRepository.findOne({
-          where: { id: document.document_type_id },
-          //relations: ['someRelation'], // replace with actual relations
-        });
-        documentTypeNo = documentType?.rfpaId;
-        break;
-
-      case 'deal-slip':
-        documentType = await this.dealSlipRepository.findOne({
-          where: { id: document.document_type_id },
-          //relations: ['someRelation'],
-        });
-        documentTypeNo = documentType?.dealSlipNo;
-        break;
-
-      case 'return-by-customer':
-        // PostReturnByCustomer doesn't have a return number field yet
-        // Using document ID as reference for now
-        documentTypeNo = document.document_type_id ? `ID: ${document.document_type_id.substring(0, 8)}` : 'N/A';
-        break;
-
-      // ➕ Add more cases as needed
-    }
-
-    const message = `You have been assigned as a ${role} for ${document?.type} type document`;
-
-    // Send notifications in parallel for better performance
-    const notificationPromises = users.map(async (user) => {
-      console.log(
-        `Assigned user ${user.id} as ${role} for document ${documentId}`,
+    // Fire SSE notifications immediately — no extra DB lookups blocking this
+    const baseMessage = `You have been assigned as a ${role} for ${document?.type} document`;
+    users.forEach((user) => {
+      this.notificationService.createNoti(baseMessage, user.id).catch((err) =>
+        console.error(`Failed to send notification to user ${user.id}:`, err)
       );
-
-      try {
-        await this.notificationService.createNoti(message, user.id);
-      } catch (err) {
-        console.error(`Failed to send notification to user ${user.id}:`, err);
-      }
     });
 
-    // Wait for all notifications to complete
-    await Promise.all(notificationPromises);
-
-    // Optional: Update document status
-    // await this.documentbRepository.update(documentId, {
-    //   status: DocumentStatus.IN_PROGRESS,
-    // });
+    // Resolve document number in background for richer DB-saved notification
+  //   this.resolveDocumentTypeNo(document).then((documentTypeNo) => {
+  //     const richMessage = documentTypeNo
+  //       ? `You have been assigned as a ${role} for ${document?.type} (${documentTypeNo}) document`
+  //       : baseMessage;
+  //     users.forEach((user) => {
+  //       this.notificationService.saveNotificationToDb(richMessage, user.id).catch((err) =>
+  //         console.error(`Failed to save notification for user ${user.id}:`, err)
+  //       );
+  //     });
+  //   }).catch(() => {/* ignore */});
   }
 
   async getAllHoldGrnDocuments(): Promise<any[]> {

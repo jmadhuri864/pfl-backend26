@@ -35,6 +35,7 @@ export enum DocumentTypeEnum {
   DUMP_REGISTER = 'dump-register',
   VEHICLE_DISPATCH_REGISTER = 'vehicle-dispatch-register',
   RETURN_BY_CUSTOMER = 'return-by-customer',
+  RETURN_TO_VENDOR = 'return-to-vendor',
   SECOND_SALE = 'second-sale',
   EOD_REPORT = 'eod-report',
   PROFORMA_INVOICE = 'proforma-invoice',
