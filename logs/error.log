@@ -890,3 +890,4 @@ Cannot read properties of undefined (reading 'city')
 2026-03-25 12:56:06 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
 2026-03-25 02:37:48 PM [error]: AppError: No RFPAs found 
 2026-03-25 02:37:50 PM [error]: AppError: No RFPAs found 
+2026-03-26 10:19:29 AM [error]: Error starting the server: 

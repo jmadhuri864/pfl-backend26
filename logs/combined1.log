@@ -23924,3 +23924,6 @@ Cannot read properties of undefined (reading 'city')
 2026-03-25 03:21:48 PM [info]: Database connected successfully 
 2026-03-25 03:31:16 PM [info]: Database connected successfully 
 2026-03-25 03:32:17 PM [info]: Database connected successfully 
+2026-03-26 10:19:29 AM [error]: Error starting the server: 
+2026-03-26 10:33:38 AM [info]: Database connected successfully 
+2026-03-26 11:17:08 AM [info]: Database connected successfully 

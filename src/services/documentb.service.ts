@@ -123,7 +123,7 @@ export class DocumentbService {
 
       if (!approvalFlow) {
         throw new Error(
-          `No approval flow found for user ${lastActionByUser.id} and type GRN`,
+          `No approval flow found...Please contact with admin`,
         );
       }
 

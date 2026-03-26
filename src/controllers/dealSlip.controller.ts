@@ -255,6 +255,11 @@ export class DealSlipController {
       });
     } catch (error) {
       ControllerLogger.logError('Create Deal Slip', error, req, res);
+
+       if (error instanceof Error) {
+         return next(new AppError(400, error.message)); // ← sends 400 with real message
+       }
+
       next(error);
     }
   }

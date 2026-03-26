@@ -409,7 +409,7 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
         // Rollback transaction - undo all changes
         await queryRunner.rollbackTransaction();
         console.error('Error creating GRN:', error);
-        throw new Error('Failed to create GRN');
+        throw error;
       } finally {
         // Release query runner
         await queryRunner.release();

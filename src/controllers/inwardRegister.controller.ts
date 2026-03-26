@@ -85,6 +85,9 @@ export class InwardRegisterController {
       logger.error('Error creating inward register', { error: err });
       console.log(err);
       ControllerLogger.logError('Inward Register creation', err, req, res);
+      if (error instanceof Error) {
+               return next(new AppError(400, error.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

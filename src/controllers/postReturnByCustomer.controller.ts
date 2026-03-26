@@ -224,6 +224,9 @@ console.log("User ID:", userId);
     } catch (error) {
       console.log(error)
       ControllerLogger.logError('Post Return By Customer creation', error, req, res);
+      if (error instanceof Error) {
+               return next(new AppError(400, error.message)); // ← sends 400 with real message
+             }
       next(error);
     }
   }

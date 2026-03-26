@@ -178,7 +178,7 @@ export class StockTransferDeliveryChallanService {
     // Rollback transaction - undo all changes
     await queryRunner.rollbackTransaction();
     console.error('Error creating Stock Transfer:', error);
-    throw new Error('Failed to create Stock Transfer');
+    throw error;
   } finally {
     // Release query runner
     await queryRunner.release();

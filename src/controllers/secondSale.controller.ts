@@ -83,6 +83,9 @@ export class SecondSaleController {
       console.log(err);
       logger.error('Error occurred while creating second sale', { error: err });
       ControllerLogger.logError('Second Sale creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

@@ -96,6 +96,9 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       });
       console.log(err)
       ControllerLogger.logError('Vehicle Dispatch creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }

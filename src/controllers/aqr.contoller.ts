@@ -69,6 +69,11 @@ console.log(aqrData)
       
       ControllerLogger.logError('AQR creation', error, req, res);
       console.log(error);
+
+       if (error instanceof Error) {
+         return next(new AppError(400, error.message)); // ← sends 400 with real message
+       }
+
       next(error);
     }
   }

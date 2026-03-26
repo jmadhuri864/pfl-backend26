@@ -120,6 +120,11 @@ export class CustomerDeliveryChallanController {
       });
     } catch (err) {
       ControllerLogger.logError('Get Customer Delivery Challan for update', err, req, res);
+
+       if (err instanceof Error) {
+         return next(new AppError(400, err.message)); // ← sends 400 with real message
+       }
+
       next(err);
     }
   }

@@ -185,7 +185,7 @@ const serialNo = await this.generateSerialNo("INWR");
   } catch (error: any) {
     // Rollback transaction - undo all changes
     await queryRunner.rollbackTransaction();
-    throw new Error(`Failed to create inward register: ${error.message}`);
+    throw error;
   } finally {
     // Release query runner
     await queryRunner.release();

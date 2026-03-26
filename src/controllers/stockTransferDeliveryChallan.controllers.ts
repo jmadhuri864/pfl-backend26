@@ -62,6 +62,9 @@ export class StockTranferDeliveryChallanController {
     } catch (err) {
       logger.error('Error creating stock transfer delivery challan', { error: err });
       ControllerLogger.logError('Stock Transfer Delivery Challan creation', err, req, res);
+      if (err instanceof Error) {
+               return next(new AppError(400, err.message)); // ← sends 400 with real message
+             }
       next(err);
     }
   }
