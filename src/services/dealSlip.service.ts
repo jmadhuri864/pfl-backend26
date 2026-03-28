@@ -1170,9 +1170,8 @@ public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> 
       return {
     documentId: document.documentId,
     overAllStatus: document.status,
-    createdBy: document.createdBy ,
-      // ? `${document.createdBy.firstName} ${document.createdBy.lastName}`
-      // : null,
+    createdBy:document.createdBy,
+     
 
     createdDate,
     createdTime,

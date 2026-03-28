@@ -6,9 +6,14 @@ import { DataSource, In } from "typeorm";
 import { UserLogger } from "../utils/logger";
 import { ReturnToVendorRepository } from "../repositories/returnToVendor.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
-import { DocumentbService } from "./documentb.service";
+import { DocumentbService, DocumentWithRelatedData } from "./documentb.service";
 import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import { DocDoubleApproverService } from "./docDoubleApprover.service";
+import { PaginationOptions } from "../utils/pagination";
+import { formatDateTime } from "../utils/dateUtils";
 
 @injectable()
 export class ReturnToVendorService {
@@ -20,6 +25,9 @@ export class ReturnToVendorService {
                     @inject(TYPES.InventoryStockRepository) private inventoryStockRepository: InventoryStockRepository,
                     @inject(TYPES.DocumentbService) private documentbService: DocumentbService,
                     @inject(TYPES.DataSource) private dataSource: DataSource,
+                    //@inject(TYPES.DocDoubleApproverService) private docDoubleApproverService: DocDoubleApproverService,
+                      @inject(TYPES.DocDoubleApproverService)
+    private readonly docDoubleApproverService: DocDoubleApproverService,
         ) {}   
 
     public async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any>{
@@ -209,23 +217,67 @@ export class ReturnToVendorService {
         }
     }
 
-    public async getAll(page: number = 1, limit: number = 10): Promise<{ data: any[], total: number, page: number, limit: number }> {
-        try {
-            const skip = (page - 1) * limit;
+    public async getAll(queryOptions: PaginationOptions, userId: any): Promise<any> {
+        const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+            userId,
+            DocumentTypeEnum.RETURN_TO_VENDOR,
+            queryOptions,
+        );
 
-            const [data, total] = await this.postReturnToVendorRepository.findAndCount({
-                relations: ['companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
-                select:{'companyName': { id: true, name: true }, 'location': { id: true, name: true }, 'selectedVendor': { id: true, companyName: true }, 'createdBy': { id: true, firstName: true,lastName: true }, 'rtvProducts': { id: true, quantity: true, unitPrice: true, netWeight: true, grossWeight: true, productName: { id: true, name: true }, variant: { id: true, variantName: true,variantCode: true }, uom:{id:true,unit:true} } },
-                order: { createdAt: 'DESC' },
-                take: limit,
-                skip: skip,
-            });
+        const { search } = queryOptions;
+        const typedDocuments = data as DocumentWithRelatedData[];
 
-            return { data, total, page, limit };
-        } catch (error) {
-            console.error('Error fetching all return to vendor records:', error);
-            throw error;
+        for (const doc of typedDocuments) {
+            if (!doc.document_type_id) continue;
+            try {
+                doc.relatedData = await this.postReturnToVendorRepository.findOne({
+                    where: { id: doc.document_type_id },
+                    relations: ['grnNo', 'companyName', 'location', 'selectedVendor', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
+                });
+            } catch (error) {
+                console.error(`Error fetching relatedData for document ${doc.id}:`, error);
+                doc.relatedData = null;
+            }
         }
+
+        let relatedDataOnly = typedDocuments
+            .filter((doc) => doc.relatedData)
+            .map((doc) => ({
+                id: doc.relatedData.id,
+                documentId: doc.id,
+                overAllStatus: doc.status,
+                createdBy: doc.lastActionBy ? `${doc.lastActionBy.firstName} ${doc.lastActionBy.lastName}` : null,
+                createdDate: formatDateTime(doc.createdAt).createdDate,
+                createdTime: formatDateTime(doc.createdAt).createdTime,
+                grnNo: doc.relatedData.grnNo?.grnNo ?? null,
+                companyName: doc.relatedData.companyName?.name ?? null,
+                location: doc.relatedData.location?.name ?? null,
+                selectedVendor: doc.relatedData.selectedVendor?.companyName ?? null,
+                returnedGrossWeight: doc.relatedData.returnedGrossWeight,
+                returnedNetWeight: doc.relatedData.returnedNetWeight,
+                totalAmt: doc.relatedData.totalAmt,
+                returnDate: doc.relatedData.returnDate ?? null,
+                amtWords: doc.relatedData.amtWords ?? null,
+                remark: doc.relatedData.remark ?? null,
+            }));
+
+        const objectToString = (obj: any): string => {
+            if (obj == null) return '';
+            if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+            return String(obj);
+        };
+
+        if (search && search.trim()) {
+            const term = search.toLowerCase();
+            relatedDataOnly = relatedDataOnly.filter((item) =>
+                objectToString(item).toLowerCase().includes(term)
+            );
+        }
+
+        return {
+            data: relatedDataOnly,
+            meta: { total: meta.total, page: meta.page, pages: meta.pages },
+        };
     }
 
     public async getById(id: string): Promise<any> {
@@ -290,6 +342,9 @@ export class ReturnToVendorService {
                 rtvProducts: returnRecord.rtvProducts?.map(product => ({
                     id: product.id,
                     quantity: product.quantity,
+                    amount:product.amount,
+                    packingMaterialWeight:product.packingMaterialWeight,
+                     reason:product.reason,
                     unitPrice: product.unitPrice,
                     netWeight: product.netWeight,
                     grossWeight: product.grossWeight,
@@ -305,44 +360,56 @@ export class ReturnToVendorService {
         }
     }
 
-     public async getByIdForView(id: string): Promise<any> {
+     public async getByIdForView(docid: string): Promise<any> {
         try {
-            if (!id) {
-                throw new Error('Return to vendor ID is required');
+            const document1 = await this.docDoubleApproverService.getDocumentById(docid);
+            if (!document1) {
+                throw new Error(`Document with ID ${docid} not found`);
             }
 
+            const id = document1.documentTypeId;
             const returnRecord = await this.postReturnToVendorRepository.findOne({
                 where: { id },
-                relations: ['companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
+                relations: ['companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom', 'grnNo'],
             });
 
             if (!returnRecord) {
                 throw new Error(`Return to vendor record with ID ${id} not found`);
             }
 
-            // Map to return only specific fields
+            const { createdDate, createdTime } = formatDateTime(document1.createdAt);
+
             return {
                 id: returnRecord.id,
-                companyName: returnRecord.companyName.name || null,
-                location: returnRecord.location.name || null ,
-                selectedVendor: returnRecord.selectedVendor.companyName || null,
-                createdBy: returnRecord.createdBy?.firstName|| null+' '+returnRecord.createdBy?.lastName||null,
-                 returnedGrossWeight:returnRecord.returnedGrossWeight,
-                totalAmt:returnRecord.totalAmt,
+                documentId: document1.id,
+                overAllStatus: document1.status,
+                createdBy: document1.lastActionBy ? `${document1.lastActionBy.firstName} ${document1.lastActionBy.lastName}` : null,
+                createdDate,
+                createdTime,
+                approvalSummary: document1.approvalSummary ?? null,
+                grnNo: returnRecord.grnNo?.grnNo ?? null,
+                companyName: returnRecord.companyName?.name ?? null,
+                location: returnRecord.location?.name ?? null,
+                selectedVendor: returnRecord.selectedVendor?.companyName ?? null,
+                returnedGrossWeight: returnRecord.returnedGrossWeight,
                 returnedNetWeight: returnRecord.returnedNetWeight,
-                returnDate:returnRecord.returnDate||null,
-                amtWords:returnRecord.amtWords || null,
-                remark:returnRecord.remark || null,
+                totalAmt: returnRecord.totalAmt,
+                returnDate: returnRecord.returnDate ?? null,
+                amtWords: returnRecord.amtWords ?? null,
+                remark: returnRecord.remark ?? null,
                 rtvProducts: returnRecord.rtvProducts?.map(product => ({
                     id: product.id,
+                    productName: product.productName?.name ?? null,
+                    variant: product.variant?.variantName ?? null,
+                    uom: product.uom?.unit ?? null,
                     quantity: product.quantity,
                     unitPrice: product.unitPrice,
                     netWeight: product.netWeight,
                     grossWeight: product.grossWeight,
-                    productName: product.productName.name|| null,
-                    variant: product.variant.variantName || null,
-                    uom: product.uom.unit || null
-                })) || []
+                    amount: product.amount,
+                    packingMaterialWeight: product.packingMaterialWeight,
+                    reason: product.reason,
+                })) ?? [],
             };
         } catch (error) {
             console.error('Error fetching return to vendor by ID:', error);

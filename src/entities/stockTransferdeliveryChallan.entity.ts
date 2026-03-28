@@ -20,7 +20,6 @@ export class StockTransferDeliveryChallan extends DeliveryChallanPurchase {
   @ManyToOne(() => Branches, {
     nullable: true,
     onDelete: 'SET NULL',
-    cascade: true,
   })
   @JoinColumn({ name: 'from_location_id' })
   fromLocation: Branches;
@@ -28,7 +27,6 @@ export class StockTransferDeliveryChallan extends DeliveryChallanPurchase {
   @ManyToOne(() => Branches, {
     nullable: true,
     onDelete: 'SET NULL',
-    cascade: true,
   })
   @JoinColumn({ name: 'to_location_id' })
   toLocation: Branches;

@@ -53,7 +53,7 @@ console.log(aqrData)
       try {
         const userId = res.locals.user.id;
         
-        await this.notificationService.createNoti(
+       this.notificationService.createNoti(
           `AQR  created successfully and submitted for approval`,
           userId
         );
@@ -127,7 +127,7 @@ console.log(aqrData)
 
         // 🔔 Send notification for accessing recycle bin
         try {
-          await this.notificationService.createNoti(
+          this.notificationService.createNoti(
             `Accessed AQR recycle bin (${aqrs.data.length} items)`,
             userId
           );
@@ -170,16 +170,16 @@ console.log(aqrData)
       }
 
       // 🔔 Send notification for AQR access
-      try {
-        const userId = res.locals.user.id;
-        const aqrId = aqr.aqrId || id;
-        // await this.notificationService.createNoti(
-        //   `Viewed AQR ${aqrId} details`,
-        //   userId
-        // );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   const aqrId = aqr.aqrId || id;
+      //   // await this.notificationService.createNoti(
+      //   //   `Viewed AQR ${aqrId} details`,
+      //   //   userId
+      //   // );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       // Log successful view
       ControllerLogger.logView('AQR', id, req, res);
@@ -209,16 +209,16 @@ console.log(aqrData)
       }
 
       // 🔔 Send notification for AQR edit access
-      try {
-        const userId = res.locals.user.id;
-        const aqrId = aqr.aqrId || id;
-        // await this.notificationService.createNoti(
-        //   `Opened AQR ${aqrId} for editing`,
-        //   userId
-        // );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   const aqrId = aqr.aqrId || id;
+      //   // await this.notificationService.createNoti(
+      //   //   `Opened AQR ${aqrId} for editing`,
+      //   //   userId
+      //   // );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
       
       // Log successful view for update
       ControllerLogger.logView('AQR', id, req, res);
@@ -561,7 +561,7 @@ try {
       // 🔔 Send notification for bulk AQR deletion
       try {
         const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
+       this.notificationService.createNoti(
           `Bulk delete operation completed: ${result.success} AQRs deleted successfully, ${result.failed} failed`,
           userId
         );

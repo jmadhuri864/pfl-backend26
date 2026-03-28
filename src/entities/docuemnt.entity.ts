@@ -46,6 +46,7 @@ export enum DocumentTypeEnum {
   PACKAGING_MATERIAL_VOUCHER = 'packaging-material-voucher',
   DC_TYPE_CUSTOMER = "DC_TYPE_CUSTOMER",
   DC_TYPE_STOCK_TRANSFER = "DC_TYPE_STOCK_TRANSFER",
+  DC_TYPE_OTHER="DC_TYPE_OTHER"
 }
 
 @Entity('documents')

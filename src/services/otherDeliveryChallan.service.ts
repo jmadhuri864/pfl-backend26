@@ -5,6 +5,12 @@ import logger from '../utils/logger';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DataSource } from 'typeorm';
+import { DocumentbService } from './documentb.service';
+import { DocDoubleApproverService } from './docDoubleApprover.service';
+import { DeliveryChallanService } from './deliveryChallan.service';
+import { CustomerDeliveryChallanService } from './customerDeliveryChallan.service';
+import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
+import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 
 
 @injectable()
@@ -13,7 +19,16 @@ export class OtherDeliveryChallanService {
     @inject(TYPES.OtherDeliveryChallanRepository)
     private readonly challanRepository: OtherDeliveryChallanRepository,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+        @inject(TYPES.DocumentbService)
+            private readonly documentbService: DocumentbService,
+            @inject(TYPES.DocDoubleApproverService)
+                private readonly docDoubleApproverService: DocDoubleApproverService,
+                @inject(TYPES.DeliveryChallanService)
+                private readonly deliveryChallanService: DeliveryChallanService,
+                     @inject(TYPES.CustomerDeliveryChallanService)
+    private readonly customerDeliveryChallanService:CustomerDeliveryChallanService,
+
    
   ) {}
 
@@ -23,13 +38,28 @@ export class OtherDeliveryChallanService {
     await queryRunner.startTransaction();
 
     try {
+data.challanNo = await this.customerDeliveryChallanService.generateVoucherNo(data.type || 'O');
       const challan = queryRunner.manager.create(this.challanRepository.target, data);
-      const savedchallan = await queryRunner.manager.save(challan);
+      const savedChallanArr = await queryRunner.manager.save(challan);
+const savedChallan = Array.isArray(savedChallanArr)
+      ? savedChallanArr[0]
+      : savedChallanArr;
 
+    // 4. Create document
+    const document = await this.documentbService.createDocument({
+      type: DocumentTypeEnum.DC_TYPE_OTHER,
+      docDef: DocDefEnum.SALE,
+      status: DocumentStatus.HOLD,
+      remarks: 'Document auto-created with Stock Transfer Challan',
+      lastActionBy: { id:savedChallanArr.createdBy.id },
+      document_type_id: savedChallan.id,
+    });
+
+    await this.documentbService.startApprovalFlow(document.id);
       // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
       
-      return savedchallan;
+      return savedChallanArr;
     } catch (error: any) {
       // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
@@ -58,8 +88,7 @@ export class OtherDeliveryChallanService {
           'companyName',
           'offices',
           'grnNo',
-          'toLocationInput',
-          'fromLocationInput',
+          'fromLocation',
         ],
       });
     } catch (err) {
@@ -83,14 +112,10 @@ export class OtherDeliveryChallanService {
         'packagingMaterialUoM',
       )
       .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('challan.partyName', 'partyName')
-      .leftJoinAndSelect('challan.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('challan.deliveryAddress', 'deliveryAddress')
       .leftJoinAndSelect('challan.companyName', 'company')
       .leftJoinAndSelect('challan.offices', 'office')
       .leftJoinAndSelect('challan.grnNo', 'grn')
-      .leftJoinAndSelect('challan.toLocationInput', 'toLocationInput')
-      .leftJoinAndSelect('challan.fromLocationInput', 'fromLocationInput')
+      .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
       .where('challan.id = :id', { id })
       .getOne();
 
@@ -107,26 +132,10 @@ export class OtherDeliveryChallanService {
       companyName: challan.companyName?.name || null,
       office: challan.offices?.name || null,
       grnNo: challan.grnNo?.grnNo || null,
-      fromLocationInput: challan.fromLocationInput
+      fromLocation: challan.fromLocation
         ? {
-            id: challan.fromLocationInput.id,
-            address1: challan.fromLocationInput.address1,
-            address2: challan.fromLocationInput.address2,
-            city: challan.fromLocationInput.city,
-            state: challan.fromLocationInput.state,
-            location: challan.fromLocationInput.location,
-            pincode: challan.fromLocationInput.pincode,
-          }
-        : null,
-      toLocationInput: challan.toLocationInput
-        ? {
-            id: challan.toLocationInput.id,
-            address1: challan.toLocationInput.address1,
-            address2: challan.toLocationInput.address2,
-            city: challan.toLocationInput.city,
-            state: challan.toLocationInput.state,
-            location: challan.toLocationInput.location,
-            pincode: challan.toLocationInput.pincode,
+            id: challan.fromLocation.id,
+            name: challan.fromLocation.name,
           }
         : null,
       driverName: challan.driverName,
@@ -179,14 +188,10 @@ export class OtherDeliveryChallanService {
         'packagingMaterialUoM',
       )
       .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('challan.partyName', 'partyName')
-      .leftJoinAndSelect('challan.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('challan.deliveryAddress', 'deliveryAddress')
       .leftJoinAndSelect('challan.companyName', 'company')
       .leftJoinAndSelect('challan.offices', 'office')
       .leftJoinAndSelect('challan.grnNo', 'grn')
-      .leftJoinAndSelect('challan.toLocationInput', 'toLocationInput')
-      .leftJoinAndSelect('challan.fromLocationInput', 'fromLocationInput')
+      .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
       .where('challan.id = :id', { id })
       .getOne();
 
@@ -203,26 +208,10 @@ export class OtherDeliveryChallanService {
       companyName: challan.companyName?.id || null,
       office: challan.offices?.id || null,
       grnNo: challan.grnNo?.id || null,
-      fromLocationInput: challan.fromLocationInput
+      fromLocation: challan.fromLocation
         ? {
-            id: challan.fromLocationInput.id,
-            address1: challan.fromLocationInput.address1,
-            address2: challan.fromLocationInput.address2,
-            city: challan.fromLocationInput.city,
-            state: challan.fromLocationInput.state,
-            location: challan.fromLocationInput.location,
-            pincode: challan.fromLocationInput.pincode,
-          }
-        : null,
-      toLocationInput: challan.toLocationInput
-        ? {
-            id: challan.toLocationInput.id,
-            address1: challan.toLocationInput.address1,
-            address2: challan.toLocationInput.address2,
-            city: challan.toLocationInput.city,
-            state: challan.toLocationInput.state,
-            location: challan.toLocationInput.location,
-            pincode: challan.toLocationInput.pincode,
+            id: challan.fromLocation.id,
+            name: challan.fromLocation.name,
           }
         : null,
       driverName: challan.driverName,
@@ -276,8 +265,7 @@ export class OtherDeliveryChallanService {
       .leftJoinAndSelect('challan.companyName', 'company')
       .leftJoinAndSelect('challan.offices', 'office')
       .leftJoinAndSelect('challan.grnNo', 'grn')
-      .leftJoinAndSelect('challan.toLocationInput', 'toLocationInput')
-      .leftJoinAndSelect('challan.fromLocationInput', 'fromLocationInput');
+      .leftJoinAndSelect('challan.fromLocation', 'fromLocation');
 
     const result = await buildQuery(queryBuilder, queryOptions, 'challan');
 
@@ -290,30 +278,12 @@ export class OtherDeliveryChallanService {
           companyName: challan.companyName?.name || null,
           office: challan.offices?.name || null,
           grnNo: challan.grnNo?.grnNo || null,
-          //   fromLocationInput: challan.fromLocationInput?.name || null,
-          fromLocationInput: challan.fromLocationInput
+          fromLocation: challan.fromLocation
             ? {
-                id: challan.fromLocationInput.id,
-                address1: challan.fromLocationInput.address1,
-                address2: challan.fromLocationInput.address2,
-                city: challan.fromLocationInput.city,
-                state: challan.fromLocationInput.state,
-                location: challan.fromLocationInput.location,
-                pincode: challan.fromLocationInput.pincode,
+                id: challan.fromLocation.id,
+                name: challan.fromLocation.name,
               }
             : null,
-          toLocationInput: challan.toLocationInput
-            ? {
-                id: challan.toLocationInput.id,
-                address1: challan.toLocationInput.address1,
-                address2: challan.toLocationInput.address2,
-                city: challan.toLocationInput.city,
-                state: challan.toLocationInput.state,
-                location: challan.toLocationInput.location,
-                pincode: challan.toLocationInput.pincode,
-              }
-            : null,
-
           driverName: challan.driverName,
           contactNo: challan.contactNo,
           altContactNo: challan.altContactNo,

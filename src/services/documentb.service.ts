@@ -70,12 +70,15 @@ export class DocumentbService {
       //Todo:Have To Add Some documentType...pending
       DocumentTypeEnum.DC_TYPE_CUSTOMER,
       DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER,
+      DocumentTypeEnum.DC_TYPE_OTHER,
       DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
       DocumentTypeEnum.MULTI_CASH_VOUCHER,
       DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
       DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
       DocumentTypeEnum.DUMP_REGISTER,
-      DocumentTypeEnum.FINAL_INVOICE
+      DocumentTypeEnum.FINAL_INVOICE,
+      DocumentTypeEnum.RETURN_TO_VENDOR,
+      DocumentTypeEnum.RETURN_BY_CUSTOMER
     ].includes(type);
   }
 
@@ -244,7 +247,7 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
         //type: document.type,
         overAllStatus: document.status,
         // createdAt: document.createdAt,
-        createdBy: document.lastActionBy?.firstName ?? null,
+        createdBy: document.lastActionBy?.firstName+" "+document.lastActionBy?.lastName ?? null,
         // ...documentDataByForm, // full GRN info (or null)
         approvalSummary: approvalInfoSummary, // name + status summary
       };

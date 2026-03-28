@@ -71,5 +71,8 @@ export class ProductReturnToVendor extends Model {
           @Column({ type: 'varchar', length: 255, nullable: true })
           deliveryLocation: string | null; 
 
+           @Column({ type: 'varchar', length: 255, nullable: true })
+          reason: string | null; 
+
 
 }

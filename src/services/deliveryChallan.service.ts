@@ -40,6 +40,8 @@ export class DeliveryChallanService {
     private readonly inventoryStockRepository: InventoryStockRepository,
   ) {}
 
+  
+
   //   public async createDeliveryChallan(deliveryChallanData: any): Promise<any> {
   //     console.log("in service", deliveryChallanData);
   //     deliveryChallanData.challanNo = await this.generateVoucherNo();

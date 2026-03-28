@@ -251,7 +251,7 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
       documentTypeId: document.document_type_id,
       status: document.status,
       overAllStatus: document.status,
-      createdBy: document.lastActionBy?.firstName ?? null,
+      createdBy: document.lastActionBy?.firstName+" "+document.lastActionBy?.lastName ?? null,
       approvalSummary: approvalInfoSummary,
       // documentType: document.type,
       //type: document.type,

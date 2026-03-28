@@ -52,14 +52,19 @@ export class InwardRegisterService {
      
   ) {}
 
-  private async generateSerialNo(prefix: string): Promise<string> {
-      // Get the count of existing GRNs for the branch (or use another unique mechanism)
+  private async generateSerialNo(): Promise<string> {
+      const now = new Date();
+      const yyyy = now.getFullYear().toString();
+      const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+      const dd = now.getDate().toString().padStart(2, '0');
+      const datePrefix = `IWD${yyyy}${mm}${dd}`;
+
+      // Count only records for today's prefix to get per-day sequence
       const count = await this.inwardRegisterRepo.count({
-        where: { inwardNo: ILike(`${prefix}%`) },
+        where: { inwardNo: ILike(`${datePrefix}%`) },
       });
-      console.log(count);
-      // Generate the serial number in the format "PREFIX-001"
-      const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
+
+      const serialNo = `${datePrefix}${(count + 1).toString().padStart(4, '0')}`;
       return serialNo;
     }
 
@@ -87,7 +92,7 @@ public async createInwardRegister(data: any): Promise<any> {
 
     // 3. Extract product IDs from variants
     const productIds = variants.map(v => v.product?.id).filter(Boolean);
-const serialNo = await this.generateSerialNo("INWR");
+const serialNo = await this.generateSerialNo();
       data.inwardNo = serialNo;
     // 4. Create Inward Register
     const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
@@ -246,12 +251,16 @@ public async getAllRecycleBinInwardRegisters(queryOptions: PaginationOptions, us
       batchNo: rd.batchNo || null,
       inwardType: rd.inwardType || null,
       remarks: rd.remarks || null,
-      purchasedQty: rd.purchasedQty || null,
-      inwardQtyInKg: rd.inwardQtyInKg || null,
+      // purchasedQty: rd.purchasedQty || null,
+      // inwardQtyInKg: rd.inwardQtyInKg || null,
       inwardCost: rd.inwardCost || null,
       totalWeightInKg: rd.totalWeightInKg || null,
       source: rd.source || null,
+incomingGrossQty: rd.incomingGrossQty,
+      incomingNetQty: rd.incomingNetQty,
 
+      inwardGrossQty: rd.inwardGrossQty,
+      inwardNetQty:rd.inwardNetQty,
       grnNo: rd.grnNo?.grnNo || null,
       deliveryChallanNo: rd.deliveryChallanNo?.id || null,
       companyName: rd.companyName?.name || null,
@@ -501,8 +510,7 @@ async filterInwardRegisters(
         source: inwardRegister.source,
         purchasedBy: inwardRegister.purchasedBy,
         totalWeightInKg: inwardRegister.totalWeightInKg,
-        purchasedQty: inwardRegister.purchasedQty,
-        inwardQtyInKg: inwardRegister.inwardQtyInKg,
+        
         inwardCost: inwardRegister.inwardCost,
         remarks: inwardRegister.remarks,
         inwardBy: inwardRegister.inwardBy,
@@ -605,8 +613,12 @@ async filterInwardRegisters(
                 inwardRegister.purchasedBy?.lastName || null,
           }
         : null,
-      purchasedQty: inwardRegister.purchasedQty,
-      inwardQtyInKg: inwardRegister.inwardQtyInKg,
+      incomingGrossQty: inwardRegister.incomingGrossQty,
+      incomingNetQty: inwardRegister.incomingNetQty,
+
+      inwardGrossQty: inwardRegister.inwardGrossQty,
+      inwardNetQty: inwardRegister.inwardNetQty,
+
       inwardCost: inwardRegister.inwardCost,
       remarks: inwardRegister.remarks,
       inwardBy: inwardRegister.inwardBy
@@ -725,8 +737,11 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
             inwardRegister.purchasedBy.id
             
         : null,
-      purchasedQty: inwardRegister.purchasedQty,
-      inwardQtyInKg: inwardRegister.inwardQtyInKg,
+      incomingGrossQty: inwardRegister.incomingGrossQty,
+      incomingNetQty: inwardRegister.incomingNetQty,
+
+      inwardGrossQty: inwardRegister.inwardGrossQty,
+      inwardNetQty: inwardRegister.inwardNetQty,
       inwardCost: inwardRegister.inwardCost,
       remarks: inwardRegister.remarks,
       inwardBy: inwardRegister.inwardBy
@@ -878,8 +893,11 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
             inwardRegister.purchasedBy?.firstName+' '+inwardRegister.purchasedBy?.middleName+' '+inwardRegister.purchasedBy?.lastName
             
         : null,
-      purchasedQty: inwardRegister.purchasedQty,
-      inwardQtyInKg: inwardRegister.inwardQtyInKg,
+     incomingGrossQty: inwardRegister.incomingGrossQty,
+      incomingNetQty: inwardRegister.incomingNetQty,
+
+      inwardGrossQty: inwardRegister.inwardGrossQty,
+      inwardNetQty: inwardRegister.inwardNetQty,
       inwardCost: inwardRegister.inwardCost,
       remarks: inwardRegister.remarks,
       inwardBy: inwardRegister.inwardBy
@@ -1228,6 +1246,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       id: rd.id || null,
       batchNo: rd.batchNo || null,
       inwardType: rd.inwardType || null,
+    
       remarks: rd.remarks || null,
       purchasedQty: rd.purchasedQty || null,
       inwardQtyInKg: rd.inwardQtyInKg || null,
@@ -1429,8 +1448,11 @@ selectedParty,
       remarks: inwardRegister.remarks,
       source: inwardRegister.source,
       date:inwardRegister.date,
-      purchasedQty: inwardRegister.purchasedQty,
-      inwardQtyInKg: inwardRegister.inwardQtyInKg,
+      incomingGrossQty: inwardRegister.incomingGrossQty,
+      incomingNetQty: inwardRegister.incomingNetQty,
+
+      inwardGrossQty: inwardRegister.inwardGrossQty,
+      inwardNetQty: inwardRegister.inwardNetQty,
       inwardCost: inwardRegister.inwardCost,
       totalWeightInKg: inwardRegister.totalWeightInKg,
 

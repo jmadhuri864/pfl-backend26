@@ -58,20 +58,22 @@ export class ReturnToVendorController {
     @response() res: Response,
     @next() next: NextFunction) {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const page = req.query.page !== undefined ? parseInt(req.query.page as string) : undefined;
+      const limit = req.query.limit !== undefined ? parseInt(req.query.limit as string) : undefined;
+      const search = req.query.search as string | undefined;
+      const queryOptions = { page: page ?? 1, limit: limit ?? 10, search };
+      const userId = res.locals.user.id;
 
-      const result = await this.returnToVendorService.getAll(page, limit);
+      const result = await this.returnToVendorService.getAll(queryOptions, userId);
 
       ControllerLogger.logSuccess('Get all return to vendor records', '', req, res);
 
       res.status(200).json({
         status: "success",
         data: result.data,
-        totalRecords: result.total,
-          totalPages: Math.ceil(result.total / result.limit),
-          page: result.page,
-       
+        totalRecords: result.meta.total,
+        totalPages: result.meta.pages,
+        page: result.meta.page,
         message: "Return to vendor records fetched successfully",
       });
     } catch (error) {
@@ -111,24 +113,24 @@ export class ReturnToVendorController {
       next(error);
     }
   }
-  @httpGet("/view/:id")
+  @httpGet("/view/:docid")
   public async getReturnToVendorByIdForView(
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction) {
     try {
-      const { id } = req.params;
+      const { docid } = req.params;
 
-      if (!id) {
+      if (!docid) {
         return res.status(400).json({
           status: "error",
-          message: "Return to vendor ID is required",
+          message: "Return to vendor document ID is required",
         });
       }
 
-      const returnRecord = await this.returnToVendorService.getByIdForView(id);
+      const returnRecord = await this.returnToVendorService.getByIdForView(docid);
 
-      ControllerLogger.logSuccess('Get return to vendor by ID', id, req, res);
+      ControllerLogger.logSuccess('Get return to vendor by ID', docid, req, res);
 
       res.status(200).json({
         status: "success",
@@ -197,7 +199,7 @@ export class ReturnToVendorController {
         const userId = res.locals.user?.id;
         if (userId) {
           await this.notificationService.createNoti(
-            `Return to vendor with ID ${id} updated successfully`,
+            `Return to vendor updated successfully`,
             userId
           );
         }

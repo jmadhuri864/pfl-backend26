@@ -23,6 +23,7 @@ import { ProductRepository } from '../repositories/product.repository';
 import { ProductVarientService } from './productVarient.service';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { format } from 'date-fns';
 
 @injectable()
 export class CustomerDeliveryChallanService {
@@ -56,6 +57,24 @@ export class CustomerDeliveryChallanService {
      @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
   ) { }
+
+
+  public async generateVoucherNo(type: string = 'C'): Promise<string> {
+    const today = new Date();
+    const formattedDate = format(today, 'yyyyMMdd');
+    const typeCode = type.toUpperCase();
+
+    // Count all challans of this type to get next serial
+    const count = await this.challanRepository
+      .createQueryBuilder('deliveryChallan')
+      .where('deliveryChallan.challanNo LIKE :pattern', {
+        pattern: `CN%${typeCode}%`,
+      })
+      .getCount();
+
+    const serialStr = (count + 1).toString().padStart(5, '0');
+    return `CN${formattedDate}${typeCode}${serialStr}`;
+  }
   async create(data: any, requestedBy: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -85,7 +104,7 @@ export class CustomerDeliveryChallanService {
       }
 
       // 3. Generate Challan No
-      data.challanNo = await this.deliveryChallanService.generateVoucherNo();
+      data.challanNo = await this.generateVoucherNo(data.type || 'C');
 
       // 4. Normalize variants list
       let variantIds: string[] = [];

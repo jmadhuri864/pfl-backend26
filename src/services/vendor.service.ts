@@ -1014,15 +1014,13 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       status:vendor.status,
       vendorCode:`${vendor.vendorCode}`.toUpperCase(),
       companyName:vendor.companyName,
-      category:{
-        id:vendor.category.id,
-        name:vendor.category.name},
-      subcategory:{
-        id:vendor.subcategory.id,
-        name:vendor.subcategory.name},
-      officeAddress:{
-        id:vendor.officeAddress.id,
-        address:vendor.officeAddress? formatAddress(vendor.officeAddress) : ''},
+      category:vendor.category.name,
+        // id:vendor.category.id,
+        // name:vendor.category.name},
+      subcategory:vendor.subcategory.name,
+        // id:vendor.subcategory.id,
+        // name:vendor.subcategory.name},
+      officeAddress:vendor.officeAddress? formatAddress(vendor.officeAddress) : '',
       officeContactNo:vendor.officeContactNo,
       listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
                         .map((product:Product)=>product?.name)
@@ -1528,7 +1526,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
 
   async getVendorByIdWithFilter(id: string): Promise<any> {
-    const vendor = await this.vendorRepository
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    const qb = this.vendorRepository
       .createQueryBuilder("vendor")
       .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1552,9 +1552,15 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
         "officeAddress.city",
         "officeAddress.state",
         "officeAddress.pincode",
-      ])
-      .where("vendor.id = :id", { id })
-      .getOne();
+      ]);
+
+    if (isUuid) {
+      qb.where("vendor.id = :id", { id });
+    } else {
+      qb.where("LOWER(vendor.companyName) = LOWER(:name)", { name: id });
+    }
+
+    const vendor = await qb.getOne();
 
     // If vendor is null, return null
     if (!vendor) {

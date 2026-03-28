@@ -8,6 +8,7 @@ import { InversifyExpressServer } from 'inversify-express-utils';
 import { container } from './inversify.config';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { AppDataSource } from './utils/data-source';
 import { seedAdmin } from './seed';
 import { seedDatabase } from './seed/companyseed';
@@ -97,6 +98,7 @@ const startServer = async () => {
       });
 
       app.use(express.json());
+      app.use(cookieParser());
       
       // Configure helmet to not interfere with CORS
       app.use(helmet({
@@ -104,7 +106,15 @@ const startServer = async () => {
         crossOriginEmbedderPolicy: false, // Disable COEP
       }));
       
-      app.use(compression());
+      // Skip compression for SSE endpoints — compression buffers the stream and delays events
+      app.use(compression({
+        filter: (req, res) => {
+          if (req.path.includes('/sse') || req.headers.accept === 'text/event-stream') {
+            return false;
+          }
+          return compression.filter(req, res);
+        }
+      }));
 
       // Main CORS handler - MUST be before any other middleware that might set headers
       app.use((req, res, next) => {
@@ -204,7 +214,7 @@ const startServer = async () => {
       process.exit(0);
     });
   } catch (error) {
-    //console.log(error)
+    console.log(error)
     logger.error('Error starting the server:', error);
     process.exit(1);
   }

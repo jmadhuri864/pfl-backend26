@@ -1316,3 +1316,350 @@ Cannot read properties of undefined (reading 'city')
 2026-03-26 05:52:15 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
 2026-03-26 05:54:02 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
 2026-03-26 05:54:02 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-26 05:59:07 PM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-27 10:23:09 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-27 10:27:53 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-27 10:36:43 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-27 10:38:20 AM [error]: Unhandled Error: Cannot read properties of undefined (reading 'access_token') 
+2026-03-27 10:55:06 AM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "undefined" 
+2026-03-27 10:55:07 AM [error]: Unhandled Error: Error fetching document: QueryFailedError: invalid input syntax for type uuid: "undefined" 
+2026-03-27 10:55:57 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 10:55:58 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 10:58:42 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 10:58:43 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 11:10:59 AM [error]: AppError: You are not logged in 
+2026-03-27 11:21:09 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 11:21:10 AM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 11:23:24 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:23:44 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:24:26 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:24:53 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:26:17 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:26:43 AM [error]: Error starting the server: Data type "Object" in "ProductReturnToVendor.reason" is not supported by "postgres" database. 
+2026-03-27 11:35:01 AM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-27 11:40:31 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:33 AM [error]: AppError: You are not logged in 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:40:35 AM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-27 11:44:52 AM [error]: AppError: You are not logged in 
+2026-03-27 11:44:52 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:47:41 AM [error]: AppError: You are not logged in 
+2026-03-27 11:47:41 AM [error]: AppError: You are not logged in 
+2026-03-27 11:47:41 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:47:41 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:49:37 AM [error]: AppError: You are not logged in 
+2026-03-27 11:50:31 AM [error]: AppError: You are not logged in 
+2026-03-27 11:50:32 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:50:49 AM [error]: AppError: You are not logged in 
+2026-03-27 11:50:49 AM [error]: AppError: You are not logged in 
+2026-03-27 11:50:49 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:50:49 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:52:32 AM [error]: AppError: You are not logged in 
+2026-03-27 11:52:32 AM [error]: AppError: You are not logged in 
+2026-03-27 11:52:34 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 11:52:34 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:04:00 PM [error]: AppError: You are not logged in 
+2026-03-27 12:04:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:34:52 PM [error]: AppError: You are not logged in 
+2026-03-27 12:34:52 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:42:35 PM [error]: AppError: You are not logged in 
+2026-03-27 12:42:35 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:42:35 PM [error]: AppError: You are not logged in 
+2026-03-27 12:42:35 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:10 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:10 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:10 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:10 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:27 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:27 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:27 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:27 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:27 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:27 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:27 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:27 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:48:51 PM [error]: AppError: You are not logged in 
+2026-03-27 12:48:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:54:37 PM [error]: AppError: You are not logged in 
+2026-03-27 12:54:37 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 12:56:33 PM [error]: AppError: You are not logged in 
+2026-03-27 12:56:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:02:23 PM [error]: AppError: You are not logged in 
+2026-03-27 01:02:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:06:17 PM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-27 01:06:17 PM [error]: Error creating voucher 
+2026-03-27 01:06:18 PM [error]: AppError: Error creating document: Error: No approval flow found...Please contact with admin 
+2026-03-27 01:06:29 PM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-27 01:06:30 PM [error]: Error creating voucher 
+2026-03-27 01:06:30 PM [error]: AppError: Error creating document: Error: No approval flow found...Please contact with admin 
+2026-03-27 01:06:47 PM [error]: AppError: You are not logged in 
+2026-03-27 01:06:47 PM [error]: AppError: You are not logged in 
+2026-03-27 01:06:48 PM [error]: AppError: You are not logged in 
+2026-03-27 01:06:48 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:06:48 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:06:48 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:06:48 PM [error]: AppError: You are not logged in 
+2026-03-27 01:06:48 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:07:51 PM [error]: AppError: You are not logged in 
+2026-03-27 01:07:51 PM [error]: AppError: You are not logged in 
+2026-03-27 01:07:51 PM [error]: AppError: You are not logged in 
+2026-03-27 01:07:51 PM [error]: AppError: You are not logged in 
+2026-03-27 01:07:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:07:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:07:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:07:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:10:03 PM [error]: AppError: You are not logged in 
+2026-03-27 01:10:03 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:14:00 PM [error]: AppError: You are not logged in 
+2026-03-27 01:14:00 PM [error]: AppError: You are not logged in 
+2026-03-27 01:14:00 PM [error]: AppError: You are not logged in 
+2026-03-27 01:14:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:14:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:14:00 PM [error]: AppError: You are not logged in 
+2026-03-27 01:14:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:14:00 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:15:19 PM [error]: AppError: You are not logged in 
+2026-03-27 01:15:19 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:17:38 PM [error]: AppError: You are not logged in 
+2026-03-27 01:17:38 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:18:09 PM [error]: AppError: You are not logged in 
+2026-03-27 01:18:09 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:18:14 PM [error]: AppError: You are not logged in 
+2026-03-27 01:18:14 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:22:21 PM [error]: AppError: You are not logged in 
+2026-03-27 01:22:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 01:30:47 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 01:30:48 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 02:06:03 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 02:06:05 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 02:06:16 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 02:06:17 PM [error]: Unhandled Error: invalid input syntax for type uuid: "undefined" 
+2026-03-27 02:13:51 PM [error]: AppError: You are not logged in 
+2026-03-27 02:13:51 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:14:08 PM [error]: AppError: You are not logged in 
+2026-03-27 02:14:08 PM [error]: AppError: You are not logged in 
+2026-03-27 02:14:08 PM [error]: AppError: You are not logged in 
+2026-03-27 02:14:08 PM [error]: AppError: You are not logged in 
+2026-03-27 02:14:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:14:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:14:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:14:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:15:30 PM [error]: Unhandled Error: invalid input syntax for type uuid: "greenharvest pvt. ltd." 
+2026-03-27 02:26:05 PM [error]: Unhandled Error: Error fetching document: Error: Document with ID a2475336-82f5-42e0-bd79-56bac279a418 not found 
+2026-03-27 02:26:06 PM [error]: Unhandled Error: Error fetching document: Error: Document with ID a2475336-82f5-42e0-bd79-56bac279a418 not found 
+2026-03-27 02:26:18 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-27 02:42:40 PM [error]: Unhandled Error: invalid input syntax for type uuid: "greenharvest pvt. ltd." 
+2026-03-27 02:42:41 PM [error]: Unhandled Error: invalid input syntax for type uuid: "greenharvest pvt. ltd." 
+2026-03-27 02:42:58 PM [error]: Unhandled Error: invalid input syntax for type uuid: "greenharvest pvt. ltd." 
+2026-03-27 02:42:59 PM [error]: Unhandled Error: invalid input syntax for type uuid: "greenharvest pvt. ltd." 
+2026-03-27 02:48:31 PM [error]: AppError: You are not logged in 
+2026-03-27 02:48:31 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:48:43 PM [error]: AppError: You are not logged in 
+2026-03-27 02:48:43 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:23 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:42 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:42 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You are not logged in 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:49:55 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:50:31 PM [error]: AppError: You are not logged in 
+2026-03-27 02:50:31 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:51:13 PM [error]: AppError: You are not logged in 
+2026-03-27 02:51:13 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:52:23 PM [error]: AppError: You are not logged in 
+2026-03-27 02:52:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:52:44 PM [error]: AppError: You are not logged in 
+2026-03-27 02:52:44 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:53:19 PM [error]: AppError: You are not logged in 
+2026-03-27 02:53:19 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:55:05 PM [error]: AppError: You are not logged in 
+2026-03-27 02:55:05 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 02:55:40 PM [error]: AppError: You are not logged in 
+2026-03-27 02:55:40 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 03:01:06 PM [error]: AppError: You are not logged in 
+2026-03-27 03:01:06 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 04:19:21 PM [error]: AppError: You are not logged in 
+2026-03-27 04:19:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 04:59:32 PM [error]: AppError: You are not logged in 
+2026-03-27 04:59:32 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 05:01:54 PM [error]: AppError: You are not logged in 
+2026-03-27 05:01:54 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 05:24:36 PM [error]: AppError: userIds must be a non-empty array 
+2026-03-27 05:40:11 PM [error]: AppError: You are not logged in 
+2026-03-27 05:40:11 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 05:40:21 PM [error]: AppError: You are not logged in 
+2026-03-27 05:40:21 PM [error]: AppError: You are not logged in 
+2026-03-27 05:40:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 05:40:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-27 05:51:11 PM [error]: AppError: You are not logged in 
+2026-03-27 05:51:12 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 10:36:58 AM [error]: AppError: invalid input syntax for type date: "" 
+2026-03-28 10:38:06 AM [error]: AppError: invalid input syntax for type date: "" 
+2026-03-28 10:38:46 AM [error]: AppError: Error creating document: Error: No approval flow found...Please contact with admin 
+2026-03-28 10:39:07 AM [error]: AppError: Error creating document: Error: No approval flow found...Please contact with admin 
+2026-03-28 10:39:41 AM [error]: AppError: You are not logged in 
+2026-03-28 10:39:42 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 10:41:38 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:41:39 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:42:09 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:42:10 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:45:29 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:45:30 AM [error]: Unhandled Error: Cannot read properties of null (reading 'id') 
+2026-03-28 10:46:20 AM [error]: AppError: You are not logged in 
+2026-03-28 10:46:20 AM [error]: AppError: You are not logged in 
+2026-03-28 10:46:20 AM [error]: AppError: You are not logged in 
+2026-03-28 10:46:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 10:46:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 10:46:20 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 10:58:49 AM [error]: AppError: No farmers found 
+2026-03-28 10:58:50 AM [error]: AppError: No farmers found 
+2026-03-28 11:03:36 AM [error]: AppError: You are not logged in 
+2026-03-28 11:03:36 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:04:24 AM [error]: AppError: You are not logged in 
+2026-03-28 11:04:24 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:07:37 AM [error]: Unhandled Error: Property "sendBy" was not found in "Aqr". Make sure your query is correct. 
+2026-03-28 11:07:38 AM [error]: Unhandled Error: Property "sendBy" was not found in "Aqr". Make sure your query is correct. 
+2026-03-28 11:09:50 AM [error]: AppError: You are not logged in 
+2026-03-28 11:09:50 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:11:28 AM [error]: AppError: You are not logged in 
+2026-03-28 11:11:28 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:14:50 AM [error]: AppError: You are not logged in 
+2026-03-28 11:14:50 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:15:36 AM [error]: AppError: You are not logged in 
+2026-03-28 11:15:36 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:16:49 AM [error]: AppError: You are not logged in 
+2026-03-28 11:16:50 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:18:08 AM [error]: AppError: You are not logged in 
+2026-03-28 11:18:08 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:25:24 AM [error]: AppError: You are not logged in 
+2026-03-28 11:25:24 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:26:16 AM [error]: AppError: You are not logged in 
+2026-03-28 11:26:16 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:26:46 AM [error]: AppError: You are not logged in 
+2026-03-28 11:26:46 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 11:41:42 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:41:44 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:50:02 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:50:03 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:50:28 AM [error]: AppError: No farmers found 
+2026-03-28 11:50:30 AM [error]: AppError: No farmers found 
+2026-03-28 11:50:31 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:50:34 AM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 11:59:06 AM [error]: AppError: You are not logged in 
+2026-03-28 11:59:06 AM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:08:58 PM [error]: AppError: No farmers found 
+2026-03-28 12:09:00 PM [error]: AppError: No farmers found 
+2026-03-28 12:12:42 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:12:43 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:13:37 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:13:39 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:37:08 PM [error]: AppError: You are not logged in 
+2026-03-28 12:37:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:37:33 PM [error]: AppError: You are not logged in 
+2026-03-28 12:37:33 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:42:28 PM [error]: AppError: You are not logged in 
+2026-03-28 12:42:28 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:42:53 PM [error]: AppError: You are not logged in 
+2026-03-28 12:42:53 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:43:21 PM [error]: AppError: You are not logged in 
+2026-03-28 12:43:21 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:44:02 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:44:03 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:44:12 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:44:13 PM [error]: AppError: No stock transfer delivery challans found 
+2026-03-28 12:48:04 PM [error]: AppError: You are not logged in 
+2026-03-28 12:48:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:48:22 PM [error]: AppError: You are not logged in 
+2026-03-28 12:48:22 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 12:50:06 PM [error]: AppError: You are not logged in 
+2026-03-28 12:50:07 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 01:03:06 PM [error]: AppError: You are not logged in 
+2026-03-28 01:03:06 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 01:04:56 PM [error]: AppError: You are not logged in 
+2026-03-28 01:04:56 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 01:08:36 PM [error]: AppError: You are not logged in 
+2026-03-28 01:08:36 PM [error]: AppError: You are not logged in 
+2026-03-28 01:08:36 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 01:08:36 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 01:11:09 PM [error]: AppError: You are not logged in 
+2026-03-28 01:11:09 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:11:57 PM [error]: AppError: You are not logged in 
+2026-03-28 02:11:57 PM [error]: AppError: You are not logged in 
+2026-03-28 02:11:57 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:11:57 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:14:22 PM [error]: AppError: You are not logged in 
+2026-03-28 02:14:22 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:14:42 PM [error]: AppError: You are not logged in 
+2026-03-28 02:14:42 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:15:08 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:18:27 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:19:23 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:21:45 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:22:53 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:23:17 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:35:42 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:36:13 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:38:55 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:39:47 PM [error]: Error starting the server: Cannot read properties of undefined (reading 'name') 
+2026-03-28 02:50:01 PM [error]: AppError: You are not logged in 
+2026-03-28 02:50:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:50:26 PM [error]: AppError: You are not logged in 
+2026-03-28 02:50:26 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:50:42 PM [error]: AppError: You are not logged in 
+2026-03-28 02:50:42 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:51:01 PM [error]: AppError: You are not logged in 
+2026-03-28 02:51:01 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 02:57:59 PM [error]: Unhandled Promise Rejection: Something went wrong In Approval flow service 
+2026-03-28 03:21:40 PM [error]: AppError: You are not logged in 
+2026-03-28 03:21:40 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:22:12 PM [error]: AppError: You are not logged in 
+2026-03-28 03:22:12 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:22:36 PM [error]: AppError: You are not logged in 
+2026-03-28 03:22:36 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:23:23 PM [error]: AppError: You are not logged in 
+2026-03-28 03:23:23 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:34:52 PM [error]: AppError: You are not logged in 
+2026-03-28 03:34:52 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:42:08 PM [error]: AppError: You are not logged in 
+2026-03-28 03:42:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:44:50 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 03:44:50 PM [error]: AppError: You need to re-authenticate. Please log in. 

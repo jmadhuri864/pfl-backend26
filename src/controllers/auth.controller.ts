@@ -18,6 +18,7 @@ import { UserSystemInfoRepository } from '../repositories/userSystemInfo.reposit
 import { AppDataSource } from '../utils/data-source';
 import { BlacklistedToken } from '../entities/blacklistedToken.entity';
 import { NotificationService } from '../services/notification.service';
+import { SSEService } from '../services/sse.service';
 import { UserRepository } from '../repositories/user.repository';
 import { ActiveSessionRepository } from '../repositories/activeSession.repository';
 
@@ -56,6 +57,8 @@ export class AuthController {
     private readonly systemLogRepository: UserSystemInfoRepository,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.SSEService)
+    private sseService: SSEService,
     @inject(TYPES.UserRepository)
     private userRepository: UserRepository,
   ) {}
@@ -128,15 +131,15 @@ export class AuthController {
       });
       logger.info('Access token refreshed successfully', { userId: user.id });
 
-      // 🔔 Simple session refresh notification
-      try {
-        await this.notificationService.createNoti(
-          `Session refreshed`,
-          user.id
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // // 🔔 Simple session refresh notification
+      // try {
+      //   await this.notificationService.createNoti(
+      //     `Session refreshed`,
+      //     user.id
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -184,14 +187,14 @@ export class AuthController {
         logger.error('User is inactive during login', { uid });
         
         // 🔔 Send notification for inactive account login attempt
-        try {
-          await this.notificationService.createNoti(
-            `Invalid password and email`,
-            user.id
-          );
-        } catch (notifError) {
-          console.log('Inactive account notification error:', notifError);
-        }
+        // try {
+        //   await this.notificationService.createNoti(
+        //     `Invalid password and email`,
+        //     user.id
+        //   );
+        // } catch (notifError) {
+        //   console.log('Inactive account notification error:', notifError);
+        // }
         
         throw new AppError(
           403,
@@ -209,14 +212,14 @@ export class AuthController {
         logger.warn('Invalid password during login', { uid });
         
         // 🔔 Send notification for failed password attempt
-        try {
-          await this.notificationService.createNoti(
-            `Wrong password`,
-            user.id
-          );
-        } catch (notifError) {
-          console.log('Failed password notification error:', notifError);
-        }
+        // try {
+        //   await this.notificationService.createNoti(
+        //     `Wrong password`,
+        //     user.id
+        //   );
+        // } catch (notifError) {
+        //   console.log('Failed password notification error:', notifError);
+        // }
         
         ControllerLogger.logAuth('User login', req, res, false);
         throw new AppError(401, 'Wrong password');
@@ -450,13 +453,24 @@ export class AuthController {
       res.clearCookie('refresh_token');
       logger.info('User logged out successfully');
 
-      // 🔔 Simple logout notification
+      //🔔 Simple logout notification — SSE only, no DB save
       try {
-        if (user) {
-          await this.notificationService.createNoti(
-            `Logout successfully`,
-            user.id
-          );
+        if (user && this.sseService.isUserConnected(user.id)) {
+          const now = new Date();
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          let hours = now.getHours();
+          const minutes = pad(now.getMinutes());
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12 || 12;
+          this.sseService.sendToUser(user.id, {
+            type: 'notification',
+            message: 'Logout successfully',
+            date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+            time: `${pad(hours)}:${minutes} ${ampm}`,
+            isRead: false,
+            userId: user.id,
+            timestamp: now.toISOString(),
+          });
         }
       } catch (notifError) {
         console.log('Logout notification error:', notifError);

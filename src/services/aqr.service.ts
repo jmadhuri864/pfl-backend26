@@ -59,6 +59,11 @@ export class AqrService {
 
 const serialNO = await this.generateSerialNo("AQR")
  data.aqrNo = serialNO;
+
+    // Sanitize optional date fields — empty string from frontend causes type errors
+    if (!data.dcDate || data.dcDate === '') data.dcDate = null;
+    if (!data.arrivalDate || data.arrivalDate === '') data.arrivalDate = null;
+
     console.log("in create aqr service ",data)
     const aqr = this.aqrRepo.create(data);
     console.log("it will create aqr");
@@ -138,7 +143,7 @@ const serialNO = await this.generateSerialNo("AQR")
       .leftJoinAndSelect("aqr.qcCheckBy", "qcCheckBy")
       .leftJoinAndSelect("aqr.receivedBy", "receivedBy")
       .leftJoinAndSelect("aqr.purchaseBy", "purchaseBy")
-      .leftJoinAndSelect("aqr.sendBy", "sendBy")
+      //.leftJoinAndSelect("aqr.sendBy", "sendBy")
       .leftJoinAndSelect("aqr.parameters", "parameters")
       .where("aqr.id = :id", { id })
       .getOne();
@@ -150,19 +155,20 @@ const serialNO = await this.generateSerialNo("AQR")
    ;
 
    const { createdDate, createdTime } = formatDateTime(result.createdAt);
-    console.log("result.arrivaleDate",result.arrivalDate);
-    console.log("result.dcDate",result.dcDate);
-    
-    // Pass strings directly instead of wrapping in new Date()
-    const dcDate = formatDateTime(result.dcDate).createdDate;
-    const arrivalDate = formatDateTime(result.arrivalDate).createdDate;
 
-    // Format arrivalDate to remove time
-    //const arrivalDate = result.arrivalDate ? formatDateTime(result.arrivalDate).createdDate : null;
+    // Entity transformer returns "DD-MM-YYYY", convert to "YYYY-MM-DD" for the update form
+    const toIsoDate = (val: string | null) => {
+      if (!val) return null;
+      const parts = val.split('-');
+      if (parts.length !== 3) return null;
+      return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY → YYYY-MM-DD
+    };
+    const dcDate = toIsoDate(result.dcDate as any);
+    const arrivalDate = toIsoDate(result.arrivalDate as any);
 
     return {
       id: result.id,
-      dcNo: result.dcNo.id,
+      dcNo: result.dcNo?.id || null,
       //dcDate: result.dcDate,
       arrivedQty: result.arrivedQty,
       samplingQty: result.samplingQty,
@@ -170,7 +176,7 @@ const serialNO = await this.generateSerialNo("AQR")
       receivedBy: result.receivedBy?.id,
       qcCheckBy: result.qcCheckBy?.id,
       verifiedBy: result.verifiedBy?.id,
-      sentBy: result.sendBy?.id,
+      //sentBy: result.sendBy?.id,
       totalQty: result.totalQty,
       totalpercent: result.totalpercent,
       supplierName: result.supplierName,
@@ -190,8 +196,8 @@ const serialNO = await this.generateSerialNo("AQR")
         qualityParameterId: param.qualityParameterId,
         qualityParameterName: param.qualityParameterName,
         qualityParameterType: param.qualityParameterType,
-        quantity: param.quantity,
-        percentage: param.percentage
+        quantity: param.quantity !== null && param.quantity !== undefined ? Number(param.quantity) : null,
+        percentage: param.percentage !== null && param.percentage !== undefined ? Number(param.percentage) : null,
       }))
     };
   }
@@ -207,7 +213,7 @@ const serialNO = await this.generateSerialNo("AQR")
       .leftJoinAndSelect("aqr.qcCheckBy", "qcCheckBy")
       .leftJoinAndSelect("aqr.receivedBy", "receivedBy")
       .leftJoinAndSelect("aqr.purchaseBy", "purchaseBy")
-      .leftJoinAndSelect("aqr.sendBy", "sendBy")
+      //.leftJoinAndSelect("aqr.sendBy", "sendBy")
       .leftJoinAndSelect("aqr.parameters", "parameters")
       .where("aqr.id = :id", { id })
       .getOne();
@@ -301,6 +307,9 @@ const serialNO = await this.generateSerialNo("AQR")
       return null;
     }
 
+    // Sanitize optional date fields — empty string from frontend causes type errors
+    if (!data.dcDate || data.dcDate === '') data.dcDate = null;
+    if (!data.arrivalDate || data.arrivalDate === '') data.arrivalDate = null;
 
     const oldData = { ...existingAqr };
 
@@ -544,7 +553,7 @@ console.log('Active documents:', activeDocuments);
           relations: ['dcNo',
           'product',
           'parameters',
-          'sendBy',
+         // 'sendBy',
           'purchaseBy',
           'receivedBy',
           'qcCheckBy',
@@ -586,7 +595,7 @@ console.log('Active documents:', activeDocuments);
       packingType: rd.product?.packingType || null,
 
       // users
-      sendBy: rd.sendBy?.firstName || null,
+      //sendBy: rd.sendBy?.firstName || null,
       purchaseBy: rd.purchaseBy?.firstName || null,
       receivedBy: rd.receivedBy?.firstName || null,
       qcCheckBy: rd.qcCheckBy?.firstName || null,
@@ -691,7 +700,7 @@ console.log('Active documents:', activeDocuments);
           relations: ['dcNo',
           'product',
           'parameters',
-          'sendBy',
+          //'sendBy',
           'purchaseBy',
           'receivedBy',
           'qcCheckBy',
@@ -733,7 +742,7 @@ console.log('Active documents:', activeDocuments);
       packingType: rd.product?.packingType || null,
 
       // users
-      sendBy: rd.sendBy?.firstName || null,
+     // sendBy: rd.sendBy?.firstName || null,
       purchaseBy: rd.purchaseBy?.firstName || null,
       receivedBy: rd.receivedBy?.firstName || null,
       qcCheckBy: rd.qcCheckBy?.firstName || null,
@@ -823,7 +832,7 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
           'dcNo',
       'product',
       'parameters',
-      'sendBy',
+      //'sendBy',
       'purchaseBy',
       'receivedBy',
       'qcCheckBy',
@@ -874,13 +883,13 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
     remark: aqr.remark || null,
 
     // product info
-    productName: aqr.product?.name || null,
+    product: aqr.product?.name || null,
     productCode: aqr.product?.productCode || null,
     //brand: aqr.product?.brand || null,
     packingType: aqr.product?.packingType || null,
 
     
-sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}`.trim() : null,
+//sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}`.trim() : null,
     purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ''} ${aqr.purchaseBy.lastName || ''}`.trim() : null,
     receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ''} ${aqr.receivedBy.lastName || ''}`.trim() : null,
     qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ''} ${aqr.qcCheckBy.lastName || ''}`.trim() : null,
@@ -916,7 +925,7 @@ sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}
 
   // ✅ Join relations but select only specific fields
   queryBuilder
-    .leftJoin("aqr.sendBy", "sendedBy")
+    //.leftJoin("aqr.sendBy", "sendedBy")
     .addSelect(["sendedBy.id", "sendedBy.firstName", "sendedBy.lastName"])
     .leftJoin("aqr.purchaseBy", "purchasedBy")
     .addSelect(["purchasedBy.id", "purchasedBy.firstName", "purchasedBy.lastName"])

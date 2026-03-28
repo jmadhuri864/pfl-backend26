@@ -346,6 +346,10 @@ import { SuperAdminController } from "./controllers/superAdmin.controller";
 import { ReportController } from "./controllers/report.controller";
 import { ReportService } from "./services/report.service";
 import { SalesReportService } from "./services/salesReport.service";
+import { RoleController } from "./controllers/role.controller";
+import { RoleService } from "./services/role.service";
+import { RoleRepository } from "./repositories/role.repository";
+import { Role } from "./entities/role.entity";
 
 
 const container = new Container();
@@ -1382,4 +1386,13 @@ container.bind<FinalInvoiceService>(TYPES.FinalInvoiceService).to(FinalInvoiceSe
 container.bind<FinalInvoiceController>(TYPES.FinalInvoiceController).to(FinalInvoiceController).inSingletonScope();
 container.bind<FinalInvoiceReportService>(TYPES.FinalInvoiceReportService).to(FinalInvoiceReportService).inSingletonScope();
 container.bind<FinalInvoiceReportController>(TYPES.FinalInvoiceReportController).to(FinalInvoiceReportController).inSingletonScope()
+
+// role
+container.bind<RoleRepository>(TYPES.RoleRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(Role).extend(RoleRepository);
+}).inRequestScope();
+container.bind<RoleService>(TYPES.RoleService).to(RoleService).inSingletonScope();
+container.bind<RoleController>(TYPES.RoleController).to(RoleController).inSingletonScope();
+
 export { container };

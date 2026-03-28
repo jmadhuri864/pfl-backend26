@@ -459,7 +459,12 @@ RegistrationReportsController:Symbol.for("RegistrationReportsController"),
   FinalInvoiceService:Symbol.for("FinalInvoiceService"),
   FinalInvoiceController:Symbol.for("FinalInvoiceController"),
   FinalInvoiceReportController:Symbol.for("FinalInvoiceReportController"),
-  FinalInvoiceReportService:Symbol.for("FinalInvoiceReportService")
+  FinalInvoiceReportService:Symbol.for("FinalInvoiceReportService"),
+
+  //role
+  RoleService: Symbol.for("RoleService"),
+  RoleRepository: Symbol.for("RoleRepository"),
+  RoleController: Symbol.for("RoleController"),
 
 };
 

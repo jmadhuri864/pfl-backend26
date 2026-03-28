@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { inject } from "inversify";
+import { inject, injectable } from "inversify";
 import { controller, httpGet, httpPost, httpPatch, httpDelete, request, response, next, requestParam, requestBody } from "inversify-express-utils";
 import { RoleService } from "../services/role.service";
 import { TYPES } from "../types";
 import { Role } from "../entities/role.entity";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
+
 
 @controller("/roles")
 export class RoleController {

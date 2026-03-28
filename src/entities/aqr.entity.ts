@@ -36,9 +36,9 @@ export class Aqr extends Model {
   samplingQty: string;
   // @Column({ nullable: true })
   // sendBy: string;
-   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-    @JoinColumn({ name: 'send_id' })
-    sendBy: User;
+  //  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  //   @JoinColumn({ name: 'send_id' })
+  //   sendBy: User;
   // @Column({ nullable: true })
   // purchaseBy: string;
    @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

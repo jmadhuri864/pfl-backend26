@@ -20,6 +20,7 @@ import { DitemRepository } from '../repositories/dItem.repository';
 import { custom } from 'zod';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { DataSource } from 'typeorm';
+import { CustomerDeliveryChallanService } from './customerDeliveryChallan.service';
 
 
 @injectable()
@@ -45,7 +46,8 @@ export class StockTransferDeliveryChallanService {
             private readonly deliveryChallanProductRepository: DitemRepository,
             @inject(TYPES.DocumentbRepository)
             private readonly documentbRepository: DocumentbRepository,
-    
+        @inject(TYPES.CustomerDeliveryChallanService)
+    private readonly customerDeliveryChallanService:CustomerDeliveryChallanService,
         @inject(TYPES.ProductRepository)
         private readonly productRepository: ProductRepository,
         @inject(TYPES.DataSource)
@@ -70,8 +72,7 @@ export class StockTransferDeliveryChallanService {
       throw new Error('Approval flow not found for user');
     }
 
-    // 2. Generate challan number
-    data.challanNo = await this.deliveryChallanService.generateVoucherNo();
+    data.challanNo = await this.customerDeliveryChallanService.generateVoucherNo(data.type || 'S');
 
     // 3. Save challan
     const challan = queryRunner.manager.create(this.challanRepository.target, data);

@@ -8,8 +8,10 @@ import { Source } from '../utils/status.enum';
 import { InwardProduct } from './inwardProduct.entity';
 import { Branches } from './branches.entity';
 import { Company } from './company.entity';
-import { format, toZonedTime } from 'date-fns-tz';
 import { User } from './user.entity';
+import { format, toZonedTime } from 'date-fns-tz';import { PostReturnByCustomer } from './postReturnByCustomer.entity';
+import { Customer } from './customer.entity';
+'./postReturnByCustomer.entity';
 
 export enum InwardType {
   Purchase = 'purchase',
@@ -27,7 +29,13 @@ export class InwardRegister extends Model {
   })
   @JoinColumn({ name: 'delivery_challan_id' })
   deliveryChallanNo: DeliveryChallanPurchase;
- 
+
+  @ManyToOne(() =>PostReturnByCustomer, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'rbc_id' })
+  rbcNo: PostReturnByCustomer;
 
   @Column({
     type: 'enum',
@@ -48,6 +56,10 @@ export class InwardRegister extends Model {
   @ManyToOne(() => Branches, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'branch_id' })
   location: Branches;
+
+  @ManyToOne(() => Branches, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'fromlocation_branch_id' })
+  fromLocation: Branches;
   @Column({
     type: 'date',
     nullable: true,
@@ -91,11 +103,28 @@ export class InwardRegister extends Model {
   })
   source: Source;
 
+  @ManyToOne(() => Customer, {
+    cascade: true,
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'customer_id' })
+  customerName: Customer;
+
+  // @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
+  // purchasedQty: number;
+   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
+  incomingGrossQty: number;
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
-  purchasedQty: number;
+  incomingNetQty: number;
+
+  // @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
+  // inwardQtyInKg: number;
 
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
-  inwardQtyInKg: number;
+  inwardGrossQty: number;
+  @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
+  inwardNetQty: number;
 
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   inwardCost: number;
