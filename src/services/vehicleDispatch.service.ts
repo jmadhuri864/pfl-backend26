@@ -29,15 +29,18 @@ export class VehicleDispatchService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService
   ) {}
-private async generateSerialNo(prefix: string): Promise<string> {
-    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+private async generateSerialNo(): Promise<string> {
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `VDR${yyyy}${mm}${dd}`;
+
     const count = await this.vehicleDispatchRepository.count({
-      where: { vehicleDispatchNo: ILike(`${prefix}%`) },
+      where: { vehicleDispatchNo: ILike(`${datePrefix}%`) },
     });
-    console.log(count);
-    // Generate the serial number in the format "PREFIX-001"
-    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
-    return serialNo;
+
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
   }
 
 
@@ -53,7 +56,7 @@ private async generateSerialNo(prefix: string): Promise<string> {
       throw new Error('Approval flow not found');
     }
 
-const serialNo = await this.generateSerialNo("VEHD");
+const serialNo = await this.generateSerialNo();
       data.vehicleDispatchNo = serialNo;
     const vehicleDispatch = this.vehicleDispatchRepository.create(data);
     console.log(vehicleDispatch);

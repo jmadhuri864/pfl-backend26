@@ -4,7 +4,7 @@ import { DealSlipRepository } from "../repositories/dealSlip.repository";
 import { DealSlip } from "../entities/dealSlip.entity";
 
 import { RfpaRepository } from "../repositories/rfpa.repository";
-import { Between, DeepPartial, LessThan, MoreThanOrEqual, SelectQueryBuilder, DataSource } from "typeorm";
+import { Between, DeepPartial, ILike, LessThan, MoreThanOrEqual, SelectQueryBuilder, DataSource } from "typeorm";
 import { Status } from "../utils/status.enum";
 import { UserService } from "./user.service";
 import { AuditLogService } from "./auditLog.service";
@@ -430,25 +430,18 @@ export class DealSlipService {
     
 
       async generateDealSlipId(): Promise<string> {
-        const today = new Date();
-        const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
-        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0);
-    
-        const lastDealSlip = await this.dealSlipRepository.findOne({
-          where: {
-              createdAt: Between(startOfDay, endOfDay),
-          },
-          order: { createdAt: "DESC" },
-      });
-      
-    
-        const sequenceNumber = lastDealSlip ? parseInt(lastDealSlip.dealSlipNo.slice(-4)) + 1 : 1;
-    
-       
-        return `${datePart}${sequenceNumber.toString().padStart(4, '0')}`;
-    }
+        const now = new Date();
+        const yyyy = now.getFullYear().toString();
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const datePrefix = `DL${yyyy}${mm}${dd}`;
+
+        const count = await this.dealSlipRepository.count({
+          where: { dealSlipNo: ILike(`${datePrefix}%`) },
+        });
+
+        return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
+      }
 
 
   

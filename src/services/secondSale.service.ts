@@ -44,15 +44,18 @@ export class SecondSaleService {
 
   ) { }
 
-  private async generateSerialNo(prefix: string): Promise<string> {
-    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+  private async generateSerialNo(): Promise<string> {
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `SSR${yyyy}${mm}${dd}`;
+
     const count = await this.secondSaleRepository.count({
-      where: { secondSaleNO: ILike(`${prefix}%`) },
+      where: { secondSaleNo: ILike(`${datePrefix}%`) },
     });
-    console.log(count);
-    // Generate the serial number in the format "PREFIX-001"
-    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
-    return serialNo;
+
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
   }
 
 
@@ -88,7 +91,7 @@ export class SecondSaleService {
 
       // 3. Extract product IDs from variants
       const productIds = variants.map(v => v.product?.id).filter(Boolean);
-const serialNo = await this.generateSerialNo("SSL");
+const serialNo = await this.generateSerialNo();
       secondSaleData.secondSaleNO = serialNo;
       const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
         ...secondSaleData,

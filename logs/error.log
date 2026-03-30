@@ -1663,3 +1663,7 @@ Cannot read properties of undefined (reading 'city')
 2026-03-28 03:42:08 PM [error]: AppError: You need to re-authenticate. Please log in. 
 2026-03-28 03:44:50 PM [error]: AppError: You need to re-authenticate. Please log in. 
 2026-03-28 03:44:50 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 04:29:30 PM [error]: AppError: You are not logged in 
+2026-03-28 04:29:30 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 05:28:55 PM [error]: AppError: You are not logged in 
+2026-03-28 05:28:56 PM [error]: AppError: You need to re-authenticate. Please log in. 

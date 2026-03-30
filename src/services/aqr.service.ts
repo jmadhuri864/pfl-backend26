@@ -32,16 +32,19 @@ export class AqrService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService
   ) { }
-  private async generateSerialNo(prefix: string): Promise<string> {
-      // Get the count of existing GRNs for the branch (or use another unique mechanism)
-      const count = await this.aqrRepo.count({
-        where: { aqrNo: ILike(`${prefix}%`) },
-      });
-      console.log(count);
-      // Generate the serial number in the format "PREFIX-001"
-      const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
-      return serialNo;
-    }
+  private async generateSerialNo(): Promise<string> {
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `AQR${yyyy}${mm}${dd}`;
+
+    const count = await this.aqrRepo.count({
+      where: { aqrNo: ILike(`${datePrefix}%`) },
+    });
+
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
+  }
 
 
 
@@ -57,7 +60,7 @@ export class AqrService {
     //   throw new Error('Approval flow not found');
     // }
 
-const serialNO = await this.generateSerialNo("AQR")
+const serialNO = await this.generateSerialNo()
  data.aqrNo = serialNO;
 
     // Sanitize optional date fields — empty string from frontend causes type errors

@@ -46,7 +46,7 @@ export class SecondSale extends Model {
 
 
     @Column({ type: 'text', nullable: true })
-  secondSaleNO: string;
+  secondSaleNo: string;
 
   @Column({ type: 'text', nullable: true })
   buyerMobNo: string;

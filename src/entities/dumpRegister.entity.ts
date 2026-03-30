@@ -6,6 +6,8 @@ import { DumpProduct } from "./dumpProduct.entity";
 import { Branches } from "./branches.entity";
 import { Company } from "./company.entity";
 import { format } from "date-fns";
+import { DeliveryChallanPurchase } from "./deliveryChallan.entity";
+import { PostReturnByCustomer } from "./postReturnByCustomer.entity";
 
 export enum DumpType {
   Purchase = 'purchase',
@@ -14,6 +16,24 @@ export enum DumpType {
 }
 @Entity("dump_register")
 export class DumpRegister extends Model {
+
+  @ManyToOne(() => DeliveryChallanPurchase, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'delivery_challan_id' })
+  deliveryChallanNo: DeliveryChallanPurchase;
+
+  @ManyToOne(() =>PostReturnByCustomer, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'rbc_id' })
+  rbcNo: PostReturnByCustomer;
+
+   @ManyToOne(() => GRN, { nullable: true, cascade:true,onDelete: "SET NULL" })
+  @JoinColumn({ name: "grn_id" })
+  grn: GRN;
  
   @ManyToOne(() => Company, {cascade: true,nullable: true,onDelete: "SET NULL" })
   @JoinColumn({name: "company_id"})
@@ -29,9 +49,7 @@ export class DumpRegister extends Model {
   },
 })
   date: Date;
-  @ManyToOne(() => GRN, { nullable: true, cascade:true,onDelete: "SET NULL" })
-  @JoinColumn({ name: "grn_id" })
-  grn: GRN;
+ 
   
    @Column({
     type: 'enum',
@@ -42,7 +60,7 @@ export class DumpRegister extends Model {
   @Column({ nullable: true })
   batchNo: string; 
    @Column({ nullable: true })
-    dumpRegisterNO: string;
+    dumpNo: string;
   @Column({ nullable: true })
   totalQty: number; 
   @Column({ nullable: true })

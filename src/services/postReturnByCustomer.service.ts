@@ -100,15 +100,18 @@ export class PostReturnByCustomerService {
    * - Cascade save for returnedProducts (no manual save needed)
    * - Efficient SQL aggregation for quantity updates
    */
-  private async generateSerialNo(prefix: string): Promise<string> {
-    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+  private async generateSerialNo(): Promise<string> {
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `RBC${yyyy}${mm}${dd}`;
+
     const count = await this.postReturnByCustomerRepository.count({
-      where: { rbcNo: ILike(`${prefix}%`) },
+      where: { rbcNo: ILike(`${datePrefix}%`) },
     });
-    console.log(count);
-    // Generate the serial number in the format "PREFIX-001"
-    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
-    return serialNo;
+
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
   }
 
 
@@ -179,7 +182,7 @@ export class PostReturnByCustomerService {
           }
         }
       }
-      const serialNo = await this.generateSerialNo("RBC");
+      const serialNo = await this.generateSerialNo();
       returnData.rbcNo = serialNo;
 
       // 5️⃣ Create return entity with returnedProducts (cascade will auto-save products)

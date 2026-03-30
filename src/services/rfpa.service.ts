@@ -11,7 +11,7 @@ import { Branches } from '../entities/branches.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { Farmer } from '../entities/farmer.entity';
 import { PaymentInfoForRFPA } from '../entities/rfpaPayementInfo.entity';
-import { DeepPartial, In, LessThan, MoreThanOrEqual, SelectQueryBuilder, DataSource } from 'typeorm';
+import { DeepPartial, ILike, In, LessThan, MoreThanOrEqual, SelectQueryBuilder, DataSource } from 'typeorm';
 import { UOMRepository } from '../repositories/uom.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { VendorService } from './vendor.service';
@@ -777,39 +777,17 @@ async getRFQByIdForUpdate(id: string) {
   }
 
   async generateRFPAId(): Promise<string> {
-    const today = new Date();
-    const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `RFPA${yyyy}${mm}${dd}`;
 
-    const startOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      0,
-      0,
-      0,
-    );
-    const endOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + 1,
-      0,
-      0,
-      0,
-    );
-
-    const lastRFPA = await this.rfpaRepository.findOne({
-      where: [
-        { createdAt: MoreThanOrEqual(startOfDay) },
-        { createdAt: LessThan(endOfDay) },
-      ],
-      order: { createdAt: 'DESC' },
+    const count = await this.rfpaRepository.count({
+      where: { rfpaId: ILike(`${datePrefix}%`) },
     });
 
-    const sequenceNumber = lastRFPA
-      ? parseInt(lastRFPA.rfpaId.slice(-4)) + 1
-      : 1;
-
-    return `${datePart}${sequenceNumber.toString().padStart(4, '0')}`;
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
   }
 
   

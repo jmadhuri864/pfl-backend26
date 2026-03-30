@@ -42,15 +42,18 @@ export class DumpRegisterService{
     @inject(TYPES.DataSource)
     private readonly dataSource: DataSource
     ) {}
-      private async generateSerialNo(prefix: string): Promise<string> {
-    // Get the count of existing GRNs for the branch (or use another unique mechanism)
+  private async generateSerialNo(): Promise<string> {
+    const now = new Date();
+    const yyyy = now.getFullYear().toString();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `DPR${yyyy}${mm}${dd}`;
+
     const count = await this.dumpRegisterRepository.count({
-      where: { dumpRegisterNO: ILike(`${prefix}%`) },
+      where: { dumpNo: ILike(`${datePrefix}%`) },
     });
-    console.log(count);
-    // Generate the serial number in the format "PREFIX-001"
-    const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
-    return serialNo;
+
+    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
   }
 
 
@@ -77,10 +80,10 @@ export class DumpRegisterService{
         const companyId = data.companyId || data.companyName;
         const locationId = data.locationId || data.location;
         const grnId = data.grnId || data.grn;
-const serialNo = await this.generateSerialNo("DUMR");
+const serialNo = await this.generateSerialNo();
 
         const dumpRegister = queryRunner.manager.create(this.dumpRegisterRepository.target, {
-          dumpRegisterNO: serialNo,
+          dumpNo: serialNo,
           companyName: companyId ? { id: companyId } : undefined,
           location: locationId ? { id: locationId } : undefined,
           date: data.date,

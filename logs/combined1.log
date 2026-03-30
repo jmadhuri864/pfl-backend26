@@ -44956,3 +44956,320 @@ Cannot read properties of undefined (reading 'city')
 2026-03-28 03:55:49 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
 2026-03-28 03:55:49 PM [info]: Fetching all products 
 2026-03-28 03:55:49 PM [info]: Fetched undefined products successfully 
+2026-03-28 03:57:41 PM [info]: Database connected successfully 
+2026-03-28 03:57:54 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 03:57:54 PM [info]: Total AQR fetched: 2 
+2026-03-28 03:59:55 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 03:59:55 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 03:59:55 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NGRjMTIxNi1jMzEwLTRiNDctYTc5Ny02NjNjZjlkODM4YjkiLCJpYXQiOjE3NzQ2OTIzMDEsImV4cCI6MTc3NDg3MjMwMX0.VIun4-dCgR8Wykht2NRDe2Jck8PXIoIZeTOzZNGK12woGGjyBjvhwVBa8qnTCpIgGK0dQ8mSXGBY9XVm49xqUucOAjVVMTnfh8Pl3HOfbpvAc2Tp3QCNUT_Un7v7XBqpPtsouRvj-C_L_tTKGg-BpbWIFpE-IVXPR9O35evWCfZ9xBKtajvkd9BALZ3Gc6ahjMLtIao8jAgnOJH7pGQd1gz-TcDPlxGphTHNTc8DpIetC4Qz0IMyYPyuz4-T4XQVm6jXO_afFm8-CumzyzmhgYCMbIZfAwni5yrxH12TZDmHiT3GEPb8fYA2XfreiZAQqF-Ddp8vcSCwF__KlFSM-w [IP: ::ffff:192.168.1.46]
+2026-03-28 03:59:55 PM [info]: SSE connected: 44dc1216-c310-4b47-a797-663cf9d838b9 (44dc1216-c310-4b47-a797-663cf9d838b9-1774693795451-3ucf1tbd0) 
+2026-03-28 03:59:55 PM [info]: SSE client connected: 44dc1216-c310-4b47-a797-663cf9d838b9-1774693795451-3ucf1tbd0 for user: 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 03:59:55 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ2OTI4OTAsImV4cCI6MTc3NDg3Mjg5MH0.B8UnCmF5payBrHx3tQJ55CVQwaFSK_RosRI7VmVdEAoL9Xc_yqjcNXyUg_Cn9P6teqSxLvKmCxPkyVlR9ZOrGchIeXXnuVJG-o2V1WnKEI_s5LOgqYLNmh1gC9BM9EYC-wRubQZ4Cr3MXwvcFRZG7etRvzxiexzVB1YUs_qYSARh0_LerMK5swkyf0UuOVUPe82I0e0IiKbStghslVwmJbJBmgsArg4c0uUwjRjY_fL4IfZpakD7mrT7LF3x-T_6_3Dv97iHVO00jlvhFMvgCwo3E7p-R-kEIaW00F9LprEHMPOUXZ6N_nBvXcOhkk5IsU8nittaqcXTyXea9mqCkA [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693795486-5qpbfz9gh) 
+2026-03-28 03:59:55 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693795486-5qpbfz9gh for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 03:59:55 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzQ2NzQ1NTUsImV4cCI6MTc3NDg1NDU1NX0.iybL5YMkPnRUT7wy1TI_i5XRHbOFeZSqD5r4c55F_9WwB2-C7WfDDOO9Fu2BAbP_GSEAt2UAHhT1dxDAuFxnTZpyzXQj_C9Itl3qa7g2IOND84SadeLyERuQUU1IexvO-Y82NBzuoSYTRKVUNEKPLLW0wqbgyeQqULSb7AmmmQudMd9mSSbOimc2baUVeIjgnAwQvdZEVymCKRUeS7PssQncMnwDATyQ9q0QUOvaczBfMcV2PHat-xh90WENDXBsbP8Bzh_g4AaYhtGsS4xhimDo5uEesIJrcb25hGdvj_HfS8YUkovK-Iriy--Sv7z_o2xL2ZyGIPypM-ZtUYDgWw [IP: ::ffff:192.168.1.52]
+2026-03-28 03:59:55 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693795514-bs0enxb9i) 
+2026-03-28 03:59:55 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693795514-bs0enxb9i for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-03-28 03:59:55 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 03:59:55 PM [info]: Getting All Employee 
+2026-03-28 03:59:55 PM [info]: Employee Getting successfully 
+2026-03-28 03:59:56 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 03:59:56 PM [info]: Activity logged: VIEW - OTHER by user 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 03:59:56 PM [info]: Total AQR fetched: 2 
+2026-03-28 04:00:06 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 04:00:06 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 04:00:06 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 04:00:06 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmN2M5MWVhMi05YTEwLTQxNjktYmNhNC1mMjQwZTRiNTg0MzciLCJpYXQiOjE3NzQ2NzQ5OTMsImV4cCI6MTc3NDg1NDk5M30.cEU9CcglsKgq9wpBh8zVNjE5nTe0-GtT1rKP8CwmnIR7SdOa5G2eJ7phPiSYicq6YEAbR1JQB3nNl2akZ0-VLjpUZZihjg8OUx0lkLl0D8U7StPiW8dnQU7wSzSceyw972H82LhLjPwu5yEYi41GWfJ9PhQk4FkWNDN1PKiFsB7Rl7BlGu4J2G6bJbrfxZRU6T2a4e86VQxSCUJUkEK9Xh6yc4Ra3BtAULBycSfB56mcSxjJODLH-C9-ttCZV9W3fsz6AYCRXFnh8T2y5zHbSV2aMJ8WFEDVJWVt53eO3k51zjErgarR6AiOEzqUg6dZEwY50-BBkvTSHTWhFXdU4w [IP: ::ffff:192.168.1.46]
+2026-03-28 04:00:06 PM [info]: SSE connected: f7c91ea2-9a10-4169-bca4-f240e4b58437 (f7c91ea2-9a10-4169-bca4-f240e4b58437-1774693806765-wo8h92ht2) 
+2026-03-28 04:00:06 PM [info]: SSE client connected: f7c91ea2-9a10-4169-bca4-f240e4b58437-1774693806765-wo8h92ht2 for user: f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 04:00:09 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 04:00:29 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.63]
+2026-03-28 04:00:29 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-03-28 04:00:29 PM [info]: Fetching all products 
+2026-03-28 04:00:29 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:00:29 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzQ2NzY2OTAsImV4cCI6MTc3NDg1NjY5MH0.KBvyOI0vEVU6in2P8IYQGaPc2XUSfd9ThJQojumbQadMvLbJSRUvtLW3l_C44SrpjhF6LJG8nemKSdP6RywbkHMuBlZpyLE1G217Y9umW7pIYlvYZkhaZxCta1KNY_xBBjIbZNbgr19pnQEM0LE_kZ7P0XutRMoGGG9Vj-S1_uhKvpva0pWdq77MIqX5imaiCrhNwC1BEOBeHE1Ad8yTQeBjdeABoeyJeY2piTgKbc8DsFvuUb8r3ClzBIJ5I1qagOe1U2qFkZ_aLcLZvkoUjX0zn040ZG_wROU13wy_k_JzcQlSAb_1w_BKwXro_qq8YOlag0arCUxr457ePB-c-w [IP: ::ffff:192.168.1.63]
+2026-03-28 04:00:29 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693829334-ymc89qz4b) 
+2026-03-28 04:00:29 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693829334-ymc89qz4b for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:01:34 PM [info]: SSE client disconnected: 44dc1216-c310-4b47-a797-663cf9d838b9-1774693795451-3ucf1tbd0 for user: 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 04:01:34 PM [info]: SSE closed: 44dc1216-c310-4b47-a797-663cf9d838b9 (44dc1216-c310-4b47-a797-663cf9d838b9-1774693795451-3ucf1tbd0) 
+2026-03-28 04:01:34 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693795486-5qpbfz9gh for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 04:01:34 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693795486-5qpbfz9gh) 
+2026-03-28 04:01:34 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ2OTI4OTAsImV4cCI6MTc3NDg3Mjg5MH0.B8UnCmF5payBrHx3tQJ55CVQwaFSK_RosRI7VmVdEAoL9Xc_yqjcNXyUg_Cn9P6teqSxLvKmCxPkyVlR9ZOrGchIeXXnuVJG-o2V1WnKEI_s5LOgqYLNmh1gC9BM9EYC-wRubQZ4Cr3MXwvcFRZG7etRvzxiexzVB1YUs_qYSARh0_LerMK5swkyf0UuOVUPe82I0e0IiKbStghslVwmJbJBmgsArg4c0uUwjRjY_fL4IfZpakD7mrT7LF3x-T_6_3Dv97iHVO00jlvhFMvgCwo3E7p-R-kEIaW00F9LprEHMPOUXZ6N_nBvXcOhkk5IsU8nittaqcXTyXea9mqCkA [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:34 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693894947-p6w2yp9zd) 
+2026-03-28 04:01:34 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1774693894947-p6w2yp9zd for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 04:01:34 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NGRjMTIxNi1jMzEwLTRiNDctYTc5Ny02NjNjZjlkODM4YjkiLCJpYXQiOjE3NzQ2OTIzMDEsImV4cCI6MTc3NDg3MjMwMX0.VIun4-dCgR8Wykht2NRDe2Jck8PXIoIZeTOzZNGK12woGGjyBjvhwVBa8qnTCpIgGK0dQ8mSXGBY9XVm49xqUucOAjVVMTnfh8Pl3HOfbpvAc2Tp3QCNUT_Un7v7XBqpPtsouRvj-C_L_tTKGg-BpbWIFpE-IVXPR9O35evWCfZ9xBKtajvkd9BALZ3Gc6ahjMLtIao8jAgnOJH7pGQd1gz-TcDPlxGphTHNTc8DpIetC4Qz0IMyYPyuz4-T4XQVm6jXO_afFm8-CumzyzmhgYCMbIZfAwni5yrxH12TZDmHiT3GEPb8fYA2XfreiZAQqF-Ddp8vcSCwF__KlFSM-w [IP: ::ffff:192.168.1.46]
+2026-03-28 04:01:34 PM [info]: SSE connected: 44dc1216-c310-4b47-a797-663cf9d838b9 (44dc1216-c310-4b47-a797-663cf9d838b9-1774693894996-iupn8u6j0) 
+2026-03-28 04:01:34 PM [info]: SSE client connected: 44dc1216-c310-4b47-a797-663cf9d838b9-1774693894996-iupn8u6j0 for user: 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 04:01:35 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 04:01:35 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:35 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:35 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 04:01:35 PM [info]: Getting All Employee 
+2026-03-28 04:01:35 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 04:01:35 PM [info]: Employee Getting successfully 
+2026-03-28 04:01:35 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 04:01:35 PM [info]: Activity logged: VIEW - OTHER by user 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 04:01:35 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693795514-bs0enxb9i for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-03-28 04:01:35 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693795514-bs0enxb9i) 
+2026-03-28 04:01:35 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzQ2NzQ1NTUsImV4cCI6MTc3NDg1NDU1NX0.iybL5YMkPnRUT7wy1TI_i5XRHbOFeZSqD5r4c55F_9WwB2-C7WfDDOO9Fu2BAbP_GSEAt2UAHhT1dxDAuFxnTZpyzXQj_C9Itl3qa7g2IOND84SadeLyERuQUU1IexvO-Y82NBzuoSYTRKVUNEKPLLW0wqbgyeQqULSb7AmmmQudMd9mSSbOimc2baUVeIjgnAwQvdZEVymCKRUeS7PssQncMnwDATyQ9q0QUOvaczBfMcV2PHat-xh90WENDXBsbP8Bzh_g4AaYhtGsS4xhimDo5uEesIJrcb25hGdvj_HfS8YUkovK-Iriy--Sv7z_o2xL2ZyGIPypM-ZtUYDgWw [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:35 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693895817-y9x0luggr) 
+2026-03-28 04:01:35 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774693895817-y9x0luggr for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-03-28 04:01:35 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:35 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 04:01:36 PM [info]: Total AQR fetched: 2 
+2026-03-28 04:02:22 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693829334-ymc89qz4b for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:02:22 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693829334-ymc89qz4b) 
+2026-03-28 04:02:22 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-03-28 04:02:22 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.63]
+2026-03-28 04:02:22 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzQ2NzY2OTAsImV4cCI6MTc3NDg1NjY5MH0.KBvyOI0vEVU6in2P8IYQGaPc2XUSfd9ThJQojumbQadMvLbJSRUvtLW3l_C44SrpjhF6LJG8nemKSdP6RywbkHMuBlZpyLE1G217Y9umW7pIYlvYZkhaZxCta1KNY_xBBjIbZNbgr19pnQEM0LE_kZ7P0XutRMoGGG9Vj-S1_uhKvpva0pWdq77MIqX5imaiCrhNwC1BEOBeHE1Ad8yTQeBjdeABoeyJeY2piTgKbc8DsFvuUb8r3ClzBIJ5I1qagOe1U2qFkZ_aLcLZvkoUjX0zn040ZG_wROU13wy_k_JzcQlSAb_1w_BKwXro_qq8YOlag0arCUxr457ePB-c-w [IP: ::ffff:192.168.1.63]
+2026-03-28 04:02:22 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693942735-8gnis06et) 
+2026-03-28 04:02:22 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774693942735-8gnis06et for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:02:22 PM [info]: Fetching all products 
+2026-03-28 04:02:22 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:05:45 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 04:05:45 PM [info]: Getting All Employee 
+2026-03-28 04:05:46 PM [info]: Employee Getting successfully 
+2026-03-28 04:05:46 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-03-28 04:11:03 PM [info]: Database connected successfully 
+2026-03-28 04:12:20 PM [info]: Database connected successfully 
+2026-03-28 04:13:35 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Received GET request on /packingMaterial/ [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:35 PM [info]: Fetching all products 
+2026-03-28 04:13:35 PM [info]: Fetching all products 
+2026-03-28 04:13:35 PM [info]: Fetching all packing materials 
+2026-03-28 04:13:35 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:13:36 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:13:36 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:36 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:36 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:36 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzQ2NzY2OTAsImV4cCI6MTc3NDg1NjY5MH0.KBvyOI0vEVU6in2P8IYQGaPc2XUSfd9ThJQojumbQadMvLbJSRUvtLW3l_C44SrpjhF6LJG8nemKSdP6RywbkHMuBlZpyLE1G217Y9umW7pIYlvYZkhaZxCta1KNY_xBBjIbZNbgr19pnQEM0LE_kZ7P0XutRMoGGG9Vj-S1_uhKvpva0pWdq77MIqX5imaiCrhNwC1BEOBeHE1Ad8yTQeBjdeABoeyJeY2piTgKbc8DsFvuUb8r3ClzBIJ5I1qagOe1U2qFkZ_aLcLZvkoUjX0zn040ZG_wROU13wy_k_JzcQlSAb_1w_BKwXro_qq8YOlag0arCUxr457ePB-c-w [IP: ::ffff:192.168.1.63]
+2026-03-28 04:13:36 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694616122-0z9y8ujf4) 
+2026-03-28 04:13:36 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694616122-0z9y8ujf4 for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:13:36 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:13:36 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:13:36 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:13:39 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:14:28 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694616122-0z9y8ujf4 for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:14:28 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694616122-0z9y8ujf4) 
+2026-03-28 04:14:28 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Received GET request on /packingMaterial/ [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzQ2NzY2OTAsImV4cCI6MTc3NDg1NjY5MH0.KBvyOI0vEVU6in2P8IYQGaPc2XUSfd9ThJQojumbQadMvLbJSRUvtLW3l_C44SrpjhF6LJG8nemKSdP6RywbkHMuBlZpyLE1G217Y9umW7pIYlvYZkhaZxCta1KNY_xBBjIbZNbgr19pnQEM0LE_kZ7P0XutRMoGGG9Vj-S1_uhKvpva0pWdq77MIqX5imaiCrhNwC1BEOBeHE1Ad8yTQeBjdeABoeyJeY2piTgKbc8DsFvuUb8r3ClzBIJ5I1qagOe1U2qFkZ_aLcLZvkoUjX0zn040ZG_wROU13wy_k_JzcQlSAb_1w_BKwXro_qq8YOlag0arCUxr457ePB-c-w [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694668143-2tng9rrqg) 
+2026-03-28 04:14:28 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1774694668143-2tng9rrqg for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:14:28 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Fetching all packing materials 
+2026-03-28 04:14:28 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Fetching all products 
+2026-03-28 04:14:28 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:14:28 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-03-28 04:14:28 PM [info]: Fetching all products 
+2026-03-28 04:14:28 PM [info]: Fetched undefined products successfully 
+2026-03-28 04:14:29 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:14:29 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:14:29 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 04:29:26 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzQ2NzQ1NTUsImV4cCI6MTc3NDg1NDU1NX0.iybL5YMkPnRUT7wy1TI_i5XRHbOFeZSqD5r4c55F_9WwB2-C7WfDDOO9Fu2BAbP_GSEAt2UAHhT1dxDAuFxnTZpyzXQj_C9Itl3qa7g2IOND84SadeLyERuQUU1IexvO-Y82NBzuoSYTRKVUNEKPLLW0wqbgyeQqULSb7AmmmQudMd9mSSbOimc2baUVeIjgnAwQvdZEVymCKRUeS7PssQncMnwDATyQ9q0QUOvaczBfMcV2PHat-xh90WENDXBsbP8Bzh_g4AaYhtGsS4xhimDo5uEesIJrcb25hGdvj_HfS8YUkovK-Iriy--Sv7z_o2xL2ZyGIPypM-ZtUYDgWw [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:26 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774695566199-s81jjrubh) 
+2026-03-28 04:29:26 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774695566199-s81jjrubh for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-03-28 04:29:26 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:26 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:26 PM [info]: Total AQR fetched: 2 
+2026-03-28 04:29:29 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:30 PM [info]: User logged out successfully 
+2026-03-28 04:29:30 PM [info]: Notification sent to user c9bd1e5f-e584-49fb-9e53-aca4f8e70415: notification 
+2026-03-28 04:29:30 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:30 PM [error]: AppError: You are not logged in 
+2026-03-28 04:29:30 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774695566199-s81jjrubh for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-03-28 04:29:30 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1774695566199-s81jjrubh) 
+2026-03-28 04:29:30 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.52]
+2026-03-28 04:29:30 PM [info]: Received request to refresh access token 
+2026-03-28 04:29:30 PM [warn]: Refresh token not provided 
+2026-03-28 04:29:30 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 04:54:36 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 04:54:36 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 04:54:37 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 04:54:37 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmN2M5MWVhMi05YTEwLTQxNjktYmNhNC1mMjQwZTRiNTg0MzciLCJpYXQiOjE3NzQ2NzQ5OTMsImV4cCI6MTc3NDg1NDk5M30.cEU9CcglsKgq9wpBh8zVNjE5nTe0-GtT1rKP8CwmnIR7SdOa5G2eJ7phPiSYicq6YEAbR1JQB3nNl2akZ0-VLjpUZZihjg8OUx0lkLl0D8U7StPiW8dnQU7wSzSceyw972H82LhLjPwu5yEYi41GWfJ9PhQk4FkWNDN1PKiFsB7Rl7BlGu4J2G6bJbrfxZRU6T2a4e86VQxSCUJUkEK9Xh6yc4Ra3BtAULBycSfB56mcSxjJODLH-C9-ttCZV9W3fsz6AYCRXFnh8T2y5zHbSV2aMJ8WFEDVJWVt53eO3k51zjErgarR6AiOEzqUg6dZEwY50-BBkvTSHTWhFXdU4w [IP: ::ffff:192.168.1.46]
+2026-03-28 04:54:37 PM [info]: SSE connected: f7c91ea2-9a10-4169-bca4-f240e4b58437 (f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697077122-7xangscf2) 
+2026-03-28 04:54:37 PM [info]: SSE client connected: f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697077122-7xangscf2 for user: f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 04:54:39 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:00:15 PM [info]: SSE client disconnected: f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697077122-7xangscf2 for user: f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:00:15 PM [info]: SSE closed: f7c91ea2-9a10-4169-bca4-f240e4b58437 (f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697077122-7xangscf2) 
+2026-03-28 05:00:15 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmN2M5MWVhMi05YTEwLTQxNjktYmNhNC1mMjQwZTRiNTg0MzciLCJpYXQiOjE3NzQ2NzQ5OTMsImV4cCI6MTc3NDg1NDk5M30.cEU9CcglsKgq9wpBh8zVNjE5nTe0-GtT1rKP8CwmnIR7SdOa5G2eJ7phPiSYicq6YEAbR1JQB3nNl2akZ0-VLjpUZZihjg8OUx0lkLl0D8U7StPiW8dnQU7wSzSceyw972H82LhLjPwu5yEYi41GWfJ9PhQk4FkWNDN1PKiFsB7Rl7BlGu4J2G6bJbrfxZRU6T2a4e86VQxSCUJUkEK9Xh6yc4Ra3BtAULBycSfB56mcSxjJODLH-C9-ttCZV9W3fsz6AYCRXFnh8T2y5zHbSV2aMJ8WFEDVJWVt53eO3k51zjErgarR6AiOEzqUg6dZEwY50-BBkvTSHTWhFXdU4w [IP: ::ffff:192.168.1.46]
+2026-03-28 05:00:15 PM [info]: SSE connected: f7c91ea2-9a10-4169-bca4-f240e4b58437 (f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697415295-mj7ti7q0u) 
+2026-03-28 05:00:15 PM [info]: SSE client connected: f7c91ea2-9a10-4169-bca4-f240e4b58437-1774697415295-mj7ti7q0u for user: f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:00:15 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 05:00:15 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:00:15 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 05:00:16 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:02:22 PM [info]: Database connected successfully 
+2026-03-28 05:03:29 PM [info]: Database connected successfully 
+2026-03-28 05:04:33 PM [info]: Database connected successfully 
+2026-03-28 05:07:48 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:07:49 PM [info]: Total AQR fetched: 4 
+2026-03-28 05:07:53 PM [info]: Received GET request on /aqr/view/5432daa1-39cc-4f72-80c8-a81ac7ac7ed6 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:07:58 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:09:22 PM [info]: Database connected successfully 
+2026-03-28 05:10:19 PM [info]: Database connected successfully 
+2026-03-28 05:12:39 PM [info]: Received GET request on /aqr/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:12:40 PM [info]: Total AQR fetched: 4 
+2026-03-28 05:13:24 PM [info]: Received GET request on /aqr/view/5432daa1-39cc-4f72-80c8-a81ac7ac7ed6 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:13:26 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:14:58 PM [info]: Database connected successfully 
+2026-03-28 05:15:37 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NGRjMTIxNi1jMzEwLTRiNDctYTc5Ny02NjNjZjlkODM4YjkiLCJpYXQiOjE3NzQ2OTIzMDEsImV4cCI6MTc3NDg3MjMwMX0.VIun4-dCgR8Wykht2NRDe2Jck8PXIoIZeTOzZNGK12woGGjyBjvhwVBa8qnTCpIgGK0dQ8mSXGBY9XVm49xqUucOAjVVMTnfh8Pl3HOfbpvAc2Tp3QCNUT_Un7v7XBqpPtsouRvj-C_L_tTKGg-BpbWIFpE-IVXPR9O35evWCfZ9xBKtajvkd9BALZ3Gc6ahjMLtIao8jAgnOJH7pGQd1gz-TcDPlxGphTHNTc8DpIetC4Qz0IMyYPyuz4-T4XQVm6jXO_afFm8-CumzyzmhgYCMbIZfAwni5yrxH12TZDmHiT3GEPb8fYA2XfreiZAQqF-Ddp8vcSCwF__KlFSM-w [IP: ::ffff:192.168.1.46]
+2026-03-28 05:15:37 PM [info]: SSE connected: 44dc1216-c310-4b47-a797-663cf9d838b9 (44dc1216-c310-4b47-a797-663cf9d838b9-1774698337293-idkmmjw4y) 
+2026-03-28 05:15:37 PM [info]: SSE client connected: 44dc1216-c310-4b47-a797-663cf9d838b9-1774698337293-idkmmjw4y for user: 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 05:15:37 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 05:15:37 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:15:37 PM [info]: Fetching all Vehical Dispatch... 
+2026-03-28 05:15:38 PM [info]: Activity logged: VIEW - OTHER by user 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 05:17:12 PM [info]: Received GET request on /dumpRegister/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /dumpRegister/update/3072d7dc-1722-4521-bfa3-aec67b91353d [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:20 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDumpCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:21 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:21 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:21 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:22 PM [info]: Received GET request on /products/partial/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:22 PM [info]: Received GET request on /products/getall/getvarient/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:22 PM [info]: Received GET request on /products/getall/getvarient/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:22 PM [info]: Received GET request on /products/partial/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:22 PM [info]: Fetching all products 
+2026-03-28 05:17:22 PM [info]: Fetching product with ID 
+2026-03-28 05:17:22 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:22 PM [info]: Fetching product with ID 
+2026-03-28 05:17:22 PM [info]: Fetching all products 
+2026-03-28 05:17:22 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:22 PM [info]: Fetching all products 
+2026-03-28 05:17:22 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:22 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:22 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:22 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:17:22 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:17:37 PM [info]: Received GET request on /dumpRegister/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Received GET request on /products/partial/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Fetching all products 
+2026-03-28 05:17:44 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:44 PM [info]: Received GET request on /products/getall/getvarient/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Received GET request on /products/partial/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Received GET request on /products/getall/getvarient/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:44 PM [info]: Fetching all products 
+2026-03-28 05:17:45 PM [info]: Fetching product with ID 
+2026-03-28 05:17:45 PM [info]: Fetching all products 
+2026-03-28 05:17:45 PM [info]: Received GET request on /dumpRegister/update/3072d7dc-1722-4521-bfa3-aec67b91353d [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:45 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:45 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:45 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:17:45 PM [info]: Fetching product with ID 
+2026-03-28 05:17:45 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:17:45 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:45 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDumpCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:45 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:45 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:17:45 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.46]
+2026-03-28 05:17:46 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:46 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:49 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:17:49 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:28:51 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.46]
+2026-03-28 05:28:55 PM [info]: User logged out successfully 
+2026-03-28 05:28:55 PM [info]: Notification sent to user 44dc1216-c310-4b47-a797-663cf9d838b9: notification 
+2026-03-28 05:28:55 PM [info]: SSE client disconnected: 44dc1216-c310-4b47-a797-663cf9d838b9-1774698337293-idkmmjw4y for user: 44dc1216-c310-4b47-a797-663cf9d838b9 
+2026-03-28 05:28:55 PM [info]: SSE closed: 44dc1216-c310-4b47-a797-663cf9d838b9 (44dc1216-c310-4b47-a797-663cf9d838b9-1774698337293-idkmmjw4y) 
+2026-03-28 05:28:55 PM [info]: Received GET request on /vehicleDispatches/?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:28:55 PM [error]: AppError: You are not logged in 
+2026-03-28 05:28:56 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.46]
+2026-03-28 05:28:56 PM [info]: Received request to refresh access token 
+2026-03-28 05:28:56 PM [warn]: Refresh token not provided 
+2026-03-28 05:28:56 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-03-28 05:34:30 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-03-28 05:34:31 PM [info]: Fetching all products 
+2026-03-28 05:34:31 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:34:32 PM [info]: Received GET request on /products/partial/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:34:33 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:34:33 PM [info]: Received GET request on /products/getall/getvarient/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:34:33 PM [info]: Received GET request on /products/getall/getvarient/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:34:33 PM [info]: Fetching all products 
+2026-03-28 05:34:33 PM [info]: Received GET request on /products/partial/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:34:33 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:34:33 PM [info]: Fetching all products 
+2026-03-28 05:34:33 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:34:33 PM [info]: Fetching product with ID 
+2026-03-28 05:34:33 PM [info]: Fetching product with ID 
+2026-03-28 05:34:33 PM [info]: Fetching all products 
+2026-03-28 05:34:33 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:34:33 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:34:33 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:36:23 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDumpCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.46]
+2026-03-28 05:36:23 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.46]
+2026-03-28 05:36:23 PM [info]: Received GET request on /dumpRegister/update/3072d7dc-1722-4521-bfa3-aec67b91353d [IP: ::ffff:192.168.1.46]
+2026-03-28 05:36:23 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.46]
+2026-03-28 05:36:23 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.46]
+2026-03-28 05:36:23 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:36:23 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:36:23 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:36:28 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Received GET request on /packingMaterial/ [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.63]
+2026-03-28 05:36:28 PM [info]: Fetching all packing materials 
+2026-03-28 05:36:28 PM [info]: Fetching all products 
+2026-03-28 05:36:28 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:36:28 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 05:36:28 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 05:36:28 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-03-28 05:39:05 PM [info]: Database connected successfully 
+2026-03-28 05:39:29 PM [info]: Database connected successfully 
+2026-03-28 05:44:58 PM [info]: Database connected successfully 
+2026-03-28 05:45:07 PM [info]: Database connected successfully 
+2026-03-28 05:46:35 PM [info]: Database connected successfully 
+2026-03-28 05:46:48 PM [info]: Database connected successfully 
+2026-03-28 05:47:36 PM [info]: Database connected successfully 
+2026-03-28 05:48:06 PM [info]: Database connected successfully 
+2026-03-28 05:48:54 PM [info]: Database connected successfully 
+2026-03-28 05:49:08 PM [info]: Database connected successfully 
+2026-03-28 05:53:15 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmN2M5MWVhMi05YTEwLTQxNjktYmNhNC1mMjQwZTRiNTg0MzciLCJpYXQiOjE3NzQ2NzQ5OTMsImV4cCI6MTc3NDg1NDk5M30.cEU9CcglsKgq9wpBh8zVNjE5nTe0-GtT1rKP8CwmnIR7SdOa5G2eJ7phPiSYicq6YEAbR1JQB3nNl2akZ0-VLjpUZZihjg8OUx0lkLl0D8U7StPiW8dnQU7wSzSceyw972H82LhLjPwu5yEYi41GWfJ9PhQk4FkWNDN1PKiFsB7Rl7BlGu4J2G6bJbrfxZRU6T2a4e86VQxSCUJUkEK9Xh6yc4Ra3BtAULBycSfB56mcSxjJODLH-C9-ttCZV9W3fsz6AYCRXFnh8T2y5zHbSV2aMJ8WFEDVJWVt53eO3k51zjErgarR6AiOEzqUg6dZEwY50-BBkvTSHTWhFXdU4w [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: SSE connected: f7c91ea2-9a10-4169-bca4-f240e4b58437 (f7c91ea2-9a10-4169-bca4-f240e4b58437-1774700595222-03odtyrud) 
+2026-03-28 05:53:15 PM [info]: SSE client connected: f7c91ea2-9a10-4169-bca4-f240e4b58437-1774700595222-03odtyrud for user: f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:53:15 PM [info]: Received GET request on /products/partial/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /dumpRegister/update/3072d7dc-1722-4521-bfa3-aec67b91353d [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Fetching all products 
+2026-03-28 05:53:15 PM [info]: Fetching all products 
+2026-03-28 05:53:15 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:53:15 PM [info]: Received GET request on /products/getall/getvarient/71024a95-c860-4d2e-acf9-4f28e8cab3d0 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /products/partial/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:53:15 PM [info]: Received GET request on /products/getall/getvarient/f151f517-33fa-4235-a02a-90c355b1c942 [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDumpCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Fetching product with ID 
+2026-03-28 05:53:15 PM [info]: Fetching all products 
+2026-03-28 05:53:15 PM [info]: Fetching product with ID 
+2026-03-28 05:53:15 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:53:15 PM [info]: Fetched undefined products successfully 
+2026-03-28 05:53:15 PM [info]: Product with ID fetched successfully 
+2026-03-28 05:53:15 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:15 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:16 PM [info]: Activity logged: VIEW - OTHER by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:53:16 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.46]
+2026-03-28 05:53:17 PM [info]: Activity logged: VIEW - GRN by user f7c91ea2-9a10-4169-bca4-f240e4b58437 
+2026-03-28 05:53:29 PM [info]: Database connected successfully 
+2026-03-28 05:54:00 PM [info]: Database connected successfully 
+2026-03-28 05:54:29 PM [info]: Database connected successfully 
+2026-03-28 05:54:46 PM [info]: Database connected successfully 
