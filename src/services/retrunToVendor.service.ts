@@ -86,14 +86,18 @@ export class ReturnToVendorService {
           // 8️⃣ Create document and start approval flow (outside transaction)
           const document = await this.documentbService.createDocument({
             type: DocumentTypeEnum.RETURN_TO_VENDOR,
-            docDef: DocDefEnum.PROCUREMENT,
+            docDef: DocDefEnum.OPERATION,
             status: DocumentStatus.HOLD,
             remarks: 'Document auto-created with Return To Vendor',
             lastActionBy: { id: requestedBy },
             document_type_id: savedreturn.id,
           });
 
-          await this.documentbService.startApprovalFlow(document.id);
+          try {
+            await this.documentbService.startApprovalFlow(document.id);
+          } catch (approvalError: any) {
+            console.warn('Approval flow not started (no flow configured):', approvalError?.message);
+          }
 
           // 9️⃣ Process inventory (outside transaction, non-critical)
           if (Array.isArray(savedreturn.rtvProducts)) {
@@ -106,7 +110,11 @@ export class ReturnToVendorService {
           return savedreturn;
 
       } catch (error: any) {
-          await queryRunner.rollbackTransaction();
+          try {
+            await queryRunner.rollbackTransaction();
+          } catch {
+            // transaction already committed or not started — safe to ignore
+          }
           throw error;
       } finally {
           await queryRunner.release();
@@ -226,8 +234,10 @@ export class ReturnToVendorService {
 
         const { search } = queryOptions;
         const typedDocuments = data as DocumentWithRelatedData[];
+        const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        for (const doc of typedDocuments) {
+        for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;
             try {
                 doc.relatedData = await this.postReturnToVendorRepository.findOne({
@@ -240,7 +250,7 @@ export class ReturnToVendorService {
             }
         }
 
-        let relatedDataOnly = typedDocuments
+        let relatedDataOnly = activeDocuments
             .filter((doc) => doc.relatedData)
             .map((doc) => ({
                 id: doc.relatedData.id,

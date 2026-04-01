@@ -79,21 +79,26 @@ export class DumpRegisterService{
         // Handle both companyId/companyName field names
         const companyId = data.companyId || data.companyName;
         const locationId = data.locationId || data.location;
-        const grnId = data.grnId || data.grn;
+        const grnId = data.grn || data.grnNo;
+        const deliveryChallanId = data.deliveryChallanNo || data.deliveryChallan;
+        const rbcId = data.rbcNo || data.rbc;
 const serialNo = await this.generateSerialNo();
 
         const dumpRegister = queryRunner.manager.create(this.dumpRegisterRepository.target, {
           dumpNo: serialNo,
           companyName: companyId ? { id: companyId } : undefined,
           location: locationId ? { id: locationId } : undefined,
-          date: data.date,
           grn: grnId ? { id: grnId } : undefined,
+          deliveryChallanNo: deliveryChallanId ? { id: deliveryChallanId } : undefined,
+          rbcNo: rbcId ? { id: rbcId } : undefined,
+          requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
+          date: data.date,
+          dumpType: data.dumpType || undefined,
           batchNo: data.batchNo,
           totalQty: data.totalQty,
           totalDumpCost: data.totalDumpCost,
           totalCostInWords: data.totalCostInWords,
           remark: data.remark,
-          requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
         });
 
         console.log("Saving dump register...");
@@ -236,7 +241,7 @@ const serialNo = await this.generateSerialNo();
             try {
               doc.relatedData = await this.dumpRegisterRepository.findOne({
                 where: { id: doc.document_type_id, isDeleted:true },
-                relations: ['companyName', 'location', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
+                relations: ['companyName', 'location', 'grn', 'deliveryChallanNo', 'rbcNo', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
               });
       
             } catch {
@@ -248,15 +253,25 @@ const serialNo = await this.generateSerialNo();
             .filter((doc) => doc.relatedData)
             .map((doc) => ({
               documentId: doc.id,
-              overAllStatus: doc.status, 
+              overAllStatus: doc.status,
               createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
               createdDate: formatDateTime(doc.createdAt).createdDate,
               createdTime: formatDateTime(doc.createdAt).createdTime,
-              ...doc.relatedData,
+              id: doc.relatedData.id,
+              dumpNo: doc.relatedData.dumpNo,
               companyName: doc.relatedData?.companyName?.name || null,
               location: doc.relatedData?.location?.name || null,
-            })
-            );
+              grn: doc.relatedData?.grn?.grnNo || null,
+              deliveryChallanNo: doc.relatedData?.deliveryChallanNo?.challanNo || null,
+              rbcNo: doc.relatedData?.rbcNo?.rbcNo || null,
+              date: doc.relatedData.date,
+              batchNo: doc.relatedData.batchNo,
+              totalQty: doc.relatedData.totalQty,
+              totalDumpCost: doc.relatedData.totalDumpCost,
+              totalCostInWords: doc.relatedData.totalCostInWords,
+              remark: doc.relatedData.remark,
+              dumpType: doc.relatedData.dumpType || null,
+            }));
 
              // 🔍 Deep search helper
   const objectToString = (obj: any): string => {
@@ -365,7 +380,7 @@ const serialNo = await this.generateSerialNo();
        async getDumpRegisterByIdforUpdate(id: string): Promise<any> {
         const dumpRegister = await this.dumpRegisterRepository.findOne({
           where: { id },
-          relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.uom","companyName","location"],
+          relations: ["location", "grn", "deliveryChallanNo", "rbcNo", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.variant", "dumpProducts.uom", "companyName"],
         });
       
         if (!dumpRegister) {
@@ -377,42 +392,30 @@ const serialNo = await this.generateSerialNo();
       
         return {
           id: dumpRegister.id,
+          dumpNo: dumpRegister.dumpNo || null,
           companyName: dumpRegister.companyName?.id,
           createdDate: createdDate, 
-          createdTime: createdTime,   
+          createdTime: createdTime, 
+          dumpType: dumpRegister.dumpType || null,
           location: dumpRegister.location ? dumpRegister.location.id : null,
           date: dumpRegister.date,
           totalDumpCost: dumpRegister.totalDumpCost,
           totalCostInWords: dumpRegister.totalCostInWords,
+          totalQty: dumpRegister.totalQty,
           batchNo: dumpRegister.batchNo,
           remark: dumpRegister.remark,
-          grn: dumpRegister.grn ? dumpRegister.grn.id : null,
-            
-          requestedBy: dumpRegister.requestedBy?.id,
-            // ? {
-            //     id: dumpRegister.requestedBy.id,
-            //     firstName: dumpRegister.requestedBy.firstName,
-            //     lastName: dumpRegister.requestedBy.lastName,
-            //   }
-            // : null,
+          grn: dumpRegister.grn?.id || null,
+          deliveryChallanNo: dumpRegister.deliveryChallanNo?.id || null,
+          rbcNo: dumpRegister.rbcNo?.id || null,
+          requestedBy: dumpRegister.requestedBy?.id || null,
           dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
             id: dumpProduct.id,
-            productName: dumpProduct.productName?.id ,
-            variant:dumpProduct.variant?.id,
-            // ? {
-            //   id:dumpProduct.productName.id ,
-            //   productName:dumpProduct.productName.name
-            // }: null,
-            uom: dumpProduct.uom?.id ,
-            //?{ id:dumpProduct.uom.id,unit:dumpProduct.uom.unit }: null,
-            // variety:dumpProduct.variety,
-            // count:dumpProduct.count,
-            // size:dumpProduct.size,
-            // origin:dumpProduct.origin,
+            productName: dumpProduct.productName?.id || null,
+            variant: dumpProduct.variant?.id || null,
+            uom: dumpProduct.uom?.id || null,
             quantity: dumpProduct.quantity,
-            amount:dumpProduct.amount,
-            unitPrice:dumpProduct.unitPrice
-           
+            amount: dumpProduct.amount,
+            unitPrice: dumpProduct.unitPrice,
           })),
         };
       }
@@ -426,7 +429,7 @@ const serialNo = await this.generateSerialNo();
         if(id){
         const dumpRegister = await this.dumpRegisterRepository.findOne({
           where: { id },
-          relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.uom","companyName","location"],
+          relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.variant", "dumpProducts.uom", "companyName", "deliveryChallanNo", "rbcNo"],
         });
       
         if (!dumpRegister) {
@@ -438,50 +441,37 @@ const serialNo = await this.generateSerialNo();
       
         return {
           id: dumpRegister.id,
-          companyName: dumpRegister.companyName?.name,
+          dumpNo: dumpRegister.dumpNo || null,
+          grn: dumpRegister.grn?.grnNo || null,
+          deliveryChallanNo: dumpRegister.deliveryChallanNo?.challanNo || null,
+          rbcNo: dumpRegister.rbcNo?.rbcNo || null,
+          dumpType: dumpRegister.dumpType || null,
+          companyName: dumpRegister.companyName?.name || null,
           createdDate: createdDate, 
           createdTime: createdTime,   
-          location: dumpRegister.location ? dumpRegister.location?.name : null,
+          location: dumpRegister.location?.name || null,
           date: dumpRegister.date,
           totalDumpCost: dumpRegister.totalDumpCost,
           totalCostInWords: dumpRegister.totalCostInWords,
+          totalQty: dumpRegister.totalQty,
           batchNo: dumpRegister.batchNo,
           remark: dumpRegister.remark,
-          grn: dumpRegister.grn ? dumpRegister.grn?.grnNo: null,
-            
-         requestedBy: dumpRegister.requestedBy
-  ? `${dumpRegister.requestedBy?.firstName} ${dumpRegister.requestedBy?.lastName}`
-  : null,
-
-            // ? {
-            //     id: dumpRegister.requestedBy.id,
-            //     firstName: dumpRegister.requestedBy.firstName,
-            //     lastName: dumpRegister.requestedBy.lastName,
-            //   }
-            // : null,
+          requestedBy: dumpRegister.requestedBy
+            ? `${dumpRegister.requestedBy.firstName} ${dumpRegister.requestedBy.lastName}`
+            : null,
           dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
             id: dumpProduct?.id,
-            productName: dumpProduct.productName?.name ,
-            variant:dumpProduct.variant?.id,
-            // ? {
-            //   id:dumpProduct.productName.id ,
-            //   productName:dumpProduct.productName.name
-            // }: null,
-            uom: dumpProduct.uom?.unit ,
-            //?{ id:dumpProduct.uom.id,unit:dumpProduct.uom.unit }: null,
-            // variety:dumpProduct.variety,
-            // count:dumpProduct.count,
-            // size:dumpProduct.size,
-            // origin:dumpProduct.origin,
+            productName: dumpProduct.productName?.name,
+            variant: dumpProduct.variant?.variantName || null,
+            uom: dumpProduct.uom?.unit || null,
             quantity: dumpProduct.quantity,
-            amount:dumpProduct.amount,
-            unitPrice:dumpProduct.unitPrice
-           
+            amount: dumpProduct.amount,
+            unitPrice: dumpProduct.unitPrice,
           })),
-        overAllStatus: document.overAllStatus,
-        createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
-        documentId: document.id,
+          overAllStatus: document.overAllStatus,
+          createdBy: document.createdBy,
+          approvalSummary: document.approvalSummary,
+          documentId: document.documentId,
         };
       }
       }
@@ -648,13 +638,15 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
       //   const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'dump_register');
       
       const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-          for (const doc of activeDocuments) {
+      //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());  
+      for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;
             try {
               doc.relatedData = await this.dumpRegisterRepository.findOne({
                 where: { id: doc.document_type_id, isDeleted:false },
-                relations: ['companyName', 'location', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
+                relations: ['companyName', 'location', 'grn', 'deliveryChallanNo', 'rbcNo', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
               });
       
             } catch {
@@ -666,15 +658,25 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
             .filter((doc) => doc.relatedData)
             .map((doc) => ({
               documentId: doc.id,
-              overAllStatus: doc.status, 
+              overAllStatus: doc.status,
               createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
               createdDate: formatDateTime(doc.createdAt).createdDate,
               createdTime: formatDateTime(doc.createdAt).createdTime,
-              ...doc.relatedData,
+              id: doc.relatedData.id,
+              dumpNo: doc.relatedData.dumpNo,
               companyName: doc.relatedData?.companyName?.name || null,
               location: doc.relatedData?.location?.name || null,
-            })
-            );
+              grn: doc.relatedData?.grn?.grnNo || null,
+              deliveryChallanNo: doc.relatedData?.deliveryChallanNo?.challanNo || null,
+              rbcNo: doc.relatedData?.rbcNo?.rbcNo || null,
+              date: doc.relatedData.date,
+              batchNo: doc.relatedData.batchNo,
+              totalQty: doc.relatedData.totalQty,
+              totalDumpCost: doc.relatedData.totalDumpCost,
+              totalCostInWords: doc.relatedData.totalCostInWords,
+              remark: doc.relatedData.remark,
+              dumpType: doc.relatedData.dumpType || null,
+            }));
 
              // 🔍 Deep search helper
   const objectToString = (obj: any): string => {

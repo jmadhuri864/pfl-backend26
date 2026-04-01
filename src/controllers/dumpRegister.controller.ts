@@ -36,9 +36,8 @@ export class DumpRegisterController {
       const dumpRegisterData = req.body;
       const requestedBy = res.locals.user.id;
       dumpRegisterData.requestedBy = requestedBy;
-     console.log(dumpRegisterData
-
-     )
+     console.log(dumpRegisterData)
+     
       const dumpRegister = await this.dumpRegisterService.createDumpRegister(dumpRegisterData);
       
       if (!dumpRegister) {

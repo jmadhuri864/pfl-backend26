@@ -33,11 +33,11 @@ export class SecondSale extends Model {
 
   @Column({
     type: 'date',
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'dd-MM-yyyy') : null, // Convert to DD-MM-YYYY format
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'dd-MM-yyyy') : null, // Convert to DD-MM-YYYY format
+    // },
   })
   saleDate: string;
 

@@ -78,7 +78,9 @@ export class DocumentbService {
       DocumentTypeEnum.DUMP_REGISTER,
       DocumentTypeEnum.FINAL_INVOICE,
       DocumentTypeEnum.RETURN_TO_VENDOR,
-      DocumentTypeEnum.RETURN_BY_CUSTOMER
+      DocumentTypeEnum.RETURN_BY_CUSTOMER,
+      DocumentTypeEnum.SECOND_SALE,
+      DocumentTypeEnum.EOD_REPORT,
     ].includes(type);
   }
 

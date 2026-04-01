@@ -21,13 +21,13 @@ export class OtherDeliveryChallan extends DeliveryChallanPurchase {
   @JoinColumn({ name: 'other_from_location_id_for_other' })
   fromLocation: Branches;
 
-@Column({ type: 'varchar', nullable: true })
-    customerName: string;
+@Column({ type: 'varchar', nullable: true, name: 'other_customer_name' })
+    customer: string;
     
-    @Column({ type: 'varchar', nullable: true })
+    @Column({ type: 'varchar', nullable: true, name: 'other_customer_contact_no' })
     customerContactNo: string;
     
-    @Column({ type: 'varchar', nullable: true })
+    @Column({ type: 'varchar', nullable: true, name: 'other_customer_email' })
     customerEmail: string;
     @ManyToOne(() => Address, {
       nullable: true,

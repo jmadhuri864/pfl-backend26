@@ -62,15 +62,15 @@ export class StockTransferDeliveryChallanService {
 
   try {
     // 1. Approval flow check
-    const approvalFlowExit =
-      await this.approvalFlowService.findApprovalFlowForLoggedUser(
-        requestedBy,
-        'DC_TYPE_STOCK_TRANSFER'
-      );
+    // const approvalFlowExit =
+    //   await this.approvalFlowService.findApprovalFlowForLoggedUser(
+    //     requestedBy,
+    //     'DC_TYPE_STOCK_TRANSFER'
+    //   );
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found for user');
-    }
+    // if (!approvalFlowExit) {
+    //   throw new Error('Approval flow not found for user');
+    // }
 
     data.challanNo = await this.customerDeliveryChallanService.generateVoucherNo(data.type || 'S');
 
@@ -216,6 +216,8 @@ export class StockTransferDeliveryChallanService {
         .createQueryBuilder('challan')
         .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
         .leftJoinAndSelect('products.productName', 'productName')
+        .leftJoinAndSelect('products.variant', 'variant')
+        .leftJoinAndSelect('products.uom', 'uom')
         .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
         .leftJoinAndSelect(
           'products.packagingMaterialUoM',
@@ -239,7 +241,7 @@ export class StockTransferDeliveryChallanService {
       const formattedChallan = {
         id: challan.id,
         challanNo: challan.challanNo,
-        transferType: challan.transferType,
+        stockTransferType: challan.stockTransferType,
         companyName: challan.companyName?.id || null,
         office: challan.offices?.id || null,
         grnNo: challan.grnNo?.id || null,
@@ -257,6 +259,7 @@ export class StockTransferDeliveryChallanService {
         totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
         totalAmtInWords: challan.totalAmtInWords,
         transitInsuranceNo:challan.transitInsuranceNo,
+        rmn: challan.rmn || null,
         createdDate,
         createdTime,
         requestingDepartment: challan.requestingDepartment,
@@ -267,11 +270,16 @@ export class StockTransferDeliveryChallanService {
           (product) => ({
             id: product.id,
             productName: product.productName?.id,
+            variant: product.variant?.id || null,
+            uom: product.uom?.id || null,
             quantity: product.quantity,
             unitPrice: product.unitPrice,
             amount: product.amount,
-            saleUoM: product.saleUoM?.unit || null,
-            packingMaterial: product.packagingMaterial?.id || null,
+            grossWeight: product.grossWeight,
+            packingMaterialWeight: product.packingMaterialWeight,
+            netWeight: product.netWeight,
+            saleUoM: product.saleUoM?.id || null,
+            packagingMaterialp: product.packagingMaterial?.id || null,
             packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
             packagingMaterialAmount: product.packagingMaterialAmount,
             packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
@@ -339,6 +347,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
         .createQueryBuilder('challan')
         .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
         .leftJoinAndSelect('products.productName', 'productName')
+        .leftJoinAndSelect('products.variant', 'variant')
         .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
         .leftJoinAndSelect(
           'products.packagingMaterialUoM',
@@ -364,7 +373,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
       const formattedChallan = {
         id: challan.id,
         challanNo: challan.challanNo,
-        transferType: challan.transferType,
+        stockTransferType: challan.stockTransferType,
         companyName: challan.companyName?.name || null,
         transitInsuranceNo:challan.transitInsuranceNo,
         office: challan.offices?.name || null,
@@ -393,9 +402,13 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
           (product) => ({
             id: product.id,
             productName: product.productName?.name,
+            variant:product.variant?.variantName,
             quantity: product.quantity,
             unitPrice: product.unitPrice,
             amount: product.amount,
+            grossWeight:product.grossWeight,
+            netWeight:product.netWeight,
+             packingMaterialWeight: product.packingMaterialWeight,
             saleUoM: product.saleUoM?.unit || null,
             packingMaterial:
               product.packagingMaterial?.packagingMaterialName || null,
@@ -435,18 +448,19 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
         
 
         const typedDocuments = data as DocumentWithRelatedData[];
-        for(const doc of typedDocuments) {
+        const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        for(const doc of activeDocuments) {
           if(!doc.document_type_id) continue;
           console.log("id:", doc.document_type_id);
           
           try {
             doc.relatedData = await this.challanRepository.findOne({
               where: { id: doc.document_type_id },
-              relations:[
-                'customerName',
-                "fromLocation",
-                "toLocation"
-
+              relations: [
+                'companyName',
+                'fromLocation',
+                'toLocation',
               ]
             })
             console.log("data:", doc.relatedData);
@@ -459,26 +473,38 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
         //console.log("Typerd documents: ", typedDocuments);
         
 
-        const relatedDataOnly = typedDocuments
+        const relatedDataOnly = activeDocuments
                 .filter((doc) => doc.relatedData)
                 .map((doc) => ({
                   documentId: doc.id,
-                  overAllStatus: doc.status, 
-                  createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
+                  overAllStatus: doc.status,
+                  createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
                   createdDate: formatDateTime(doc.createdAt).createdDate,
                   createdTime: formatDateTime(doc.createdAt).createdTime,
-                  ...doc.relatedData,
-                   companyName: doc.relatedData.companyName?.name || null,
-                   //customerName: doc.relatedData.cu || null,
-                   customerName: doc.relatedData.customerName?.organisationName || null,
-      
-    fromLocation: doc.relatedData.fromLocation?.name || null,
-    toLocation: doc.relatedData.toLocation?.name || null,
-    transferType: doc.relatedData.transferType || null,
-                  // companyName: doc.relatedData.companyName.name || null,
-                  // location: doc.relatedData.location.name || null,
-                })
-                );
+                  id: doc.relatedData.id,
+                  challanNo: doc.relatedData.challanNo,
+                  transitInsuranceNo: doc.relatedData.transitInsuranceNo || null,
+                  totalProductAmount: doc.relatedData.totalProductAmount,
+                  netProductWeight: doc.relatedData.netProductWeight,
+                  netPackagingMaterialWeight: doc.relatedData.netPackagingMaterialWeight,
+                  totalPackagingMaterialAmount: doc.relatedData.totalPackagingMaterialAmount,
+                  totalAmtInWords: doc.relatedData.totalAmtInWords,
+                  driverName: doc.relatedData.driverName,
+                  contactNo: doc.relatedData.contactNo,
+                  altContactNo: doc.relatedData.altContactNo || null,
+                  vehicleNo: doc.relatedData.vehicleNo,
+                  licenseNo: doc.relatedData.licenseNo,
+                  rmn: doc.relatedData.rmn || null,
+                  receiverName: doc.relatedData.receiverName,
+                  anyAttachment: doc.relatedData.anyAttachment || null,
+                  remark: doc.relatedData.remark || null,
+                  requestingDepartment: doc.relatedData.requestingDepartment || null,
+                  approvalStatus: doc.relatedData.approvalStatus || null,
+                  stockTransferType: (doc.relatedData as any).stockTransferType || null,
+                  companyName: doc.relatedData.companyName?.name || null,
+                  fromLocation: doc.relatedData.fromLocation?.name || null,
+                  toLocation: doc.relatedData.toLocation?.name || null,
+                }));
           // 🔄 Sorting
   if (queryOptions.sort) {
     const [field, direction] = queryOptions.sort.split(':');
@@ -507,7 +533,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
             meta: {
               total: meta.total,
               page: meta.page,
-              pages: meta.pages
+              totalPages: meta.pages,
             }
           };
     

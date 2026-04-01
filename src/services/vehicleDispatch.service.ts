@@ -58,6 +58,7 @@ private async generateSerialNo(): Promise<string> {
 
 const serialNo = await this.generateSerialNo();
       data.vehicleDispatchNo = serialNo;
+    
     const vehicleDispatch = this.vehicleDispatchRepository.create(data);
     console.log(vehicleDispatch);
     const savedVehicalDispatch=await this.vehicleDispatchRepository.save(vehicleDispatch);
@@ -109,7 +110,7 @@ const serialNo = await this.generateSerialNo();
             relations: [
           'companyName',
           'clientAddress',
-          'dcNo',
+          'deliveryChallanNo',
           ]
           });
         } catch (e) {
@@ -154,7 +155,7 @@ const serialNo = await this.generateSerialNo();
       // Related entity fields
       companyName: rd.companyName?.name || null,
       clientAddress: rd.clientAddress || null,
-      deliveryChallanNo: rd.dcNo?.challanNo || null,
+      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
 
         };
       });
@@ -209,7 +210,7 @@ const serialNo = await this.generateSerialNo();
   let query = this.vehicleDispatchRepository
     .createQueryBuilder('dispatch')
     .leftJoinAndSelect('dispatch.clientAddress', 'clientAddress')
-    .leftJoinAndSelect('dispatch.dcNo', 'dcNo')
+    .leftJoinAndSelect('dispatch.deliveryChallanNo', 'deliveryChallanNo')
     .leftJoinAndSelect('dispatch.companyName', 'companyName')
     .orderBy('dispatch.createdAt', 'DESC');
 
@@ -248,7 +249,7 @@ console.log(result); // Debug result
       netInwardQty: item.netInwardQty,
       clientGRNNo: item.clientGRNNo,
       paymentTerms: item.paymentTerms,
-      dcNo: item.dcNo?.challanNo,
+      deliveryChallanNo: item.deliveryChallanNo?.challanNo || null,
       rejection: item.rejection,
       shrinkageDump: item.shrinkageDump,
     };
@@ -262,14 +263,54 @@ console.log(result); // Debug result
   
 
   async findById(id: string): Promise<any> {
-    return await this.vehicleDispatchRepository
-    .createQueryBuilder('dispatch')
-    .leftJoinAndSelect('dispatch.clientAddress', 'clientAddress')
-    .leftJoinAndSelect('dispatch.dcNo', 'dcNo')
-    .leftJoinAndSelect('dispatch.companyName', 'companyName')
-      .select(['dispatch', 'clientAddress', 'dcNo.id','companyName.id'])
+    const vdr = await this.vehicleDispatchRepository
+      .createQueryBuilder('dispatch')
+      .leftJoinAndSelect('dispatch.clientAddress', 'clientAddress')
+      .leftJoinAndSelect('dispatch.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoinAndSelect('dispatch.companyName', 'companyName')
       .where('dispatch.id = :id', { id })
       .getOne();
+
+    if (!vdr) return null;
+
+    return {
+      id: vdr.id,
+      vehicleDispatchNo: vdr.vehicleDispatchNo || null,
+      companyName: vdr.companyName?.id || null,
+      date: vdr.date || null,
+      vehicleType: vdr.vehicleType || null,
+      vehicleNo: vdr.vehicleNo || null,
+      driverName: vdr.driverName || null,
+      driverMobNo: vdr.driverMobNo || null,
+      paymentDiscussed: vdr.paymentDiscussed || null,
+      outTime: vdr.outTime || null,
+      reachingTime: vdr.reachingTime || null,
+      clientName: vdr.clientName || null,
+      clientAddress: vdr.clientAddress
+        ? {
+            id: vdr.clientAddress.id,
+            address1: vdr.clientAddress.address1,
+            address2: vdr.clientAddress.address2,
+            location: vdr.clientAddress.location,
+            city: vdr.clientAddress.city,
+            state: vdr.clientAddress.state,
+            pincode: vdr.clientAddress.pincode,
+          }
+        : null,
+      receivingPerson: vdr.receivingPerson || null,
+      supervisorName: vdr.supervisorName || null,
+      accDeptVerification: vdr.accDeptVerification || null,
+      transportationBillAmt: vdr.transportationBillAmt || null,
+      advancePaid: vdr.advancePaid || null,
+      remarksPFL: vdr.remarksPFL || null,
+      feedbackbyTransporterOwner: vdr.feedbackbyTransporterOwner || null,
+      netInwardQty: vdr.netInwardQty || null,
+      clientGRNNo: vdr.clientGRNNo || null,
+      paymentTerms: vdr.paymentTerms || null,
+      deliveryChallanNo: vdr.deliveryChallanNo?.id || null,
+      rejection: vdr.rejection || null,
+      shrinkageDump: vdr.shrinkageDump || null,
+    };
   }
 
   async update(
@@ -347,8 +388,9 @@ console.log(result); // Debug result
       console.log('Fetched documents:', data);
     
       const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-    
+      //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       if (typedDocuments.length > 0) {
         console.log("doc.relatedData", typedDocuments[0].relatedData);
       } else {
@@ -367,7 +409,7 @@ console.log(result); // Debug result
             relations: [
           'companyName',
           'clientAddress',
-          'dcNo',
+          'deliveryChallanNo',
           ]
           });
         } catch (e) {
@@ -412,7 +454,7 @@ console.log(result); // Debug result
       // Related entity fields
       companyName: rd.companyName?.name || null,
       clientAddress: rd.clientAddress || null,
-      deliveryChallanNo: rd.dcNo?.challanNo || null,
+      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
 
         };
       });
@@ -497,7 +539,7 @@ console.log(result); // Debug result
   //           relations: [
   //         'companyName',
   //         'clientAddress',
-  //         'dcNo',
+  //         'deliveryChallanNo',
   //         ]
   //         });
   //       } catch (e) {
@@ -542,7 +584,7 @@ console.log(result); // Debug result
   //     // Related entity fields
   //     companyName: rd.companyName?.name || null,
   //     clientAddress: rd.clientAddress || null,
-  //     deliveryChallanNo: rd.dcNo?.challanNo || null,
+  //     deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
 
   //       };
   //     });
@@ -613,7 +655,7 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
         relations: [
          'companyName',
         'clientAddress',
-        'dcNo',
+        'deliveryChallanNo',
         ],
       });
 
@@ -670,8 +712,8 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
 
       // Related entity fields
       companyName: vehicalDispatch.companyName?.name || null,
-      clientAddress: vehicalDispatch.clientAddress?.address1 || null,
-      deliveryChallanNo: vehicalDispatch.dcNo?.challanNo || null,
+      clientAddress: vehicalDispatch.clientAddress?.address1||' '+vehicalDispatch.clientAddress?.address2||' '+vehicalDispatch.clientAddress?.location||' '+vehicalDispatch.clientAddress?.city||' '+vehicalDispatch.clientAddress?.state||' '+vehicalDispatch.clientAddress?.pincode||' ',
+      deliveryChallanNo: vehicalDispatch.deliveryChallanNo?.challanNo || null,
   };
   }
 }
@@ -691,8 +733,8 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
         queryBuilder
           .leftJoin("vehicalDispatch.companyName", "companyName")
           .addSelect("companyName.name")
-          .leftJoin("vehicalDispatch.dcNo", "dcNo")
-          .addSelect("dcNo.vehicleNo")
+          .leftJoin("vehicalDispatch.deliveryChallanNo", "deliveryChallanNo")
+          .addSelect("deliveryChallanNo.challanNo")
           
      // ✅ Apply dynamic filters (including deep relations)
       Object.entries(filters).forEach(([key, value], index) => {

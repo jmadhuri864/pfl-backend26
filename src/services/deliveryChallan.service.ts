@@ -614,6 +614,54 @@ console.log("in the service location",location)
     });
     return challanNumbers;
   }
+  // public async getAllDealSlipNumbers(): Promise<
+  //   { id: string; challanNo: string }[]
+  // > {
+  //   const challanNumbers = await this.deliveryChallanRepo.find({
+  //     select: ['id', 'challanNo'], // Select only the id and challanNo fields
+  //   });
+  //   return challanNumbers;
+  // }
+
+  public async getDcTypeNumbers(
+    dcType: string,
+    page?: number,
+    limit?: number,
+  ): Promise<any> {
+    const typeMap: Record<string, string> = {
+      'stock-transfer': 'stock-transfer-delivery-challan',
+      'other': 'other-delivery-challan',
+      'customer': 'customer_delivery_challan',
+    };
+
+    const type = typeMap[dcType];
+    if (!type) throw new Error(`Invalid dcType: ${dcType}. Use 'stock-transfer', 'other', or 'customer'`);
+
+    if (!page || !limit) {
+      const data = await this.deliveryChallanRepo.find({
+        where: { type } as any,
+        select: ['id', 'challanNo'],
+        order: { createdAt: 'DESC' },
+      });
+      return { data, total: data.length, page: 1, totalPages: 1 };
+    }
+
+    const [data, total] = await this.deliveryChallanRepo.findAndCount({
+      where: { type } as any,
+      select: ['id', 'challanNo'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   public async getDataForTillDate(
     filterType?: string,
     filterValue?: string,

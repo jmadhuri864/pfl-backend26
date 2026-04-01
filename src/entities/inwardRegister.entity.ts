@@ -60,21 +60,11 @@ export class InwardRegister extends Model {
   @ManyToOne(() => Branches, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'fromlocation_branch_id' })
   fromLocation: Branches;
-  @Column({
+   @Column({
     type: 'date',
     nullable: true,
-    transformer: {
-      to: (value: Date) => value,
-
-      from: (value: string) => {
-        if (!value || isNaN(new Date(value).getTime())) return null;
-        return format(
-          toZonedTime(value, 'Asia/Kolkata'),
-          'dd-MM-yyyy hh:mm a',
-          { timeZone: 'Asia/Kolkata' },
-        );
-      },
-    },
+    default: null,
+    
   })
   date: Date;
 

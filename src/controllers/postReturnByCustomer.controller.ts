@@ -190,6 +190,28 @@ console.log("User ID:", userId);
     }
   }
 
+  @httpGet("/get/rbcNo")
+  public async getAllRBCNumbers(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const result = await this.postReturnByCustomerService.getAllRBCNumbers(page, limit);
+      res.status(200).json({
+        status: 'success',
+        data: result.data,
+        allRecords: result.total,
+        totalPages: result.totalPages,
+        page: result.page,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   @httpPost("/")
   public async createPostReturn(
     @requestBody() postReturnData: any,

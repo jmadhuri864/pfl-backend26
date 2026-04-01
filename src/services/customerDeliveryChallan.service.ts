@@ -600,7 +600,9 @@ export class CustomerDeliveryChallanService {
     // console.log("Data: ", data);
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    for (const doc of typedDocuments) {
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    for (const doc of activeDocuments) {
       //  console.log("DOC TYPE ID: ",doc.document_type_id);
 
       if (!doc.document_type_id) continue;
@@ -626,7 +628,7 @@ export class CustomerDeliveryChallanService {
       }
     }
 
-    const relatedDataOnly = typedDocuments
+    const relatedDataOnly = activeDocuments
       .filter((doc) => doc.relatedData)
       .map((doc) => ({
         documentId: doc.id,

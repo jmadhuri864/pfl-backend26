@@ -343,8 +343,8 @@ console.log("docid: ", docId);
         id: secondSale?.id,
         companyName: secondSale?.companyName?.name || null,
         location: secondSale?.location?.name || null,
-        dcNo: secondSale?.dcNo.challanNo || null,
-        sale: secondSale?.saleDate || null,
+        dcNo: secondSale?.dcNo?.challanNo || null,
+        saleDate: secondSale?.saleDate || null,
         createdDate,
         createdTime,
         buyerName: secondSale?.buyerName || null,
@@ -402,6 +402,7 @@ console.log("docid: ", docId);
         .leftJoinAndSelect("secondSale.dcNo", "dcNo")
         .leftJoinAndSelect("secondSale.location", "location")
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
+        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
         .leftJoinAndSelect("secondSaleProducts.uom", "uom")
 
         .where("secondSale.id = :id", { id })
@@ -415,8 +416,8 @@ console.log("docid: ", docId);
         id: secondSale?.id,
         companyName: secondSale?.companyName?.id || null,
         location: secondSale?.location?.id || null,
-        dcNo: secondSale?.dcNo.id || null,
-        sale: secondSale?.saleDate || null,
+        dcNo: secondSale?.dcNo?.id || null,
+        saleDate: secondSale?.saleDate || null,
         createdDate,
         createdTime,
         buyerName: secondSale?.buyerName || null,
@@ -435,6 +436,7 @@ console.log("docid: ", docId);
           packingMaterialWeight: product.packingMaterialWeight,
           netWeight: product.netWeight,
           productName: product.productName?.id || null,
+          variant:product.variant?.id || null,
           uom: product.uom?.id || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,

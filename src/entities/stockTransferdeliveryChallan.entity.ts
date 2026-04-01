@@ -15,7 +15,7 @@ export class StockTransferDeliveryChallan extends DeliveryChallanPurchase {
     type: 'enum',
     enum: StockTransferType,
   })
-  transferType: StockTransferType;
+  stockTransferType: StockTransferType;
 
   @ManyToOne(() => Branches, {
     nullable: true,

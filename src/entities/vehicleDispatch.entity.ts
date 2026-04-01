@@ -22,10 +22,12 @@ import { toZonedTime } from "date-fns-tz";
       @ManyToOne(() => Company, {cascade: true,nullable: true,onDelete: "SET NULL" })
        @JoinColumn({name: "company_id"})
         companyName: Company;
-    @Column({ type: "date" ,nullable :true,transformer: {
-        to: (value: Date) => value, 
-        from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null,
-      },})
+    @Column({ type: "date" ,nullable :true
+      // ,transformer: {
+      //   to: (value: Date) => value, 
+      //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null,
+      // },
+    })
     date: Date;
   
     @Column({ nullable: true })
@@ -45,36 +47,36 @@ import { toZonedTime } from "date-fns-tz";
     @Column({ nullable: true })
     driverMobNo: string;
   
-    @Column({
-      type: "time",
-      nullable: true,
-      transformer: {
-        from: (value: string) => {
-          if (!value) return null;
-          try {
-            //const parsedTime = parse(value, "HH:mm:ss", new Date());
-            return format(new Date(`1970-01-01T${value}`), "hh:mm a");
+    // @Column({
+    //   type: "time",
+    //   nullable: true,
+    //   transformer: {
+    //     from: (value: string) => {
+    //       if (!value) return null;
+    //       try {
+    //         //const parsedTime = parse(value, "HH:mm:ss", new Date());
+    //         return format(new Date(`1970-01-01T${value}`), "HH:mm:ss");
 
-            //return format(parsedTime, "hh:mm a"); // Convert to 12-hour format with AM/PM
-          } catch (error) {
-            console.error("Invalid time format for outTime:", value);
-            return null;
-          }
-        },
-        to: (value: string) => {
-          if (!value) return null;
-          try {
-            //const parsedTime = parse(value, "hh:mm a", new Date());
-            return format(new Date(`1970-01-01T${value}`), "hh:mm a");
+    //         //return format(parsedTime, "HH:mm:ss"); // Convert to 12-hour format with AM/PM
+    //       } catch (error) {
+    //         console.error("Invalid time format for outTime:", value);
+    //         return null;
+    //       }
+    //     },
+    //     to: (value: string) => {
+    //       if (!value) return null;
+    //       try {
+    //         //const parsedTime = parse(value, "HH:mm:ss", new Date());
+    //         return format(new Date(`1970-01-01T${value}`), "HH:mm:ss");
 
-          } catch (error) {
-            console.error("Invalid time format for outTime:", value);
-            return null;
-          }
-        },
-      },
-    })
-    outTime: string;
+    //       } catch (error) {
+    //         console.error("Invalid time format for outTime:", value);
+    //         return null;
+    //       }
+    //     },
+    //   },
+    // })
+    // outTime: string;
     
     @Column({
       type: "time",
@@ -94,7 +96,7 @@ import { toZonedTime } from "date-fns-tz";
         to: (value: string) => {
           if (!value) return null;
           try {
-            // const parsedTime = parse(value, "hh:mm a", new Date());
+            // const parsedTime = parse(value, "HH:mm:ss", new Date());
             return format(new Date(`1970-01-01T${value}`), "HH:mm:ss");
 
           } catch (error) {
@@ -105,7 +107,35 @@ import { toZonedTime } from "date-fns-tz";
       },
     })
     reachingTime: string;
-    
+    @Column({
+      type: "time",
+      nullable: true,
+      transformer: {
+        from: (value: string) => {
+          if (!value) return null;
+          try {
+            //const parsedTime = parse(value, "HH:mm:ss", new Date());
+            return format(new Date(`1970-01-01T${value}`), "HH:mm:ss");
+
+          } catch (error) {
+            console.error("Invalid time format for reachingTime:", value);
+            return null;
+          }
+        },
+        to: (value: string) => {
+          if (!value) return null;
+          try {
+            // const parsedTime = parse(value, "HH:mm:ss", new Date());
+            return format(new Date(`1970-01-01T${value}`), "HH:mm:ss");
+
+          } catch (error) {
+            console.error("Invalid time format for outTime:", value);
+            return null;
+          }
+        },
+      },
+    })
+    outTime: string;
   
     @Column()
     clientName: string;
@@ -158,7 +188,7 @@ import { toZonedTime } from "date-fns-tz";
       //   clientGRNNo: GRN;
         @ManyToOne(() => DeliveryChallanPurchase, { nullable: true,onDelete: "SET NULL",cascade:true })
         @JoinColumn({ name: "delivery_challan_id" }) // Define the foreign key column
-        dcNo: DeliveryChallanPurchase;
+        deliveryChallanNo: DeliveryChallanPurchase;
     // @Column({ type: "date", nullable: true })
     // paymentReceivedDate: Date;
   

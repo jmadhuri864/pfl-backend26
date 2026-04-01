@@ -535,7 +535,8 @@ const serialNO = await this.generateSerialNo()
   
     const typedDocuments = data as DocumentWithRelatedData[];
     // Exclude soft-deleted documents
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 console.log('Active documents:', activeDocuments);
   
     if (activeDocuments.length > 0) {
@@ -562,6 +563,7 @@ console.log('Active documents:', activeDocuments);
           'qcCheckBy',
           'verifiedBy',
         ]
+        
         });
       } catch (e) {
         console.log("in catch block", e);

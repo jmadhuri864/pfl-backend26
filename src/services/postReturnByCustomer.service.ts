@@ -350,6 +350,8 @@ export class PostReturnByCustomerService {
         const { search } = queryOptions;
     //console.log("Fetched documents:", data);
     const typedDocuments = data as DocumentWithRelatedData[];
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // for (const doc of typedDocuments) {
     //   if (!doc.document_type_id) continue;
@@ -364,7 +366,7 @@ export class PostReturnByCustomerService {
     // }
     //console.log("Typed documents with related data:", typedDocuments);
 
-    for (const doc of typedDocuments) {
+    for (const doc of activeDocuments) {
       if (!doc.document_type_id) continue;
       // console.log(doc.document_type_id)
       //   const relatedId = typeof doc.relatedData === 'object' ? doc.relatedData?.id : doc.relatedData;
@@ -394,7 +396,7 @@ export class PostReturnByCustomerService {
       }
     }
 
-    let relatedDataOnly = typedDocuments
+    let relatedDataOnly = activeDocuments
       .filter((doc) => doc.relatedData)
       .map((doc) => ({
         documentId: doc.id,
@@ -519,16 +521,24 @@ export class PostReturnByCustomerService {
   }
 
   async getByIdPostReturnByCustomerforupdate(docid: string): Promise<any> {
-    const document1 = await this.docDoubleApproverService.getDocumentById(
-      docid,
-    );
+    // docid can be either the document ID or the RBC record ID
+    let document1 = await this.documentbRepository.findOne({
+      where: { id: docid },
+    });
+
+    // If not found by document ID, try by document_type_id (RBC record ID)
+    if (!document1) {
+      document1 = await this.documentbRepository.findOne({
+        where: { document_type_id: docid },
+      });
+    }
+
     if (!document1) {
       throw new Error(`Document with ID ${docid} not found`);
     }
-    console.log('document....', document1);
-    const relatedId = document1.documentTypeId;
-    console.log('relatedId:', relatedId);
-    const id = relatedId;
+
+    const fullDocument = await this.docDoubleApproverService.getDocumentById(document1.id);
+    const id = fullDocument.documentTypeId;
     const result = await this.postReturnByCustomerRepository
       .createQueryBuilder('postReturn')
       .leftJoinAndSelect('postReturn.companyName', 'company')
@@ -585,12 +595,12 @@ export class PostReturnByCustomerService {
         rejectedGrossWt: returnedProduct.rejectedGrossWt,
         rejectedPackingMaterialWt: returnedProduct.rejectedPackingMaterialWt,
         unitPrice: returnedProduct.unitPrice,
-        documentId: document1.documentId,
-        overAllStatus: document1.status,
-        createdBy: document1.createdBy,
-        createdDate: formatDateTime(document1.createdAt).createdDate,
-        createdTime: formatDateTime(document1.createdAt).createdTime,
-        approvalSummary: document1.approvalSummary,
+        documentId: fullDocument.documentId,
+        overAllStatus: fullDocument.status,
+        createdBy: fullDocument.createdBy,
+        createdDate: formatDateTime(fullDocument.createdAt).createdDate,
+        createdTime: formatDateTime(fullDocument.createdAt).createdTime,
+        approvalSummary: fullDocument.approvalSummary,
       })),
     };
   }
@@ -652,6 +662,30 @@ export class PostReturnByCustomerService {
       })),
     };
   }
+  async getAllRBCNumbers(page?: number, limit?: number): Promise<any> {
+    if (!page || !limit) {
+      const data = await this.postReturnByCustomerRepository.find({
+        select: ['id', 'rbcNo'],
+        order: { createdAt: 'DESC' },
+      });
+      return { data, total: data.length, page: 1, totalPages: 1 };
+    }
+
+    const [data, total] = await this.postReturnByCustomerRepository.findAndCount({
+      select: ['id', 'rbcNo'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
    //TODO:Delte Multiple
 public async deleteMultipleRBC(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];

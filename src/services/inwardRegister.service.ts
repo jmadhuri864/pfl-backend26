@@ -25,6 +25,13 @@ import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 
 
+function normalizeDateFormat(date: string | null | undefined): string | null | undefined {
+  if (!date) return date;
+  const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
+  const match = date.match(ddmmyyyy);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return date;
+}
 @injectable()
 export class InwardRegisterService {
   constructor(
@@ -52,6 +59,8 @@ export class InwardRegisterService {
      
   ) {}
 
+ 
+
   private async generateSerialNo(): Promise<string> {
       const now = new Date();
       const yyyy = now.getFullYear().toString();
@@ -69,6 +78,7 @@ export class InwardRegisterService {
     }
 
 
+    
 
 public async createInwardRegister(data: any): Promise<any> {
   const queryRunner = this.dataSource.createQueryRunner();
@@ -227,7 +237,7 @@ public async getAllRecycleBinInwardRegisters(queryOptions: PaginationOptions, us
         
         doc.relatedData = await this.inwardRegisterRepo.findOne({
           where: { id: doc.document_type_id ,isDeleted:true},
-        //  relations: ['grnNo', 'deliveryChallanNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
+        //  relations: ['grnNo', 'deliveryChallanNo', 'rbcNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
         });
         console.log('Related data fetched for document:', doc.id, doc.relatedData);
         
@@ -262,7 +272,8 @@ incomingGrossQty: rd.incomingGrossQty,
       inwardGrossQty: rd.inwardGrossQty,
       inwardNetQty:rd.inwardNetQty,
       grnNo: rd.grnNo?.grnNo || null,
-      deliveryChallanNo: rd.deliveryChallanNo?.id || null,
+      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+      rbcNo: rd.rbcNo?.rbcNo || null,
       companyName: rd.companyName?.name || null,
       location: rd.location?.name || null,
       vendorName: rd.selectedVendor?.companyName || null,
@@ -549,6 +560,7 @@ async filterInwardRegisters(
         'location',
         'companyName',
         'deliveryChallanNo',
+        'rbcNo',
         'selectedVendor',
         'selectedFarmer',
         'inwardProducts',
@@ -690,6 +702,7 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
         'location',
         'companyName',
         'deliveryChallanNo',
+        'rbcNo',
         'selectedVendor',
         'selectedFarmer',
         'inwardProducts',
@@ -728,14 +741,13 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
       companyName: inwardRegister.companyName?.id||null,
         
       location: inwardRegister.location ? inwardRegister.location?.id : null,
-      date: inwardRegister.date || null,
+      date: inwardRegister.date,
+       
       batchNo: inwardRegister.batchNo,
       source: inwardRegister.source,
       totalWeightInKg: inwardRegister.totalWeightInKg,
       purchasedBy: inwardRegister.purchasedBy
-        ? 
-            inwardRegister.purchasedBy.id
-            
+        ? inwardRegister.purchasedBy.id
         : null,
       incomingGrossQty: inwardRegister.incomingGrossQty,
       incomingNetQty: inwardRegister.incomingNetQty,
@@ -748,14 +760,10 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
         ?  inwardRegister.inwardBy.id
             
         : null,
-      grnNo: inwardRegister.grnNo
-        ?  inwardRegister.grnNo.id
-           
-        : null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo
-        ?  inwardRegister.deliveryChallanNo.id
-            
-        : null,
+      grnNo: inwardRegister.grnNo?.id||null,
+      deliveryChallanNo: inwardRegister.deliveryChallanNo?.id || null,
+      rbcNo: inwardRegister.rbcNo?.id || null,
+      
 
       selectedParty: selectedParty,
       inwardProducts: inwardRegister.inwardProducts.map((product) => ({
@@ -938,6 +946,7 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
 
     return transformedInwardRegister;
   }
+ 
   async updateInwardRegister(
     id: string,
     data: any,
@@ -950,7 +959,7 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
     if (!inwardRegister) {
       throw new AppError(404, `InwardRegister with ID ${id} not found`);
     }
-
+ data.date= normalizeDateFormat(data.date);
     const oldData = { ...inwardRegister };
 
     Object.assign(inwardRegister, data);
@@ -1089,7 +1098,7 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
         
 //         doc.relatedData = await this.inwardRegisterRepo.findOne({
 //           where: { id: doc.document_type_id },
-//         //  relations: ['grnNo', 'deliveryChallanNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
+//         //  relations: ['grnNo', 'deliveryChallanNo', 'rbcNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
 //         });
 //         console.log('Related data fetched for document:', doc.id, doc.relatedData);
         
@@ -1120,7 +1129,8 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
 //       source: rd.source || null,
 
 //       grnNo: rd.grnNo?.grnNo || null,
-//       deliveryChallanNo: rd.deliveryChallanNo?.id || null,
+//       deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+     // rbcNo: rd.rbcNo?.rbcNo || null,
 //       companyName: rd.companyName?.name || null,
 //       location: rd.location?.name || null,
 //       vendorName: rd.selectedVendor?.companyName || null,
@@ -1205,7 +1215,9 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
   
     const typedDocuments = data as DocumentWithRelatedData[];
     // Exclude soft-deleted documents
-  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+  //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
     // if (typedDocuments.length > 0) {
     //   console.log("doc.relatedData", typedDocuments[0].relatedData);
@@ -1223,7 +1235,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
         
         doc.relatedData = await this.inwardRegisterRepo.findOne({
           where: { id: doc.document_type_id ,isDeleted:false},
-         relations: ['grnNo', 'deliveryChallanNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
+         relations: ['grnNo', 'deliveryChallanNo', 'rbcNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
         });
         console.log('Related data fetched for document:', doc.id, doc.relatedData);
         
@@ -1246,41 +1258,30 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       id: rd.id || null,
       batchNo: rd.batchNo || null,
       inwardType: rd.inwardType || null,
-    
+    inwardNetQty:rd.inwardNetQty||null,
+    inwardGrossQty:rd.inwardGrossQty || null,
+    incomingNetQty:rd.incomingNetQty || null,
+    incomingGrossQty:rd.incomingGrossQty || null,
       remarks: rd.remarks || null,
-      purchasedQty: rd.purchasedQty || null,
-      inwardQtyInKg: rd.inwardQtyInKg || null,
+
+      // purchasedQty: rd.purchasedQty || null,
+      // inwardQtyInKg: rd.inwardQtyInKg || null,
       inwardCost: rd.inwardCost || null,
       totalWeightInKg: rd.totalWeightInKg || null,
       source: rd.source || null,
 
       grnNo: rd.grnNo?.grnNo || null,
-      deliveryChallanNo: rd.deliveryChallanNo?.id || null,
+      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+      rbcNo: rd.rbcNo?.rbcNo || null,
       companyName: rd.companyName?.name || null,
       location: rd.location?.name || null,
       vendorName: rd.selectedVendor?.companyName || null,
       farmerName: rd.selectedFarmer?.farmerfName || null,
       purchasedBy: rd.purchasedBy?.name || null,
       inwardBy: rd.inwardBy?.name || null,
-
+date:rd.date,
       // Products
-      inwardProducts: rd.inwardProducts ? rd.inwardProducts.map((p: any) => ({
-        productName: p.productName?.name || null,
-        grade: p.grade || null,
-        quantity: p.quantity || null,
-        uom: p.uom?.unit || null,
-        unitPrice: p.unitPrice || null,
-        amount: p.amount || null,
-        purchaseDate: p.purchaseDate || null,
-        expectedHarvestDate: p.expectedHarvestDate || null,
-        dispatchDate: p.dispatchDate || null,
-        deliveryDate: p.deliveryDate || null,
-        deliveryLocation: p.deliveryLocation || null,
-        count: p.count || null,
-        size: p.size || null,
-        origin: p.origin || null,
-        variety: p.variety || null,
-      })) : [],
+      
       };
     });
    // 🔍 Deep Search
@@ -1351,9 +1352,9 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
         relations: [
           'grnNo',
         'deliveryChallanNo',
+        'rbcNo',
         'companyName',
         'location',
-       
           'selectedVendor',
         'selectedVendor.officeAddress',
         'selectedVendor.category',
@@ -1364,9 +1365,12 @@ public async getInwardregisterByIdForView(docid: string, userId:string): Promise
         'selectedFarmer.residensialAddress',
         'purchasedBy',
         'inwardBy',
+        'fromLocation',
+        'customerName',
         'inwardProducts',
         'inwardProducts.productName',
         'inwardProducts.uom',
+        'inwardProducts.variant',
         ],
       });
 
@@ -1444,10 +1448,11 @@ selectedParty,
       // from InwardRegister:
       id: inwardRegister.id,
       inwardType: inwardRegister.inwardType,
+      inwardNo:inwardRegister.inwardNo,
       batchNo: inwardRegister.batchNo,
       remarks: inwardRegister.remarks,
       source: inwardRegister.source,
-      date:inwardRegister.date,
+
       incomingGrossQty: inwardRegister.incomingGrossQty,
       incomingNetQty: inwardRegister.incomingNetQty,
 
@@ -1457,13 +1462,17 @@ selectedParty,
       totalWeightInKg: inwardRegister.totalWeightInKg,
 
       grnNo: inwardRegister.grnNo?.grnNo || null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo?.id || null,
+      deliveryChallanNo: inwardRegister.deliveryChallanNo?.challanNo || null,
+      rbcNo: inwardRegister.rbcNo?.rbcNo || null,
       companyName: inwardRegister.companyName?.name || null,
       location: inwardRegister.location?.name || null,
-     
-
-      purchasedBy: `${inwardRegister.inwardBy?.firstName || null } ${inwardRegister.inwardBy?.lastName || null}`,
-      inwardBy: `${inwardRegister.inwardBy?.firstName || null } ${inwardRegister.inwardBy?.lastName || null}`,
+      fromLocation: inwardRegister.fromLocation?.name || null,
+      customerName: inwardRegister.customerName?.organisationName || null,
+      date: inwardRegister.date,
+      purchasedBy: inwardRegister.purchasedBy
+        ? `${inwardRegister.purchasedBy.firstName || ''} ${inwardRegister.purchasedBy.lastName || ''}`.trim()
+        : null,
+      inwardBy: `${inwardRegister.inwardBy?.firstName || ''} ${inwardRegister.inwardBy?.lastName || ''}`.trim() || null,
 
       inwardProducts: inwardRegister.inwardProducts?.map((prod) => ({
         id: prod.id,

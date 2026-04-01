@@ -214,11 +214,6 @@ export class StockTranferDeliveryChallanController {
 
       const challans = await this.stockTransferDeliveryChallanService.getAll(queryOptions, userId);
 
-      if (!challans || challans.data.length === 0) {
-        ControllerLogger.logError('Stock Transfer Delivery Challan list retrieval', new AppError(404, 'No stock transfer delivery challans found'), req, res);
-        return next(new AppError(404, 'No stock transfer delivery challans found'));
-      }
-
       ControllerLogger.logList('Stock Transfer Delivery Challan', req, res);
 
       // Send notification for stock transfer delivery challan list access

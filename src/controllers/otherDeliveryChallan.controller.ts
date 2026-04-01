@@ -87,7 +87,7 @@ export class OtherDeliveryChallanController {
     try {
       const otherDeliveryChallanData = req.body;
       const requestedBy = res.locals.user.id;
-      
+      console.log(req.body);
       otherDeliveryChallanData.createdBy = requestedBy;
       otherDeliveryChallanData.requestedBy = requestedBy;
       otherDeliveryChallanData.requestingDepartment = res.locals.user.selectDepartment;
@@ -112,78 +112,7 @@ export class OtherDeliveryChallanController {
         // Don't fail the main operation if notification fails
       }
 
-      // // 🔔 Notify approvers if approval flow exists
-      // try {
-      //   // Get the Document record for this Other Delivery Challan with approval flow
-      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.id);
-
-      //   if (document && document.approvalFlow) {
-      //     const flow = document.approvalFlow;
-      //     const approvers: string[] = [];
-
-      //     // Collect verifiers
-      //     if (flow.verifiers && flow.verifiers.length > 0) {
-      //       flow.verifiers.forEach((verifier: any) => {
-      //         if (verifier.id) approvers.push(verifier.id);
-      //       });
-      //     }
-
-      //     // Collect approvers from approval levels
-      //     if (flow.approvers) {
-      //       const levels = [
-      //         flow.approvers.firstApprover,
-      //         flow.approvers.secondApprover,
-      //         flow.approvers.thirdApprover
-      //       ];
-
-      //       levels.forEach((level: any) => {
-      //         if (level && level.users && level.users.length > 0) {
-      //           level.users.forEach((user: any) => {
-      //             if (user.id) approvers.push(user.id);
-      //           });
-      //         }
-      //       });
-      //     }
-
-      //     // Send notifications to all approvers
-      //     for (const approverId of approvers) {
-      //       await this.notificationService.createNoti(
-      //         `New Other Delivery Challan ${otherDeliveryChallan.id} requires your approval`,
-      //         approverId
-      //       );
-      //     }
-      //   }
-      // } catch (approverNotifError) {
-      //   console.error('Approver notification error:', approverNotifError);
-      //   // Don't fail the main operation
-      // }
-
-      // 📊 Log user activity
-      try {
-        const user = res.locals.user;
-        await this.activityLogService.logActivity({
-          userId: requestedBy,
-          userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-          action: ActivityAction.CREATE,
-          module: ActivityModule.OTHER_DELIVERY_CHALLAN,
-          entityName: 'Other Delivery Challan',
-          entityId: otherDeliveryChallan.id,
-          description: `Created Other Delivery Challan ${otherDeliveryChallan.id}`,
-          metadata: {
-            challanId: otherDeliveryChallan.id,
-          },
-          ipAddress: req.ip || req.socket.remoteAddress,
-          userAgent: req.get('user-agent'),
-          endpoint: req.originalUrl,
-          httpMethod: req.method,
-          statusCode: 201,
-        });
-      } catch (activityLogError) {
-        console.error('Activity log error:', activityLogError);
-        // Don't fail the main operation
-      }
-
-      ControllerLogger.logSuccess('Other Delivery Challan created', otherDeliveryChallan.id, req, res);
+  ControllerLogger.logSuccess('Other Delivery Challan created', otherDeliveryChallan.id, req, res);
 
       res.status(201).json({
         status: 'success',
@@ -214,7 +143,7 @@ export class OtherDeliveryChallanController {
         search: (search as string) || '',
       };
       const otherDeliveryChallans =
-        await this.otherDeliveryChallanService.getAll(queryOptions);
+        await this.otherDeliveryChallanService.getAll(queryOptions, userId);
 
       if (!otherDeliveryChallans) {
         return next(new AppError(404, 'No Other Delivery Challans found'));
@@ -326,16 +255,17 @@ export class OtherDeliveryChallanController {
     }
   }
 
-  @httpGet('/view/:docid')
+  @httpGet('/view/:id')
   public async getOtherDeliveryChallanByIdForView(
-    @requestParam('docid') docid: string,
+    @requestParam('id') id: string,
     @response() res: Response,
     @request() req: Request,
     @next() next: NextFunction,
   ) {
     try {
+
       const otherDeliveryChallan =
-        await this.otherDeliveryChallanService.getByIdChallanforView(docid);
+        await this.otherDeliveryChallanService.getByIdChallanforView(id);
       if (!otherDeliveryChallan) {
         return next(new AppError(404, 'Other Delivery Challan not found'));
       }
