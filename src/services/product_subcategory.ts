@@ -28,32 +28,27 @@ export class ProductSubcategoryService {
   // }
 
 async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
-    let baseQuery = await this.productSubcategoryRepository.createQueryBuilder('productSubcategory')
-        .leftJoinAndSelect('productSubcategory.category', 'category')
-        .leftJoinAndSelect('category.productClassification', 'productClassification')
-        .orderBy('productSubcategory.createdAt', 'DESC');
+    let baseQuery = this.productSubcategoryRepository
+      .createQueryBuilder('productSubcategory')
+      .leftJoin('productSubcategory.category', 'category')
+      .select([
+        'productSubcategory.id',
+        'productSubcategory.name',
+        'category.id',
+        'category.name',
+      ])
+      .orderBy('productSubcategory.createdAt', 'DESC');
 
-    // Execute query with pagination
     const subcategories = await buildQuery(baseQuery, queryOptions, 'productSubcategory');
 
     return {
-        data: subcategories.data.map((subcategory) => ({
-            id: subcategory.id,
-            name: subcategory.name,
-            category: subcategory.category
-                ? {
-                    id: subcategory.category.id,
-                    name: subcategory.category.name,
-                }
-                : null, // Handle case where category is null
-            // classification: subcategory.category?.productClassification
-            //     ? {
-            //         id: subcategory.category.productClassification.id,
-            //         name: subcategory.category.productClassification.name,
-            //     }
-            //     : null, // Handle case where productClassification is null
-        })),
-        meta: subcategories.meta, // Ensure meta data is returned properly
+      data: subcategories.data.map((subcategory) => ({
+        id: subcategory.id,
+        name: subcategory.name,
+        //categoryId: subcategory.category?.id ?? null,
+        category: subcategory.category?.name ?? null,
+      })),
+      meta: subcategories.meta,
     };
 }
 
@@ -62,11 +57,20 @@ async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any 
   
   
 
-  async getById(id: string): Promise<ProductSubcategory | null> {
-    return this.productSubcategoryRepository.findOne({
-      where: { id },
-      relations: ["category"], // Ensure category is loaded
-    });
+  async getById(id: string): Promise<any> {
+    const result = await this.productSubcategoryRepository
+      .createQueryBuilder('productSubcategory')
+      .leftJoin('productSubcategory.category', 'category')
+      .select(['productSubcategory.id', 'productSubcategory.name', 'category.id'])
+      .where('productSubcategory.id = :id', { id })
+      .getOne();
+
+    if (!result) return null;
+    return {
+      id: result.id,
+      name: result.name,
+      category: result.category?.id ?? null,
+    };
   }
 
   async create(name: string, category: string): Promise<ProductSubcategory> {

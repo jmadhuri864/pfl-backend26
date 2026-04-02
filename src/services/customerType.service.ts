@@ -48,7 +48,10 @@ export class CustomerTypeService {
 
 
   async getCustomerTypeById(id: string): Promise<CustomerType | null> {
-    return this.customerTypeRepository.findOneBy({ id });
+    return this.customerTypeRepository.findOne({ 
+      where: {id},
+      select: ["id", "name"]
+     });
   }
 
   async createCustomerType(name: string): Promise<CustomerType> {

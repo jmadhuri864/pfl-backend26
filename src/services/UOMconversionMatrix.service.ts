@@ -31,17 +31,8 @@ export class UOMConversionMatrixService {
       return{
         id:uom.id,
         conversionFactor:uom.conversionFactor,
-        fromUOM:uom.fromUOM ?
-        {
-          id:uom?.fromUOM.id,
-          unit:uom?.fromUOM.unit
-        }:null,
-        toUOM:uom.toUOM
-        ?
-        {
-          id:uom?.toUOM.id,
-          unit:uom?.toUOM.unit
-        }:null
+        fromUOM: uom.fromUOM?.unit ?? null,
+        toUOM: uom.toUOM?.unit ?? null,
       }
     }),
     meta:result.meta

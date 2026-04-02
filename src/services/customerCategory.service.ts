@@ -49,7 +49,10 @@ export class CustomerCategoryService {
 
 
   public async getById(id: string): Promise<CustomerCategory | null> {
-    return await this.customerCategoryRepository.findOneBy({ id });
+    return await this.customerCategoryRepository.findOne({
+    where: {id},
+    select:["id", "name"]   
+    });
   }
 
   public async create(

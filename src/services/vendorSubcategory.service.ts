@@ -93,21 +93,47 @@ export class VendorSubcategoryService {
   //   //return await paginateQuery(queryBuilder, queryOptions);
   // }
   
-  public async getByall(queryOptions:PaginationOptions): Promise<any> {
-   
+  public async getByall(queryOptions: PaginationOptions): Promise<any> {
+    let baseQuery = this.vendorSubcategoryRepository
+      .createQueryBuilder('vendorSubcategory')
+      .leftJoin('vendorSubcategory.category', 'category')
+      .select([
+        'vendorSubcategory.id',
+        'vendorSubcategory.name',
+        'category.name',
+      ])
+      .orderBy('vendorSubcategory.createdAt', 'DESC');
 
-    let baseQuery = await this.vendorSubcategoryRepository.createQueryBuilder('vendorSubcategory')
-        .leftJoinAndSelect('vendorSubcategory.category', 'category')
-        .orderBy('vendorSubcategory.createdAt', 'DESC');  
+    const result = await buildQuery(baseQuery, queryOptions, 'vendorSubcategory');
 
-return await buildQuery(baseQuery, queryOptions, 'vendorSubcategory');
+    // Flatten category object to just the name string
+    if (result?.data) {
+      result.data = result.data.map((item: any) => ({
+        ...item,
+        category: item.category?.name ?? null,
+      }));
+    }
+
+    return result;
   }
 
-  public async getById(id: string): Promise<VendorSubcategory | null> {
-    return this.vendorSubcategoryRepository.findOne({
-      where: { id },
-      relations: ["category"], // Ensure correct relation name
-    });
+  public async getById(id: string): Promise<any> {
+    const result = await this.vendorSubcategoryRepository
+      .createQueryBuilder('vendorSubcategory')
+      .leftJoin('vendorSubcategory.category', 'category')
+      .select([
+        'vendorSubcategory.id',
+        'vendorSubcategory.name',
+        'category.id',
+      ])
+      .where('vendorSubcategory.id = :id', { id })
+      .getOne();
+
+    if (!result) return null;
+    return {
+      ...result,
+      category: result.category?.id ?? null,
+    };
   }
 
   public async update(
