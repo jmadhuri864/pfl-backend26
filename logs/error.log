@@ -1984,3 +1984,22 @@ Cannot read properties of undefined (reading 'city')
 2026-04-01 02:48:04 PM [error]: AppError: You are not logged in 
 2026-04-01 02:48:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
 2026-04-01 02:48:04 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:01:31 PM [error]: AppError: userIds must be a non-empty array 
+2026-04-01 03:11:47 PM [error]: AppError: You are not logged in 
+2026-04-01 03:11:47 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:15:57 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-50) at this location 
+2026-04-01 03:16:02 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-50) at this location 
+2026-04-01 03:16:15 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-40) at this location 
+2026-04-01 03:16:20 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-40) at this location 
+2026-04-01 03:16:35 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-60) at this location 
+2026-04-01 03:21:20 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:20 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:45 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 05:00:30 PM [error]: AppError: You are not logged in 
+2026-04-01 05:00:30 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 05:14:22 PM [error]: AppError: No customer types found 

@@ -9,6 +9,7 @@ import { DocumentApprovalFlowRepository } from "../repositories/DocumentApproval
 import { ApprovalStageInfoRepository } from "../repositories/approvalStageInfoRepository";
 import { NotificationService } from "./notification.service";
 import { buildQueryFromArray } from "../utils/pagination";
+import { DocumentbService } from "./documentb.service";
 
 
 @injectable()
@@ -22,7 +23,9 @@ export class DocSingalApproverService {
     @inject(TYPES.ApprovalStageInfoRepository)
     private approvalStageInfoRepository: ApprovalStageInfoRepository,
     @inject(TYPES.NotificationService)
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    @inject(TYPES.DocumentbService)
+    private documentBService: DocumentbService
   ){}
   
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
@@ -125,15 +128,19 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+
+          const docNo = await this.documentBService.resolveDocumentTypeNo(document);
+          const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
+
           // 🔔 Notify approver
           await this.notificationService.createNoti(
-            `${document.type} was rejected by ${userName}`,
+            `${docLabel} was rejected by ${userName}`,
             userId,
           );
           // 🔔 Notify creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
-              `Your ${document.type} was rejected by ${userName}`,
+              `Your ${docLabel} was rejected by ${userName}`,
               document.lastActionBy.id,
             );
           }
@@ -142,15 +149,19 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+
+          const docNo = await this.documentBService.resolveDocumentTypeNo(document);
+          const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
+
           // 🔔 Notify approver
           await this.notificationService.createNoti(
-            `${document.type} was Approved by ${userName}`,
+            `${docLabel} was Approved by ${userName}`,
             userId,
           );
           // 🔔 Notify creator that document is fully approved
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
-              `Your ${document.type} has been approved by ${userName}`,
+              `Your ${docLabel} has been approved by ${userName}`,
               document.lastActionBy.id,
             );
           }

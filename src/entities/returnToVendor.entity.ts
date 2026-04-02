@@ -81,6 +81,9 @@ export class ReturnToVendor extends Model {
       amtWords: string | null;
 
       @Column({ type: 'varchar', length: 255, nullable: true })
+      rtvNo: string | null;
+
+      @Column({ type: 'varchar', length: 255, nullable: true })
       remark: string | null;
 
       @DeleteDateColumn({ name: "deleted_at_new", nullable: true })

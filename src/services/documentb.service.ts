@@ -19,6 +19,16 @@ import { log } from 'node:console';
 import { UserRepository } from '../repositories/user.repository';
 import { MultiCashVoucherRepository } from '../repositories/multicashVoucher.repository';
 import { LabourPaymentVoucherRepository } from '../repositories/labourPaymentVoucher.repository';
+import { AqrRepository } from '../repositories/aqr.repository';
+import { SecondSaleRepository } from '../repositories/secondSale.repository';
+import { VehicleDispatchRepository } from '../repositories/vehicleDispatch.repository';
+import { DumpRegisterRepository } from '../repositories/dumpRegister.repository';
+import { InwardRepository } from '../repositories/inwardRegister.repository';
+import { OtherDeliveryChallanRepository } from '../repositories/otherDeliveryChallan.repository';
+import { StockTransferDeliveryChallanRepository } from '../repositories/stockTransferDeliveryChallan.repository';
+import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliveryChallan.repository';
+import { PostReturnByCustomerRepository } from '../repositories/postReturnByCustomer.repository';
+import { ReturnToVendorRepository } from '../repositories/returnToVendor.repository';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { ParsedQs } from 'qs';
 import { Brackets } from 'typeorm';
@@ -53,6 +63,26 @@ export class DocumentbService {
     private cashVoucherRepository: MultiCashVoucherRepository,
     @inject(TYPES.LabourPaymentVoucherRepository)
     private lpVoucherRepository: LabourPaymentVoucherRepository,
+    @inject(TYPES.AqrRepository)
+    private aqrRepository: AqrRepository,
+    @inject(TYPES.SecondSaleRepository)
+    private secondSaleRepository: SecondSaleRepository,
+    @inject(TYPES.VehicleDispatchRepository)
+    private vehicleDispatchRepository: VehicleDispatchRepository,
+    @inject(TYPES.DumpRegisterRepository)
+    private dumpRegisterRepository: DumpRegisterRepository,
+    @inject(TYPES.InwardRepository)
+    private inwardRepository: InwardRepository,
+    @inject(TYPES.OtherDeliveryChallanRepository)
+    private otherDCRepository: OtherDeliveryChallanRepository,
+    @inject(TYPES.StockTransferDeliveryChallanRepository)
+    private stockTransferDCRepository: StockTransferDeliveryChallanRepository,
+    @inject(TYPES.CustomerDeliveryChallanRepository)
+    private customerDCRepository: CustomerDeliveryChallanRepository,
+    @inject(TYPES.PostReturnByCustomerRepository)
+    private rbcRepository: PostReturnByCustomerRepository,
+    @inject(TYPES.ReturnToVendorRepository)
+    private rtvRepository: ReturnToVendorRepository,
   ) { }
 
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
@@ -1250,30 +1280,71 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     }
   }
 
-  private async resolveDocumentTypeNo(document: any): Promise<string | null> {
+  public async resolveDocumentTypeNo(document: any): Promise<string | null> {
     if (!document?.document_type_id) return null;
-    switch (document.type) {
-      case 'grn': {
-        const doc = await this.grnRepository.findOne({ where: { id: document.document_type_id } });
-        return doc?.grnNo ?? null;
+    try {
+      switch (document.type) {
+        case DocumentTypeEnum.GRN: {
+          const doc = await this.grnRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.grnNo ?? null;
+        }
+        case DocumentTypeEnum.RFPA: {
+          const doc = await this.rfpaRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.rfpaId ?? null;
+        }
+        case DocumentTypeEnum.DEAL_SLIP: {
+          const doc = await this.dealSlipRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.dealSlipNo ?? null;
+        }
+        case DocumentTypeEnum.LABOR_PAYMENT_VOUCHER: {
+          const doc = await this.lpVoucherRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.voucherNo ?? null;
+        }
+        case DocumentTypeEnum.AQR: {
+          const doc = await this.aqrRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.aqrNo ?? null;
+        }
+        case DocumentTypeEnum.SECOND_SALE: {
+          const doc = await this.secondSaleRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.secondSaleNo ?? null;
+        }
+        case DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER: {
+          const doc = await this.vehicleDispatchRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.vehicleDispatchNo ?? null;
+        }
+        case DocumentTypeEnum.DUMP_REGISTER: {
+          const doc = await this.dumpRegisterRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.dumpNo ?? null;
+        }
+        case DocumentTypeEnum.INWARD_REGISTER: {
+          const doc = await this.inwardRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.inwardNo ?? null;
+        }
+        case DocumentTypeEnum.DC_TYPE_OTHER: {
+          const doc = await this.otherDCRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.challanNo ?? null;
+        }
+        case DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER: {
+          const doc = await this.stockTransferDCRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.challanNo ?? null;
+        }
+        case DocumentTypeEnum.DC_TYPE_CUSTOMER: {
+          const doc = await this.customerDCRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.challanNo ?? null;
+        }
+        case DocumentTypeEnum.RETURN_BY_CUSTOMER: {
+          const doc = await this.rbcRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.rbcNo ?? null;
+        }
+        case DocumentTypeEnum.RETURN_TO_VENDOR: {
+          const doc = await this.rtvRepository.findOne({ where: { id: document.document_type_id } });
+          return doc?.rtvNo ?? null;
+        }
+        default:
+          return null;
       }
-      case 'rfpa': {
-        const doc = await this.rfpaRepository.findOne({ where: { id: document.document_type_id } });
-        return doc?.rfpaId ?? null;
-      }
-      case 'deal-slip': {
-        const doc = await this.dealSlipRepository.findOne({ where: { id: document.document_type_id } });
-        return doc?.dealSlipNo ?? null;
-      }
-      case 'labor-payment-voucher': {
-        const doc = await this.lpVoucherRepository.findOne({ where: { id: document.document_type_id } });
-        return doc?.voucherNo ?? null;
-      }
-      case 'return-by-customer':
-      case 'return-to-vendor':
-        return `ID: ${document.document_type_id.substring(0, 8)}`;
-      default:
-        return null;
+    } catch {
+      return null;
     }
   }
 
@@ -1291,25 +1362,17 @@ function isWithinRange(min: number | string | null, max: number | string | null,
 
     const document = await this.documentbRepository.findOne({ where: { id: documentId } });
 
-    // Fire SSE notifications immediately — no extra DB lookups blocking this
-    const baseMessage = `You have been assigned as a ${role} for ${document?.type} document`;
+    // Resolve document number for rich notification message
+    const documentTypeNo = await this.resolveDocumentTypeNo(document);
+    const richMessage = documentTypeNo
+      ? `You have been assigned as a ${role} for ${document?.type} (${documentTypeNo})`
+      : `You have been assigned as a ${role} for ${document?.type} document`;
+
     users.forEach((user) => {
-      this.notificationService.createNoti(baseMessage, user.id).catch((err) =>
+      this.notificationService.createNoti(richMessage, user.id).catch((err) =>
         console.error(`Failed to send notification to user ${user.id}:`, err)
       );
     });
-
-    // Resolve document number in background for richer DB-saved notification
-  //   this.resolveDocumentTypeNo(document).then((documentTypeNo) => {
-  //     const richMessage = documentTypeNo
-  //       ? `You have been assigned as a ${role} for ${document?.type} (${documentTypeNo}) document`
-  //       : baseMessage;
-  //     users.forEach((user) => {
-  //       this.notificationService.saveNotificationToDb(richMessage, user.id).catch((err) =>
-  //         console.error(`Failed to save notification for user ${user.id}:`, err)
-  //       );
-  //     });
-  //   }).catch(() => {/* ignore */});
   }
 
   async getAllHoldGrnDocuments(): Promise<any[]> {

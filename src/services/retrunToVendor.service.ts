@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "../types";
 import { GrnRepository } from "../repositories/grn.repository";
 import { ProductVarientRepository } from "../repositories/varients.repository";
-import { DataSource, In } from "typeorm";
+import { DataSource, ILike, In } from "typeorm";
 import { UserLogger } from "../utils/logger";
 import { ReturnToVendorRepository } from "../repositories/returnToVendor.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
@@ -29,6 +29,18 @@ export class ReturnToVendorService {
                       @inject(TYPES.DocDoubleApproverService)
     private readonly docDoubleApproverService: DocDoubleApproverService,
         ) {}   
+
+    private async generateSerialNo(): Promise<string> {
+      const now = new Date();
+      const yyyy = now.getFullYear().toString();
+      const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+      const dd = now.getDate().toString().padStart(2, '0');
+      const datePrefix = `RTV${yyyy}${mm}${dd}`;
+      const count = await this.postReturnToVendorRepository.count({
+        where: { rtvNo: ILike(`${datePrefix}%`) },
+      });
+      return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
+    }
 
     public async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any>{
       const queryRunner = this.dataSource.createQueryRunner();
@@ -70,8 +82,10 @@ export class ReturnToVendorService {
           const productIds = variants.map((v: any) => v.product?.id).filter(Boolean);
 
           // 6️⃣ Create and save return entity
+          const rtvNo = await this.generateSerialNo();
           const newReturn = queryRunner.manager.create(this.postReturnToVendorRepository.target, {
             ...returnData,
+            rtvNo,
             createdBy: requestedBy,
             variants: variants.map((v: any) => ({ id: v.id })),
             products: productIds.map((id: any) => ({ id })),
@@ -260,6 +274,7 @@ export class ReturnToVendorService {
                 createdDate: formatDateTime(doc.createdAt).createdDate,
                 createdTime: formatDateTime(doc.createdAt).createdTime,
                 grnNo: doc.relatedData.grnNo?.grnNo ?? null,
+                rtvNo: doc.relatedData.rtvNo ?? null,
                 companyName: doc.relatedData.companyName?.name ?? null,
                 location: doc.relatedData.location?.name ?? null,
                 selectedVendor: doc.relatedData.selectedVendor?.companyName ?? null,
@@ -398,6 +413,7 @@ export class ReturnToVendorService {
                 createdTime,
                 approvalSummary: document1.approvalSummary ?? null,
                 grnNo: returnRecord.grnNo?.grnNo ?? null,
+                rtvNo: returnRecord.rtvNo ?? null,
                 companyName: returnRecord.companyName?.name ?? null,
                 location: returnRecord.location?.name ?? null,
                 selectedVendor: returnRecord.selectedVendor?.companyName ?? null,

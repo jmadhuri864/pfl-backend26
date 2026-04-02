@@ -102,15 +102,18 @@ export class DocDoubleApproverService {
     await this.documentApprovalFlowRepository.save(info);
     await this.documentbRepository.save(document);
 
+    const docNo = await this.documentBService.resolveDocumentTypeNo(document);
+    const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
+
     // 🔔 Notify approver
     await this.notificationService.createNoti(
-      `${document.type} was rejected by ${userName}`,
+      `${docLabel} was rejected by ${userName}`,
       userId,
     );
     // 🔔 Notify creator
     if (document.lastActionBy?.id) {
       await this.notificationService.createNoti(
-        `Your ${document.type} was rejected by ${userName}`,
+        `Your ${docLabel} was rejected by ${userName}`,
         document.lastActionBy.id,
       );
     }
@@ -137,9 +140,12 @@ export class DocDoubleApproverService {
 
     await this.documentApprovalFlowRepository.save(info);
 
+    const docNo2 = await this.documentBService.resolveDocumentTypeNo(document);
+    const docLabel2 = docNo2 ? `${document.type} (${docNo2})` : document.type;
+
     // 🔔 Notify approver of their action
     await this.notificationService.createNoti(
-      `${document.type} approved by ${userName}`,
+      `${docLabel2} approved by ${userName}`,
       userId,
     );
 
@@ -155,7 +161,15 @@ export class DocDoubleApproverService {
       // 🔔 Notify creator that document is fully approved
       if (document.lastActionBy?.id) {
         await this.notificationService.createNoti(
-          `Your ${document.type} has been approved by ${userName}`,
+          `Your ${docLabel2} has been fully approved by ${userName}`,
+          document.lastActionBy.id,
+        );
+      }
+    } else {
+      // 🔔 Notify creator about partial approval (forward notification)
+      if (document.lastActionBy?.id) {
+        await this.notificationService.createNoti(
+          `Your ${docLabel2} has been approved at one level by ${userName}, awaiting next approval`,
           document.lastActionBy.id,
         );
       }

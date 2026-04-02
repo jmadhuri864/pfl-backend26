@@ -58615,3 +58615,1066 @@ Cannot read properties of undefined (reading 'city')
 2026-04-01 02:55:24 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
 2026-04-01 02:55:28 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
 2026-04-01 02:58:01 PM [info]: Database connected successfully 
+2026-04-01 02:59:05 PM [info]: Database connected successfully 
+2026-04-01 03:01:20 PM [info]: Received GET request on /employee/?search=sudh&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:01:20 PM [info]: Getting All Employee 
+2026-04-01 03:01:21 PM [info]: Employee Getting successfully 
+2026-04-01 03:01:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:01:22 PM [info]: Received GET request on /employee/?search=sudhanshu&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:01:22 PM [info]: Getting All Employee 
+2026-04-01 03:01:22 PM [info]: Employee Getting successfully 
+2026-04-01 03:01:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:01:30 PM [info]: Received DELETE request on /employee/delete/multiple [IP: ::ffff:192.168.1.52]
+2026-04-01 03:01:31 PM [error]: AppError: userIds must be a non-empty array 
+2026-04-01 03:01:31 PM [info]: Activity logged: ERROR - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:10 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:10 PM [info]: Getting All Employee 
+2026-04-01 03:03:11 PM [info]: Employee Getting successfully 
+2026-04-01 03:03:11 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:15 PM [info]: Received GET request on /employee/?search=Narend&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:15 PM [info]: Getting All Employee 
+2026-04-01 03:03:15 PM [info]: Employee Getting successfully 
+2026-04-01 03:03:16 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:17 PM [info]: Received GET request on /employee/?search=narendra&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:17 PM [info]: Getting All Employee 
+2026-04-01 03:03:17 PM [info]: Employee Getting successfully 
+2026-04-01 03:03:19 PM [info]: Received GET request on /employee/3b91073f-615f-4b4b-a7a7-46642e7fe872/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:19 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:19 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:19 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:19 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:19 PM [info]: Received request to fetch all offices 
+2026-04-01 03:03:19 PM [info]: Fetched all offices successfully 
+2026-04-01 03:03:19 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:03:51 PM [info]: Received PUT request on /employee/3b91073f-615f-4b4b-a7a7-46642e7fe872 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:03:58 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:04:00 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:00 PM [info]: Getting All Employee 
+2026-04-01 03:04:01 PM [info]: Employee Getting successfully 
+2026-04-01 03:04:02 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:04:18 PM [info]: Received GET request on /employee/?search=ravi&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:18 PM [info]: Getting All Employee 
+2026-04-01 03:04:18 PM [info]: Employee Getting successfully 
+2026-04-01 03:04:18 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:04:20 PM [info]: Received GET request on /employee/8846303c-d35c-4918-8ec7-a4cc03a97491/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:21 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:21 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:21 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:21 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:04:21 PM [info]: Received request to fetch all offices 
+2026-04-01 03:04:21 PM [info]: Fetched all offices successfully 
+2026-04-01 03:04:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:04:22 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:05:58 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:05:58 PM [info]: Getting All Employee 
+2026-04-01 03:05:58 PM [info]: Employee Getting successfully 
+2026-04-01 03:05:59 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:06:05 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:26 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:26 PM [info]: Getting All Employee 
+2026-04-01 03:06:27 PM [info]: Employee Getting successfully 
+2026-04-01 03:06:27 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:06:32 PM [info]: Received GET request on /employee/?search=an&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:32 PM [info]: Getting All Employee 
+2026-04-01 03:06:32 PM [info]: Employee Getting successfully 
+2026-04-01 03:06:32 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:06:34 PM [info]: Received GET request on /employee/?search=Ankush&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:34 PM [info]: Getting All Employee 
+2026-04-01 03:06:34 PM [info]: Employee Getting successfully 
+2026-04-01 03:06:37 PM [info]: Received GET request on /employee/c32f41e9-0779-4383-878a-fe40ccad9ff1/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:37 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:37 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:37 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:06:37 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:37 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:06:37 PM [info]: Received request to fetch all offices 
+2026-04-01 03:06:37 PM [info]: Fetched all offices successfully 
+2026-04-01 03:06:40 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:06:40 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:07:16 PM [info]: Received PUT request on /employee/c32f41e9-0779-4383-878a-fe40ccad9ff1 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:24 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:24 PM [info]: Getting All Employee 
+2026-04-01 03:07:24 PM [info]: Employee Getting successfully 
+2026-04-01 03:07:24 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:07:24 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:07:30 PM [info]: Received GET request on /employee/?search=vit&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:30 PM [info]: Getting All Employee 
+2026-04-01 03:07:30 PM [info]: Employee Getting successfully 
+2026-04-01 03:07:30 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:07:32 PM [info]: Received GET request on /employee/c9bd1e5f-e584-49fb-9e53-aca4f8e70415/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:32 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:32 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:34 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:34 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:07:34 PM [info]: Received request to fetch all offices 
+2026-04-01 03:07:34 PM [info]: Fetched all offices successfully 
+2026-04-01 03:07:35 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:07:35 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:04 PM [info]: Received PUT request on /employee/c9bd1e5f-e584-49fb-9e53-aca4f8e70415 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:11 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:11 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:11 PM [info]: Getting All Employee 
+2026-04-01 03:08:11 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:13 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:15 PM [info]: Received GET request on /employee/?search=naren&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:15 PM [info]: Getting All Employee 
+2026-04-01 03:08:15 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:15 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:16 PM [info]: Received GET request on /employee/?search=narendra&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:16 PM [info]: Getting All Employee 
+2026-04-01 03:08:17 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:18 PM [info]: Received GET request on /employee/3b91073f-615f-4b4b-a7a7-46642e7fe872/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:18 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:18 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:18 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:18 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:18 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:18 PM [info]: Received request to fetch all offices 
+2026-04-01 03:08:18 PM [info]: Fetched all offices successfully 
+2026-04-01 03:08:21 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:21 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:37 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:37 PM [info]: Getting All Employee 
+2026-04-01 03:08:37 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:39 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:45 PM [info]: Received GET request on /employee/?search=ravi&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:45 PM [info]: Getting All Employee 
+2026-04-01 03:08:46 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:46 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:52 PM [info]: Received GET request on /employee/?search=ra&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:52 PM [info]: Getting All Employee 
+2026-04-01 03:08:52 PM [info]: Employee Getting successfully 
+2026-04-01 03:08:52 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:08:58 PM [info]: Received GET request on /employee/?search=rahul&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:08:58 PM [info]: Getting All Employee 
+2026-04-01 03:08:58 PM [info]: Employee Getting successfully 
+2026-04-01 03:09:00 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:09:00 PM [info]: Received GET request on /employee/5a21aad5-6020-4ecb-9d96-81279db74aa3/update [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:00 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:00 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:00 PM [info]: Received GET request on /document-details/ [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:00 PM [info]: Received GET request on /location-offices/filterData/filter/all [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:00 PM [info]: Received request to fetch all offices 
+2026-04-01 03:09:00 PM [info]: Fetched all offices successfully 
+2026-04-01 03:09:00 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:09:00 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:09:22 PM [info]: Received PUT request on /employee/5a21aad5-6020-4ecb-9d96-81279db74aa3 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:26 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:09:28 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 03:09:28 PM [info]: Getting All Employee 
+2026-04-01 03:09:28 PM [info]: Employee Getting successfully 
+2026-04-01 03:09:29 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:11:44 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.42]
+2026-04-01 03:11:46 PM [info]: User logged out successfully 
+2026-04-01 03:11:47 PM [info]: Received GET request on /other-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:11:47 PM [error]: AppError: You are not logged in 
+2026-04-01 03:11:47 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 03:11:47 PM [info]: Received request to refresh access token 
+2026-04-01 03:11:47 PM [warn]: Refresh token not provided 
+2026-04-01 03:11:47 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:11:54 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:14 PM [info]: Received POST request on /auth/login [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:14 PM [info]: Login request received 
+2026-04-01 03:12:17 PM [info]: System log saved 
+2026-04-01 03:12:17 PM [info]: User logged in successfully 
+2026-04-01 03:12:23 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzUwMzY1MzcsImV4cCI6MTc3NTIxNjUzN30.iQvW_IqyzTH4o4TB7d1Er5yAG-X1fMb0b2G0-fpCyYgb2H4PwHGQER37XntFakQrch8UqITxB0UPoQqprL7FtWiIeNlLFN0SX1hcta-BQld79aITki5sUq9FN1a6rIs8g6Sx0NoxVmi373PBYlWLhr6YVBUgKPihsKi8TFzJyPjDrIqLwl-KrmNP9nBVYc8s9jyfk3ETadXzrU3SZ0Pp8-PvDbwmNzBhHVpCi_gYctow6mw-reD_ZMugW6rCDvmG7bb-OGhz8vKkmu79D_kyfDKsLDF4KlgucXBfiRqj-qrvwXDwVLAG-CzIiJEdjEc9DqB2ICe3P2fMniki-RtV3Q [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036543346-0imglefem) 
+2026-04-01 03:12:23 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036543346-0imglefem for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:23 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /employee/all/partial [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:23 PM [info]: Employee Getting successfully 
+2026-04-01 03:12:23 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:24 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:24 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:29 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:34 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:34 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:34 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:34 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:34 PM [info]: Received GET request on /packingMaterial/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:35 PM [info]: Fetching all products 
+2026-04-01 03:12:35 PM [info]: Fetching all packing materials 
+2026-04-01 03:12:35 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:12:35 PM [info]: Received GET request on /customers/names/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:35 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDCForCustomerCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:35 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:35 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:35 PM [info]: Fetching all products 
+2026-04-01 03:12:35 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:12:35 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:35 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:35 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:38 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:43 PM [info]: Received GET request on /customers/partial/all/d4dfc334-2250-440b-9046-87939bc1630d [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:46 PM [info]: Notification sent to user 5a21aad5-6020-4ecb-9d96-81279db74aa3: notification 
+2026-04-01 03:12:47 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:12:49 PM [info]: Received GET request on /products/partial/f6cd3fa6-5ce3-4bee-a3e0-a0e4e706c65f [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:49 PM [info]: Received GET request on /products/getall/getvarient/f6cd3fa6-5ce3-4bee-a3e0-a0e4e706c65f [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:50 PM [info]: Fetching all products 
+2026-04-01 03:12:50 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:12:50 PM [info]: Fetching product with ID 
+2026-04-01 03:12:50 PM [info]: Product with ID fetched successfully 
+2026-04-01 03:12:59 PM [info]: Received GET request on /products/getall/getvarient/e61be0b4-71ba-483c-86c2-5f96038ef7c3 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:59 PM [info]: Received GET request on /products/partial/e61be0b4-71ba-483c-86c2-5f96038ef7c3 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:12:59 PM [info]: Fetching product with ID 
+2026-04-01 03:12:59 PM [info]: Fetching all products 
+2026-04-01 03:12:59 PM [info]: Product with ID fetched successfully 
+2026-04-01 03:12:59 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:13:14 PM [info]: Received GET request on /products/partial/data?page=2&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:13:14 PM [info]: Fetching all products 
+2026-04-01 03:13:14 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:13:22 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:14 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:14 PM [info]: Received GET request on /customer-delivery-challan/view/1494d556-2a2d-406b-8a91-1fb13923d23c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:17 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user ca87d4d6-bb2f-4702-94da-947240629068 
+2026-04-01 03:14:23 PM [info]: Received GET request on /products/partial/e61be0b4-71ba-483c-86c2-5f96038ef7c3 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:23 PM [info]: Received GET request on /products/getall/getvarient/e61be0b4-71ba-483c-86c2-5f96038ef7c3 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:23 PM [info]: Fetching all products 
+2026-04-01 03:14:24 PM [info]: Fetching product with ID 
+2026-04-01 03:14:24 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:14:24 PM [info]: Product with ID fetched successfully 
+2026-04-01 03:14:32 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:32 PM [info]: Fetching all products 
+2026-04-01 03:14:32 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:14:36 PM [info]: Received GET request on /products/partial/f46f9547-2937-40a5-9436-72a834fa1032 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:38 PM [info]: Received GET request on /products/getall/getvarient/f46f9547-2937-40a5-9436-72a834fa1032 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:14:38 PM [info]: Fetching all products 
+2026-04-01 03:14:38 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:14:38 PM [info]: Fetching product with ID 
+2026-04-01 03:14:38 PM [info]: Product with ID fetched successfully 
+2026-04-01 03:15:56 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:15:57 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-50) at this location 
+2026-04-01 03:15:58 PM [info]: Activity logged: ERROR - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:01 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:02 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-50) at this location 
+2026-04-01 03:16:02 PM [info]: Activity logged: ERROR - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:15 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:15 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-40) at this location 
+2026-04-01 03:16:16 PM [info]: Activity logged: ERROR - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:19 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:20 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-40) at this location 
+2026-04-01 03:16:22 PM [info]: Activity logged: ERROR - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:34 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:35 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036543346-0imglefem for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:35 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036543346-0imglefem) 
+2026-04-01 03:16:35 PM [error]: AppError: Insufficient stock: No inventory found for product "apple fuji fresh" (variant: apple fuji fresh,Count-60) at this location 
+2026-04-01 03:16:35 PM [info]: Activity logged: ERROR - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:44 PM [info]: Received GET request on /packingMaterial/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:44 PM [info]: Received GET request on /products/partial/data?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Fetching all packing materials 
+2026-04-01 03:16:46 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /customers/names/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Fetching all products 
+2026-04-01 03:16:46 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:16:46 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzUwMzY1MzcsImV4cCI6MTc3NTIxNjUzN30.iQvW_IqyzTH4o4TB7d1Er5yAG-X1fMb0b2G0-fpCyYgb2H4PwHGQER37XntFakQrch8UqITxB0UPoQqprL7FtWiIeNlLFN0SX1hcta-BQld79aITki5sUq9FN1a6rIs8g6Sx0NoxVmi373PBYlWLhr6YVBUgKPihsKi8TFzJyPjDrIqLwl-KrmNP9nBVYc8s9jyfk3ETadXzrU3SZ0Pp8-PvDbwmNzBhHVpCi_gYctow6mw-reD_ZMugW6rCDvmG7bb-OGhz8vKkmu79D_kyfDKsLDF4KlgucXBfiRqj-qrvwXDwVLAG-CzIiJEdjEc9DqB2ICe3P2fMniki-RtV3Q [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036806851-8h7v4bzuo) 
+2026-04-01 03:16:46 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036806851-8h7v4bzuo for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:46 PM [info]: Received GET request on /grns/grnnumbers/getAllgrnNo?page=1&limit=10&isDCForCustomerCreated=false&overAllStatus=COMPLETE [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /products/partial/data [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:46 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:16:47 PM [info]: Fetching all products 
+2026-04-01 03:16:47 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:16:47 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:47 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:47 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:16:50 PM [info]: Activity logged: VIEW - GRN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:17:23 PM [info]: Received GET request on /customer-delivery-challan/view/1494d556-2a2d-406b-8a91-1fb13923d23c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:23 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:23 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:23 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYTg3ZDRkNi1iYjJmLTQ3MDItOTRkYS05NDcyNDA2MjkwNjgiLCJpYXQiOjE3NzUwMjg5MTQsImV4cCI6MTc3NTIwODkxNH0.YrzzbNS6gW1Lhxj4U1k6pVyavh82KeicwO_EG_TkVqeiZ5mLZFH_qX5hNiFyStCCUEFxYY7iSyB5wgSSaKKRxzoQcS75lzstbD-EX8ZgXCG8Jcx0-CB0yeEARlkEaDIQu_5L9j4ae9R3NXcGkmBoOyZ_CZpcirYvBTGuGx7xYkwcqMXoS3E3J3XEOx0U89m-XDcPrgcq9DEWyx_5gFTlEjFM2Hk68JADgFopppfM4O6Xf8YA5Yh7yBHV2wgH9GgIk08AQONFlfCYNHoJ54LTGPy82LkZNIOhd_ZvTwMWamM6G7hjvuJteXqraeJYRbzJeyHAdZgK3-kx2jFfqW-DmQ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:23 PM [info]: SSE connected: ca87d4d6-bb2f-4702-94da-947240629068 (ca87d4d6-bb2f-4702-94da-947240629068-1775036843876-y24yde2dq) 
+2026-04-01 03:17:23 PM [info]: SSE client connected: ca87d4d6-bb2f-4702-94da-947240629068-1775036843876-y24yde2dq for user: ca87d4d6-bb2f-4702-94da-947240629068 
+2026-04-01 03:17:24 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user ca87d4d6-bb2f-4702-94da-947240629068 
+2026-04-01 03:17:28 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:28 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:28 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:40 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=0077bf42-c691-473a-88dc-f0e8657a4f53&location=7288c9e3-005b-45fc-bd9a-fc8af7bf2ac6 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:43 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=0077bf42-c691-473a-88dc-f0e8657a4f53&location=44918e9e-3546-4d60-b491-c96834d18db0 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:47 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=0077bf42-c691-473a-88dc-f0e8657a4f53&location=358dbd3d-6fd0-4d87-9080-de5f47b0533b [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:52 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=0077bf42-c691-473a-88dc-f0e8657a4f53&location=a29eaab7-c61b-4e6e-9789-fb3e75504e02 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:55 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=0077bf42-c691-473a-88dc-f0e8657a4f53&location=103c55ac-49e4-4a56-9095-d5e65b51eccb [IP: ::ffff:192.168.1.42]
+2026-04-01 03:17:57 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 03:17:57 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 03:17:57 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 03:17:57 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775036877462-zfz9rwqt0) 
+2026-04-01 03:17:57 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775036877462-zfz9rwqt0 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:17:58 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:18:05 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=005c9b67-f8c0-4d5c-abcd-a40ea39c1274&location=103c55ac-49e4-4a56-9095-d5e65b51eccb [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:09 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=005c9b67-f8c0-4d5c-abcd-a40ea39c1274&location=44918e9e-3546-4d60-b491-c96834d18db0 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:15 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=005c9b67-f8c0-4d5c-abcd-a40ea39c1274&location=b9dfa94e-8fec-4bf4-92f3-7385b64f9b6c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:29 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=1c94f61e-9de6-435b-8292-579f01467959&location=a29eaab7-c61b-4e6e-9789-fb3e75504e02 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:34 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10&company=a77e6602-04ad-4019-86e0-333482676859&location=a29eaab7-c61b-4e6e-9789-fb3e75504e02 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:50 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:50 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:50 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzUwMzUxMTAsImV4cCI6MTc3NTIxNTExMH0.NKP5kHl9nIgEGiJAk_Ba-xqInRmxN0as6MSjYhVItaU9LHmLvq1eXkPQYYUc6rL8bSNzpU2LFjE1-vHRMQdhg96UjCMlAqpgLbbpWLRIgxExAM9mnYBVPY7kj8rJ3hL0i8scxz6q2rJHoGbsBXpPfjiAMQI_-8vUqzCuo2mJVUPuKgpyz99euXlCoMP4N5SYyijsBs8pDL1SlzlnXi1ZQBPRP4fr9V_nuawZtq0FyDsxFFbQ1UkYm8kVtq8x8KdrXGXSwaYz2aqVA_qnvljDoPuMN3p50SHxrDfyWoPvF21IbB9LAT81Vso_uWtCdMMsBZ8KJNiNhJqx-O3XnWuYeQ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:50 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775036930987-82x6w47ma) 
+2026-04-01 03:18:50 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775036930987-82x6w47ma for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:18:58 PM [info]: Received GET request on /customers/partial/all/d4dfc334-2250-440b-9046-87939bc1630d [IP: ::ffff:192.168.1.42]
+2026-04-01 03:18:58 PM [info]: Notification sent to user 5a21aad5-6020-4ecb-9d96-81279db74aa3: notification 
+2026-04-01 03:18:59 PM [info]: Activity logged: VIEW - OTHER by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:19:05 PM [info]: Received GET request on /products/getall/getvarient/f46f9547-2937-40a5-9436-72a834fa1032 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:19:05 PM [info]: Received GET request on /products/partial/f46f9547-2937-40a5-9436-72a834fa1032 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:19:06 PM [info]: Fetching product with ID 
+2026-04-01 03:19:06 PM [info]: Fetching all products 
+2026-04-01 03:19:06 PM [info]: Fetched undefined products successfully 
+2026-04-01 03:19:06 PM [info]: Product with ID fetched successfully 
+2026-04-01 03:19:53 PM [info]: Received POST request on /customer-delivery-challan/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:19:58 PM [info]: Notification sent to user c9bd1e5f-e584-49fb-9e53-aca4f8e70415: notification 
+2026-04-01 03:19:59 PM [info]: Notification sent to user 5a21aad5-6020-4ecb-9d96-81279db74aa3: notification 
+2026-04-01 03:19:59 PM [info]: Activity logged: CREATE - OTHER_DELIVERY_CHALLAN by user 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:20:02 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:14 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:14 PM [info]: Getting All Employee 
+2026-04-01 03:20:14 PM [info]: Employee Getting successfully 
+2026-04-01 03:20:16 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:20:18 PM [info]: Received GET request on /employee/?search=vi&page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:18 PM [info]: Getting All Employee 
+2026-04-01 03:20:18 PM [info]: Employee Getting successfully 
+2026-04-01 03:20:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:20:20 PM [info]: Received GET request on /employee/?search=vit&page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:20 PM [info]: Getting All Employee 
+2026-04-01 03:20:20 PM [info]: Employee Getting successfully 
+2026-04-01 03:20:21 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:20:47 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:47 PM [info]: Getting All Employee 
+2026-04-01 03:20:47 PM [info]: Employee Getting successfully 
+2026-04-01 03:20:48 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:20:52 PM [info]: Received GET request on /approval-flow/?page=1&limit=10&type=Sale [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:56 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:20:56 PM [info]: Getting All Employee 
+2026-04-01 03:20:56 PM [info]: Employee Getting successfully 
+2026-04-01 03:20:56 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:21:00 PM [info]: Received GET request on /employee/?search=nar&page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:00 PM [info]: Getting All Employee 
+2026-04-01 03:21:00 PM [info]: Employee Getting successfully 
+2026-04-01 03:21:03 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:21:18 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:20 PM [info]: User logged out successfully 
+2026-04-01 03:21:20 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 03:21:20 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775036930987-82x6w47ma for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 03:21:20 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775036930987-82x6w47ma) 
+2026-04-01 03:21:20 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:20 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:20 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:20 PM [info]: Received request to refresh access token 
+2026-04-01 03:21:20 PM [warn]: Refresh token not provided 
+2026-04-01 03:21:20 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:32 PM [info]: Received POST request on /auth/login [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:32 PM [info]: Login request received 
+2026-04-01 03:21:36 PM [info]: Active session stored 
+2026-04-01 03:21:36 PM [info]: System log saved 
+2026-04-01 03:21:36 PM [info]: User logged in successfully 
+2026-04-01 03:21:40 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYjkxMDczZi02MTVmLTRiNGItYTdhNy00NjY0MmU3ZmU4NzIiLCJpYXQiOjE3NzUwMzcwOTYsImV4cCI6MTc3NTIxNzA5Nn0.fH4PzOAldVJ-w7aj-Chej1Ul008ocg3vwbLR3S3DoBY1ZYfnsjdAfI2jJaE3Bfnz4u4NiJptLyT5CnJEAqsQrxFMZWUSdcZnuW7w5WeBiCtHkkSzsr_8eIeeNVYLaWMoblMvWZvCBm9Yocfjbietc2I7iKB7oqPc0oS4cUkReWF5LR6XpjAEIGn2SNI7xklQVs77lMc-BWjH-jnsUvmzbQlCRzAlk7q-a-Z2sRqafXhtOTetH0X8Tlxzq4MIzwmS8wcFw1I548uizw1AY8XGswra_3JjQqUkAGs89d6GqdvNY1LNFD5xhWSAO0ZhtHzbflk6TwknKGibfnJhXOiewA [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:40 PM [info]: SSE connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037100435-5rd7as2if) 
+2026-04-01 03:21:40 PM [info]: SSE client connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037100435-5rd7as2if for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:21:40 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:41 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:41 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:41 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:41 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:41 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:42 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:42 PM [info]: Received GET request on /employee/all/partial [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:42 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:42 PM [info]: Employee Getting successfully 
+2026-04-01 03:21:42 PM [info]: Activity logged: VIEW - OTHER by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:21:43 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:44 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:44 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:44 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:44 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:45 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:45 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:45 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:45 PM [info]: User logged out successfully 
+2026-04-01 03:21:45 PM [info]: Notification sent to user ca87d4d6-bb2f-4702-94da-947240629068: notification 
+2026-04-01 03:21:45 PM [info]: SSE client disconnected: ca87d4d6-bb2f-4702-94da-947240629068-1775036843876-y24yde2dq for user: ca87d4d6-bb2f-4702-94da-947240629068 
+2026-04-01 03:21:45 PM [info]: SSE closed: ca87d4d6-bb2f-4702-94da-947240629068 (ca87d4d6-bb2f-4702-94da-947240629068-1775036843876-y24yde2dq) 
+2026-04-01 03:21:45 PM [info]: Received GET request on /inventoryStock/stock/locationwise-companywise?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:45 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:46 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:46 PM [error]: AppError: You are not logged in 
+2026-04-01 03:21:46 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:46 PM [info]: Received request to refresh access token 
+2026-04-01 03:21:46 PM [warn]: Refresh token not provided 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:46 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:46 PM [info]: Received request to refresh access token 
+2026-04-01 03:21:46 PM [warn]: Refresh token not provided 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:46 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:46 PM [info]: Received request to refresh access token 
+2026-04-01 03:21:46 PM [warn]: Refresh token not provided 
+2026-04-01 03:21:46 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 03:21:59 PM [info]: Received POST request on /auth/login [IP: ::ffff:192.168.1.42]
+2026-04-01 03:21:59 PM [info]: Login request received 
+2026-04-01 03:22:05 PM [info]: Active session stored 
+2026-04-01 03:22:05 PM [info]: System log saved 
+2026-04-01 03:22:05 PM [info]: User logged in successfully 
+2026-04-01 03:22:05 PM [info]: Notification sent to user c9bd1e5f-e584-49fb-9e53-aca4f8e70415: notification 
+2026-04-01 03:22:08 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMzcxMjUsImV4cCI6MTc3NTIxNzEyNX0.g9EvD9SuNe5ah9XI52qLe372OLNTxeYStT1IyA_UaF7M7mIfy0IkLhkrVlRsX1eYZg1V7jDeU8UbSjf5C6A-x7ahETqdog2rAGCEl6MyXsxglCwz6cIBdLGZ37GQMD2W5f93mwRat0KHCoI4SaPC6xtKeYR06sXTWEUv4h91G2JEQANNXV5z_Q5WCD-4O3DkBEOmHYAthsPNEwlP2IPGy1bl3ToCwFvKBPD3dZDGAPKVNGvE1bppHBJsnVwlPzmM7pgKyJjTdf0wDMXk7Xvb8uOBujG5hBg9DVAmU0H4N5mRDnQ_UWpUHe35Ui8CItrWCHPznYnoFA4l4nQnfOP2XA [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:08 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037128862-i0kiy3kqa) 
+2026-04-01 03:22:08 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037128862-i0kiy3kqa for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:22:09 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /employee/all/partial [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:09 PM [info]: Employee Getting successfully 
+2026-04-01 03:22:10 PM [info]: Received GET request on /procurement-target/procurement-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /procurement-target/procurement-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /procurement-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /sales-target/sales-summary//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /sales-target/sales-per-product//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /sales-target/sales-per-customer//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:10 PM [info]: Received GET request on /sales-target/performance//3/2026 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:12 PM [info]: Activity logged: VIEW - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:22:28 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:28 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:33 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:33 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:37 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:41 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:41 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:44 PM [info]: Received PATCH request on /documents/updatesecondlevel/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:44 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:22:52 PM [info]: Notification sent to user c9bd1e5f-e584-49fb-9e53-aca4f8e70415: notification 
+2026-04-01 03:22:52 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:22:55 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:22:55 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:03 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:12 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:12 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:14 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:23:20 PM [info]: Received PATCH request on /documents/updatesecondlevel/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:21 PM [info]: Notification sent to user 3b91073f-615f-4b4b-a7a7-46642e7fe872: notification 
+2026-04-01 03:23:22 PM [info]: Notification sent to user 5a21aad5-6020-4ecb-9d96-81279db74aa3: notification 
+2026-04-01 03:23:22 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:23 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:23:34 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.42]
+2026-04-01 03:23:37 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:28:35 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.63]
+2026-04-01 03:28:37 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:16 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036806851-8h7v4bzuo for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:34:16 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775036806851-8h7v4bzuo) 
+2026-04-01 03:34:17 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:17 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:17 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzUwMzY1MzcsImV4cCI6MTc3NTIxNjUzN30.iQvW_IqyzTH4o4TB7d1Er5yAG-X1fMb0b2G0-fpCyYgb2H4PwHGQER37XntFakQrch8UqITxB0UPoQqprL7FtWiIeNlLFN0SX1hcta-BQld79aITki5sUq9FN1a6rIs8g6Sx0NoxVmi373PBYlWLhr6YVBUgKPihsKi8TFzJyPjDrIqLwl-KrmNP9nBVYc8s9jyfk3ETadXzrU3SZ0Pp8-PvDbwmNzBhHVpCi_gYctow6mw-reD_ZMugW6rCDvmG7bb-OGhz8vKkmu79D_kyfDKsLDF4KlgucXBfiRqj-qrvwXDwVLAG-CzIiJEdjEc9DqB2ICe3P2fMniki-RtV3Q [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:17 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037857151-ma08cw7c6) 
+2026-04-01 03:34:17 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037857151-ma08cw7c6 for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:34:18 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:18 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:18 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775036877462-zfz9rwqt0 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:18 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775036877462-zfz9rwqt0) 
+2026-04-01 03:34:18 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:18 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037858607-qa0j58b7b) 
+2026-04-01 03:34:18 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037858607-qa0j58b7b for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:19 PM [info]: SSE client disconnected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037100435-5rd7as2if for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:34:19 PM [info]: SSE closed: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037100435-5rd7as2if) 
+2026-04-01 03:34:19 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYjkxMDczZi02MTVmLTRiNGItYTdhNy00NjY0MmU3ZmU4NzIiLCJpYXQiOjE3NzUwMzcwOTYsImV4cCI6MTc3NTIxNzA5Nn0.fH4PzOAldVJ-w7aj-Chej1Ul008ocg3vwbLR3S3DoBY1ZYfnsjdAfI2jJaE3Bfnz4u4NiJptLyT5CnJEAqsQrxFMZWUSdcZnuW7w5WeBiCtHkkSzsr_8eIeeNVYLaWMoblMvWZvCBm9Yocfjbietc2I7iKB7oqPc0oS4cUkReWF5LR6XpjAEIGn2SNI7xklQVs77lMc-BWjH-jnsUvmzbQlCRzAlk7q-a-Z2sRqafXhtOTetH0X8Tlxzq4MIzwmS8wcFw1I548uizw1AY8XGswra_3JjQqUkAGs89d6GqdvNY1LNFD5xhWSAO0ZhtHzbflk6TwknKGibfnJhXOiewA [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:19 PM [info]: SSE connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037859156-x30y4atyh) 
+2026-04-01 03:34:19 PM [info]: SSE client connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037859156-x30y4atyh for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:34:19 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:19 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:19 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:20 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037128862-i0kiy3kqa for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:20 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037128862-i0kiy3kqa) 
+2026-04-01 03:34:20 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMzcxMjUsImV4cCI6MTc3NTIxNzEyNX0.g9EvD9SuNe5ah9XI52qLe372OLNTxeYStT1IyA_UaF7M7mIfy0IkLhkrVlRsX1eYZg1V7jDeU8UbSjf5C6A-x7ahETqdog2rAGCEl6MyXsxglCwz6cIBdLGZ37GQMD2W5f93mwRat0KHCoI4SaPC6xtKeYR06sXTWEUv4h91G2JEQANNXV5z_Q5WCD-4O3DkBEOmHYAthsPNEwlP2IPGy1bl3ToCwFvKBPD3dZDGAPKVNGvE1bppHBJsnVwlPzmM7pgKyJjTdf0wDMXk7Xvb8uOBujG5hBg9DVAmU0H4N5mRDnQ_UWpUHe35Ui8CItrWCHPznYnoFA4l4nQnfOP2XA [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:20 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037860361-yz8as9lc9) 
+2026-04-01 03:34:20 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037860361-yz8as9lc9 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:20 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:20 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:21 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:21 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:34:58 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037857151-ma08cw7c6 for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:34:58 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037857151-ma08cw7c6) 
+2026-04-01 03:34:58 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:58 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:58 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzUwMzY1MzcsImV4cCI6MTc3NTIxNjUzN30.iQvW_IqyzTH4o4TB7d1Er5yAG-X1fMb0b2G0-fpCyYgb2H4PwHGQER37XntFakQrch8UqITxB0UPoQqprL7FtWiIeNlLFN0SX1hcta-BQld79aITki5sUq9FN1a6rIs8g6Sx0NoxVmi373PBYlWLhr6YVBUgKPihsKi8TFzJyPjDrIqLwl-KrmNP9nBVYc8s9jyfk3ETadXzrU3SZ0Pp8-PvDbwmNzBhHVpCi_gYctow6mw-reD_ZMugW6rCDvmG7bb-OGhz8vKkmu79D_kyfDKsLDF4KlgucXBfiRqj-qrvwXDwVLAG-CzIiJEdjEc9DqB2ICe3P2fMniki-RtV3Q [IP: ::ffff:192.168.1.42]
+2026-04-01 03:34:58 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037898371-maytmp80a) 
+2026-04-01 03:34:58 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037898371-maytmp80a for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:34:59 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:59 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:59 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037858607-qa0j58b7b for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:34:59 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037858607-qa0j58b7b) 
+2026-04-01 03:34:59 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 03:34:59 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037899488-gablv07vb) 
+2026-04-01 03:34:59 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037899488-gablv07vb for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:35:00 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:37:29 PM [info]: SSE client disconnected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037859156-x30y4atyh for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 03:37:29 PM [info]: SSE closed: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775037859156-x30y4atyh) 
+2026-04-01 03:37:29 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037860361-yz8as9lc9 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 03:37:29 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037860361-yz8as9lc9) 
+2026-04-01 03:37:29 PM [info]: SSE client disconnected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037898371-maytmp80a for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 03:37:29 PM [info]: SSE closed: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775037898371-maytmp80a) 
+2026-04-01 04:17:02 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 04:17:02 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 04:17:02 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ5NTgwMzMsImV4cCI6MTc3NTEzODAzM30.XLL3P8TdXq10owtc7bkCeN6_Z1d76jJJ-918tSd3UJamyc2BSNYOw-FYGFRLkj7AYZa359YhW7kntLpcydmAYKest0DQJyx82Ca_5QEqJ0kzzMU-_14rQF_P9SM0bKSJ4n3_m2VfTn2qNbY0OeMnMrbb6OxtzJwLk3SDwMRjf4BuyzPsks4DiOlLGzkBemXoWI9NzZzILha17Z87dXcpx_yM6WVNLTy0stZ8AZCfNVRSd7IBPQpKu-JNRToDuMH7hQvl8ab7VVBSqcGZNwWP-UUYemMST9xdGbAv8jQz6cF9tMnPVS6JhxGHVN9D-E5GwaIZFn0R2A65PI8Kg4XzZw [IP: ::ffff:192.168.1.52]
+2026-04-01 04:17:02 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775040422228-dtttegbdh) 
+2026-04-01 04:17:02 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775040422228-dtttegbdh for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:17:02 PM [info]: Getting All Employee 
+2026-04-01 04:17:02 PM [info]: Employee Getting successfully 
+2026-04-01 04:17:03 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:47:15 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775040422228-dtttegbdh for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:47:15 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775040422228-dtttegbdh) 
+2026-04-01 04:51:15 PM [info]: Received GET request on /employee/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 04:51:15 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ5NTgwMzMsImV4cCI6MTc3NTEzODAzM30.XLL3P8TdXq10owtc7bkCeN6_Z1d76jJJ-918tSd3UJamyc2BSNYOw-FYGFRLkj7AYZa359YhW7kntLpcydmAYKest0DQJyx82Ca_5QEqJ0kzzMU-_14rQF_P9SM0bKSJ4n3_m2VfTn2qNbY0OeMnMrbb6OxtzJwLk3SDwMRjf4BuyzPsks4DiOlLGzkBemXoWI9NzZzILha17Z87dXcpx_yM6WVNLTy0stZ8AZCfNVRSd7IBPQpKu-JNRToDuMH7hQvl8ab7VVBSqcGZNwWP-UUYemMST9xdGbAv8jQz6cF9tMnPVS6JhxGHVN9D-E5GwaIZFn0R2A65PI8Kg4XzZw [IP: ::ffff:192.168.1.52]
+2026-04-01 04:51:15 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775042475948-stoue6tqm) 
+2026-04-01 04:51:15 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775042475948-stoue6tqm for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:51:15 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 04:51:16 PM [info]: Getting All Employee 
+2026-04-01 04:51:16 PM [info]: Employee Getting successfully 
+2026-04-01 04:51:16 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:54:51 PM [info]: Received GET request on /products/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 04:54:51 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 04:54:52 PM [info]: Fetching all products 
+2026-04-01 04:54:52 PM [info]: Fetched undefined products successfully 
+2026-04-01 04:54:52 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:54:52 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:54:57 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 04:54:58 PM [info]: Fetching all product categories 
+2026-04-01 04:54:58 PM [info]: Successfully fetched product categories 
+2026-04-01 04:54:59 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 04:55:04 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.52]
+2026-04-01 04:55:06 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 05:00:13 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1YTIxYWFkNS02MDIwLTRlY2ItOWQ5Ni04MTI3OWRiNzRhYTMiLCJpYXQiOjE3NzUwMzY1MzcsImV4cCI6MTc3NTIxNjUzN30.iQvW_IqyzTH4o4TB7d1Er5yAG-X1fMb0b2G0-fpCyYgb2H4PwHGQER37XntFakQrch8UqITxB0UPoQqprL7FtWiIeNlLFN0SX1hcta-BQld79aITki5sUq9FN1a6rIs8g6Sx0NoxVmi373PBYlWLhr6YVBUgKPihsKi8TFzJyPjDrIqLwl-KrmNP9nBVYc8s9jyfk3ETadXzrU3SZ0Pp8-PvDbwmNzBhHVpCi_gYctow6mw-reD_ZMugW6rCDvmG7bb-OGhz8vKkmu79D_kyfDKsLDF4KlgucXBfiRqj-qrvwXDwVLAG-CzIiJEdjEc9DqB2ICe3P2fMniki-RtV3Q [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:13 PM [info]: SSE connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3 (5a21aad5-6020-4ecb-9d96-81279db74aa3-1775043013258-tbus2l4lo) 
+2026-04-01 05:00:13 PM [info]: SSE client connected: 5a21aad5-6020-4ecb-9d96-81279db74aa3-1775043013258-tbus2l4lo for user: 5a21aad5-6020-4ecb-9d96-81279db74aa3 
+2026-04-01 05:00:13 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:13 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYjkxMDczZi02MTVmLTRiNGItYTdhNy00NjY0MmU3ZmU4NzIiLCJpYXQiOjE3NzUwMzcwOTYsImV4cCI6MTc3NTIxNzA5Nn0.fH4PzOAldVJ-w7aj-Chej1Ul008ocg3vwbLR3S3DoBY1ZYfnsjdAfI2jJaE3Bfnz4u4NiJptLyT5CnJEAqsQrxFMZWUSdcZnuW7w5WeBiCtHkkSzsr_8eIeeNVYLaWMoblMvWZvCBm9Yocfjbietc2I7iKB7oqPc0oS4cUkReWF5LR6XpjAEIGn2SNI7xklQVs77lMc-BWjH-jnsUvmzbQlCRzAlk7q-a-Z2sRqafXhtOTetH0X8Tlxzq4MIzwmS8wcFw1I548uizw1AY8XGswra_3JjQqUkAGs89d6GqdvNY1LNFD5xhWSAO0ZhtHzbflk6TwknKGibfnJhXOiewA [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: SSE connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775043016498-5uhc3xbuo) 
+2026-04-01 05:00:16 PM [info]: SSE client connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775043016498-5uhc3xbuo for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:00:16 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMzcxMjUsImV4cCI6MTc3NTIxNzEyNX0.g9EvD9SuNe5ah9XI52qLe372OLNTxeYStT1IyA_UaF7M7mIfy0IkLhkrVlRsX1eYZg1V7jDeU8UbSjf5C6A-x7ahETqdog2rAGCEl6MyXsxglCwz6cIBdLGZ37GQMD2W5f93mwRat0KHCoI4SaPC6xtKeYR06sXTWEUv4h91G2JEQANNXV5z_Q5WCD-4O3DkBEOmHYAthsPNEwlP2IPGy1bl3ToCwFvKBPD3dZDGAPKVNGvE1bppHBJsnVwlPzmM7pgKyJjTdf0wDMXk7Xvb8uOBujG5hBg9DVAmU0H4N5mRDnQ_UWpUHe35Ui8CItrWCHPznYnoFA4l4nQnfOP2XA [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775043016535-qwb6gmn81) 
+2026-04-01 05:00:16 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775043016535-qwb6gmn81 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:00:16 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:16 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:17 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:00:26 PM [info]: Received POST request on /auth/logout [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:27 PM [info]: User logged out successfully 
+2026-04-01 05:00:27 PM [info]: Notification sent to user c9bd1e5f-e584-49fb-9e53-aca4f8e70415: notification 
+2026-04-01 05:00:27 PM [info]: Received GET request on /customer-delivery-challan/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:30 PM [error]: AppError: You are not logged in 
+2026-04-01 05:00:30 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775043016535-qwb6gmn81 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:00:30 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775043016535-qwb6gmn81) 
+2026-04-01 05:00:30 PM [info]: Received POST request on /auth/refresh-token [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:30 PM [info]: Received request to refresh access token 
+2026-04-01 05:00:30 PM [warn]: Refresh token not provided 
+2026-04-01 05:00:30 PM [error]: AppError: You need to re-authenticate. Please log in. 
+2026-04-01 05:00:54 PM [info]: Received POST request on /auth/login [IP: ::ffff:192.168.1.42]
+2026-04-01 05:00:54 PM [info]: Login request received 
+2026-04-01 05:00:57 PM [info]: Active session stored 
+2026-04-01 05:00:57 PM [info]: System log saved 
+2026-04-01 05:00:58 PM [info]: User logged in successfully 
+2026-04-01 05:00:58 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:01:00 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzUwNDMwNTcsImV4cCI6MTc3NTIyMzA1N30.Gz1u1z1VGQXj_Vw2FuKBGCdhubINavv9wAHiJfSNT2SbX5Bs0fIGs9EIuQLoSt2Ap3-bLoZ9STNOH8KNCDRxE8SSSN-ew9Qda71SNMX35ZXsZu-RmXMb2RCzuhtSXUEuLUfYeHR-0y9dpmArJ4fK1ELGZylhS5RtlexLcHZCApPhvHzK_RM47dIO8SO0yo4kUgKyJ__3PcyuAS4Xq6QDCqvU8itw0wjFK4rFP6B5w0wwHp6sQLNteZO3G5ASTmAluc877cAChHRCp5pg8qfgzO17B97dQBQgEjGJfvI4Ch3ZDnxdpWYR8jjctW71H2PrSWNVF3Gc2OAEmudl3hZ-qg [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:00 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775043060506-28pzigxml) 
+2026-04-01 05:01:00 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775043060506-28pzigxml for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:03 PM [info]: Received GET request on /employee/all/partial?page=1&limit=6 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:03 PM [info]: Received GET request on /vendors/filterVendor/all?page=1&limit=6 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:03 PM [info]: Received GET request on /farmers/filterFarmer/all?page=1&limit=6 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:03 PM [info]: Received GET request on /products/partial/data?page=1&limit=6 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:03 PM [info]: Received GET request on /location-branches/filterData/filter/all [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Fetching all products 
+2026-04-01 05:01:04 PM [info]: Employee Getting successfully 
+2026-04-01 05:01:04 PM [info]: Fetched undefined products successfully 
+2026-04-01 05:01:04 PM [info]: Received GET request on /company/partial/details [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Received GET request on /customers/names/all [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Received GET request on /userreport/total-purchase [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Received GET request on /userreport/total-sale [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Received GET request on /admin/dashboard/active-users [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:04 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:04 PM [info]: Received GET request on /userreport/user-counts [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:04 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:07 PM [info]: Activity logged: VIEW - USER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:15 PM [info]: Received GET request on /vendor-categories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:15 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:21 PM [info]: Received GET request on /vendor-categories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:30 PM [info]: Received POST request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:30 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:01:30 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:32 PM [info]: Received GET request on /vendor-categories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:33 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:35 PM [info]: Received GET request on /vendor-categories/9b505d0a-c444-4725-a611-fc420770bee1 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:35 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:39 PM [info]: Received PATCH request on /vendor-categories/9b505d0a-c444-4725-a611-fc420770bee1 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:46 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:01:46 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:48 PM [info]: Received GET request on /vendor-categories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:49 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:51 PM [info]: Received GET request on /vendor-categories/9b505d0a-c444-4725-a611-fc420770bee1 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:01:51 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:01:58 PM [info]: Received PATCH request on /vendor-categories/9b505d0a-c444-4725-a611-fc420770bee1 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:00 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:02:00 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:02 PM [info]: Received GET request on /vendor-categories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:03 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:06 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:09 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:11 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:12 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:21 PM [info]: Received POST request on /vendor-subcategories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:22 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:02:22 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:24 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:25 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:27 PM [info]: Received GET request on /vendor-subcategories/e7de3276-cc7a-4818-8f9b-83a2b300bed3 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:27 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:02:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:02:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:03:50 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:03:51 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:03:55 PM [info]: Received GET request on /vendor-subcategories/e7de3276-cc7a-4818-8f9b-83a2b300bed3 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:03:55 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:03:55 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:03:55 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:04:21 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:04:23 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:04:31 PM [info]: Received GET request on /vendor-subcategories/e7de3276-cc7a-4818-8f9b-83a2b300bed3 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:04:31 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.52]
+2026-04-01 05:04:32 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:04:32 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:06:22 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:06:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:07:53 PM [info]: Received PATCH request on /notification/mark-all-read [IP: ::ffff:192.168.1.52]
+2026-04-01 05:07:53 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 05:08:01 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:08:02 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:09 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:09:11 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:22 PM [info]: Received POST request on /vendor-subcategories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:09:22 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:09:23 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:25 PM [info]: Received GET request on /vendor-subcategories/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:09:26 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:27 PM [info]: Received GET request on /vendor-subcategories/6ff74c68-b0e4-40c2-baf0-e9e83b7f3a1a [IP: ::ffff:192.168.1.42]
+2026-04-01 05:09:27 PM [info]: Received GET request on /vendor-categories/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:09:29 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:29 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:09:49 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:10:37 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.42]
+2026-04-01 05:10:44 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.42]
+2026-04-01 05:10:50 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:11:01 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.42]
+2026-04-01 05:11:13 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.42]
+2026-04-01 05:11:37 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:11:39 PM [info]: Received GET request on /customerType/950518e9-6951-4fce-a76a-f3de9186f9ee [IP: ::ffff:192.168.1.42]
+2026-04-01 05:11:41 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:11:44 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:12:12 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.42]
+2026-04-01 05:14:15 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:14:21 PM [info]: Received GET request on /customerType/?search=Real&page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:14:22 PM [error]: AppError: No customer types found 
+2026-04-01 05:14:24 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:14:36 PM [info]: Received PATCH request on /customerType [IP: ::ffff:192.168.1.52]
+2026-04-01 05:14:57 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:15:02 PM [info]: Received GET request on /customerType/197d89c8-b879-4492-948f-d79a8eca5149 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:15:04 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:15:10 PM [info]: Received POST request on /customerType/ [IP: ::ffff:192.168.1.52]
+2026-04-01 05:15:10 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:15:11 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:15:13 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:16:36 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:17:43 PM [info]: Received POST request on /customerType/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:17:44 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:17:44 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:17:47 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:17:50 PM [info]: Received GET request on /customerType/aabd7d21-86dc-47ed-aece-e9ebb6d0b28f [IP: ::ffff:192.168.1.42]
+2026-04-01 05:17:50 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:17:57 PM [info]: Received PATCH request on /customerType/aabd7d21-86dc-47ed-aece-e9ebb6d0b28f [IP: ::ffff:192.168.1.42]
+2026-04-01 05:17:58 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:17:58 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:01 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:04 PM [info]: Received GET request on /customerType/aabd7d21-86dc-47ed-aece-e9ebb6d0b28f [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:07 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:07 PM [info]: Received GET request on /customerType/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:11 PM [info]: Received GET request on /customerCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:22 PM [info]: Received POST request on /customerCategory/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:22 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:18:22 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:25 PM [info]: Received GET request on /customerCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:26 PM [info]: Received GET request on /customerCategory/6a7280fe-e1cc-44f4-8a17-e7d6138ba533 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:30 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:32 PM [info]: Received PATCH request on /customerCategory/6a7280fe-e1cc-44f4-8a17-e7d6138ba533 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:33 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:18:34 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:36 PM [info]: Received GET request on /customerCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:40 PM [info]: Received GET request on /customerCategory/6a7280fe-e1cc-44f4-8a17-e7d6138ba533 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:44 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:48 PM [info]: Received PATCH request on /customerCategory/6a7280fe-e1cc-44f4-8a17-e7d6138ba533 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:50 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:18:51 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:18:53 PM [info]: Received GET request on /customerCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:56 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:18:57 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:09 PM [info]: Received POST request on /productClassification [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:12 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:19:12 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:15 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:15 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:19 PM [info]: Received GET request on /productClassification/7fa03069-4c34-4738-8929-af5619bdb339 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:23 PM [info]: Received PATCH request on /productClassification/7fa03069-4c34-4738-8929-af5619bdb339 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:24 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:19:24 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:27 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:29 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:30 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:30 PM [info]: Fetching all product categories 
+2026-04-01 05:19:30 PM [info]: Successfully fetched product categories 
+2026-04-01 05:19:32 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:35 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:36 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:19:56 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:19:56 PM [info]: Fetching all product categories 
+2026-04-01 05:19:56 PM [info]: Successfully fetched product categories 
+2026-04-01 05:19:57 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:20:05 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:20:07 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:20:08 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:20:08 PM [info]: Fetching all product categories 
+2026-04-01 05:20:08 PM [info]: Successfully fetched product categories 
+2026-04-01 05:20:08 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:20:09 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:20:10 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:20:24 PM [info]: Received POST request on /productCategory [IP: ::ffff:192.168.1.42]
+2026-04-01 05:20:24 PM [info]: Creating a new product category 
+2026-04-01 05:20:24 PM [info]: Product category created successfully 
+2026-04-01 05:20:24 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:20:25 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:20:27 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:20:27 PM [info]: Fetching all product categories 
+2026-04-01 05:20:27 PM [info]: Successfully fetched product categories 
+2026-04-01 05:20:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:21:03 PM [info]: Received GET request on /productClassification/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:21:05 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:21:08 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:21:08 PM [info]: Fetching all product categories 
+2026-04-01 05:21:08 PM [info]: Successfully fetched product categories 
+2026-04-01 05:21:11 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:21:16 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775042475948-stoue6tqm for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:21:16 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775042475948-stoue6tqm) 
+2026-04-01 05:21:21 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ5NTgwMzMsImV4cCI6MTc3NTEzODAzM30.XLL3P8TdXq10owtc7bkCeN6_Z1d76jJJ-918tSd3UJamyc2BSNYOw-FYGFRLkj7AYZa359YhW7kntLpcydmAYKest0DQJyx82Ca_5QEqJ0kzzMU-_14rQF_P9SM0bKSJ4n3_m2VfTn2qNbY0OeMnMrbb6OxtzJwLk3SDwMRjf4BuyzPsks4DiOlLGzkBemXoWI9NzZzILha17Z87dXcpx_yM6WVNLTy0stZ8AZCfNVRSd7IBPQpKu-JNRToDuMH7hQvl8ab7VVBSqcGZNwWP-UUYemMST9xdGbAv8jQz6cF9tMnPVS6JhxGHVN9D-E5GwaIZFn0R2A65PI8Kg4XzZw [IP: ::ffff:192.168.1.52]
+2026-04-01 05:21:21 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775044281114-u3s0di8bw) 
+2026-04-01 05:21:21 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775044281114-u3s0di8bw for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:21:21 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:21:21 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 05:21:21 PM [info]: Fetching all product categories 
+2026-04-01 05:21:21 PM [info]: Successfully fetched product categories 
+2026-04-01 05:21:21 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:19 PM [info]: Received GET request on /productCategory/d35b9381-a141-4bd0-85b6-16d4d2961706 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:19 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:19 PM [info]: Fetching product category by ID 
+2026-04-01 05:22:22 PM [info]: Successfully fetched product category 
+2026-04-01 05:22:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:22 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:25 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:26 PM [info]: Fetching all product categories 
+2026-04-01 05:22:26 PM [info]: Successfully fetched product categories 
+2026-04-01 05:22:28 PM [info]: Received GET request on /productCategory/84f710d6-025d-44bd-bc75-59c49ef9a10e [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:28 PM [info]: Fetching product category by ID 
+2026-04-01 05:22:28 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:28 PM [info]: Successfully fetched product category 
+2026-04-01 05:22:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:28 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:30 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:30 PM [info]: Fetching all product categories 
+2026-04-01 05:22:30 PM [info]: Successfully fetched product categories 
+2026-04-01 05:22:30 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:34 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:35 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:49 PM [info]: Received POST request on /productCategory [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:49 PM [info]: Creating a new product category 
+2026-04-01 05:22:50 PM [info]: Product category created successfully 
+2026-04-01 05:22:50 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:22:53 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:53 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:53 PM [info]: Fetching all product categories 
+2026-04-01 05:22:53 PM [info]: Successfully fetched product categories 
+2026-04-01 05:22:54 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:22:59 PM [info]: Received GET request on /productCategory/d35b9381-a141-4bd0-85b6-16d4d2961706 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:59 PM [info]: Received GET request on /productClassification/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:22:59 PM [info]: Fetching product category by ID 
+2026-04-01 05:22:59 PM [info]: Successfully fetched product category 
+2026-04-01 05:23:02 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:23:02 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:26:36 PM [info]: Received GET request on /productSubcategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:26:36 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:26:41 PM [info]: Received GET request on /productCategory/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:26:41 PM [info]: Fetching all product categories 
+2026-04-01 05:26:41 PM [info]: Successfully fetched product categories 
+2026-04-01 05:26:43 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:27:20 PM [info]: Received POST request on /productSubcategory [IP: ::ffff:192.168.1.42]
+2026-04-01 05:27:21 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:27:21 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:27:24 PM [info]: Received GET request on /productSubcategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:27:27 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:27:31 PM [info]: Received GET request on /productSubcategory/735d72c3-3e85-4c80-94fd-2793876fe6ab [IP: ::ffff:192.168.1.42]
+2026-04-01 05:27:31 PM [info]: Received GET request on /productCategory/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:27:31 PM [info]: Fetching all product categories 
+2026-04-01 05:27:31 PM [info]: Successfully fetched product categories 
+2026-04-01 05:27:33 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:27:34 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:27:59 PM [info]: Received GET request on /packingMaterial/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:27:59 PM [info]: Fetching all packing materials 
+2026-04-01 05:28:00 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:28:08 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 05:28:11 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:28:49 PM [info]: Received PATCH request on /packingMaterial [IP: ::ffff:192.168.1.42]
+2026-04-01 05:30:05 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037899488-gablv07vb for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:30:05 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775037899488-gablv07vb) 
+2026-04-01 05:30:22 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 05:30:22 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 05:30:23 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 05:30:23 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775044823324-7auy9rw98) 
+2026-04-01 05:30:23 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775044823324-7auy9rw98 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:30:24 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:30:33 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 05:30:35 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:30:45 PM [info]: Received POST request on /packingMaterial/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:30:46 PM [info]: getting data 
+2026-04-01 05:30:46 PM [info]: materials saved successfully 
+2026-04-01 05:30:46 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:30:49 PM [info]: Received GET request on /packingMaterial/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:30:49 PM [info]: Fetching all packing materials 
+2026-04-01 05:30:49 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:30:49 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:31:06 PM [info]: Received GET request on /packingMaterial/7a1953ae-964d-41e3-865f-2fd94482aee3 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:31:06 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 05:31:06 PM [info]: Fetching material details by ID 
+2026-04-01 05:31:06 PM [info]: Material details retrieved successfully 
+2026-04-01 05:31:06 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:31:06 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:33:14 PM [info]: Received GET request on /packingMaterial/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:33:14 PM [info]: Fetching all packing materials 
+2026-04-01 05:33:14 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:37:19 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:37:21 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:37:57 PM [info]: Received POST request on /uoms/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:37:58 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:37:59 PM [info]: Activity logged: CREATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:38:01 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:38:04 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:38:05 PM [info]: Received GET request on /uoms/64c60430-dd25-4bbe-802b-1c4948d83020 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:38:07 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:38:11 PM [info]: Received PATCH request on /uoms/64c60430-dd25-4bbe-802b-1c4948d83020 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:38:14 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:38:16 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:38:17 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:38:17 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:38:19 PM [info]: Received GET request on /uoms/64c60430-dd25-4bbe-802b-1c4948d83020 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:38:20 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:39:04 PM [info]: Received PATCH request on /uoms/64c60430-dd25-4bbe-802b-1c4948d83020 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:39:05 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:39:08 PM [info]: Activity logged: UPDATE - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:39:08 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:39:10 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:39:19 PM [info]: Received GET request on /uom-conversion-matrix/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:39:21 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:10 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775044281114-u3s0di8bw for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:10 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775044281114-u3s0di8bw) 
+2026-04-01 05:40:10 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:40:10 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ5NTgwMzMsImV4cCI6MTc3NTEzODAzM30.XLL3P8TdXq10owtc7bkCeN6_Z1d76jJJ-918tSd3UJamyc2BSNYOw-FYGFRLkj7AYZa359YhW7kntLpcydmAYKest0DQJyx82Ca_5QEqJ0kzzMU-_14rQF_P9SM0bKSJ4n3_m2VfTn2qNbY0OeMnMrbb6OxtzJwLk3SDwMRjf4BuyzPsks4DiOlLGzkBemXoWI9NzZzILha17Z87dXcpx_yM6WVNLTy0stZ8AZCfNVRSd7IBPQpKu-JNRToDuMH7hQvl8ab7VVBSqcGZNwWP-UUYemMST9xdGbAv8jQz6cF9tMnPVS6JhxGHVN9D-E5GwaIZFn0R2A65PI8Kg4XzZw [IP: ::ffff:192.168.1.52]
+2026-04-01 05:40:10 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045410282-8n0idy6ah) 
+2026-04-01 05:40:10 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045410282-8n0idy6ah for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:10 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 05:40:10 PM [info]: Fetching all product categories 
+2026-04-01 05:40:10 PM [info]: Successfully fetched product categories 
+2026-04-01 05:40:10 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:11 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775043060506-28pzigxml for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:11 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775043060506-28pzigxml) 
+2026-04-01 05:40:11 PM [info]: Received GET request on /uom-conversion-matrix/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:11 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:11 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzUwNDMwNTcsImV4cCI6MTc3NTIyMzA1N30.Gz1u1z1VGQXj_Vw2FuKBGCdhubINavv9wAHiJfSNT2SbX5Bs0fIGs9EIuQLoSt2Ap3-bLoZ9STNOH8KNCDRxE8SSSN-ew9Qda71SNMX35ZXsZu-RmXMb2RCzuhtSXUEuLUfYeHR-0y9dpmArJ4fK1ELGZylhS5RtlexLcHZCApPhvHzK_RM47dIO8SO0yo4kUgKyJ__3PcyuAS4Xq6QDCqvU8itw0wjFK4rFP6B5w0wwHp6sQLNteZO3G5ASTmAluc877cAChHRCp5pg8qfgzO17B97dQBQgEjGJfvI4Ch3ZDnxdpWYR8jjctW71H2PrSWNVF3Gc2OAEmudl3hZ-qg [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:11 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045411720-vk01b7swb) 
+2026-04-01 05:40:11 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045411720-vk01b7swb for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:12 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:17 PM [info]: SSE client disconnected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775043016498-5uhc3xbuo for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:40:17 PM [info]: SSE closed: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775043016498-5uhc3xbuo) 
+2026-04-01 05:40:17 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:17 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYjkxMDczZi02MTVmLTRiNGItYTdhNy00NjY0MmU3ZmU4NzIiLCJpYXQiOjE3NzUwMzcwOTYsImV4cCI6MTc3NTIxNzA5Nn0.fH4PzOAldVJ-w7aj-Chej1Ul008ocg3vwbLR3S3DoBY1ZYfnsjdAfI2jJaE3Bfnz4u4NiJptLyT5CnJEAqsQrxFMZWUSdcZnuW7w5WeBiCtHkkSzsr_8eIeeNVYLaWMoblMvWZvCBm9Yocfjbietc2I7iKB7oqPc0oS4cUkReWF5LR6XpjAEIGn2SNI7xklQVs77lMc-BWjH-jnsUvmzbQlCRzAlk7q-a-Z2sRqafXhtOTetH0X8Tlxzq4MIzwmS8wcFw1I548uizw1AY8XGswra_3JjQqUkAGs89d6GqdvNY1LNFD5xhWSAO0ZhtHzbflk6TwknKGibfnJhXOiewA [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:17 PM [info]: SSE connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045417151-nwgg1n28h) 
+2026-04-01 05:40:17 PM [info]: SSE client connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045417151-nwgg1n28h for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:40:17 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:17 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:17 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:40:19 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:19 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:23 PM [info]: Received GET request on /uom-conversion-matrix/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:25 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:40:57 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:40:59 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:02 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:02 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:02 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775044823324-7auy9rw98 for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:02 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775044823324-7auy9rw98) 
+2026-04-01 05:41:02 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:02 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045462465-3omfxafqa) 
+2026-04-01 05:41:02 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045462465-3omfxafqa for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:03 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:03 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.52]
+2026-04-01 05:41:03 PM [info]: Received GET request on /productCategory/?page=1&limit=10 [IP: ::ffff:192.168.1.52]
+2026-04-01 05:41:03 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045410282-8n0idy6ah for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:03 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045410282-8n0idy6ah) 
+2026-04-01 05:41:03 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzQ5NTgwMzMsImV4cCI6MTc3NTEzODAzM30.XLL3P8TdXq10owtc7bkCeN6_Z1d76jJJ-918tSd3UJamyc2BSNYOw-FYGFRLkj7AYZa359YhW7kntLpcydmAYKest0DQJyx82Ca_5QEqJ0kzzMU-_14rQF_P9SM0bKSJ4n3_m2VfTn2qNbY0OeMnMrbb6OxtzJwLk3SDwMRjf4BuyzPsks4DiOlLGzkBemXoWI9NzZzILha17Z87dXcpx_yM6WVNLTy0stZ8AZCfNVRSd7IBPQpKu-JNRToDuMH7hQvl8ab7VVBSqcGZNwWP-UUYemMST9xdGbAv8jQz6cF9tMnPVS6JhxGHVN9D-E5GwaIZFn0R2A65PI8Kg4XzZw [IP: ::ffff:192.168.1.52]
+2026-04-01 05:41:03 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045463378-cvjcjpeeu) 
+2026-04-01 05:41:03 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045463378-cvjcjpeeu for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:03 PM [info]: Fetching all product categories 
+2026-04-01 05:41:03 PM [info]: Successfully fetched product categories 
+2026-04-01 05:41:06 PM [info]: SSE client disconnected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045411720-vk01b7swb for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:06 PM [info]: SSE closed: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045411720-vk01b7swb) 
+2026-04-01 05:41:06 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OTA5ZDc3YS03MGQ3LTQ3ZTgtOTZiNy04MWYwMWY1ZTI2NzIiLCJpYXQiOjE3NzUwNDMwNTcsImV4cCI6MTc3NTIyMzA1N30.Gz1u1z1VGQXj_Vw2FuKBGCdhubINavv9wAHiJfSNT2SbX5Bs0fIGs9EIuQLoSt2Ap3-bLoZ9STNOH8KNCDRxE8SSSN-ew9Qda71SNMX35ZXsZu-RmXMb2RCzuhtSXUEuLUfYeHR-0y9dpmArJ4fK1ELGZylhS5RtlexLcHZCApPhvHzK_RM47dIO8SO0yo4kUgKyJ__3PcyuAS4Xq6QDCqvU8itw0wjFK4rFP6B5w0wwHp6sQLNteZO3G5ASTmAluc877cAChHRCp5pg8qfgzO17B97dQBQgEjGJfvI4Ch3ZDnxdpWYR8jjctW71H2PrSWNVF3Gc2OAEmudl3hZ-qg [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:06 PM [info]: SSE connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672 (4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045466273-rmm5ynigt) 
+2026-04-01 05:41:06 PM [info]: SSE client connected: 4909d77a-70d7-47e8-96b7-81f01f5e2672-1775045466273-rmm5ynigt for user: 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:06 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:06 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:07 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:07 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:41:07 PM [info]: Received GET request on /customer-delivery-challan/view/6d7e12e0-09c0-46c1-b828-e1bb27f26f7c [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:07 PM [info]: SSE client disconnected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045417151-nwgg1n28h for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:41:08 PM [info]: SSE closed: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045417151-nwgg1n28h) 
+2026-04-01 05:41:08 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzYjkxMDczZi02MTVmLTRiNGItYTdhNy00NjY0MmU3ZmU4NzIiLCJpYXQiOjE3NzUwMzcwOTYsImV4cCI6MTc3NTIxNzA5Nn0.fH4PzOAldVJ-w7aj-Chej1Ul008ocg3vwbLR3S3DoBY1ZYfnsjdAfI2jJaE3Bfnz4u4NiJptLyT5CnJEAqsQrxFMZWUSdcZnuW7w5WeBiCtHkkSzsr_8eIeeNVYLaWMoblMvWZvCBm9Yocfjbietc2I7iKB7oqPc0oS4cUkReWF5LR6XpjAEIGn2SNI7xklQVs77lMc-BWjH-jnsUvmzbQlCRzAlk7q-a-Z2sRqafXhtOTetH0X8Tlxzq4MIzwmS8wcFw1I548uizw1AY8XGswra_3JjQqUkAGs89d6GqdvNY1LNFD5xhWSAO0ZhtHzbflk6TwknKGibfnJhXOiewA [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:08 PM [info]: SSE connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872 (3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045468022-dh2akxqay) 
+2026-04-01 05:41:08 PM [info]: SSE client connected: 3b91073f-615f-4b4b-a7a7-46642e7fe872-1775045468022-dh2akxqay for user: 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:41:08 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:08 PM [info]: Received GET request on /company/ [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:09 PM [info]: Activity logged: VIEW - OTHER_DELIVERY_CHALLAN by user 3b91073f-615f-4b4b-a7a7-46642e7fe872 
+2026-04-01 05:41:20 PM [info]: Received GET request on /pincode/fetchAddressByPincode?pincode=4162202 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:21 PM [info]: Received GET request on /pincode/fetchAddressByPincode?pincode=4162202 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:41:22 PM [info]: Received GET request on /return-to-vendor/?page=1&limit=10 [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:22 PM [info]: Received GET request on /notification/getbyuserid [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:22 PM [info]: SSE client disconnected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045462465-3omfxafqa for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:22 PM [info]: SSE closed: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045462465-3omfxafqa) 
+2026-04-01 05:41:22 PM [info]: Received GET request on /sse/notifications?token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOWJkMWU1Zi1lNTg0LTQ5ZmItOWU1My1hY2E0ZjhlNzA0MTUiLCJpYXQiOjE3NzUwMjQ2NDMsImV4cCI6MTc3NTIwNDY0M30.KiYwCYhJ9wxmy-F-A7AD8Bny9s0Va2u5Uw8qFwg0JSTcmEc0XFLrrnS9TgeOdEBd3oDokZTtyagWIS1qxZgUqUfrXccwVG0FOF_ZyN9hNIJDhC4dkBUNe5DOn0saW_VaqMN6IWRmHQSItezgjutwyQl-Arj_lv9ILCz3DFD-Y169VXM2Y5gOznOfqXlPrEXvvpvY0xVbf8kC25t0TU-z4uwqvcZl5QsVDxyKZQVkkvSEOPlYqH7j5eGJ7dkjR-IfqHvJtbZtf_8PcDO-b2QKQzO-NyULogYgchGJyyvZWbf4bTFl2UBG5_gcmHP_KwsezXjl7Z67N1xoTYh2Fa_x2Q [IP: ::ffff:192.168.1.63]
+2026-04-01 05:41:22 PM [info]: SSE connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 (c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045482925-nm6rl9yjv) 
+2026-04-01 05:41:22 PM [info]: SSE client connected: c9bd1e5f-e584-49fb-9e53-aca4f8e70415-1775045482925-nm6rl9yjv for user: c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:23 PM [info]: Activity logged: CREATE - OTHER by user c9bd1e5f-e584-49fb-9e53-aca4f8e70415 
+2026-04-01 05:41:24 PM [info]: Received GET request on /pincode/fetchAddressByPincode?pincode=416202 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:42:32 PM [info]: Received POST request on /location-offices/registered-office [IP: ::ffff:192.168.1.42]
+2026-04-01 05:42:35 PM [info]: Notification sent to user 4909d77a-70d7-47e8-96b7-81f01f5e2672: notification 
+2026-04-01 05:42:37 PM [info]: Activity logged: CREATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:42:38 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:42:39 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:45:02 PM [info]: Database connected successfully 
+2026-04-01 05:45:22 PM [info]: Received GET request on /uoms/64c60430-dd25-4bbe-802b-1c4948d83020 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:45:23 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:45:51 PM [info]: Database connected successfully 
+2026-04-01 05:46:29 PM [info]: Received GET request on /uom-conversion-matrix/48380865-b9e3-4067-9c5a-dd34da930b1f [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:29 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:30 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:31 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:34 PM [info]: Received GET request on /uom-conversion-matrix/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:37 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:41 PM [info]: Received GET request on /productSubcategory/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:42 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:47 PM [info]: Received GET request on /packingMaterial/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:47 PM [info]: Fetching all packing materials 
+2026-04-01 05:46:47 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:51 PM [info]: Received GET request on /packingMaterial/7a1953ae-964d-41e3-865f-2fd94482aee3 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:51 PM [info]: Received GET request on /uoms/getAll/partialdata [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:51 PM [info]: Fetching material details by ID 
+2026-04-01 05:46:51 PM [info]: Material details retrieved successfully 
+2026-04-01 05:46:51 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:52 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:46:59 PM [info]: Received GET request on /packingMaterial/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:46:59 PM [info]: Fetching all packing materials 
+2026-04-01 05:46:59 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:47:19 PM [info]: Database connected successfully 
+2026-04-01 05:47:36 PM [info]: Received GET request on /uoms/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:47:37 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:48:05 PM [info]: Database connected successfully 
+2026-04-01 05:48:07 PM [info]: Received GET request on /location-offices/registered-office/c09b4958-79a8-4e26-9a36-f5b7da3691ec [IP: ::ffff:192.168.1.42]
+2026-04-01 05:48:10 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:48:23 PM [info]: Database connected successfully 
+2026-04-01 05:48:34 PM [info]: Received PATCH request on /location-offices/registered-office/c09b4958-79a8-4e26-9a36-f5b7da3691ec [IP: ::ffff:192.168.1.42]
+2026-04-01 05:48:41 PM [info]: Activity logged: UPDATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:48:43 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:48:44 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:48:51 PM [info]: Received GET request on /location-offices/registered-office/c09b4958-79a8-4e26-9a36-f5b7da3691ec [IP: ::ffff:192.168.1.42]
+2026-04-01 05:48:54 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:49:01 PM [info]: Received PATCH request on /location-offices/registered-office/c09b4958-79a8-4e26-9a36-f5b7da3691ec [IP: ::ffff:192.168.1.42]
+2026-04-01 05:49:05 PM [info]: Activity logged: UPDATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:49:06 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:49:08 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:49:22 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:49:22 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:49:30 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:49:31 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:49:35 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:49:37 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:50:12 PM [info]: Database connected successfully 
+2026-04-01 05:50:49 PM [info]: Received GET request on /location-offices/corporate-office/20013b11-5ec2-42d2-add3-531b03d6a8e6 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:50:49 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:50:54 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:50:56 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:50:56 PM [info]: Received GET request on /uom-conversion-matrix/?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:50:59 PM [info]: Activity logged: VIEW - OTHER by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:50:59 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:51:01 PM [info]: Received GET request on /location-offices/registered-office/c09b4958-79a8-4e26-9a36-f5b7da3691ec [IP: ::ffff:192.168.1.42]
+2026-04-01 05:51:01 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:51:02 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:51:05 PM [info]: Received GET request on /location-offices/registered-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:51:07 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:51:08 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:51:08 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:51:25 PM [info]: Received GET request on /pincode/fetchAddressByPincode?pincode=416202 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:52:06 PM [info]: Database connected successfully 
+2026-04-01 05:52:41 PM [info]: Database connected successfully 
+2026-04-01 05:53:36 PM [info]: Received POST request on /location-offices/corporate-office [IP: ::ffff:192.168.1.42]
+2026-04-01 05:53:38 PM [info]: Activity logged: CREATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:53:40 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:53:40 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:54:01 PM [info]: Database connected successfully 
+2026-04-01 05:54:14 PM [info]: Received GET request on /location-offices/corporate-office/f5ff9c22-32dd-4616-a11a-24c6b57c8e76 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:54:15 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:54:19 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:54:19 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:54:21 PM [info]: Received GET request on /location-offices/corporate-office/f5ff9c22-32dd-4616-a11a-24c6b57c8e76 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:54:22 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:54:42 PM [info]: Database connected successfully 
+2026-04-01 05:55:07 PM [info]: Received PATCH request on /location-offices/corporate-office/f5ff9c22-32dd-4616-a11a-24c6b57c8e76 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:55:16 PM [info]: Activity logged: UPDATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:55:18 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:55:19 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:55:20 PM [info]: Received GET request on /location-offices/corporate-office/f5ff9c22-32dd-4616-a11a-24c6b57c8e76 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:55:22 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:55:39 PM [info]: Received PATCH request on /location-offices/corporate-office/f5ff9c22-32dd-4616-a11a-24c6b57c8e76 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:55:42 PM [info]: Activity logged: UPDATE - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:55:44 PM [info]: Received GET request on /location-offices/corporate-office?page=1&limit=10 [IP: ::ffff:192.168.1.42]
+2026-04-01 05:55:45 PM [info]: Activity logged: VIEW - OFFICE by user 4909d77a-70d7-47e8-96b7-81f01f5e2672 
+2026-04-01 05:57:07 PM [info]: Database connected successfully 
+2026-04-01 05:58:52 PM [info]: Database connected successfully 
+2026-04-01 05:59:15 PM [info]: Database connected successfully 
+2026-04-01 05:59:32 PM [info]: Database connected successfully 
+2026-04-01 06:00:00 PM [info]: Database connected successfully 
+2026-04-01 06:00:50 PM [info]: Shutting down gracefully... 
