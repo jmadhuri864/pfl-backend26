@@ -239,12 +239,13 @@ export class PostReturnByCustomerService {
         document_type_id: savedReturnEntity.id,
       });
 
-      await this.documentbService.startApprovalFlow(document.id);
-
       // 9️⃣ Log creation
       UserLogger.logRfpaCreated(savedReturnEntity.id, requestedBy, clientIp);
 
       await queryRunner.commitTransaction();
+
+      // Start approval flow after commit so RBC is visible to other DB connections
+      await this.documentbService.startApprovalFlow(document.id);
       return savedReturnEntity;
 
     } catch (error: any) {

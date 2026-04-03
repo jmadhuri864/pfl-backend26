@@ -107,6 +107,7 @@ const serialNo = await this.generateSerialNo();
     // 4. Create Inward Register
     const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
       ...data,
+      inwardNo: serialNo,
       variants: variants.map(v => ({ id: v.id })),
       products: productIds.map(id => ({ id })),
     });
@@ -194,6 +195,9 @@ const serialNo = await this.generateSerialNo();
 
     // Commit transaction - all operations succeeded
     await queryRunner.commitTransaction();
+
+    // Start approval flow after commit so inward register is visible to other DB connections
+    await this.documentbService.startApprovalFlow(document.id);
 
     return savedInward;
 
@@ -780,7 +784,7 @@ async getInwardidforupdate(id: string,userId:string): Promise<any> {
           ?  product.uom.id
              
           : null,
-
+weight:product.weight,
         packingMaterialWeight: product.packingMaterialWeight,
         quantity: product.quantity,
         unitPrice: product.unitPrice,
@@ -1269,7 +1273,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       inwardCost: rd.inwardCost || null,
       totalWeightInKg: rd.totalWeightInKg || null,
       source: rd.source || null,
-
+inwardNo:rd.inwardNo||null,
       grnNo: rd.grnNo?.grnNo || null,
       deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
       rbcNo: rd.rbcNo?.rbcNo || null,
@@ -1481,6 +1485,7 @@ selectedParty,
         variant: prod.variant?.variantName || null,
         packingMaterialWeight: prod.packingMaterialWeight,
         quantity: prod.quantity,
+        weight:prod.weight,
         unitPrice: prod.unitPrice,
         amount: prod.amount,
         netWeight: prod.netWeight,

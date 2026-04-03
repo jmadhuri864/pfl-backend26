@@ -146,9 +146,10 @@ export class FinalInvoiceService {
 
       console.log("Document created with ID:", document.id);
       console.log("Starting approval flow for final invoice...");
-      await this.documentService.startApprovalFlow(document.id);
-
       await queryRunner.commitTransaction();
+
+      // Start approval flow after commit so invoice is visible to other DB connections
+      await this.documentService.startApprovalFlow(document.id);
 
       // Fetch the complete invoice with relations
       const completeInvoice = await this.invoiceRepository.findOne({

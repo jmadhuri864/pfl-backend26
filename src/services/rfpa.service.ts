@@ -284,10 +284,11 @@ console.log(rfpaData.createdBy)
       document_type_id: savedRfpa.id,
     });
 
-    await this.documentbService.startApprovalFlow(document.id);
-
     // Commit transaction - all operations succeeded
     await queryRunner.commitTransaction();
+
+    // Start approval flow after commit so RFPA is visible to other DB connections
+    await this.documentbService.startApprovalFlow(document.id);
 
     return savedRfpa;
   } catch (error: any) {

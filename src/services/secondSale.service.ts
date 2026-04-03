@@ -110,10 +110,11 @@ const serialNo = await this.generateSerialNo();
         document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
       }, );
 
-      await this.documentbService.startApprovalFlow(document.id);
-
       // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
+
+      // Start approval flow after commit so second sale is visible to other DB connections
+      await this.documentbService.startApprovalFlow(document.id);
 
       return savedSecondSale;
     } catch (error: any) {
@@ -170,8 +171,9 @@ const { search } = queryOptions;
           createdDate: formatDateTime(doc.createdAt).createdDate,
           createdTime: formatDateTime(doc.createdAt).createdTime,
           ...doc.relatedData,
+          
           companyName: doc.relatedData.companyName.name || null,
-         // location: doc.relatedData.location.name || null,
+          location: doc.relatedData.location.name || null,
         })
         );
 //console.log("Related data : ", relatedDataOnly);
@@ -269,31 +271,40 @@ const { search } = queryOptions;
           "secondSaleProducts"
         )
         .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.dcNo", "dcNo")
+        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
         .leftJoinAndSelect("secondSale.location", "location")
+        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
-        .leftJoinAndSelect("secondSaleProducts.uom", "uom")
+        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
+        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .select([
           "secondSale",
           "secondSaleProducts.id",
-          "secondSaleProducts.count",
-          "secondSaleProducts.size",
           "secondSaleProducts.quantity",
           "secondSaleProducts.unitPrice",
           "secondSaleProducts.amount",
           "secondSaleProducts.grossWeight",
           "secondSaleProducts.packingMaterialWeight",
           "secondSaleProducts.netWeight",
+          "secondSaleProducts.packagingMaterialQuantity",
+          "secondSaleProducts.packagingMaterialUnitPrice",
+          "secondSaleProducts.packagingMaterialAmount",
           "location.id",
           "location.name",
           "companyName.id",
           "companyName.name",
-          "dcNo.id",
-          "dcNo.challanNo",
+          "deliveryChallanNo.id",
+          "deliveryChallanNo.challanNo",
+          "customerAddress.id",
           "product.id",
           "product.name",
-          "uom.id",
-          "uom.unit",
+          "variant.id",
+          "variant.name",
+          "saleUoM.id",
+          "saleUoM.unit",
+          "packagingMaterial.id",
+          "packagingMaterial.name",
         ])
         .where("secondSale.id = :id", { id })
         .getOne();
@@ -325,11 +336,13 @@ console.log("docid: ", docId);
           "secondSaleProducts"
         )
         .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.dcNo", "dcNo")
+        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
         .leftJoinAndSelect("secondSale.location", "location")
+        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
-        .leftJoinAndSelect("secondSaleProducts.uom", "uom")
-
+        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
+        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .where("secondSale.id = :id", { id })
         .getOne();
       if (!secondSale) {
@@ -343,39 +356,40 @@ console.log("docid: ", docId);
         id: secondSale?.id,
         companyName: secondSale?.companyName?.name || null,
         location: secondSale?.location?.name || null,
-        dcNo: secondSale?.dcNo?.challanNo || null,
+        deliveryChallanNo: secondSale?.deliveryChallanNo?.challanNo || null,
         saleDate: secondSale?.saleDate || null,
         createdDate,
         createdTime,
-        buyerName: secondSale?.buyerName || null,
-        buyerMobNo: secondSale?.buyerMobNo || null,
+        customerName: secondSale?.customerName || null,
+        customerContactNo: secondSale?.customerContactNo || null,
+        customerEmail: secondSale?.customerEmail || null,
+        //customerAddress:,
         reasonForSale: secondSale?.reasonForSale || null,
-        approvedBy: secondSale?.approvedBy || null,
-        soldBy: secondSale?.soldBy || null,
+        secondSaleNo: secondSale?.secondSaleNo || null,
         secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
           id: product.id,
-          count: product.count,
-          size: product.size,
           quantity: product.quantity,
           unitPrice: product.unitPrice,
           amount: product.amount,
           grossWeight: product.grossWeight,
           packingMaterialWeight: product.packingMaterialWeight,
           netWeight: product.netWeight,
+          packagingMaterialQuantity: product.packagingMaterialQuantity,
+          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
+          packagingMaterialAmount: product.packagingMaterialAmount,
           productName: product.productName?.name || null,
-          uom: product.uom?.unit || null,
+          variant: product.variant?.name || null,
+          saleUoM: product.saleUoM?.unit || null,
+          packagingMaterial: product.packagingMaterial?.name || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,
+        totalGrossWeight: secondSale?.totalGrossWeight || null,
         totalAmt: secondSale?.totalAmt || null,
         totalAmtInWords: secondSale?.totalAmtInWords || null,
         paidAmount: secondSale?.paidAmount || null,
         paymentMode: secondSale?.paymentMode || null,
         pendingAmt: secondSale?.pendingAmt || null,
         remarks: secondSale?.remarks || null,
-        comments: secondSale?.comments || null,
-        submittedBy: secondSale?.submittedBy || null,
-        mobileNo: secondSale?.mobileNo || null,
-
         overAllStatus: document.overAllStatus,
         createdBy: document.createdBy,
         approvalSummary: document.approvalSummary,
@@ -399,12 +413,13 @@ console.log("docid: ", docId);
           "secondSaleProducts"
         )
         .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.dcNo", "dcNo")
+        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
         .leftJoinAndSelect("secondSale.location", "location")
+        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
         .leftJoinAndSelect("secondSaleProducts.variant", "variant")
-        .leftJoinAndSelect("secondSaleProducts.uom", "uom")
-
+        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .where("secondSale.id = :id", { id })
         .getOne();
       if (!secondSale) {
@@ -416,42 +431,40 @@ console.log("docid: ", docId);
         id: secondSale?.id,
         companyName: secondSale?.companyName?.id || null,
         location: secondSale?.location?.id || null,
-        dcNo: secondSale?.dcNo?.id || null,
+        deliveryChallanNo: secondSale?.deliveryChallanNo?.id || null,
         saleDate: secondSale?.saleDate || null,
         createdDate,
         createdTime,
-        buyerName: secondSale?.buyerName || null,
-        buyerMobNo: secondSale?.buyerMobNo || null,
+        customerName: secondSale?.customerName || null,
+        customerContactNo: secondSale?.customerContactNo || null,
+        customerEmail: secondSale?.customerEmail || null,
         reasonForSale: secondSale?.reasonForSale || null,
-        approvedBy: secondSale?.approvedBy || null,
-        soldBy: secondSale?.soldBy || null,
+        secondSaleNo: secondSale?.secondSaleNo || null,
+        customerAddress: secondSale?.customerAddress?.id || null,
         secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
           id: product.id,
-          count: product.count,
-          size: product.size,
           quantity: product.quantity,
           unitPrice: product.unitPrice,
           amount: product.amount,
           grossWeight: product.grossWeight,
           packingMaterialWeight: product.packingMaterialWeight,
           netWeight: product.netWeight,
+          packagingMaterialQuantity: product.packagingMaterialQuantity,
+          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
+          packagingMaterialAmount: product.packagingMaterialAmount,
           productName: product.productName?.id || null,
-          variant:product.variant?.id || null,
-          uom: product.uom?.id || null,
+          variant: product.variant?.id || null,
+          saleUoM: product.saleUoM?.id || null,
+          packagingMaterial: product.packagingMaterial?.id || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,
+        totalGrossWeight: secondSale?.totalGrossWeight || null,
         totalAmt: secondSale?.totalAmt || null,
         totalAmtInWords: secondSale?.totalAmtInWords || null,
         paidAmount: secondSale?.paidAmount || null,
         paymentMode: secondSale?.paymentMode || null,
         pendingAmt: secondSale?.pendingAmt || null,
         remarks: secondSale?.remarks || null,
-        comments: secondSale?.comments || null,
-        submittedBy: secondSale?.submittedBy || null,
-        mobileNo: secondSale?.mobileNo || null,
-
-
-
       }
       console.log(secondSale)
       return formatResponse || null;

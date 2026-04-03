@@ -7,6 +7,7 @@ import { Branches } from './branches.entity'; // Import the renamed entity
 import { OfficesData } from './offices.entity';
 
 import { DeliveryDetails } from './deliveryDetailsCust.entity';
+import { SecondSale } from './secondSale.entity';
 
 @Entity('addresses')
 export class Address extends Model {
@@ -47,4 +48,7 @@ export class Address extends Model {
   deliveryDetails: DeliveryDetails[];
   @OneToOne(() => Farmer, (farmer) => farmer.residensialAddress,{ onDelete: "SET NULL" })
   farmer: Farmer;
+
+  @OneToOne(() => SecondSale, (secondSale) => secondSale.customerAddress, { onDelete: "SET NULL" })
+  secondSaleRegister: SecondSale;
 }

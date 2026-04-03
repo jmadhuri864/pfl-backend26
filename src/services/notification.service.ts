@@ -136,4 +136,60 @@ export class NotificationService {
       .where('user_id = :userId AND "isRead" = false', { userId })
       .execute();
   }
+
+  // Batch notification for multiple users — optimized for performance
+  async createBatchNoti(message: string, userIds: string[]): Promise<void> {
+    if (!message || !userIds || userIds.length === 0) return;
+
+    try {
+      const now = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      let hours = now.getHours();
+      const minutes = pad(now.getMinutes());
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+
+      const formattedDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const formattedTime = `${pad(hours)}:${minutes} ${ampm}`;
+
+      const ssePayload = {
+        type: 'notification',
+        message,
+        date: formattedDate,
+        time: formattedTime,
+        isRead: false,
+        timestamp: now.toISOString(),
+      };
+
+      // Send SSE to all connected users immediately (non-blocking)
+      for (const userId of userIds) {
+        if (this.sseService.isUserConnected(userId)) {
+          this.sseService.sendToUser(userId, { ...ssePayload, userId });
+        }
+      }
+
+      // Save to DB in background (non-blocking)
+      this.saveBatchNotificationsToDb(message, userIds).catch((err) =>
+        logger.error(`createBatchNoti DB save failed:`, err)
+      );
+
+    } catch (error) {
+      logger.error(`createBatchNoti failed:`, error);
+    }
+  }
+
+  private async saveBatchNotificationsToDb(message: string, userIds: string[]): Promise<void> {
+    const users = await Promise.all(
+      userIds.map(userId => this.userService.findUserById(userId))
+    );
+
+    const validUsers = users.filter(user => user !== null);
+    if (validUsers.length === 0) return;
+
+    const notifications = validUsers.map(user =>
+      this.notificationRepository.create({ message, user })
+    );
+
+    await this.notificationRepository.save(notifications);
+  }
 }

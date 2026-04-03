@@ -409,10 +409,11 @@ export class DealSlipService {
                             document_type_id: Array.isArray(savedDealSlip) ? (savedDealSlip[0] as DealSlip)?.id : (savedDealSlip as DealSlip).id
                           });
 
-                          await this.documentbService.startApprovalFlow(document.id);
-
           // Commit transaction - all operations succeeded
           await queryRunner.commitTransaction();
+
+          // Start approval flow after commit so Deal Slip is visible to other DB connections
+          await this.documentbService.startApprovalFlow(document.id);
 
                           return savedDealSlip;
         } catch (error: any) {

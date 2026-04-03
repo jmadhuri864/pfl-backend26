@@ -399,10 +399,11 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
         //console.log('Document created:', docuemnt);
         //const saved = await this.grnRepository.save(savedGrn);
 
-        await this.documentbService.startApprovalFlow(document.id);
-
         // Commit transaction - all operations succeeded
         await queryRunner.commitTransaction();
+
+        // Start approval flow after commit so GRN is visible to other DB connections
+        await this.documentbService.startApprovalFlow(document.id);
 
         return savedGrn;
       } catch (error: any) {

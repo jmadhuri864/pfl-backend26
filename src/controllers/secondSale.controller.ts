@@ -49,8 +49,8 @@ export class SecondSaleController {
       const secondSaleData = req.body;
       const requestedBy= res.locals.user.id;
       console.log(req.body);
-      if (secondSaleData.dcNo === '') {
-        secondSaleData.dcNo = null;
+      if (secondSaleData.deliveryChallanNo === '') {
+        secondSaleData.deliveryChallanNo = null;
       }
       const secondSale = await this.secondSaleService.createSecondSale(
         secondSaleData,

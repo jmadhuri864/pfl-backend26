@@ -118,7 +118,6 @@ const serialNo = await this.generateSerialNo();
 
         console.log("Document created with ID:", document.id);
         console.log("Starting approval flow...");
-        await this.documentService.startApprovalFlow(document.id);
 
         console.log("Creating dump products and updating inventory...");
         // Create DumpProduct records and update inventory
@@ -207,6 +206,9 @@ const serialNo = await this.generateSerialNo();
 
         // Commit transaction - all operations succeeded
         await queryRunner.commitTransaction();
+
+        // Start approval flow after commit so dump register is visible to other DB connections
+        await this.documentService.startApprovalFlow(document.id);
 
         return savedDumpRegister;
       } catch (error) {

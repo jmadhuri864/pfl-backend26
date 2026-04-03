@@ -91,8 +91,6 @@ export class StockTransferDeliveryChallanService {
       document_type_id: savedChallan.id,
     });
 
-    await this.documentbService.startApprovalFlow(document.id);
-
     // 5. Reload challan with full relations
     const challanFull = await queryRunner.manager.findOne(this.challanRepository.target, {
       where: { id: savedChallan.id },
@@ -173,6 +171,9 @@ export class StockTransferDeliveryChallanService {
 
     // Commit transaction - all operations succeeded
     await queryRunner.commitTransaction();
+
+    // Start approval flow after commit so challan is visible to other DB connections
+    await this.documentbService.startApprovalFlow(document.id);
 
     return savedChallan;
   } catch (error) {

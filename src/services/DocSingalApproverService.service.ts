@@ -27,6 +27,30 @@ export class DocSingalApproverService {
     @inject(TYPES.DocumentbService)
     private documentBService: DocumentbService
   ){}
+
+  // Convert document type to readable format
+  private getReadableDocumentType(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'grn': 'GRN',
+      'rfpa': 'RFPA',
+      'deal-slip': 'Deal Slip',
+      'aqr': 'AQR',
+      'second-sale': 'Second Sale',
+      'vehicle-dispatch-register': 'Vehicle Dispatch',
+      'dump-register': 'Dump Register',
+      'inward-register': 'Inward Register',
+      'dc-type-other': 'Delivery Challan',
+      'dc-type-stock-transfer': 'Stock Transfer Challan',
+      'dc-type-customer': 'Customer Delivery Challan',
+      'return-by-customer': 'Return by Customer',
+      'return-to-vendor': 'Return to Vendor',
+      'multi-cash-voucher': 'Cash Voucher',
+      'labor-payment-voucher': 'Labor Payment Voucher',
+      'transport-payment-voucher': 'Transport Payment Voucher',
+      'packaging-material-voucher': 'Packaging Material Voucher',
+    };
+    return typeMap[type.toLowerCase()] || type;
+  }
   
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
     return [
@@ -123,46 +147,54 @@ export class DocSingalApproverService {
         approvalInfo.firstApproved = savedStage;
         await this.documentApprovalFlowRepository.save(approvalInfo);
 
-        if (action === 'reject') {
-          const remark = `${document.type} Document Rejected By Aprrovers`;
+          const docNo = await this.documentBService.resolveDocumentTypeNo(document);
+          const readableType = this.getReadableDocumentType(document.type);
+          const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
+
+          if (action === 'reject') {
+          const remark = `${document.type} Document Rejected By Approvers`;
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
 
-          const docNo = await this.documentBService.resolveDocumentTypeNo(document);
-          const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
-
-          // 🔔 Notify approver
-          await this.notificationService.createNoti(
-            `${docLabel} was rejected by ${userName}`,
-            userId,
-          );
-          // 🔔 Notify creator
+          // 🔔 Actor
+          await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
+          // 🔔 Creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
-              `Your ${docLabel} was rejected by ${userName}`,
+              `Your ${docLabel} was rejected at Approver Level 1 by ${userName}`,
               document.lastActionBy.id,
             );
           }
+          // 🔔 Same-stage peers — batch notification
+          const rejectPeerIds = (block.users ?? []).filter(u => u.id !== userId).map(u => u.id);
+          if (rejectPeerIds.length > 0) {
+            await this.notificationService.createBatchNoti(
+              `${docLabel} was rejected at Approver Level 1 by ${userName}. No action needed from you`,
+              rejectPeerIds
+            );
+          }
         } else if (action === 'approved') {
-          const remark = `${document.type} Document Aprroved By Aprrovers`;
+          const remark = `${document.type} Document Approved By Approvers`;
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
 
-          const docNo = await this.documentBService.resolveDocumentTypeNo(document);
-          const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
-
-          // 🔔 Notify approver
-          await this.notificationService.createNoti(
-            `${docLabel} was Approved by ${userName}`,
-            userId,
-          );
-          // 🔔 Notify creator that document is fully approved
+          // 🔔 Actor
+          await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
+          // 🔔 Creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
-              `Your ${docLabel} has been approved by ${userName}`,
+              `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Document is now Complete`,
               document.lastActionBy.id,
+            );
+          }
+          // 🔔 Same-stage peers — batch notification
+          const approvePeerIds = (block.users ?? []).filter(u => u.id !== userId).map(u => u.id);
+          if (approvePeerIds.length > 0) {
+            await this.notificationService.createBatchNoti(
+              `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`,
+              approvePeerIds
             );
           }
         }

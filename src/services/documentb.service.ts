@@ -85,6 +85,49 @@ export class DocumentbService {
     private rtvRepository: ReturnToVendorRepository,
   ) { }
 
+  // User cache for current request to avoid duplicate lookups
+  private userCache: Map<string, { firstName: string; lastName: string }> = new Map();
+
+  private async getCachedUser(userId: string): Promise<string> {
+    if (this.userCache.has(userId)) {
+      const user = this.userCache.get(userId)!;
+      return `${user.firstName} ${user.lastName}`;
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+    
+    if (user) {
+      this.userCache.set(userId, { firstName: user.firstName, lastName: user.lastName });
+    }
+    
+    return userName;
+  }
+
+  // Convert document type to readable format
+  private getReadableDocumentType(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'grn': 'GRN',
+      'rfpa': 'RFPA',
+      'deal-slip': 'Deal Slip',
+      'aqr': 'AQR',
+      'second-sale': 'Second Sale',
+      'vehicle-dispatch-register': 'Vehicle Dispatch',
+      'dump-register': 'Dump Register',
+      'inward-register': 'Inward Register',
+      'dc-type-other': 'Delivery Challan',
+      'dc-type-stock-transfer': 'Stock Transfer Challan',
+      'dc-type-customer': 'Customer Delivery Challan',
+      'return-by-customer': 'Return by Customer',
+      'return-to-vendor': 'Return to Vendor',
+      'multi-cash-voucher': 'Cash Voucher',
+      'labor-payment-voucher': 'Labor Payment Voucher',
+      'transport-payment-voucher': 'Transport Payment Voucher',
+      'packaging-material-voucher': 'Packaging Material Voucher',
+    };
+    return typeMap[type.toLowerCase()] || type;
+  }
+
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
     return [
       //Todo:Have To Add Some documentType...pending
@@ -489,9 +532,11 @@ console.log("Document for starting approval flow: ", document?.type);
     }
 
     const now = new Date();
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
-console.log(userName);
+    const userName = await this.getCachedUser(userId);
+    const docNo = await this.resolveDocumentTypeNo(document);
+    const readableType = this.getReadableDocumentType(document.type);
+    const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
+
     // Ensure approvalInfo exists
     if (!document.approvalInfo) {
       document.approvalInfo = await this.documentApprovalFlowRepository.save(
@@ -502,7 +547,6 @@ console.log(userName);
 
     const info = document.approvalInfo;
     const flow = document.approvalFlow;
-
 
     if (document.type === DocumentTypeEnum.GRN || document.type === DocumentTypeEnum.MULTI_CASH_VOUCHER
       || document.type === DocumentTypeEnum.LABOR_PAYMENT_VOUCHER || document.type === DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER ||
@@ -527,16 +571,25 @@ console.log(userName);
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by Verifier`;
             await this.documentbRepository.save(document);
-            // 🔔 Notify verifier
-            await this.notificationService.createNoti(`${document.type} was rejected by you at Verifier stage`, userId);
-            // 🔔 Notify creator
-            await this.notifyCreator(document, `Your ${document.type} was rejected by the verifier`);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You rejected ${docLabel} at Verifier stage`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was rejected at Verifier stage by ${userName}`);
+            // 🔔 Other verifiers
+            await this.notifyStageParticipants(flow.verifiers, userId, `${docLabel} was rejected at Verifier stage by ${userName}. No action needed from you`);
             return;
           }
 
           document.status = DocumentStatus.VERIFIED;
           document.remarks = `${document.type} Verified by Verifier`;
           await this.documentbRepository.save(document);
+
+          // 🔔 Actor
+          await this.notificationService.createNoti(`You verified ${docLabel} at Verifier stage`, userId);
+          // 🔔 Creator
+          await this.notifyCreator(document, `Your ${docLabel} was verified by ${userName}. Now at Approver Level 1`);
+          // 🔔 Other verifiers
+          await this.notifyStageParticipants(flow.verifiers, userId, `${docLabel} has already been verified by ${userName}. No action needed from you`);
 
           // 🚀 Send to all 3 approver levels at once
           await this.assignToUsers(documentId, flow.approvers.firstApprover.users, 'approver');
@@ -607,10 +660,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected at Approver Level 1`;
             await this.documentbRepository.save(document);
-            // 🔔 Notify approver
-            await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
-            // 🔔 Notify creator
-            await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 1 by ${userName}`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} was rejected at Approver Level 1 by ${userName}. No action needed from you`);
             return;
           }
 
@@ -618,21 +673,25 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           const a2 = info.secondApproved?.status === ApproverStatus.APPROVED;
           const a3 = info.thirdApproved?.status === ApproverStatus.APPROVED;
 
-          if (
-            a1
-          ) {
+          if (a1) {
             console.log("Shri in service");
-
             document.status = DocumentStatus.APPROVED;
             document.remarks = `${document.type} Approved by Required Approvers`;
             await this.documentbRepository.save(document);
-            await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Now at Finalizer Level 1`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
             await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
             return;
           }
 
-          // 🔔 Notify approver of their action
-          await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
+          // 🔔 Actor
+          await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
+          // 🔔 Creator
+          await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Waiting for remaining approvers`);
+          // 🔔 Same-stage peers
+          await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
           return;
 
         } else {
@@ -662,10 +721,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 2`;
               await this.documentbRepository.save(document);
-              // 🔔 Notify approver
-              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
-              // 🔔 Notify creator
-              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
+              // 🔔 Actor
+              await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 1 by ${userName}`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} was rejected at Approver Level 1 by ${userName}. No action needed from you`);
               return;
             }
 
@@ -673,20 +734,38 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             const a2 = info.secondApproved?.status === ApproverStatus.APPROVED;
             const a3 = info.thirdApproved?.status === ApproverStatus.APPROVED;
 
-            if (
-              a1 && a2// Only L1 + L2 required
-              //   (requiresThird && a1 && a2 && a3) // All three required
-            ) {
+            if (a1 && a2) {
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by Required Approvers`;
               await this.documentbRepository.save(document);
-              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Now at Finalizer Level 1`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
+              // 🔔 L2 approvers — batch notification
+              if (secondBlock.users && secondBlock.users.length > 0) {
+                await this.notificationService.createBatchNoti(
+                  `${docLabel} has been fully approved. Now moving to Finalizer Level 1`,
+                  secondBlock.users.map(u => u.id)
+                );
+              }
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
 
-            // 🔔 Notify approver of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Now waiting for Approver Level 2`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
+            // 🔔 L2 approvers — batch notification
+            if (secondBlock.users && secondBlock.users.length > 0) {
+              await this.notificationService.createBatchNoti(
+                `${docLabel} has been approved at Approver Level 1 by ${userName}. Your approval is now required at Approver Level 2`,
+                secondBlock.users.map(u => u.id)
+              );
+            }
             return;
 
           }
@@ -710,10 +789,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 2`;
               await this.documentbRepository.save(document);
-              // 🔔 Notify approver
-              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 2`, userId);
-              // 🔔 Notify creator
-              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 2 by ${userName}`);
+              // 🔔 Actor
+              await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 2`, userId);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 2 by ${userName}`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} was rejected at Approver Level 2 by ${userName}. No action needed from you`);
               return;
             }
 
@@ -729,13 +810,27 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by Required Approvers`;
               await this.documentbRepository.save(document);
-              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 2 by ${userName}. Now at Finalizer Level 1`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} has already been approved at Approver Level 2 by ${userName}. No action needed from you`);
+              // 🔔 L1 approvers — batch notification
+              if (firstBlock.users && firstBlock.users.length > 0) {
+                await this.notificationService.createBatchNoti(
+                  `${docLabel} has been fully approved by ${userName}. Now moving to Finalizer Level 1`,
+                  firstBlock.users.map(u => u.id)
+                );
+              }
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
 
-            // 🔔 Notify approver of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 2`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 2`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 2 by ${userName}. Waiting for remaining approvers`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} has already been approved at Approver Level 2 by ${userName}. No action needed from you`);
             return;
 
           } else {
@@ -765,10 +860,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
-              // 🔔 Notify approver
-              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 1`, userId);
-              // 🔔 Notify creator
-              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 1 by ${userName}`);
+              // 🔔 Actor
+              await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 1 by ${userName}`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} was rejected at Approver Level 1 by ${userName}. No action needed from you`);
               return;
             }
 
@@ -780,12 +877,37 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
-              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Now at Finalizer Level 1`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
+              // 🔔 L2, L3 — batch notification
+              const l2l3UserIds = [
+                ...(secondBlock.users?.map(u => u.id) ?? []),
+                ...(thirdBlock.users?.map(u => u.id) ?? []),
+              ];
+              if (l2l3UserIds.length > 0) {
+                await this.notificationService.createBatchNoti(
+                  `${docLabel} has been fully approved. Now moving to Finalizer Level 1`,
+                  l2l3UserIds
+                );
+              }
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
-            // 🔔 Notify approver of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 1`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 1 by ${userName}. Now waiting for Approver Level 2`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(firstBlock.users, userId, `${docLabel} has already been approved at Approver Level 1 by ${userName}. No action needed from you`);
+            // 🔔 L2 — batch notification
+            if (secondBlock.users && secondBlock.users.length > 0) {
+              await this.notificationService.createBatchNoti(
+                `${docLabel} has been approved at Approver Level 1 by ${userName}. Your approval is now required at Approver Level 2`,
+                secondBlock.users.map(u => u.id)
+              );
+            }
             return;
           } else {
             throw new Error('First approver has already acted on this document');
@@ -805,10 +927,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
-              // 🔔 Notify approver
-              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 2`, userId);
-              // 🔔 Notify creator
-              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 2 by ${userName}`);
+              // 🔔 Actor
+              await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 2`, userId);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 2 by ${userName}`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} was rejected at Approver Level 2 by ${userName}. No action needed from you`);
               return;
             }
             const a1 = info.firstApproved?.status === ApproverStatus.APPROVED;
@@ -818,12 +942,37 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
-              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 2 by ${userName}. Now at Finalizer Level 1`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} has already been approved at Approver Level 2 by ${userName}. No action needed from you`);
+              // 🔔 L1, L3 — batch notification
+              const l1l3UserIds = [
+                ...(firstBlock.users?.map(u => u.id) ?? []),
+                ...(thirdBlock.users?.map(u => u.id) ?? []),
+              ];
+              if (l1l3UserIds.length > 0) {
+                await this.notificationService.createBatchNoti(
+                  `${docLabel} has been fully approved. Now moving to Finalizer Level 1`,
+                  l1l3UserIds
+                );
+              }
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
-            // 🔔 Notify approver of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 2`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 2`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 2 by ${userName}. Now waiting for Approver Level 3`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(secondBlock.users, userId, `${docLabel} has already been approved at Approver Level 2 by ${userName}. No action needed from you`);
+            // 🔔 L3 — batch notification
+            if (thirdBlock.users && thirdBlock.users.length > 0) {
+              await this.notificationService.createBatchNoti(
+                `${docLabel} has been approved at Approver Level 2 by ${userName}. Your approval is now required at Approver Level 3`,
+                thirdBlock.users.map(u => u.id)
+              );
+            }
             return;
           } else {
             throw new Error('Second approver has already acted on this document');
@@ -843,10 +992,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.REJECT;
               document.remarks = `${document.type} Rejected at Approver Level 3`;
               await this.documentbRepository.save(document);
-              // 🔔 Notify approver
-              await this.notificationService.createNoti(`${document.type} was rejected by you at Approver Level 3`, userId);
-              // 🔔 Notify creator
-              await this.notifyCreator(document, `Your ${document.type} was rejected at Approver Level 3 by ${userName}`);
+              // 🔔 Actor
+              await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 3`, userId);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was rejected at Approver Level 3 by ${userName}`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(thirdBlock.users, userId, `${docLabel} was rejected at Approver Level 3 by ${userName}. No action needed from you`);
               return;
             }
             const a1 = info.firstApproved?.status === ApproverStatus.APPROVED;
@@ -856,12 +1007,30 @@ function isWithinRange(min: number | string | null, max: number | string | null,
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by All Approvers`;
               await this.documentbRepository.save(document);
-              await this.notifyCreator(document, `Your ${document.type} has been approved by ${userName}`);
+              // 🔔 Creator
+              await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 3 by ${userName}. Now at Finalizer Level 1`);
+              // 🔔 Same-stage peers
+              await this.notifyStageParticipants(thirdBlock.users, userId, `${docLabel} has already been approved at Approver Level 3 by ${userName}. No action needed from you`);
+              // 🔔 L1, L2 — batch notification
+              const l1l2UserIds = [
+                ...(firstBlock.users?.map(u => u.id) ?? []),
+                ...(secondBlock.users?.map(u => u.id) ?? []),
+              ];
+              if (l1l2UserIds.length > 0) {
+                await this.notificationService.createBatchNoti(
+                  `${docLabel} has been fully approved. Now moving to Finalizer Level 1`,
+                  l1l2UserIds
+                );
+              }
               await this.assignToUsers(documentId, flow.finalizers.firstFinalizers, 'finalizer');
               return;
             }
-            // 🔔 Notify approver of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Approver Level 3`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 3`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Approver Level 3 by ${userName}. Waiting for remaining approvers`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(thirdBlock.users, userId, `${docLabel} has already been approved at Approver Level 3 by ${userName}. No action needed from you`);
             return;
           } else {
             throw new Error('Third approver has already acted on this document');
@@ -891,9 +1060,6 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           }
           console.log("REqui: ", requiredApprovalsPassed);
 
-
-
-
           const stage = await this.approvalStageInfoRepository.save({
             userId,
             userName,
@@ -908,15 +1074,21 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           if (action === ApproverStatus.REJECTED) {
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by First Finalizer`;
-            // 🔔 Notify finalizer
-            await this.notificationService.createNoti(`${document.type} was rejected by you at Finalizer Level 1`, userId);
-            // 🔔 Notify creator
-            await this.notifyCreator(document, `Your ${document.type} was rejected at Finalizer Level 1 by ${userName}`);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You rejected ${docLabel} at Finalizer Level 1`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was rejected at Finalizer Level 1 by ${userName}`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(flow.finalizers.firstFinalizers, userId, `${docLabel} was rejected at Finalizer Level 1 by ${userName}. No action needed from you`);
           } else {
             document.status = DocumentStatus.FINALIZING;
             document.remarks = `${document.type} Approved by First Finalizer`;
-            // 🔔 Notify finalizer of their action
-            await this.notificationService.createNoti(`${document.type} approved by you at Finalizer Level 1`, userId);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Finalizer Level 1`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Finalizer Level 1 by ${userName}. Now at Finalizer Level 2`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(flow.finalizers.firstFinalizers, userId, `${docLabel} has already been approved at Finalizer Level 1 by ${userName}. No action needed from you`);
             await this.assignToUsers(documentId, flow.finalizers.secondFinalizers, 'finalizer');
           }
 
@@ -924,7 +1096,6 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           return;
         }
       }
-
 
       // 🔴 Finalizer 2
       if (!info.secondFinalized) {
@@ -948,15 +1119,53 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           if (action === ApproverStatus.REJECTED) {
             document.status = DocumentStatus.REJECT;
             document.remarks = `${document.type} Rejected by Second Finalizer`;
-            // 🔔 Notify finalizer
-            await this.notificationService.createNoti(`${document.type} was rejected by you at Finalizer Level 2`, userId);
-            // 🔔 Notify creator
-            await this.notifyCreator(document, `Your ${document.type} was rejected at Finalizer Level 2 by ${userName}`);
+            await this.documentbRepository.save(document);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You rejected ${docLabel} at Finalizer Level 2`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was rejected at Finalizer Level 2 by ${userName}`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(flow.finalizers.secondFinalizers, userId, `${docLabel} was rejected at Finalizer Level 2 by ${userName}. No action needed from you`);
+            
+            // 🔔 Batch notification for backward chain (Finalizer 1, All Approvers, All Verifiers)
+            const backwardChainUserIds = [
+              ...(flow.finalizers.firstFinalizers?.map(u => u.id) ?? []),
+              ...(flow.approvers.firstApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.approvers.secondApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.approvers.thirdApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.verifiers?.map(u => u.id) ?? []),
+            ];
+            if (backwardChainUserIds.length > 0) {
+              await this.notificationService.createBatchNoti(
+                `${docLabel} was rejected at Finalizer Level 2 by ${userName}`,
+                backwardChainUserIds
+              );
+            }
           } else {
             document.status = DocumentStatus.COMPLETE;
             document.remarks = `${document.type} Fully Approved and Finalized`;
             await this.documentbRepository.save(document);
-            await this.notifyCreator(document, `Your ${document.type} has been fully approved and finalized by ${userName}`);
+            // 🔔 Actor
+            await this.notificationService.createNoti(`You approved ${docLabel} at Finalizer Level 2`, userId);
+            // 🔔 Creator
+            await this.notifyCreator(document, `Your ${docLabel} was approved at Finalizer Level 2 by ${userName}. Document is now Complete`);
+            // 🔔 Same-stage peers
+            await this.notifyStageParticipants(flow.finalizers.secondFinalizers, userId, `${docLabel} has already been finalized at Finalizer Level 2 by ${userName}. No action needed from you`);
+            
+            // 🔔 Batch notification for backward chain (Finalizer 1, All Approvers, All Verifiers)
+            const backwardChainUserIds = [
+              ...(flow.finalizers.firstFinalizers?.map(u => u.id) ?? []),
+              ...(flow.approvers.firstApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.approvers.secondApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.approvers.thirdApprover?.users?.map(u => u.id) ?? []),
+              ...(flow.verifiers?.map(u => u.id) ?? []),
+            ];
+            if (backwardChainUserIds.length > 0) {
+              await this.notificationService.createBatchNoti(
+                `${docLabel} has been fully finalized by ${userName}. Document is now Complete`,
+                backwardChainUserIds
+              );
+            }
             return;
           }
 
@@ -1280,6 +1489,28 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     }
   }
 
+  /**
+   * Notify all users at a stage EXCEPT the actor.
+   * Used to inform same-stage peers that someone has already acted.
+   */
+  private async notifyStageParticipants(
+    stageUsers: User[],
+    actorUserId: string,
+    message: string,
+  ): Promise<void> {
+    const otherUserIds = stageUsers
+      .filter((u) => u.id !== actorUserId)
+      .map((u) => u.id);
+    
+    if (otherUserIds.length > 0) {
+      try {
+        await this.notificationService.createBatchNoti(message, otherUserIds);
+      } catch (err) {
+        console.error(`Failed to notify stage participants:`, err);
+      }
+    }
+  }
+
   public async resolveDocumentTypeNo(document: any): Promise<string | null> {
     if (!document?.document_type_id) return null;
     try {
@@ -1365,7 +1596,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     // Resolve document number for rich notification message
     const documentTypeNo = await this.resolveDocumentTypeNo(document);
     const richMessage = documentTypeNo
-      ? `You have been assigned as a ${role} for ${document?.type} (${documentTypeNo})`
+      ? `You have been assigned as a ${role} for ${document?.type} #${documentTypeNo}`
       : `You have been assigned as a ${role} for ${document?.type} document`;
 
     users.forEach((user) => {

@@ -4,6 +4,7 @@ import { SecondSale } from './secondSale.entity';
 import { Product } from './product.entity';
 import { UOM } from './uom.entity';
 import { ProductVarient } from './productVarient.entity';
+import { PackingMaterial } from './packingMaterial.entity';
 
 @Entity({ name: 'second_sale_product' })
 export class SecondSaleProduct extends Model {
@@ -15,19 +16,9 @@ export class SecondSaleProduct extends Model {
       @JoinColumn({ name: 'varient_id' })
       variant: ProductVarient;
 
-  @ManyToOne(() => UOM, { onDelete: 'SET NULL', nullable: true })
-  @JoinColumn({ name: 'uom_id' })
-  uom: UOM;
+  ;
 
-  // @Column('character varying', { name: 'count', nullable: true, length: 100 })
-  // count: string;
-
-  // @Column('character varying', { name: 'size', nullable: true, length: 100 })
-  // size: string;
-  // @Column("character varying", { name: "origin", nullable: true, length: 100 })
-  // origin: string;
-  // @Column("character varying", { name: "variety", nullable: true, length: 100 })
-  // variety:string;
+  
   @Column('int', { nullable: true })
   quantity: number;
 
@@ -42,6 +33,29 @@ export class SecondSaleProduct extends Model {
   packingMaterialWeight: number;
   @Column({ nullable: true, type: 'decimal', precision: 10, scale: 3 })
   grossWeight: number;
+
+  @ManyToOne(() => UOM, { cascade: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'saleuom_id' })
+  saleUoM: UOM;
+  @ManyToOne(() => UOM, { cascade: true, nullable: true, onDelete: 'SET NULL' })
+  packagingMaterialUoM: UOM;
+  @Column({ nullable: true })
+  packagingMaterialQuantity: number;
+  @Column({ nullable: true })
+  packagingMaterialUnitPrice: number;
+  @Column({ nullable: true })
+  packagingMaterialAmount: number;
+  @Column({ nullable: true })
+  packagingMaterialTotalWeight: number;
+  @ManyToOne(() => PackingMaterial, {
+    cascade: true,
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'packing_material_id' })
+  packagingMaterial: PackingMaterial;
+
+  
   @ManyToOne(
     () => SecondSale,
     (saleRegister) => saleRegister.secondSaleProducts,

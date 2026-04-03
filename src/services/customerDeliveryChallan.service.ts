@@ -226,8 +226,6 @@ export class CustomerDeliveryChallanService {
         document_type_id: actualChallan.id,
       });
 
-      await this.documentbService.startApprovalFlow(document.id);
-
       const challn = actualChallan;
 
       // 10. Update Inventory (STOCK OUT) - Now we know stock is sufficient
@@ -292,6 +290,9 @@ export class CustomerDeliveryChallanService {
 
       // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
+
+      // Start approval flow after commit so challan is visible to other DB connections
+      await this.documentbService.startApprovalFlow(document.id);
 
       return actualChallan;
 

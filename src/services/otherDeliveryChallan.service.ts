@@ -100,9 +100,11 @@ export class OtherDeliveryChallanService {
         document_type_id: savedChallan.id,
       });
 
-    await this.documentbService.startApprovalFlow(document.id);
       // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
+
+      // Start approval flow after commit so challan is visible to other DB connections
+      await this.documentbService.startApprovalFlow(document.id);
       
       return savedChallan;
     } catch (error: any) {

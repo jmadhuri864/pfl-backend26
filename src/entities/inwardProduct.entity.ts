@@ -26,6 +26,8 @@ export class InwardProduct extends Model {
 
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   quantity: number;
+  @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
+  weight: number;
 
   @Column({ nullable: true, type: 'decimal', precision: 100, scale: 3 })
   unitPrice: number;

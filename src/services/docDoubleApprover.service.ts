@@ -27,6 +27,30 @@ export class DocDoubleApproverService {
   ) {
   }
 
+  // Convert document type to readable format
+  private getReadableDocumentType(type: string): string {
+    const typeMap: { [key: string]: string } = {
+      'grn': 'GRN',
+      'rfpa': 'RFPA',
+      'deal-slip': 'Deal Slip',
+      'aqr': 'AQR',
+      'second-sale': 'Second Sale',
+      'vehicle-dispatch-register': 'Vehicle Dispatch',
+      'dump-register': 'Dump Register',
+      'inward-register': 'Inward Register',
+      'dc-type-other': 'Delivery Challan',
+      'dc-type-stock-transfer': 'Stock Transfer Challan',
+      'dc-type-customer': 'Customer Delivery Challan',
+      'return-by-customer': 'Return by Customer',
+      'return-to-vendor': 'Return to Vendor',
+      'multi-cash-voucher': 'Cash Voucher',
+      'labor-payment-voucher': 'Labor Payment Voucher',
+      'transport-payment-voucher': 'Transport Payment Voucher',
+      'packaging-material-voucher': 'Packaging Material Voucher',
+    };
+    return typeMap[type.toLowerCase()] || type;
+  }
+
 
   async approveDocumentStepForDoubleLevel(
   documentId: string,
@@ -103,18 +127,30 @@ export class DocDoubleApproverService {
     await this.documentbRepository.save(document);
 
     const docNo = await this.documentBService.resolveDocumentTypeNo(document);
-    const docLabel = docNo ? `${document.type} (${docNo})` : document.type;
+    const readableType = this.getReadableDocumentType(document.type);
+    const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
+    const rejectedLevel = isFirstApprover ? 'Approver Level 1' : 'Approver Level 2';
+    const rejectedLevelUsers = isFirstApprover ? firstBlock?.users ?? [] : secondBlock?.users ?? [];
+    const otherLevelUsersOnReject = isFirstApprover ? secondBlock?.users ?? [] : firstBlock?.users ?? [];
 
-    // 🔔 Notify approver
-    await this.notificationService.createNoti(
-      `${docLabel} was rejected by ${userName}`,
-      userId,
-    );
-    // 🔔 Notify creator
+    // 🔔 Actor
+    await this.notificationService.createNoti(`You rejected ${docLabel} at ${rejectedLevel}`, userId);
+    // 🔔 Creator
     if (document.lastActionBy?.id) {
       await this.notificationService.createNoti(
-        `Your ${docLabel} was rejected by ${userName}`,
+        `Your ${docLabel} was rejected at ${rejectedLevel} by ${userName}`,
         document.lastActionBy.id,
+      );
+    }
+    // 🔔 Same-stage peers + Other level approvers — batch notification
+    const rejectNotifyUserIds = [
+      ...rejectedLevelUsers.filter(u => u.id !== userId).map(u => u.id),
+      ...otherLevelUsersOnReject.map(u => u.id),
+    ];
+    if (rejectNotifyUserIds.length > 0) {
+      await this.notificationService.createBatchNoti(
+        `${docLabel} was rejected at ${rejectedLevel} by ${userName}. No action needed from you`,
+        rejectNotifyUserIds
       );
     }
     return;
@@ -141,13 +177,11 @@ export class DocDoubleApproverService {
     await this.documentApprovalFlowRepository.save(info);
 
     const docNo2 = await this.documentBService.resolveDocumentTypeNo(document);
-    const docLabel2 = docNo2 ? `${document.type} (${docNo2})` : document.type;
-
-    // 🔔 Notify approver of their action
-    await this.notificationService.createNoti(
-      `${docLabel2} approved by ${userName}`,
-      userId,
-    );
+    const readableType2 = this.getReadableDocumentType(document.type);
+    const docLabel2 = docNo2 ? `${readableType2} #${docNo2}` : readableType2;
+    const approvedLevel = isFirstApprover ? 'Approver Level 1' : 'Approver Level 2';
+    const approvedLevelUsers = isFirstApprover ? firstBlock?.users ?? [] : secondBlock?.users ?? [];
+    const otherLevelUsers = isFirstApprover ? secondBlock?.users ?? [] : firstBlock?.users ?? [];
 
     // Check if both levels approved
     const firstApproved = info.firstApproved?.status === ApproverStatus.APPROVED;
@@ -158,19 +192,51 @@ export class DocDoubleApproverService {
       document.remarks = `${document.type} Approved by Required Approvers`;
       await this.documentbRepository.save(document);
 
-      // 🔔 Notify creator that document is fully approved
+      // 🔔 Actor
+      await this.notificationService.createNoti(`You approved ${docLabel2} at ${approvedLevel}`, userId);
+      // 🔔 Creator
       if (document.lastActionBy?.id) {
         await this.notificationService.createNoti(
-          `Your ${docLabel2} has been fully approved by ${userName}`,
+          `Your ${docLabel2} was approved at ${approvedLevel} by ${userName}. Document is now Complete`,
           document.lastActionBy.id,
         );
       }
+      // 🔔 Same-stage peers + Other level approvers — batch notification
+      const approveCompleteUserIds = [
+        ...approvedLevelUsers.filter(u => u.id !== userId).map(u => u.id),
+        ...otherLevelUsers.map(u => u.id),
+      ];
+      if (approveCompleteUserIds.length > 0) {
+        await this.notificationService.createBatchNoti(
+          `${docLabel2} has been fully approved by ${userName}. Document is now Complete`,
+          approveCompleteUserIds
+        );
+      }
     } else {
-      // 🔔 Notify creator about partial approval (forward notification)
+      const nextStage = isFirstApprover ? 'Approver Level 2' : 'Approver Level 1';
+      // 🔔 Actor
+      await this.notificationService.createNoti(`You approved ${docLabel2} at ${approvedLevel}`, userId);
+      // 🔔 Creator
       if (document.lastActionBy?.id) {
         await this.notificationService.createNoti(
-          `Your ${docLabel2} has been approved at one level by ${userName}, awaiting next approval`,
+          `Your ${docLabel2} was approved at ${approvedLevel} by ${userName}. Now waiting for ${nextStage}`,
           document.lastActionBy.id,
+        );
+      }
+      // 🔔 Same-stage peers — batch notification
+      const sameStagePeerIds = approvedLevelUsers.filter(u => u.id !== userId).map(u => u.id);
+      if (sameStagePeerIds.length > 0) {
+        await this.notificationService.createBatchNoti(
+          `${docLabel2} has already been approved at ${approvedLevel} by ${userName}. No action needed from you`,
+          sameStagePeerIds
+        );
+      }
+      // 🔔 Next level approvers — batch notification
+      const nextLevelUserIds = otherLevelUsers.map(u => u.id);
+      if (nextLevelUserIds.length > 0) {
+        await this.notificationService.createBatchNoti(
+          `${docLabel2} has been approved at ${approvedLevel} by ${userName}. Your approval is now required at ${nextStage}`,
+          nextLevelUserIds
         );
       }
     }
