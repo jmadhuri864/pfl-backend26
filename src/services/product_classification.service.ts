@@ -41,6 +41,7 @@ meta:result.meta
   async findById(id: string): Promise<ProductClassification | null> {
     return this.productClassificationRepository.findOne({
       where: { id },
+      select: ["id", "name"]
      
     });
   }

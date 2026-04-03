@@ -41,7 +41,10 @@ export class UOMService {
   }
 
   public async getById(id: string): Promise<UOM | null> {
-    return this.UOMRepository.findOneBy({ id });
+    return this.UOMRepository.findOne({ 
+     where: {id},
+     select:["id", "unit", "abbreviation", "description"]
+     });
   }
 
   public async create(uomData: Partial<UOM>): Promise<UOM> {

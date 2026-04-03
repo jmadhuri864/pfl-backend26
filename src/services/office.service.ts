@@ -100,14 +100,30 @@ async softDeleteOffices(userIds: string[],officeType:OFFICE_TYPE) {
 
   return result;
 }
-  async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<OfficesData | null> {
-    return this.officesRepository.findOne({
-      where: {
-        id,
-        type: officeType,
-      },
-      relations: ['address'],
-    });
+  async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<any> {
+    return this.officesRepository
+      .createQueryBuilder('offices')
+      .leftJoin('offices.address', 'address')
+      .select([
+        'offices.id',
+        'offices.name',
+        'offices.officeEmail',
+        'offices.contactNumber',
+        'offices.cFirstName',
+        'offices.cMiddleName',
+        'offices.cLastName',
+        'offices.notes',
+        'offices.type',
+        'address.id',
+        'address.address1',
+        'address.address2',
+        'address.location',
+        'address.city',
+        'address.state',
+        'address.pincode',
+      ])
+      .where('offices.id = :id AND offices.type = :officeType', { id, officeType })
+      .getOne();
   }
 async getOfficeById(id: string): Promise<OfficesData | null> {
     return this.officesRepository.findOne({
@@ -136,15 +152,31 @@ async getOfficeById(id: string): Promise<OfficesData | null> {
       });
     }
     
-  async getOfficesByType1(officeType: OFFICE_TYPE,queryOptions:PaginationOptions): Promise<any> {
-    console.log(`Fetching offices with type: ${officeType}`)
-    let queryBuilder=await this.officesRepository.createQueryBuilder('offices')
-    .leftJoinAndSelect('offices.address','address')
-    .where('offices.type = :officeType', { officeType })
-    .orderBy('offices.createdAt', 'DESC');
+  async getOfficesByType1(officeType: OFFICE_TYPE, queryOptions: PaginationOptions): Promise<any> {
+    let queryBuilder = this.officesRepository
+      .createQueryBuilder('offices')
+      .leftJoin('offices.address', 'address')
+      .select([
+        'offices.id',
+        'offices.name',
+        'offices.officeEmail',
+        'offices.contactNumber',
+        'offices.cFirstName',
+        'offices.cMiddleName',
+        'offices.cLastName',
+        'offices.notes',
+        'offices.type',
+        'address.id',
+        'address.location',
+        'address.city',
+        'address.state',
+        'address.pincode',
+      ])
+      .where('offices.type = :officeType', { officeType })
+      .orderBy('offices.createdAt', 'DESC');
 
-   const result = await buildQuery(queryBuilder, queryOptions, "offices");
-   return result;
+    const result = await buildQuery(queryBuilder, queryOptions, 'offices');
+    return result;
   }
   async getAllOffice(): Promise<OfficesData[]> {
    

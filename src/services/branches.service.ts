@@ -116,18 +116,32 @@ async softDeleteBranches(userIds: string[],branchType:BranchType) {
   
 
   async getBranchByIdAndType(id: string): Promise<any> {
-    console.log("in service branch")
-    const result = await this.branchesRepository.findOne({
-      where: {
-        id,
-       
-      },
-      relations:['address']
-    });
-
-    //return classToPlain(result);
-    return result;
-    
+    return this.branchesRepository
+      .createQueryBuilder('branch')
+      .leftJoin('branch.address', 'address')
+      .select([
+        'branch.id',
+        'branch.name',
+        'branch.cFirstName',
+        'branch.cMiddleName',
+        'branch.cLastName',
+        'branch.contactNumber',
+        'branch.notes',
+        'branch.totalCapacity',
+        'branch.currentCapacity',
+        'branch.balanceCapacity',
+        'branch.type',
+        'branch.prefix',
+        'address.id',
+        'address.address1',
+        'address.address2',
+        'address.location',
+        'address.city',
+        'address.state',
+        'address.pincode',
+      ])
+      .where('branch.id = :id', { id })
+      .getOne();
   }
 
 async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
@@ -160,6 +174,7 @@ async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions
     data:result.data.map((branch)=>{
       return{
         id:branch.id,
+        type:branch.type,
         address:{
           id:branch.address.id,
           address1:branch.address.address1,

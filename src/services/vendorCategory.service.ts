@@ -70,7 +70,8 @@ export class VendorCategoryService {
   public async getById(id: string): Promise<VendorCategory | null> {
     return this.vendorCategoryRepository.findOne({
       where: { id },
-      relations: ["vendorSubcategories"], // Adjust relations if needed
+      select: ["id", "name"]
+       // Adjust relations if needed
     });
   }
 

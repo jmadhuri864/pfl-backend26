@@ -36,31 +36,37 @@ export class ProductCategoryService {
      .orderBy('productCategory.createdAt', 'DESC');
     
         const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
-        return{
-            data:result.data.map((pro)=>{
-              return{
-                id:pro.id,
-                name:pro.name,
-                classification: pro?.productClassification
-                ? {
-                    id: pro.productClassification.id,
-                    name: pro.productClassification.name,
-                }
-                : null,
-              }
-            }
-          ),
-          meta:result.meta
-          }
+        return {
+          data: result.data.map((pro) => ({
+            id: pro.id,
+            name: pro.name,
+          //  classificationId: pro.productClassification?.id ?? null,
+            classification: pro.productClassification?.name ?? null,
+          })),
+          meta: result.meta,
+        };
 
         //return result;
       }
 
-  async getById(id: string): Promise<ProductCategory | null> {
-    return this.productCategoryRepository.findOne({
-      where: { id },
-      relations: ["productClassification"],
-    });
+  async getById(id: string): Promise<any> {
+    const result = await this.productCategoryRepository
+      .createQueryBuilder('productCategory')
+      .leftJoin('productCategory.productClassification', 'productClassification')
+      .select([
+        'productCategory.id',
+        'productCategory.name',
+        'productClassification.id',
+      ])
+      .where('productCategory.id = :id', { id })
+      .getOne();
+
+    if (!result) return null;
+    return {
+      id: result.id,
+      name: result.name,
+      productClassification: result.productClassification?.id ?? null,
+    };
   }
 
   
