@@ -381,19 +381,19 @@ async approveCustomer(
         throw new AppError(404, 'Customer not found');
       }
       
-      // 🔔 Send notification for customer partial view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customer.customer?.organisationName || 'Customer';
-          await this.notificationService.createNoti(
-            `Viewed partial details of "${customerName}"`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer partial view notification error:', notifError);
-      }
+      // // 🔔 Send notification for customer partial view
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     const customerName = customer.customer?.organisationName || 'Customer';
+      //     await this.notificationService.createNoti(
+      //       `Viewed partial details of "${customerName}"`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer partial view notification error:', notifError);
+      // }
       
       // Log successful view
       ControllerLogger.logView('Customer', id, req, res);

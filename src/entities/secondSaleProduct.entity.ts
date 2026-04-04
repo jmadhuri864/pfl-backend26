@@ -16,7 +16,7 @@ export class SecondSaleProduct extends Model {
       @JoinColumn({ name: 'varient_id' })
       variant: ProductVarient;
 
-  ;
+  
 
   
   @Column('int', { nullable: true })

@@ -383,7 +383,7 @@ export class CustomerDeliveryChallanService {
       vehicleNo: challan.vehicleNo,
       licenseNo: challan.licenseNo,
       receiverName: challan.receiverName,
-
+        rmn:challan.rmn,
       totalProductAmount: challan.totalProductAmount,
       netProductWeight: challan.netProductWeight,
       netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
@@ -420,10 +420,11 @@ export class CustomerDeliveryChallanService {
           changedPrice: product.changedPrice,
 
           saleUoM: product.saleUoM?.id || null,
-          packingMaterial:
-            product.packagingMaterial?.packagingMaterialName || null,
+          packagingMaterial:
+            product.packagingMaterial?.id || null,
           packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
           packagingMaterialAmount: product.packagingMaterialAmount,
+          packingMaterialWeight:product.packingMaterialWeight||null,
           packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
           packagingMaterialQuantity: product.packagingMaterialQuantity,
           packagingMaterialTotalWeight: product.packagingMaterialTotalWeight,
@@ -526,18 +527,11 @@ export class CustomerDeliveryChallanService {
         vehicleNo: challan.vehicleNo,
         licenseNo: challan.licenseNo,
         receiverName: challan.receiverName,
-
-        // Original amounts
         totalProductAmount: challan.totalProductAmount,
-        originalNetProductWeight: challan.netProductWeight,
+        netProductWeight: challan.netProductWeight,
         netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
         totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
         totalAmtInWords: challan.totalAmtInWords,
-
-
-
-
-
         createdDate,
         createdTime,
         requestingDepartment: challan.requestingDepartment,

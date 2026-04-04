@@ -124,6 +124,9 @@ export class DocumentbService {
       'labor-payment-voucher': 'Labor Payment Voucher',
       'transport-payment-voucher': 'Transport Payment Voucher',
       'packaging-material-voucher': 'Packaging Material Voucher',
+      'final-invoice': 'Final Invoice',
+      'eod-report': 'EOD Report',
+     
     };
     return typeMap[type.toLowerCase()] || type;
   }
@@ -202,18 +205,12 @@ export class DocumentbService {
 
       console.log("Approval flow: ", approvalFlow);
 
-      if (!approvalFlow) {
-        throw new Error(
-          `No approval flow found...Please contact with admin`,
-        );
-      }
-
       // const approvalInfo = this.approvalStageInfoRepository.create({});
       // await this.approvalStageInfoRepository.save(approvalInfo);
 
       const document = this.documentbRepository.create({
         ...documentData,
-        approvalFlow
+        ...(approvalFlow && { approvalFlow })
         //  approvalInfo
       });
 
@@ -421,8 +418,14 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
     });
   
 console.log("Document for starting approval flow: ", document?.type);
-    if (!document || !document.approvalFlow) {
-      throw new Error('Document or Approval Flow not found');
+    if (!document) {
+      throw new Error('Document not found');
+    }
+
+    // If no approval flow is configured, skip approval flow assignment
+    if (!document.approvalFlow) {
+      console.log('No approval flow configured for document:', documentId);
+      return;
     }
 
     const { approvalFlow, totalAmt, type } = document;

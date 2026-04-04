@@ -374,7 +374,7 @@ export class OtherDeliveryChallanService {
         companyName: doc.relatedData.companyName?.name || null,
         office: doc.relatedData.offices?.name || null,
         grnNo: doc.relatedData.grnNo?.grnNo || null,
-        fromLocation: doc.relatedData.fromLocation?.id||null,
+        fromLocation: doc.relatedData.fromLocation?.name||null,
           
         customer: (doc.relatedData as any).customer || null,
         customerContactNo: (doc.relatedData as any).customerContactNo || null,

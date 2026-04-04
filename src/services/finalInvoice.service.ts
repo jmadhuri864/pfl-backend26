@@ -90,7 +90,7 @@ export class FinalInvoiceService {
         totalProductAmount: deliveryChallan.totalProductAmount,
         netProductWeight: deliveryChallan.netProductWeight,
         totalAmount: additionalData.totalAmount || deliveryChallan.totalProductAmount,
-        totalAmtInWords: additionalData.totalAmtInWords,
+        totalAmtInWords: deliveryChallan.totalAmtInWords,
         cgst: additionalData.cgst || 0,
         sgst: additionalData.sgst || 0,
         igst: additionalData.igst || 0,
@@ -100,7 +100,7 @@ export class FinalInvoiceService {
         otherCharges: additionalData.otherCharges || 0,
         createdBy: { id: requestedBy },
       };
-
+console.log(invoiceData)
       const invoice = queryRunner.manager.create(Invoice, invoiceData);
       const savedInvoice = await queryRunner.manager.save(invoice);
 
@@ -490,6 +490,7 @@ export class FinalInvoiceService {
         id: doc.relatedData.id,
         invoiceNo: doc.relatedData.invoiceNo,
         invoiceDate: doc.relatedData.invoiceDate,
+         vehicleNo:doc.relatedData.vehicleNo||null,
         companyName: doc.relatedData.companyName?.name || null,
         deliveryChallan: doc.relatedData.deliveryChallan?.challanNo || null,
         customerName: doc.relatedData.customerName?.organisationName || null,
@@ -736,7 +737,7 @@ console.log(items)
           panNo: customer?.statutoryDetails?.panNo || '',
           items: items,
           totalAmt: totalAmt,
-          amountInWords: amountInWords,
+          totalAmtInWord: amountInWords,
           bankDetails: mappedBankDetails,
         };
 

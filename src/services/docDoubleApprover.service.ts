@@ -47,6 +47,9 @@ export class DocDoubleApproverService {
       'labor-payment-voucher': 'Labor Payment Voucher',
       'transport-payment-voucher': 'Transport Payment Voucher',
       'packaging-material-voucher': 'Packaging Material Voucher',
+      'final-invoice': 'Final Invoice',
+      'eod-report': 'EOD Report',
+      'proforma-invoice': 'Proforma Invoice',
     };
     return typeMap[type.toLowerCase()] || type;
   }

@@ -189,6 +189,7 @@ export class PostReturnByCustomerService {
       const newReturn = queryRunner.manager.create(
         this.postReturnByCustomerRepository.target, 
         {
+          rbcNo: serialNo,
           deliveryChallanNo: returnData.deliveryChallanNo,
           companyName: returnData.companyName,
           location: returnData.location,

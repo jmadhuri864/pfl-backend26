@@ -31,16 +31,16 @@ export class SecondSaleService {
     @inject(TYPES.SecondSaleProductRepository)
     private readonly secondSaleProductRepository: SecondSaleProductRepository,
     @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,
-    @inject(TYPES.DocumentbRepository) private documentbRepository:DocumentbRepository,
+    @inject(TYPES.DocumentbRepository) private documentbRepository: DocumentbRepository,
     @inject(TYPES.ProductVarientRepository)
-          private productVarientsRepository: ProductVarientRepository,
+    private productVarientsRepository: ProductVarientRepository,
     @inject(TYPES.DataSource)
     private readonly AppDataSource: DataSource,
     @inject(TYPES.DocumentbService)
     private readonly documentbService: DocumentbService,
     @inject(TYPES.DocDoubleApproverService) private readonly docDoubleApproverService: DocDoubleApproverService, // Assuming you have a service for double approval
     @inject(TYPES.ApprovalFlowService)
-        private approvalFlowService: ApprovalFlowService 
+    private approvalFlowService: ApprovalFlowService
 
   ) { }
 
@@ -70,12 +70,12 @@ export class SecondSaleService {
     try {
       //TODO: Check approval flow is exit or not for logged user
 
-       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
+      const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
 
       if (!approvalFlowExit) {
         throw new Error('Approval flow not found');
       }
-   // 1. Normalize variant IDs
+      // 1. Normalize variant IDs
       let variantIds: string[] = [];
       if (Array.isArray(secondSaleData.variants)) {
         variantIds = secondSaleData.variants;
@@ -91,8 +91,8 @@ export class SecondSaleService {
 
       // 3. Extract product IDs from variants
       const productIds = variants.map(v => v.product?.id).filter(Boolean);
-const serialNo = await this.generateSerialNo();
-      secondSaleData.secondSaleNO = serialNo;
+      const serialNo = await this.generateSerialNo();
+      secondSaleData.secondSaleNo = serialNo;
       const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
         ...secondSaleData,
         variants: variants.map(v => ({ id: v.id })), // only IDs
@@ -108,7 +108,7 @@ const serialNo = await this.generateSerialNo();
         remarks: 'Document auto-created with SecondSale',
         lastActionBy: { id: requestedBy },
         document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
-      }, );
+      },);
 
       // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
@@ -139,9 +139,9 @@ const serialNo = await this.generateSerialNo();
         DocumentTypeEnum.SECOND_SALE,
         queryOptions
       );
-const { search } = queryOptions;
-     // console.log("Data: ", data);
-      
+      const { search } = queryOptions;
+      // console.log("Data: ", data);
+
       const typedDocuments = data as DocumentWithRelatedData[];
       for (const doc of typedDocuments) {
         if (!doc.document_type_id) continue;
@@ -159,11 +159,11 @@ const { search } = queryOptions;
         }
       }
 
- //     console.log("typedDocuments: ", typedDocuments);
-      
+      //     console.log("typedDocuments: ", typedDocuments);
+
 
       let relatedDataOnly = typedDocuments
-     //   .filter((doc) => doc.relatedData)
+        //   .filter((doc) => doc.relatedData)
         .map((doc) => ({
           documentId: doc.id,
           overAllStatus: doc.status,
@@ -171,51 +171,51 @@ const { search } = queryOptions;
           createdDate: formatDateTime(doc.createdAt).createdDate,
           createdTime: formatDateTime(doc.createdAt).createdTime,
           ...doc.relatedData,
-          
+
           companyName: doc.relatedData.companyName.name || null,
           location: doc.relatedData.location.name || null,
         })
         );
-//console.log("Related data : ", relatedDataOnly);
+      //console.log("Related data : ", relatedDataOnly);
 
 
-    // 🔍 Deep search logic
-    const objectToString = (obj: any): string => {
-      if (obj == null) return '';
-      if (typeof obj === 'object') {
-        return Object.values(obj).map((v) => objectToString(v)).join(' ');
-      }
-      return String(obj);
-    };
-
-    if (search && search.trim()) {
-      const term = search.toLowerCase();
-      relatedDataOnly = relatedDataOnly.filter((item) =>
-        objectToString(item).toLowerCase().includes(term)
-      );
-    }
-// 🔄 Sorting (same as other methods)
-    if (queryOptions.sort) {
-      const [field, direction] = queryOptions.sort.split(':');
-      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-      const getNestedValue = (obj: any, path: string) =>
-        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-      relatedDataOnly.sort((a, b) => {
-        const valA = getNestedValue(a, field);
-        const valB = getNestedValue(b, field);
-
-        if (valA == null && valB == null) return 0;
-        if (valA == null) return -1 * sortOrder;
-        if (valB == null) return 1 * sortOrder;
-
-        if (!isNaN(valA) && !isNaN(valB)) {
-          return (Number(valA) - Number(valB)) * sortOrder;
+      // 🔍 Deep search logic
+      const objectToString = (obj: any): string => {
+        if (obj == null) return '';
+        if (typeof obj === 'object') {
+          return Object.values(obj).map((v) => objectToString(v)).join(' ');
         }
-        return String(valA).localeCompare(String(valB)) * sortOrder;
-      });
-    }
+        return String(obj);
+      };
+
+      if (search && search.trim()) {
+        const term = search.toLowerCase();
+        relatedDataOnly = relatedDataOnly.filter((item) =>
+          objectToString(item).toLowerCase().includes(term)
+        );
+      }
+      // 🔄 Sorting (same as other methods)
+      if (queryOptions.sort) {
+        const [field, direction] = queryOptions.sort.split(':');
+        const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+
+        const getNestedValue = (obj: any, path: string) =>
+          path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+        relatedDataOnly.sort((a, b) => {
+          const valA = getNestedValue(a, field);
+          const valB = getNestedValue(b, field);
+
+          if (valA == null && valB == null) return 0;
+          if (valA == null) return -1 * sortOrder;
+          if (valB == null) return 1 * sortOrder;
+
+          if (!isNaN(valA) && !isNaN(valB)) {
+            return (Number(valA) - Number(valB)) * sortOrder;
+          }
+          return String(valA).localeCompare(String(valB)) * sortOrder;
+        });
+      }
       return {
         data: relatedDataOnly,
         meta: {
@@ -227,35 +227,7 @@ const { search } = queryOptions;
 
 
 
-      // let query = this.secondSaleRepository
-      //   .createQueryBuilder("secondSale")
-      //   .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
-      //   .leftJoinAndSelect("secondSale.companyName", "companyName")
-      //   .leftJoinAndSelect("secondSaleProducts.productName", "product")
-      //   .leftJoinAndSelect("secondSaleProducts.uom", "uom") // Join with UOM entity
-      //   .select([
-      //     "secondSale",
-      //     "secondSaleProducts.id",
 
-      //     "companyName.name",
-      //     "product.name",
-      //     "uom.unit",
-      //   ]);
-
-      // const result = await buildQuery(query, queryOptions, "secondSale");
-
-      // const formatData = result.data.map((data: any) => ({
-      //   ...data,
-      //   companyName: data.companyName?.name || null, // Handle potential null values
-      //   secondSaleProducts: data.secondSaleProducts?.map((productData: any) => ({
-      //     ...productData,
-      //     product: productData.product?.name || null, // Handle potential null values
-      //     uom: productData.uom?.unit || null,
-      //   })) || [],
-      // }));
-      // console.log("formatedData is ",formatData)
-      // console.log("result is ",result)
-      // return { ...result, data: formatData };
     } catch (error) {
       console.error("Error fetching SecondSale:", error);
       throw error;
@@ -317,18 +289,18 @@ const { search } = queryOptions;
   }
 
   public async getSecondSaleByIdForView(docId: string): Promise<any> {
-    
-console.log("docid: ", docId);
 
-      const document = await this.docDoubleApproverService.getDocumentById(docId);
-   //   console.log("***********************");
-      
-      const id = document.documentTypeId;
+    console.log("docid: ", docId);
 
-      console.log("Document data:", id);
-      
+    const document = await this.docDoubleApproverService.getDocumentById(docId);
+    //   console.log("***********************");
 
-      if(id){
+    const id = document.documentTypeId;
+
+    console.log("Document data:", id);
+
+
+    if (id) {
       const secondSale = await this.secondSaleRepository
         .createQueryBuilder("secondSale")
         .leftJoinAndSelect(
@@ -342,6 +314,7 @@ console.log("docid: ", docId);
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
         .leftJoinAndSelect("secondSaleProducts.variant", "variant")
         .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+         .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM","packagingMaterialUoM")
         .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .where("secondSale.id = :id", { id })
         .getOne();
@@ -351,7 +324,7 @@ console.log("docid: ", docId);
 
       const rawDate = secondSale.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
-      
+
       return {
         id: secondSale?.id,
         companyName: secondSale?.companyName?.name || null,
@@ -363,7 +336,16 @@ console.log("docid: ", docId);
         customerName: secondSale?.customerName || null,
         customerContactNo: secondSale?.customerContactNo || null,
         customerEmail: secondSale?.customerEmail || null,
-        //customerAddress:,
+         customerAddress: secondSale?.customerAddress ? {
+          id: secondSale.customerAddress.id,
+          address1: secondSale.customerAddress.address1,
+          address2: secondSale.customerAddress.address2,
+          city: secondSale.customerAddress.city,
+          state: secondSale.customerAddress.state,
+          location: secondSale.customerAddress.location,
+          pincode: secondSale.customerAddress.pincode,
+          
+        } : null,
         reasonForSale: secondSale?.reasonForSale || null,
         secondSaleNo: secondSale?.secondSaleNo || null,
         secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
@@ -378,9 +360,15 @@ console.log("docid: ", docId);
           packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
           packagingMaterialAmount: product.packagingMaterialAmount,
           productName: product.productName?.name || null,
-          variant: product.variant?.name || null,
+         // productId: product.productName?.id || null,
+          variant: product.variant?.variantName || null,
+          //variantId: product.variant?.id || null,
           saleUoM: product.saleUoM?.unit || null,
-          packagingMaterial: product.packagingMaterial?.name || null,
+          //saleUoMId: product.saleUoM?.id || null,
+          packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
+          //packagingMaterialUoMId: product.packagingMaterialUoM?.id || null,
+          packagingMaterial: product.packagingMaterial?.packagingMaterialName || null,
+         // packagingMaterialId: product.packagingMaterial?.id || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,
         totalGrossWeight: secondSale?.totalGrossWeight || null,
@@ -394,12 +382,12 @@ console.log("docid: ", docId);
         createdBy: document.createdBy,
         approvalSummary: document.approvalSummary,
         documentId: document.id,
-       
+
 
       }
 
-      }
-    
+    }
+
   }
 
 
@@ -419,12 +407,14 @@ console.log("docid: ", docId);
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
         .leftJoinAndSelect("secondSaleProducts.variant", "variant")
         .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+        .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM","packagingMaterialUoM")
         .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .where("secondSale.id = :id", { id })
         .getOne();
       if (!secondSale) {
         throw new AppError(404, "Second Sale not found");
       }
+      console.log(secondSale)
       const rawDate = secondSale.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
       const formatResponse = {
@@ -440,7 +430,16 @@ console.log("docid: ", docId);
         customerEmail: secondSale?.customerEmail || null,
         reasonForSale: secondSale?.reasonForSale || null,
         secondSaleNo: secondSale?.secondSaleNo || null,
-        customerAddress: secondSale?.customerAddress?.id || null,
+        customerAddress: secondSale?.customerAddress ? {
+          id: secondSale.customerAddress.id,
+          address1: secondSale.customerAddress.address1,
+          address2: secondSale.customerAddress.address2,
+          city: secondSale.customerAddress.city,
+          state: secondSale.customerAddress.state,
+          location: secondSale.customerAddress.location,
+          pincode: secondSale.customerAddress.pincode,
+          
+        } : null,
         secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
           id: product.id,
           quantity: product.quantity,
@@ -455,6 +454,7 @@ console.log("docid: ", docId);
           productName: product.productName?.id || null,
           variant: product.variant?.id || null,
           saleUoM: product.saleUoM?.id || null,
+          packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
           packagingMaterial: product.packagingMaterial?.id || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,
@@ -474,17 +474,7 @@ console.log("docid: ", docId);
     }
   }
 
-  // // Update a Second Sale document
-  // public async updateSecondSale(id: string, secondSaleData: any,updatedBy:string): Promise<SecondSale | null> {
-  //     const secondSale = await this.secondSaleRepository.findOne({ where: { id } });
 
-  //     if (!secondSale) {
-  //         return null;
-  //     }
-
-  //     Object.assign(secondSale, secondSaleData);
-  //     return await this.secondSaleRepository.save(secondSale);
-  // }
   public async updateSecondSale(
     id: string,
     secondSaleData: any,
@@ -498,19 +488,7 @@ console.log("docid: ", docId);
     if (!secondSale) {
       return null;
     }
-    //secondSaleData.secondSaleProducts = JSON.parse(secondSaleData.secondSaleProducts);
-    // if (secondSaleData.secondSaleProducts) {
-    //   secondSaleData.secondSaleProducts = JSON.parse(
-    //     secondSaleData.secondSaleProducts
-    //   );
-      // Map inward products with the correct structure
-      //console.log("in service", secondSaleData.secondSaleProducts);
-      //  secondSaleData.secondSaleProducts = secondSaleData.secondSaleProducts.map((products: any) => ({
-      //     ...product,
-      //     product: { id: products.product }, // Map product relation
-      //     uom: { id:products.uom }, // Map UOM relation
-      // }));
-    //}
+ 
     const oldData = { ...secondSale }; // Save old data for audit log
 
     // Update the Second Sale entity
@@ -565,9 +543,9 @@ console.log("docid: ", docId);
   }
 
   public async deleteMultipleSecondSale(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];  
-  for (const id of ids) {
+    const success: string[] = [];
+    const failed: { id: string; reason: string }[] = [];
+    for (const id of ids) {
       const secondSale = await this.secondSaleRepository.findOne({
         where: { id },
       });
@@ -599,7 +577,7 @@ console.log("docid: ", docId);
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-    return { success, failed, message};
+    return { success, failed, message };
 
   }
 }
