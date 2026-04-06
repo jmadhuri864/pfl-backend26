@@ -41,7 +41,7 @@ export class ProductCategoryService {
             id: pro.id,
             name: pro.name,
           //  classificationId: pro.productClassification?.id ?? null,
-            classification: pro.productClassification?.name ?? null,
+            productClassification: pro.productClassification?.name ?? null,
           })),
           meta: result.meta,
         };
