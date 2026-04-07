@@ -197,22 +197,30 @@ export class PostReturnByCustomerService {
           date: returnData.date,
           remark: returnData.remark,
           createdBy: { id: requestedBy },
-          returnedProducts: returnData.returnedProducts?.map((product: any) => ({
-            productName: product.productName,
-            variant: product.variant || null,
-            saleUoM: product.saleUoM,
-            unitPrice: product.unitPrice,
-            returnedQty: product.returnedQty,
-            returnedQtyAmt: product.returnedQtyAmt,
-            returnedPackingMaterialWt: product.returnedPackingMaterialWt,
-            returnedGrossWt: product.returnedGrossWt,
-            returnedNetWt: product.returnedNetWt,
-            rejectedQty: product.rejectedQty,
-            rejectedQtyAmt: product.rejectedQtyAmt,
-            rejectedPackingMaterialWt: product.rejectedPackingMaterialWt,
-            rejectedGrossWt: product.rejectedGrossWt,
-            rejectedNetWt: product.rejectedNetWt,
-          })) || [],
+          returnedProducts: returnData.returnedProducts?.map((product: any) => {
+            const unitPrice    = Number(product.unitPrice   ?? 0);
+            const returnedQty  = Number(product.returnedQty ?? 0);
+            const rejectedQty  = Number(product.rejectedQty ?? 0);
+            // Always compute amounts server-side — never trust client values
+            const returnedQtyAmt  = parseFloat((returnedQty  * unitPrice).toFixed(2));
+            const rejectedQtyAmt  = parseFloat((rejectedQty  * unitPrice).toFixed(2));
+            return {
+              productName:               product.productName,
+              variant:                   product.variant || null,
+              saleUoM:                   product.saleUoM,
+              unitPrice,
+              returnedQty,
+              returnedQtyAmt,
+              returnedPackingMaterialWt: product.returnedPackingMaterialWt,
+              returnedGrossWt:           product.returnedGrossWt,
+              returnedNetWt:             product.returnedNetWt,
+              rejectedQty,
+              rejectedQtyAmt,
+              rejectedPackingMaterialWt: product.rejectedPackingMaterialWt,
+              rejectedGrossWt:           product.rejectedGrossWt,
+              rejectedNetWt:             product.rejectedNetWt,
+            };
+          }) || [],
         } as any
       );
 

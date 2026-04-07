@@ -1514,7 +1514,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       ? `${vendor.vendorSaleInfo.contactFName || ""} ${vendor.vendorSaleInfo.contactMName || ""} ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
       : null,
     officeAddress: vendor.officeAddress,
-    category: vendor.category || null,
+    category: vendor.category?.name || null,
     subcategory: vendor.subcategory?.name || null,
   }));
 

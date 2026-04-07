@@ -353,6 +353,13 @@ export class DealSlipService {
   
 
       async createDealSlip(dealSlipData: any): Promise<any> {
+
+         // 1. Validate approval flow exists before doing anything else
+      const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(dealSlipData.requestedBy, DocDefEnum.PROCUREMENT);
+
+      if (!approvalFlow) {
+        throw new AppError(400, 'No approval flow configured for this user. Please contact the admin to create an approval flow before creating a Deal Slip.');
+      }
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();

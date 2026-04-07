@@ -81,7 +81,14 @@ export class CustomerDeliveryChallanService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Fetch Customer
+      // 1. Validate approval flow exists before doing anything else
+      const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, DocDefEnum.SALE);
+
+      if (!approvalFlow) {
+        throw new AppError(400, 'No approval flow configured for this user. Please contact the admin to create an approval flow before creating a Customer Delivery Challan.');
+      }
+
+      // 2. Fetch Customer
       const cus = await queryRunner.manager.findOne(this.customerRepo.target, {
         where: { id: data.partyName },
         relations: [
@@ -214,7 +221,7 @@ export class CustomerDeliveryChallanService {
 
       const savedChallan = await queryRunner.manager.save(challan);
 
-      // 9. Auto-create document
+      // 10. Auto-create document
       const actualChallan = Array.isArray(savedChallan) ? savedChallan[0] : savedChallan;
 
       const document = await this.documentbService.createDocument({

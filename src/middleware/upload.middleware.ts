@@ -1,6 +1,7 @@
-import multer from 'multer';
+import multer, { MulterError } from 'multer';
 import multerS3 from 'multer-s3';
 import { s3 } from './spaces.config';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 const fileFilter: multer.Options['fileFilter'] = (req, file, cb) => {
   const allowedTypes = [
@@ -67,3 +68,22 @@ export const uploadFlexible = multer({
 
 // Flexible attachment upload that accepts any field name and filters in controller
 export const uploadAttachments = uploadFlexible.any();
+
+/**
+ * Wraps a multer middleware and converts MulterError "LIMIT_UNEXPECTED_FILE"
+ * into a 400 response instead of a 500, making the error message clear to the client.
+ */
+export function handleMulterFields(fields: multer.Field[]): RequestHandler {
+  const multerMiddleware = upload.fields(fields);
+  return (req: Request, res: Response, next: NextFunction) => {
+    multerMiddleware(req, res, (err) => {
+      if (err instanceof MulterError && err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({
+          status: 'error',
+          message: `Unexpected file field: "${err.field}". Please check the field names being uploaded.`,
+        });
+      }
+      next(err);
+    });
+  };
+}

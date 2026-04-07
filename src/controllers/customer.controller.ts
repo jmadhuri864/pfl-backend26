@@ -24,7 +24,7 @@ import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { generateIncrementalCode } from '../utils/codeGeneration';
 import { Status } from '../utils/status.enum';
 import { NotificationService } from '../services/notification.service';
-import { upload } from '../middleware/upload.middleware';
+import { handleMulterFields, upload } from '../middleware/upload.middleware';
 
 
 @controller('/customers', deserializeUser, requireUser)
@@ -38,15 +38,15 @@ export class CustomerController {
 
   @httpPost(
     '/',
-    upload.fields([
+    handleMulterFields([
       { name: 'customerImage', maxCount: 1 },
-      { name: 'cancelledChequeCopy', maxCount: 1 },
-      { name: 'bankStatementCopy', maxCount: 1 },
-      { name: 'panCopy', maxCount: 1 },
-      { name: 'aadharCopy', maxCount: 1 },
+      { name: 'bankDetails[cancelledChequeCopy]', maxCount: 1 },
+      { name: 'bankDetails[bankStatementCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[panCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[aadharCopy]', maxCount: 1 },
       { name: 'billBookCopy', maxCount: 1 },
-      { name: 'incorpoCertificateCopy', maxCount: 1 },
-      { name: 'regiCertificateCopy', maxCount: 1 },
+      { name: 'statutoryDetails[incorpoCertificateCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[regiCertificateCopy]', maxCount: 1 },
       { name: 'billingFormatCopy', maxCount: 1 },
       { name: 'billingAddressProofCopy', maxCount: 1 },
       { name: 'deliveryAddressProofCopy', maxCount: 1 },
@@ -72,7 +72,7 @@ export class CustomerController {
       const files = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
-
+console.log(req.body)
       const customerData = req.body;
 customerData.createdBy = res.locals.user.id;
       customerData.bankDetailsCust = customerData.bankDetailsCust || {};
@@ -84,25 +84,25 @@ customerData.createdBy = res.locals.user.id;
       // Assign DigitalOcean Spaces URLs to customer data
       if (files.customerImage?.[0])
         customerData.customerImage = (files.customerImage[0] as any).location;
-      if (files.cancelledChequeCopy?.[0])
+      if (files['bankDetails[cancelledChequeCopy]']?.[0])
         customerData.bankDetailsCust.cancelledChequeCopy =
-          (files.cancelledChequeCopy[0] as any).location;
-      if (files.bankStatementCopy?.[0])
+          (files['bankDetails[cancelledChequeCopy]'][0] as any).location;
+      if (files['bankDetails[bankStatementCopy]']?.[0])
         customerData.bankDetailsCust.bankStatementCopy =
-          (files.bankStatementCopy[0] as any).location;
-      if (files.panCopy?.[0])
-        customerData.statutoryDetails.panCopy = (files.panCopy[0] as any).location;
-      if (files.aadharCopy?.[0])
-        customerData.statutoryDetails.aadharCopy = (files.aadharCopy[0] as any).location;
+          (files['bankDetails[bankStatementCopy]'][0] as any).location;
+      if (files['statutoryDetails[panCopy]']?.[0])
+        customerData.statutoryDetails.panCopy = (files['statutoryDetails[panCopy]'][0] as any).location;
+      if (files['statutoryDetails[aadharCopy]']?.[0])
+        customerData.statutoryDetails.aadharCopy = (files['statutoryDetails[aadharCopy]'][0] as any).location;
       if (files.billBookCopy?.[0])
         customerData.statutoryDetails.billBookCopy =
           (files.billBookCopy[0] as any).location;
-      if (files.incorpoCertificateCopy?.[0])
+      if (files['statutoryDetails[incorpoCertificateCopy]']?.[0])
         customerData.statutoryDetails.incorpoCertificateCopy =
-          (files.incorpoCertificateCopy[0] as any).location;
-      if (files.regiCertificateCopy?.[0])
+          (files['statutoryDetails[incorpoCertificateCopy]'][0] as any).location;
+      if (files['statutoryDetails[regiCertificateCopy]']?.[0])
         customerData.statutoryDetails.regiCertificateCopy =
-          (files.regiCertificateCopy[0] as any).location;
+          (files['statutoryDetails[regiCertificateCopy]'][0] as any).location;
       if (files.billingFormatCopy?.[0])
         customerData.billingDetails.billingFormatCopy =
           (files.billingFormatCopy[0] as any).location;
@@ -544,7 +544,7 @@ async approveCustomer(
 
   @httpPut(
     '/:id',
-    upload.fields([
+    handleMulterFields([
       { name: 'customerImage', maxCount: 1 },
       { name: 'cancelledChequeCopy', maxCount: 1 },
       { name: 'bankStatementCopy', maxCount: 1 },

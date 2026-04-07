@@ -319,7 +319,7 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
         //type: document.type,
         overAllStatus: document.status,
         // createdAt: document.createdAt,
-        createdBy: document.lastActionBy?.firstName+" "+document.lastActionBy?.lastName ?? null,
+        createdBy: document.lastActionBy ? `${document.lastActionBy.firstName} ${document.lastActionBy.lastName}` : null,
         // ...documentDataByForm, // full GRN info (or null)
         approvalSummary: approvalInfoSummary, // name + status summary
       };

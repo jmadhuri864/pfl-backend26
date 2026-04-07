@@ -17,17 +17,17 @@
     {
       "uniqueKey": "deliveryChallan-Customer",
       "documentType": "DC_TYPE_CUSTOMER",
-      "name": "Delivery Challan"
+      "name": "Customer Delivery Challan"
     },
      {
       "uniqueKey": "deliveryChallan-Stock-Transfer",
       "documentType": "DC_TYPE_STOCK_TRANSFER",
-      "name": "Delivery Challan"
+      "name": "Stock Transfer Delivery Challan"
     },
      {
-      "uniqueKey": "delivery-challan",
+      "uniqueKey": "deliveryChallan-Other",
       "documentType": "Sale",
-      "name": "Delivery Challan"
+      "name": "Other Delivery Challan"
     },
 
     {
@@ -54,6 +54,12 @@
       "uniqueKey": "return-by-customer",
       "documentType": "Operation",
       "name": "Return By Customer"
+    },
+
+    {
+      "uniqueKey": "return-by-vendor",
+      "documentType": "Operation",
+      "name": "Return To Vendor"
     },
     {
       "uniqueKey": "second-sale",

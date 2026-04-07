@@ -12,14 +12,14 @@ export async function seedDocumentDefDatabase() {
         const documentRepo = AppDataSource.getRepository(DocumentDefinition);
        
 
-        const existingDocument= await documentRepo.count();
-        
+        const existingDocument = await documentRepo.count();
+
         if (existingDocument > 0) {
-            console.log('Database already has docuemntDefination data. Skipping seeding.');
+            console.log(`DocumentDefinition already seeded (${existingDocument} records found). Skipping.`);
             return;
         }
 
-        console.log('No existing data found. Seeding database...');
+        console.log('Seeding database with fresh data...');
 
         // Read JSON file
         const filePath = path.join(__dirname, '..', 'data', 'documentDefination.json');

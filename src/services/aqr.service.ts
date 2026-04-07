@@ -1,4 +1,4 @@
-import { inject, injectable } from "inversify";
+﻿import { inject, injectable } from "inversify";
 import { TYPES } from "../types";
 import { AqrRepository } from "../repositories/aqr.repository";
 import { Aqr } from "../entities/aqr.entity";
@@ -12,7 +12,7 @@ import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { DocumentbService, DocumentWithRelatedData } from "./documentb.service";
 import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
 import { ApprovalFlowService } from "./approvalFlow.service";
-import { ILike, SelectQueryBuilder } from "typeorm";
+import { SelectQueryBuilder, DataSource } from "typeorm";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 
 
@@ -30,7 +30,9 @@ export class AqrService {
     @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.DataSource)
+    private readonly dataSource: DataSource,
   ) { }
   private async generateSerialNo(): Promise<string> {
     const now = new Date();
@@ -39,11 +41,19 @@ export class AqrService {
     const dd = now.getDate().toString().padStart(2, '0');
     const datePrefix = `AQR${yyyy}${mm}${dd}`;
 
-    const count = await this.aqrRepo.count({
-      where: { aqrNo: ILike(`${datePrefix}%`) },
-    });
+    const result = await this.aqrRepo
+      .createQueryBuilder("aqr")
+      .select("MAX(aqr.aqrNo)", "maxNo")
+      .where("aqr.aqrNo LIKE :prefix", { prefix: `${datePrefix}%` })
+      .getRawOne();
 
-    return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
+    let nextSeq = 1;
+    if (result?.maxNo) {
+      const lastSeq = parseInt(result.maxNo.replace(datePrefix, ''), 10);
+      if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+    }
+
+    return `${datePrefix}${nextSeq.toString().padStart(5, '0')}`;
   }
 
 
@@ -51,47 +61,79 @@ export class AqrService {
 
 
   public async createAqr(data: any): Promise<any> {
-  
-    //TODO: Check approval flow is exit or not for logged user
+    const requestedBy = data.requestedBy;
 
-    //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'aqr')
+    // 1. Validate approval flow before starting transaction
+    const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, DocDefEnum.OPERATION);
+    if (!approvalFlow) {
+      throw new AppError(400, 'No approval flow configured for this user. Please contact the admin to create an approval flow before creating a AQR.');
+    }
 
-    // if (!approvalFlowExit) {
-    //   throw new Error('Approval flow not found');
-    // }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-const serialNO = await this.generateSerialNo()
- data.aqrNo = serialNO;
+    try {
+      // 2. Generate serial number
+      const serialNO = await this.generateSerialNo();
+      data.aqrNo = serialNO;
 
-    // Sanitize optional date fields — empty string from frontend causes type errors
-    if (!data.dcDate || data.dcDate === '') data.dcDate = null;
-    if (!data.arrivalDate || data.arrivalDate === '') data.arrivalDate = null;
+      // 3. Sanitize optional date fields
+      if (!data.dcDate || data.dcDate === '') data.dcDate = null;
+      if (!data.arrivalDate || data.arrivalDate === '') data.arrivalDate = null;
 
-    console.log("in create aqr service ",data)
-    const aqr = this.aqrRepo.create(data);
-    console.log("it will create aqr");
-    const savedAqr=await this.aqrRepo.save(aqr);
+      if(data.source === 'vendor' && data.selectedParty){
+        data.selectedVendor = data.selectedParty;
+        data.selectedFarmer = null;
+      }else if(data.source === 'farmer' && data.selectedParty){
+        data.selectedFarmer = data.selectedParty;
+        data.selectedVendor = null;
+      }
 
-    //Todo:By Vaishali
+      console.log("Select  party "+ data.selectedFarmer);
+      console.log("Select  party "+ data.selectedVendor);
+
+      // 4. Create and save AQR
+      const aqr = queryRunner.manager.create(this.aqrRepo.target, data);
+      const savedAqr = await queryRunner.manager.save(aqr);
+
+      // 5. Create document
+      const actualAqr = Array.isArray(savedAqr) ? (savedAqr[0] as Aqr) : (savedAqr as Aqr);
       const document = await this.documentbService.createDocument({
-       type: DocumentTypeEnum.AQR,
-       docDef: DocDefEnum.OPERATION,
-       // totalAmt: rfpaData.totalAmt,
-         status: DocumentStatus.HOLD,
-          remarks: 'Document auto-created with AQR',
-          lastActionBy: { id: data.requestedBy },
-         document_type_id: Array.isArray(savedAqr) ? (savedAqr[0] as Aqr)?.id : (savedAqr as Aqr).id
-        }, /*approvalFlowExit*/);
-       await this.documentbService.startApprovalFlow(document.id);
-       return savedAqr;
-  }
+        type: DocumentTypeEnum.AQR,
+        docDef: DocDefEnum.OPERATION,
+        status: DocumentStatus.HOLD,
+        remarks: 'Document auto-created with AQR',
+        lastActionBy: { id: requestedBy },
+        document_type_id: actualAqr.id,
+      });
 
+      await queryRunner.commitTransaction();
 
-  public async getAqrById(id: string): Promise<any> {
+      // 6. Start approval flow after commit
+      await this.documentbService.startApprovalFlow(document.id);
+
+      return savedAqr;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      if (error instanceof AppError) throw error;
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+    public async getAqrById(id: string): Promise<any> {
     const result = await this.aqrRepo
       .createQueryBuilder("aqr")
-      .leftJoinAndSelect("aqr.dcNo", " dcNo")
+      .leftJoinAndSelect("aqr.deliveryChallanNo", "deliveryChallanNo")
+      .leftJoinAndSelect("aqr.companyName", "companyName")
+      .leftJoinAndSelect("aqr.location", "location")
+      .leftJoinAndSelect("aqr.selectedVendor", "selectedVendor")
+      .leftJoinAndSelect("aqr.selectedFarmer", "selectedFarmer")
+      .leftJoinAndSelect("aqr.fromLocation", "fromLocation")
       .leftJoinAndSelect("aqr.product", "product")
+      .leftJoinAndSelect("aqr.variant", "variant")
       .leftJoinAndSelect("aqr.parameters", "parameters")
       .where("aqr.id = :id", { id })
       .getOne();
@@ -100,53 +142,59 @@ const serialNO = await this.generateSerialNo()
       return null;
     }
 
-    // Extract and format createdAt
     const { createdDate, createdTime } = formatDateTime(result.createdAt);
-
-    // Format arrivalDate to remove time
-    //const arrivalDate = result.arrivalDate ? formatDateTime(result.arrivalDate).createdDate : null;
 
     return {
       id: result.id,
-      dcNo: result.dcNo.id,
-      dcDate: result.dcDate,
+      aqrFor: result.aqrFor,
+      companyName: result.companyName?.id || null,
+      location: result.location?.id || null,
+      source: result.source,
+      selectedParty: result.source === 'vendor'
+        ? result.selectedVendor?.id || null
+        : result.selectedFarmer?.id || null,
+      deliveryChallanNo: result.deliveryChallanNo?.id || null,
+      fromLocation: result.fromLocation?.id || null,
+      product: result.product?.id || null,
+      variant: result.variant?.id || null,
+      arrivalDate: result.arrivalDate,
       arrivedQty: result.arrivedQty,
       samplingQty: result.samplingQty,
       purchaseBy: result.purchaseBy,
-
       receivedBy: result.receivedBy,
       qcCheckBy: result.qcCheckBy,
       verifiedBy: result.verifiedBy,
       totalQty: result.totalQty,
       totalpercent: result.totalpercent,
-      supplierName: result.supplierName,
-      supplierLocation: result.supplierLocation,
       remark: result.remark,
-      arrivalDate: result.arrivalDate, // Only date part
-      createdDate: createdDate,
-      createdTime: createdTime,
-      product: result.product ? result.product.id : null, // Only send product ID
+      createdDate,
+      createdTime,
       parameters: result.parameters.map(param => ({
         id: param.id,
         qualityParameterId: param.qualityParameterId,
         qualityParameterName: param.qualityParameterName,
         qualityParameterType: param.qualityParameterType,
         quantity: param.quantity,
-        percentage: param.percentage
-      }))
+        percentage: param.percentage,
+      })),
     };
   }
 
   public async getAqrByIdForUpdate(id: string): Promise<any> {
     const result = await this.aqrRepo
       .createQueryBuilder("aqr")
-      .leftJoinAndSelect("aqr.dcNo", " dcNo")
+      .leftJoinAndSelect("aqr.deliveryChallanNo", "deliveryChallanNo")
+      .leftJoinAndSelect("aqr.companyName", "companyName")
+      .leftJoinAndSelect("aqr.location", "location")
+      .leftJoinAndSelect("aqr.selectedVendor", "selectedVendor")
+      .leftJoinAndSelect("aqr.selectedFarmer", "selectedFarmer")
+      .leftJoinAndSelect("aqr.fromLocation", "fromLocation")
       .leftJoinAndSelect("aqr.product", "product")
+      .leftJoinAndSelect("aqr.variant", "variant")
       .leftJoinAndSelect("aqr.verifiedBy", "verifiedBy")
       .leftJoinAndSelect("aqr.qcCheckBy", "qcCheckBy")
       .leftJoinAndSelect("aqr.receivedBy", "receivedBy")
       .leftJoinAndSelect("aqr.purchaseBy", "purchaseBy")
-      //.leftJoinAndSelect("aqr.sendBy", "sendBy")
       .leftJoinAndSelect("aqr.parameters", "parameters")
       .where("aqr.id = :id", { id })
       .getOne();
@@ -155,45 +203,40 @@ const serialNO = await this.generateSerialNo()
       return null;
     }
 
-   ;
+    const { createdDate, createdTime } = formatDateTime(result.createdAt);
 
-   const { createdDate, createdTime } = formatDateTime(result.createdAt);
-
-    // Entity transformer returns "DD-MM-YYYY", convert to "YYYY-MM-DD" for the update form
     const toIsoDate = (val: string | null) => {
       if (!val) return null;
       const parts = val.split('-');
       if (parts.length !== 3) return null;
-      return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY → YYYY-MM-DD
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
     };
-    const dcDate = toIsoDate(result.dcDate as any);
-    const arrivalDate = toIsoDate(result.arrivalDate as any);
 
     return {
       id: result.id,
-      dcNo: result.dcNo?.id || null,
-      //dcDate: result.dcDate,
+      aqrFor: result.aqrFor,
+      companyName: result.companyName?.id || null,
+      location: result.location?.id || null,
+      source: result.source,
+      selectedParty: result.source === 'vendor'
+        ? result.selectedVendor?.id || null
+        : result.selectedFarmer?.id || null,
+      deliveryChallanNo: result.deliveryChallanNo?.id || null,
+      fromLocation: result.fromLocation?.id || null,
+      product: result.product?.id || null,
+      variant: result.variant?.id || null,
+      arrivalDate: toIsoDate(result.arrivalDate as any),
       arrivedQty: result.arrivedQty,
       samplingQty: result.samplingQty,
-      purchaseBy: result.purchaseBy?.id,
-      receivedBy: result.receivedBy?.id,
-      qcCheckBy: result.qcCheckBy?.id,
-      verifiedBy: result.verifiedBy?.id,
-      //sentBy: result.sendBy?.id,
+      purchaseBy: result.purchaseBy?.id || null,
+      receivedBy: result.receivedBy?.id || null,
+      qcCheckBy: result.qcCheckBy?.id || null,
+      verifiedBy: result.verifiedBy?.id || null,
       totalQty: result.totalQty,
       totalpercent: result.totalpercent,
-      supplierName: result.supplierName,
-      supplierLocation: result.supplierLocation,
       remark: result.remark,
-      //arrivalDate: result.arrivalDate,
-      //arrivalDate: formatDateTime(result.arrivalDate || '').createdDate,
-      // dcDate: formatDateTime(result.dcDate ).createdDate,
-      // arrivalDate: formatDateTime(result.arrivalDate ).createdDate,
-      dcDate,
-      arrivalDate,
-      createdDate: createdDate,
-      createdTime: createdTime,
-      product: result.product?.id || null,
+      createdDate,
+      createdTime,
       parameters: result.parameters.map(param => ({
         id: param.id,
         qualityParameterId: param.qualityParameterId,
@@ -201,78 +244,73 @@ const serialNO = await this.generateSerialNo()
         qualityParameterType: param.qualityParameterType,
         quantity: param.quantity !== null && param.quantity !== undefined ? Number(param.quantity) : null,
         percentage: param.percentage !== null && param.percentage !== undefined ? Number(param.percentage) : null,
-      }))
+      })),
     };
   }
 
   public async getAqrByIdForView(id: string): Promise<any> {
-    console.log("in service layer: ", id);
-
     const result = await this.aqrRepo
       .createQueryBuilder("aqr")
-      .leftJoinAndSelect("aqr.dcNo", "dcNo")
+      .leftJoinAndSelect("aqr.deliveryChallanNo", "deliveryChallanNo")
+      .leftJoinAndSelect("aqr.companyName", "companyName")
+      .leftJoinAndSelect("aqr.location", "location")
+      .leftJoinAndSelect("aqr.selectedVendor", "selectedVendor")
+      .leftJoinAndSelect("aqr.selectedFarmer", "selectedFarmer")
+      .leftJoinAndSelect("aqr.fromLocation", "fromLocation")
       .leftJoinAndSelect("aqr.product", "product")
+      .leftJoinAndSelect("aqr.variant", "variant")
       .leftJoinAndSelect("aqr.verifiedBy", "verifiedBy")
       .leftJoinAndSelect("aqr.qcCheckBy", "qcCheckBy")
       .leftJoinAndSelect("aqr.receivedBy", "receivedBy")
       .leftJoinAndSelect("aqr.purchaseBy", "purchaseBy")
-      //.leftJoinAndSelect("aqr.sendBy", "sendBy")
       .leftJoinAndSelect("aqr.parameters", "parameters")
       .where("aqr.id = :id", { id })
       .getOne();
 
-    console.log("Data", result);
-
-
     if (!result) {
       return null;
     }
-    const aqrViewData = {
-      ...result,
-      dcNo: result.dcNo?.challanNo || "",
-      product: result.product.name,
-      verifiedBy: `${result.verifiedBy.firstName} ${result.verifiedBy.lastName}`,
-      qcCheckBy: `${result.qcCheckBy.firstName} ${result.qcCheckBy.lastName}`,
-      receivedBy: `${result.receivedBy.firstName} ${result.receivedBy.lastName}`,
-      purchaseBy: `${result.purchaseBy.firstName} ${result.purchaseBy.lastName}`,
-    }
-    // Extract and format createdAt
+
     const { createdDate, createdTime } = formatDateTime(result.createdAt);
 
-    // Format arrivalDate to remove time
-    //const arrivalDate = result.arrivalDate ? formatDateTime(result.arrivalDate).createdDate : null;
+    const selectedParty = result.source === 'vendor'
+      ? result.selectedVendor?.companyName || null
+      : result.selectedFarmer
+        ? `${result.selectedFarmer.farmerfName} ${result.selectedFarmer.farmermName} ${result.selectedFarmer.farmerlName}`.trim()
+        : null;
 
-    // return {
-    //     id: result.id,
-    //     dcNo:result.dcNo.id,
-    //     dcDate: result.dcDate,
-    //     arrivedQty: result.arrivedQty,
-    //     samplingQty: result.samplingQty,
-    //     purchaseBy: result.purchaseBy?.firstName+' '+result.purchaseBy?.middleName+' '+result.purchaseBy?.lastName||null,
-    //    receivedBy: result.receivedBy?.firstName+' '+result.receivedBy?.middleName+' '+result.receivedBy?.lastName || null,
-    //     qcCheckBy: result.qcCheckBy?.firstName+' '+result.qcCheckBy?.middleName+' '+result.qcCheckBy?.lastName || null,
-    //     verifiedBy: result.verifiedBy?.firstName+' '+result.verifiedBy?.middleName+' '+result.verifiedBy?.lastName || null ,
-    //     sentBy:result.sendBy?.firstName+' '+result.sendBy?.middleName+' '+result.sendBy?.lastName || null,
-    //     totalQty: result.totalQty,
-    //     totalpercent: result.totalpercent,
-    //     supplierName: result.supplierName,
-    //     supplierLocation: result.supplierLocation,
-    //     remark: result.remark,
-    //     arrivalDate: result.arrivalDate, 
-    //     createdDate: createdDate,
-    //     createdTime: createdTime,
-    //     product: result.product ? result.product.name : null,
-    //     parameters: result.parameters.map(param => ({
-    //         id: param.id,
-    //         qualityParameterId: param.qualityParameterId,
-    //         qualityParameterName: param.qualityParameterName,
-    //         qualityParameterType: param.qualityParameterType,
-    //         quantity: param.quantity,
-    //         percentage: param.percentage
-    //     }))
-    // };
-
-    return { data: aqrViewData }
+    return {
+      id: result.id,
+      aqrFor: result.aqrFor,
+      companyName: result.companyName?.name || null,
+      location: result.location?.name || null,
+      source: result.source,
+      selectedParty,
+      deliveryChallanNo: result.deliveryChallanNo?.challanNo || null,
+      fromLocation: result.fromLocation?.name || null,
+      product: result.product?.name || null,
+      variant: result.variant?.variantName|| null,
+      arrivalDate: result.arrivalDate,
+      arrivedQty: result.arrivedQty,
+      samplingQty: result.samplingQty,
+      purchaseBy: result.purchaseBy ? `${result.purchaseBy.firstName} ${result.purchaseBy.lastName}`.trim() : null,
+      receivedBy: result.receivedBy ? `${result.receivedBy.firstName} ${result.receivedBy.lastName}`.trim() : null,
+      qcCheckBy: result.qcCheckBy ? `${result.qcCheckBy.firstName} ${result.qcCheckBy.lastName}`.trim() : null,
+      verifiedBy: result.verifiedBy ? `${result.verifiedBy.firstName} ${result.verifiedBy.lastName}`.trim() : null,
+      totalQty: result.totalQty,
+      totalpercent: result.totalpercent,
+      remark: result.remark,
+      createdDate,
+      createdTime,
+      parameters: result.parameters.map(param => ({
+        id: param.id,
+        qualityParameterId: param.qualityParameterId,
+        qualityParameterName: param.qualityParameterName,
+        qualityParameterType: param.qualityParameterType,
+        quantity: param.quantity,
+        percentage: param.percentage,
+      })),
+    };
   }
   public async getAllAqr(queryOptions: PaginationOptions): Promise<any> {
     const queryBuilder = this.aqrRepo
@@ -293,7 +331,7 @@ const serialNO = await this.generateSerialNo()
           createdDate: createdDate,
           createdTime: createdTime,
           arrivalDate: formatDateTime(aqr.arrivalDate || ''),
-          dcDate: formatDateTime(aqr.dcDate || ''),
+          
         };
       }),
       meta: result.meta,
@@ -310,7 +348,7 @@ const serialNO = await this.generateSerialNo()
       return null;
     }
 
-    // Sanitize optional date fields — empty string from frontend causes type errors
+    // Sanitize optional date fields â€” empty string from frontend causes type errors
     if (!data.dcDate || data.dcDate === '') data.dcDate = null;
     if (!data.arrivalDate || data.arrivalDate === '') data.arrivalDate = null;
 
@@ -490,7 +528,7 @@ const serialNO = await this.generateSerialNo()
   //   );
   // }
 
-  // // 🔄 Sorting
+  // // ðŸ”„ Sorting
   // if (queryOptions.sort) {
   //   const [field, direction] = queryOptions.sort.split(':');
   //   const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
@@ -554,16 +592,21 @@ console.log('Active documents:', activeDocuments);
       try {
         doc.relatedData = await this.aqrRepo.findOne({
           where: { id: doc.document_type_id , isDeleted: false },
-          relations: ['dcNo',
-          'product',
-          'parameters',
-         // 'sendBy',
-          'purchaseBy',
-          'receivedBy',
-          'qcCheckBy',
-          'verifiedBy',
-        ]
-        
+          relations: [
+            'deliveryChallanNo',
+            'companyName',
+            'location',
+            'selectedVendor',
+            'selectedFarmer',
+            'fromLocation',
+            'product',
+            'variant',
+            'parameters',
+            'purchaseBy',
+            'receivedBy',
+            'qcCheckBy',
+            'verifiedBy',
+          ]
         });
       } catch (e) {
         console.log("in catch block", e);
@@ -573,6 +616,9 @@ console.log('Active documents:', activeDocuments);
   
     let relatedDataOnly = activeDocuments.map((doc) => {
       const rd = doc.relatedData || {};
+      const selectedParty = rd.source === 'vendor'
+        ? rd.selectedVendor?.companyName || null
+        : rd.selectedFarmer?.farmerfName+" "+rd.selectedFarmer?.farmerlName || null;
       return {
         documentId: doc.id,
         overAllStatus: doc.status,
@@ -580,43 +626,30 @@ console.log('Active documents:', activeDocuments);
         createdDate: formatDateTime(doc.createdAt).createdDate,
         createdTime: formatDateTime(doc.createdAt).createdTime,
 
-        // From AQR entity
-      id: rd.id || null,
-      dcNo: rd.dcNo?.challanNo || null,
-      dcDate: rd.dcDate || null,
-      arrivedQty: rd.arrivedQty || null,
-      samplingQty: rd.samplingQty || null,
-      totalQty: rd.totalQty || null,
-      totalpercent: rd.totalpercent || null,
-      supplierName: rd.supplierName || null,
-      arrivalDate: rd.arrivalDate || null,
-      supplierLocation: rd.supplierLocation || null,
-      remark: rd.remark || null,
-
-      // product info
-      productName: rd.product?.name || null,
-      productCode: rd.product?.productCode || null,
-      brand: rd.product?.brand || null,
-      packingType: rd.product?.packingType || null,
-
-      // users
-      //sendBy: rd.sendBy?.firstName || null,
-      purchaseBy: rd.purchaseBy?.firstName || null,
-      receivedBy: rd.receivedBy?.firstName || null,
-      qcCheckBy: rd.qcCheckBy?.firstName || null,
-      verifiedBy: rd.verifiedBy?.firstName || null,
-
-      // parameters
-      parameters: rd.parameters
-        ? rd.parameters.map((param: any) => ({
-            id: param.id || null,
-            qualityParameterId: param.qualityParameterId || null,
-            qualityParameterName: param.qualityParameterName || null,
-            qualityParameterType: param.qualityParameterType || null,
-            quantity: param.quantity || null,
-            percentage: param.percentage || null,
-          }))
-        : [],
+        id: rd.id || null,
+        aqrFor: rd.aqrFor || null,
+        aqrNo: rd.aqrNo || null,
+        companyName: rd.companyName?.name || null,
+        location: rd.location?.name || null,
+        source: rd.source || null,
+        selectedParty,
+        deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+        fromLocation: rd.fromLocation?.name || null,
+        
+        product: rd.product?.name || null,
+              
+        variant: rd.variant?.variantName || null,
+        arrivalDate: rd.arrivalDate || null,
+        arrivedQty: Number(rd.arrivedQty).toFixed(2) || null,
+        samplingQty: Number(rd.samplingQty).toFixed(2) || null,
+        totalQty: Number(rd.totalQty).toFixed(2) || null,
+        totalpercent: rd.totalpercent || null,
+        remark: rd.remark || null,
+        purchaseBy: rd.purchaseBy?.firstName+" "+rd.purchaseBy?.lastName || null,
+        receivedBy: rd.receivedBy?.firstName+" "+rd.receivedBy?.lastName || null,
+        qcCheckBy: rd.qcCheckBy?.firstName+" "+rd.qcCheckBy?.lastName || null,
+        verifiedBy: rd.verifiedBy?.firstName+" "+rd.verifiedBy?.lastName || null,
+        
       };
     });
  
@@ -638,7 +671,7 @@ console.log('Active documents:', activeDocuments);
     );
   }
 
-  // 🔄 Sorting
+  // ðŸ”„ Sorting
   if (queryOptions.sort) {
     const [field, direction] = queryOptions.sort.split(':');
     const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
@@ -702,15 +735,21 @@ console.log('Active documents:', activeDocuments);
       try {
         doc.relatedData = await this.aqrRepo.findOne({
           where: { id: doc.document_type_id , isDeleted: true },
-          relations: ['dcNo',
-          'product',
-          'parameters',
-          //'sendBy',
-          'purchaseBy',
-          'receivedBy',
-          'qcCheckBy',
-          'verifiedBy',
-        ]
+          relations: [
+            'deliveryChallanNo',
+            'companyName',
+            'location',
+            'selectedVendor',
+            'selectedFarmer',
+            'fromLocation',
+            'product',
+            'variant',
+            'parameters',
+            'purchaseBy',
+            'receivedBy',
+            'qcCheckBy',
+            'verifiedBy',
+          ]
         });
       } catch (e) {
         console.log("in catch block", e);
@@ -720,6 +759,9 @@ console.log('Active documents:', activeDocuments);
   
     let relatedDataOnly = activeDocuments.map((doc) => {
       const rd = doc.relatedData || {};
+      const selectedParty = rd.source === 'vendor'
+        ? rd.selectedVendor?.id || null
+        : rd.selectedFarmer?.id || null;
       return {
         documentId: doc.id,
         overAllStatus: doc.status,
@@ -727,43 +769,39 @@ console.log('Active documents:', activeDocuments);
         createdDate: formatDateTime(doc.createdAt).createdDate,
         createdTime: formatDateTime(doc.createdAt).createdTime,
 
-        // From AQR entity
-      id: rd.id || null,
-      dcNo: rd.dcNo?.challanNo || null,
-      dcDate: rd.dcDate || null,
-      arrivedQty: rd.arrivedQty || null,
-      samplingQty: rd.samplingQty || null,
-      totalQty: rd.totalQty || null,
-      totalpercent: rd.totalpercent || null,
-      supplierName: rd.supplierName || null,
-      arrivalDate: rd.arrivalDate || null,
-      supplierLocation: rd.supplierLocation || null,
-      remark: rd.remark || null,
-
-      // product info
-      productName: rd.product?.name || null,
-      productCode: rd.product?.productCode || null,
-      brand: rd.product?.brand || null,
-      packingType: rd.product?.packingType || null,
-
-      // users
-     // sendBy: rd.sendBy?.firstName || null,
-      purchaseBy: rd.purchaseBy?.firstName || null,
-      receivedBy: rd.receivedBy?.firstName || null,
-      qcCheckBy: rd.qcCheckBy?.firstName || null,
-      verifiedBy: rd.verifiedBy?.firstName || null,
-
-      // parameters
-      parameters: rd.parameters
-        ? rd.parameters.map((param: any) => ({
-            id: param.id || null,
-            qualityParameterId: param.qualityParameterId || null,
-            qualityParameterName: param.qualityParameterName || null,
-            qualityParameterType: param.qualityParameterType || null,
-            quantity: param.quantity || null,
-            percentage: param.percentage || null,
-          }))
-        : [],
+        id: rd.id || null,
+        aqrFor: rd.aqrFor || null,
+        companyName: rd.companyName?.id || null,
+        location: rd.location?.id || null,
+        source: rd.source || null,
+        selectedParty,
+        deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+        fromLocation: rd.fromLocation?.id || null,
+        product: rd.product?.id || null,
+        productName: rd.product?.name || null,
+        productCode: rd.product?.productCode || null,
+        packingType: rd.product?.packingType || null,
+        variant: rd.variant?.id || null,
+        arrivalDate: rd.arrivalDate || null,
+        arrivedQty: rd.arrivedQty || null,
+        samplingQty: rd.samplingQty || null,
+        totalQty: rd.totalQty || null,
+        totalpercent: rd.totalpercent || null,
+        remark: rd.remark || null,
+        purchaseBy: rd.purchaseBy?.firstName || null,
+        receivedBy: rd.receivedBy?.firstName || null,
+        qcCheckBy: rd.qcCheckBy?.firstName || null,
+        verifiedBy: rd.verifiedBy?.firstName || null,
+        parameters: rd.parameters
+          ? rd.parameters.map((param: any) => ({
+              id: param.id || null,
+              qualityParameterId: param.qualityParameterId || null,
+              qualityParameterName: param.qualityParameterName || null,
+              qualityParameterType: param.qualityParameterType || null,
+              quantity: param.quantity || null,
+              percentage: param.percentage || null,
+            }))
+          : [],
       };
     });
  
@@ -785,7 +823,7 @@ console.log('Active documents:', activeDocuments);
     );
   }
 
-  // 🔄 Sorting
+  // ðŸ”„ Sorting
   if (queryOptions.sort) {
     const [field, direction] = queryOptions.sort.split(':');
     const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
@@ -834,14 +872,23 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
       const aqr = await this.aqrRepo.findOne({
         where: { id },
         relations: [
-          'dcNo',
-      'product',
-      'parameters',
-      //'sendBy',
-      'purchaseBy',
-      'receivedBy',
-      'qcCheckBy',
-      'verifiedBy',
+          'deliveryChallanNo',
+          'companyName',
+          'location',
+          'selectedVendor',
+          'selectedVendor.officeAddress',
+          'selectedVendor.vendorSaleInfo',
+          'selectedFarmer',
+          'selectedFarmer.residensialAddress',
+          'selectedFarmer.farmAddress',
+          'fromLocation',
+          'product',
+          'variant',
+          'parameters',
+          'purchaseBy',
+          'receivedBy',
+          'qcCheckBy',
+          'verifiedBy',
         ],
       });
 
@@ -865,54 +912,73 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
       // }
       const rawDate = aqr.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
+
+      const selectedParty = aqr.source === 'vendor'
+        ? aqr.selectedVendor ? {
+            id: aqr.selectedVendor.id,
+            companyName: aqr.selectedVendor.companyName || null,
+            vendorCode: aqr.selectedVendor.vendorCode || null,
+            officeContactNo: aqr.selectedVendor.officeContactNo || null,
+            officeEmail: aqr.selectedVendor.officeEmail || null,
+            officeAddress: aqr.selectedVendor.officeAddress || null,
+            contactPersonName: aqr.selectedVendor.vendorSaleInfo.contactFName+" "+aqr.selectedVendor.vendorSaleInfo.contactLName,
+
+          } : null
+        : aqr.selectedFarmer ? {
+            id: aqr.selectedFarmer.id,
+            fullName: `${aqr.selectedFarmer.farmerfName || ''} ${aqr.selectedFarmer.farmerlName || ''}`.trim(),
+            farmerCode: aqr.selectedFarmer.farmerCode || null,
+            primaryMobileNo: aqr.selectedFarmer.primaryMobileNo || null,
+            email: aqr.selectedFarmer.email || null,
+            residensialAddress:
+            aqr.selectedFarmer.residensialAddress || null,
+            farmAddress: aqr.selectedFarmer.farmAddress || null,
+          } : null;
+          
+
       return {
-    documentId: document.documentId,
-    overAllStatus: document.status,
-    createdBy: document.createdBy ,
-    createdDate,
-    createdTime,
-    approvalSummary: document.approvalSummary,
+        documentId: document.documentId,
+        overAllStatus: document.status,
+        createdBy: document.createdBy,
+        createdDate,
+        createdTime,
+        approvalSummary: document.approvalSummary,
 
-    
-      // From AQR
-    id: aqr.id,
-    dcNo: aqr.dcNo?.challanNo || null,
-    dcDate: aqr.dcDate || null,
-    arrivedQty: aqr.arrivedQty || null,
-    samplingQty: aqr.samplingQty || null,
-    totalQty: aqr.totalQty || null,
-    totalpercent: aqr.totalpercent || null,
-    supplierName: aqr.supplierName || null,
-    arrivalDate: aqr.arrivalDate || null,
-    supplierLocation: aqr.supplierLocation || null,
-    remark: aqr.remark || null,
+        id: aqr.id,
+        aqrFor: aqr.aqrFor,
+        companyName: aqr.companyName?.id || null,
+        location: aqr.location?.name || null,
+        source: aqr.source,
+        selectedParty,
+        deliveryChallanNo: aqr.deliveryChallanNo?.challanNo || null,
+        fromLocation: aqr.fromLocation?.name || null,
+        product: aqr.product?.name || null,
+        productCode: aqr.product?.productCode || null,
+        packingType: aqr.product?.packingType || null,
+        variant: aqr.variant?.variantName || null,
+        arrivalDate: aqr.arrivalDate || null,
+        arrivedQty: aqr.arrivedQty || null,
+        samplingQty: aqr.samplingQty || null,
+        totalQty: aqr.totalQty || null,
+        totalpercent: aqr.totalpercent || null,
+        remark: aqr.remark || null,
+        purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ''} ${aqr.purchaseBy.lastName || ''}`.trim() : null,
+        receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ''} ${aqr.receivedBy.lastName || ''}`.trim() : null,
+        qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ''} ${aqr.qcCheckBy.lastName || ''}`.trim() : null,
+        verifiedBy: aqr.verifiedBy ? `${aqr.verifiedBy.firstName || ''} ${aqr.verifiedBy.lastName || ''}`.trim() : null,
+        parameters: aqr.parameters?.map(param => ({
+          id: param.id || null,
+          qualityParameterId: param.qualityParameterId || null,
+          qualityParameterName: param.qualityParameterName || null,
+          qualityParameterType: param.qualityParameterType || null,
+          quantity: param.quantity || null,
+          percentage: param.percentage || null,
+        })) || [],
+      };
+    }
+  }
 
-    // product info
-    product: aqr.product?.name || null,
-    productCode: aqr.product?.productCode || null,
-    //brand: aqr.product?.brand || null,
-    packingType: aqr.product?.packingType || null,
 
-    
-//sendBy: aqr.sendBy ? `${aqr.sendBy.firstName || ''} ${aqr.sendBy.lastName || ''}`.trim() : null,
-    purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ''} ${aqr.purchaseBy.lastName || ''}`.trim() : null,
-    receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ''} ${aqr.receivedBy.lastName || ''}`.trim() : null,
-    qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ''} ${aqr.qcCheckBy.lastName || ''}`.trim() : null,
-    verifiedBy: aqr.verifiedBy ? `${aqr.verifiedBy.firstName || ''} ${aqr.verifiedBy.lastName || ''}`.trim() : null,
-
-
-    // parameters
-    parameters: aqr.parameters?.map(param => ({
-      id: param.id || null,
-      qualityParameterId: param.qualityParameterId || null,
-      qualityParameterName: param.qualityParameterName || null,
-      qualityParameterType: param.qualityParameterType || null,
-      quantity: param.quantity || null,
-      percentage: param.percentage || null,
-    })) || [],
-  };
-  }
-}
 
 
 
@@ -925,13 +991,11 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
   const queryBuilder: SelectQueryBuilder<Aqr> =
     this.aqrRepo.createQueryBuilder("aqr");
 
-  // ✅ Select all fields from Aqr
+  // âœ… Select all fields from Aqr
   queryBuilder.select("aqr");
 
-  // ✅ Join relations but select only specific fields
+  // âœ… Join relations but select only specific fields
   queryBuilder
-    //.leftJoin("aqr.sendBy", "sendedBy")
-    .addSelect(["sendedBy.id", "sendedBy.firstName", "sendedBy.lastName"])
     .leftJoin("aqr.purchaseBy", "purchasedBy")
     .addSelect(["purchasedBy.id", "purchasedBy.firstName", "purchasedBy.lastName"])
     .leftJoin("aqr.receivedBy", "receivedBy")
@@ -943,7 +1007,7 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
     .leftJoin("aqr.product", "product")
     .addSelect(["product.id", "product.name"]);
 
-  // ✅ Apply dynamic filters (including related fields)
+  // âœ… Apply dynamic filters (including related fields)
   Object.entries(filters).forEach(([key, value]) => {
     if (key.includes(".")) {
       // Example: filters = { "sendedBy.firstName": "John" }
@@ -963,7 +1027,7 @@ public async getAQRByIdForView(docid: string, userId:string): Promise<any> {
     }
   });
 
-  // ✅ Pagination
+  // âœ… Pagination
   queryBuilder.skip((page - 1) * limit).take(limit);
 
   const [data, total] = await queryBuilder.getManyAndCount();

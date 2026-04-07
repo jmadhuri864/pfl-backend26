@@ -309,9 +309,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       },
       customerAddress: {
         id:cust.customerAddress.id,
-        customerAddress:cust.customerAddress 
-        ? `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()
-        : null},
+        customerAddress:`${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim(),
       contactPersonName:{
         id:cust.billingDetails.id,
         //billingName: cust.billingDetails?.billingName || null,
@@ -337,8 +335,9 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         // primaryContactNo: cust.deliveryDetails?.primaryContactNo || null,
         // emailPrimary: cust.deliveryDetails?.emailPrimary || null,
         // },
-    };
-  });
+      }
+    }
+  })
 
   console.log("customer data",customers)
 

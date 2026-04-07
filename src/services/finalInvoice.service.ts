@@ -74,58 +74,103 @@ export class FinalInvoiceService {
       const locationPrefix = deliveryChallan.fromLocation?.name || 'LOC';
       const invoiceNo = await this.generateInvoiceNo(companyName, locationPrefix);
 
-      // Create invoice from delivery challan data
+      // ── Per-product calculations based on accepted qty ──────────────────────
+      // acceptedQty = originalQty - returnedQty - rejectedQty
+      // (already written to dItem by updateDeliveryChallanItemsWithReturns)
+      // If no return was created, acceptedQty will be null → fall back to originalQty.
+      const invoiceProductData = (deliveryChallan.deliveryChallanProducts ?? []).map((dcProduct) => {
+        const originalQty   = Number(dcProduct.quantity   ?? 0);
+        const returnedQty   = Number(dcProduct.returnedQty ?? 0);
+        const rejectedQty   = Number(dcProduct.rejectedQty ?? 0);
+        const acceptedQty   = dcProduct.acceptedQty != null
+          ? Number(dcProduct.acceptedQty)
+          : originalQty - returnedQty - rejectedQty;
+
+        const unitPrice     = Number(dcProduct.unitPrice  ?? 0);
+        const acceptedAmt   = parseFloat((acceptedQty * unitPrice).toFixed(4));
+
+        // Weight proportional to accepted / original qty
+        const ratio         = originalQty > 0 ? acceptedQty / originalQty : 1;
+        const acceptedGross = parseFloat((Number(dcProduct.grossWeight ?? 0) * ratio).toFixed(4));
+        const acceptedNet   = parseFloat((Number(dcProduct.netWeight   ?? 0) * ratio).toFixed(4));
+
+        return {
+          productName:  dcProduct.productName,
+          variant:      dcProduct.variant,
+          saleUoM:      dcProduct.saleUoM,
+          quantity:     originalQty,
+          acceptedQty,
+          returnedQty,
+          rejectedQty,
+          unitPrice,
+          amount:       acceptedAmt,
+          grossWeight:  acceptedGross,
+          netWeight:    acceptedNet,
+          hsnCode:      additionalData.hsnCode || '',
+          description:  dcProduct.productName?.description || '',
+        };
+      });
+
+      // ── Invoice header totals ─────────────────────────────────────────────
+      const totalProductAmount = parseFloat(
+        invoiceProductData.reduce((sum, p) => sum + p.amount, 0).toFixed(4)
+      );
+      const netProductWeight = parseFloat(
+        invoiceProductData.reduce((sum, p) => sum + p.netWeight, 0).toFixed(4)
+      );
+
+      const cgst         = Number(additionalData.cgst         ?? 0);
+      const sgst         = Number(additionalData.sgst         ?? 0);
+      const igst         = Number(additionalData.igst         ?? 0);
+      const taxAmount    = Number(additionalData.taxAmount    ?? cgst + sgst + igst);
+      const discount     = Number(additionalData.discount     ?? 0);
+      const freight      = Number(additionalData.freight      ?? 0);
+      const otherCharges = Number(additionalData.otherCharges ?? 0);
+
+      const totalAmount  = parseFloat(
+        (totalProductAmount + taxAmount + freight + otherCharges - discount).toFixed(4)
+      );
+
+      const totalAmtInWords = toWords(Math.round(totalAmount))
+        .replace(/\b\w/g, (c: string) => c.toUpperCase()) + ' Only';
+
+      // ── Build invoice header ──────────────────────────────────────────────
       const invoiceData = {
-        invoiceNo: invoiceNo,
-        invoiceDate: additionalData.invoiceDate || new Date(),
-        companyName: deliveryChallan.companyName,
-        deliveryChallan: { id: deliveryChallanId },
-        customerName: deliveryChallan.customerName,
-        poNumber: deliveryChallan.poNumber,
-        fromLocation: deliveryChallan.fromLocation,
-        billingAddress: deliveryChallan.billingAddress,
-        deliveryAddress: deliveryChallan.deliveryAddress,
-        vehicleNo: deliveryChallan.vehicleNo,
-        placeOfSupply: additionalData.placeOfSupply || deliveryChallan.deliveryAddress?.state,
-        totalProductAmount: deliveryChallan.totalProductAmount,
-        netProductWeight: deliveryChallan.netProductWeight,
-        totalAmount: additionalData.totalAmount || deliveryChallan.totalProductAmount,
-        totalAmtInWords: deliveryChallan.totalAmtInWords,
-        cgst: additionalData.cgst || 0,
-        sgst: additionalData.sgst || 0,
-        igst: additionalData.igst || 0,
-        taxAmount: additionalData.taxAmount || 0,
-        discount: additionalData.discount || 0,
-        freight: additionalData.freight || 0,
-        otherCharges: additionalData.otherCharges || 0,
+        invoiceNo,
+        invoiceDate:        additionalData.invoiceDate || new Date(),
+        companyName:        deliveryChallan.companyName,
+        deliveryChallan:    { id: deliveryChallanId },
+        customerName:       deliveryChallan.customerName,
+        poNumber:           deliveryChallan.poNumber,
+        fromLocation:       deliveryChallan.fromLocation,
+        billingAddress:     deliveryChallan.billingAddress,
+        deliveryAddress:    deliveryChallan.deliveryAddress,
+        vehicleNo:          deliveryChallan.vehicleNo,
+        placeOfSupply:      additionalData.placeOfSupply || deliveryChallan.deliveryAddress?.state,
+        totalProductAmount,
+        netProductWeight,
+        totalAmount,
+        totalAmtInWords,
+        cgst,
+        sgst,
+        igst,
+        taxAmount,
+        discount,
+        freight,
+        otherCharges,
         createdBy: { id: requestedBy },
       };
-console.log(invoiceData)
+
       const invoice = queryRunner.manager.create(Invoice, invoiceData);
       const savedInvoice = await queryRunner.manager.save(invoice);
 
-      // Create invoice products from delivery challan products
-      if (deliveryChallan.deliveryChallanProducts && deliveryChallan.deliveryChallanProducts.length > 0) {
-        const invoiceProducts = deliveryChallan.deliveryChallanProducts.map((dcProduct) => {
-          const invoiceProduct = queryRunner.manager.create(InvoiceProduct, {
-            productName: dcProduct.productName,
-            variant: dcProduct.variant,
-            quantity: dcProduct.quantity,
-            acceptedQty: dcProduct.acceptedQty,
-            rejectedQty: dcProduct.rejectedQty,
-            returnedQty: dcProduct.returnedQty,
-            saleUoM: dcProduct.saleUoM,
-            amount: dcProduct.amount,
-            unitPrice: dcProduct.unitPrice,
-            grossWeight: dcProduct.grossWeight,
-            netWeight: dcProduct.netWeight,
-            hsnCode: additionalData.hsnCode || '',
-            description: dcProduct.productName?.description || '',
-          });
+      // Create invoice products with recalculated values
+      if (invoiceProductData.length > 0) {
+        const invoiceProducts = invoiceProductData.map((p) => {
+          const invoiceProduct = queryRunner.manager.create(InvoiceProduct, p);
           invoiceProduct.invoice = savedInvoice;
           return invoiceProduct;
         });
-
         await queryRunner.manager.save(InvoiceProduct, invoiceProducts);
       }
 
@@ -426,7 +471,9 @@ console.log(invoiceData)
         productName: product.productName?.name || null,
         variant: product.variant?.variantName || null,
         quantity: product.quantity,
-        acceptedQty: (product.quantity || 0) - (product.returnedQty || 0),
+        acceptedQty: product.acceptedQty != null
+          ? product.acceptedQty
+          : (product.quantity || 0) - (product.returnedQty || 0) - (product.rejectedQty || 0),
         rejectedQty: product.rejectedQty,
         returnedQty: product.returnedQty,
         saleUoM: product.saleUoM?.unit || null,

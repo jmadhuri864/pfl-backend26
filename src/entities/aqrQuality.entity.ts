@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, ManyToOne } from "typeorm";
 import Model from "./model.entity";
 import { Aqr} from "./aqr.entity";
 
