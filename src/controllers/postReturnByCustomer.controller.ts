@@ -168,15 +168,15 @@ console.log("User ID:", userId);
       const result = await this.postReturnByCustomerService.deleteMultipleRBC(ids);
 
       // 🔔 Send notification for bulk AQR deletion
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `RBCs deleted successfully`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `RBCs deleted successfully`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.status(200).json({
         message: result.message,

@@ -140,13 +140,13 @@ export class WorkflowHierarchyController {
       ControllerLogger.logList('Workflow tree', req, res);
 
       // Send notification for workflow tree access
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Workflow tree accessed for department: ${department}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Workflow tree accessed for department: ${department}`,
+      //     userId
+      //   );
+      // }
 
       return res.status(200).json({
         status: "success",

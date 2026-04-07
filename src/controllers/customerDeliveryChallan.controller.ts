@@ -295,17 +295,17 @@ export class CustomerDeliveryChallanController {
       }
 
       // 🔔 Send notification for customer delivery challan deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Customer delivery challan deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer delivery challan deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Customer delivery challan deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer delivery challan deletion notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Customer Delivery Challan deleted', id, req, res);
       res.status(200).json({
@@ -332,15 +332,15 @@ export class CustomerDeliveryChallanController {
         const result = await this.customerDeliveryChallanService.deleteMultipleCustomerDC(ids);
   
         // 🔔 Send notification for bulk AQR deletion
-        try {
-          const userId = res.locals.user.id;
-          await this.notificationService.createNoti(
-            `Bulk delete operation completed: ${result.success} Customer DC deleted successfully, ${result.failed} failed`,
-            userId
-          );
-        } catch (notifError) {
-          console.log('Notification error:', notifError);
-        }
+        // try {
+        //   const userId = res.locals.user.id;
+        //   await this.notificationService.createNoti(
+        //     `Bulk delete operation completed: ${result.success} Customer DC deleted successfully, ${result.failed} failed`,
+        //     userId
+        //   );
+        // } catch (notifError) {
+        //   console.log('Notification error:', notifError);
+        // }
   
         res.status(200).json({
           message: result.message,
@@ -407,17 +407,17 @@ export class CustomerDeliveryChallanController {
       }
 
       // 🔔 Send notification for delivery challan net amounts view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed delivery challan with ID ${id} net amounts`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Delivery challan net amounts view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed delivery challan with ID ${id} net amounts`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Delivery challan net amounts view notification error:', notifError);
+      // }
 
       ControllerLogger.logView('Delivery Challan with net amounts', id, req, res);
       res.status(200).json({

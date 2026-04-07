@@ -218,13 +218,13 @@ try {
       });
 
       // Send notification for vehicle dispatch view
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vehicle Dispatch viewed: ${id}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vehicle Dispatch viewed: ${id}`,
+      //     userId
+      //   );
+      // }
 
 
       res.status(200).json({
@@ -317,13 +317,13 @@ try {
             }
 
       // Send notification for vehicle dispatch deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vehicle Dispatch deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vehicle Dispatch deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       
       res.status(200).json({
@@ -464,13 +464,13 @@ try {
         const result = await this.vehicleDispatchService.deleteMultipleVehicleDispatch(ids);
 
         // Send notification for multiple vehicle dispatch deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Multiple Vehicle Dispatches deleted successfully: ${ids.length} records`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `Multiple Vehicle Dispatches deleted successfully: ${ids.length} records`,
+        //     userId
+        //   );
+        // }
 
         ControllerLogger.logSuccess('Vehicle Dispatch multiple deletion', `${ids.length} records`, req, res);
         res.status(200).json({

@@ -239,13 +239,13 @@ public async getAllSubcategories1(
       ControllerLogger.logSuccess('Vendor subcategory deleted', id, req, res);
 
       // Send notification for vendor subcategory deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor Subcategory deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vendor Subcategory deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -289,13 +289,13 @@ public async softDeleteMultipleVendorSubcategory(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple VendorSubcategory soft deleted: ${subCategoryIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple VendorSubcategory soft deleted: ${subCategoryIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

@@ -242,17 +242,17 @@ export class CustomerCategoryController {
       }
       
       // 🔔 Send notification for customer category deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Customer category  deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer category deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Customer category  deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer category deletion notification error:', notifError);
+      // }
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer Category deleted', id, req, res);
@@ -296,13 +296,13 @@ public async softDeleteMultipleCustomerCategory(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple customerCategory soft deleted: ${customerCategoryIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple customerCategory soft deleted: ${customerCategoryIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

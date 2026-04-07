@@ -396,13 +396,13 @@ public async updateUser(
       ControllerLogger.logSuccess('Employee deleted', id, req, res);
 
       // Send notification for employee deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Employee deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Employee deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -656,13 +656,13 @@ public async softDeleteMultipleEmployees(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple employees soft deleted: ${userIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple employees soft deleted: ${userIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

@@ -427,17 +427,17 @@ export class DealSlipController {
       }
       
       // 🔔 Send notification for deal slip deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Deal slip with ID ${id} deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Deal slip deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Deal slip with ID ${id} deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Deal slip deletion notification error:', notifError);
+      // }
       
       ControllerLogger.logSuccess('Deal Slip deleted', id, req, res);
       res.status(200).json({
@@ -523,17 +523,17 @@ export class DealSlipController {
       const result = await this.dealSlipService.deleteMultipleDealSlips(ids.ids);
 
       // 🔔 Send notification for multiple deal slips deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `${ids.ids.length} Deal Slip(s) deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Delete multiple deal slips notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `${ids.ids.length} Deal Slip(s) deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Delete multiple deal slips notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Multiple Deal Slips deleted', `${ids.ids.length} items`, req, res);
       res.status(200).json({

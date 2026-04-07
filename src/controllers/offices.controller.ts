@@ -337,13 +337,13 @@ export class OfficesController {
       ControllerLogger.logSuccess('Office deleted', id, req, res);
 
       // Send notification for office deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Office ${officeType} deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Office ${officeType} deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -386,13 +386,13 @@ public async softDeleteMultipleOffices(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple Offices soft deleted: ${officeIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple Offices soft deleted: ${officeIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

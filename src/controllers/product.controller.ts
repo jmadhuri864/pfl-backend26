@@ -433,13 +433,13 @@ public async softDeleteMultipleProducts(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple product soft deleted: ${productIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple product soft deleted: ${productIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",
@@ -566,13 +566,13 @@ public async softDeleteMultipleProducts(
       ControllerLogger.logSuccess('Product deleted', id, req, res);
 
       // Send notification for product deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',

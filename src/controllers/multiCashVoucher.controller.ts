@@ -323,13 +323,13 @@ export class  MultiCashVoucherController {
              ControllerLogger.logSuccess('Multi Cash Voucher deleted', id, req, res);
 
              // Send notification for multi cash voucher deletion
-             const userId = res.locals.user?.id;
-             if (userId) {
-               await this.notificationService.createNoti(
-                 `Multi Cash Voucher deleted successfully`,
-                 userId
-               );
-             }
+            //  const userId = res.locals.user?.id;
+            //  if (userId) {
+            //    await this.notificationService.createNoti(
+            //      `Multi Cash Voucher deleted successfully`,
+            //      userId
+            //    );
+            //  }
 
              res.status(200).json({ 
               status: "success", 

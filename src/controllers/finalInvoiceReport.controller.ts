@@ -43,7 +43,7 @@ async exportReport(@request() req: Request,
       const fileUrl = await this.uploadToCloud(buffer);
 
       // Send notification
-      await this.sendNotification(undefined, fileUrl, res);
+      //await this.sendNotification(undefined, fileUrl, res);
 
       ControllerLogger.logSuccess('GRN report stored in DigitalOcean Spaces', fileUrl, req, res);
 

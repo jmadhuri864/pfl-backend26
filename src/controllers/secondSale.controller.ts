@@ -340,13 +340,13 @@ export class SecondSaleController {
       ControllerLogger.logSuccess('Second Sale deleted', id, req, res);
 
       // Send notification for second sale deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Second Sale deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Second Sale deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',
@@ -377,13 +377,13 @@ export class SecondSaleController {
           ControllerLogger.logSuccess('Second Sale multiple deletion', `${ids.length} records`, req, res);
 
           // Send notification for multiple second sale deletion
-          const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              `Multiple Second Sales deleted successfully: ${ids.length} records`,
-              userId
-            );
-          }
+          // const userId = res.locals.user?.id;
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     `Multiple Second Sales deleted successfully: ${ids.length} records`,
+          //     userId
+          //   );
+          // }
 
           res.status(200).json({
             message: result.message,

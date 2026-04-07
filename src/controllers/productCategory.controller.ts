@@ -212,13 +212,13 @@ export class ProductCategoryController {
         ControllerLogger.logSuccess('Product Category deleted', id, req, res);
 
         // Send notification for product category deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Product Category deleted successfully`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `Product Category deleted successfully`,
+        //     userId
+        //   );
+        // }
 
         res.status(200).json({
           status: "success",
@@ -265,13 +265,13 @@ public async softDeleteMultipleProductCategory(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple ProductCategory soft deleted: ${productCategoryIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple ProductCategory soft deleted: ${productCategoryIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

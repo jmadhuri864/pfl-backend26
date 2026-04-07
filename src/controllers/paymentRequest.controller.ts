@@ -195,13 +195,13 @@ public async deletePaymentRequest(
     ControllerLogger.logSuccess('Payment Request deleted', id, req, res);
 
     // Send notification for payment request deletion
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Payment Request deleted successfully`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Payment Request deleted successfully`,
+    //     userId
+    //   );
+    // }
     
     res.status(200).json({ 
       status: "success", 

@@ -190,13 +190,13 @@ export class SaleOrderController {
       ControllerLogger.logSuccess('Sale Order deleted', id, req, res);
 
       // Send notification for sale order deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Sale Order deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Sale Order deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",

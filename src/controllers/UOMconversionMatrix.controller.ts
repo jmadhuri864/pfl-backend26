@@ -238,13 +238,13 @@ export class UOMConversionMatrixController {
         ControllerLogger.logSuccess('UOM Conversion Matrix deleted', id, req, res);
 
         // Send notification for UOM conversion matrix deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `UOM Conversion Matrix deleted successfully: ${id}`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `UOM Conversion Matrix deleted successfully: ${id}`,
+        //     userId
+        //   );
+        // }
 
         res.status(200).json({
           status: "success",
@@ -289,13 +289,13 @@ export class UOMConversionMatrixController {
       );
   
       // Send notification
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Multiple UOMConversion soft deleted: ${uomConversionIds.length}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multiple UOMConversion soft deleted: ${uomConversionIds.length}`,
+      //     userId
+      //   );
+      // }
   
       return res.status(200).json({
         status: "success",
