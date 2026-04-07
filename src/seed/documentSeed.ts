@@ -12,13 +12,6 @@ export async function seedDocumentDefDatabase() {
         const documentRepo = AppDataSource.getRepository(DocumentDefinition);
        
 
-        const existingDocument = await documentRepo.count();
-
-        if (existingDocument > 0) {
-            console.log(`DocumentDefinition already seeded (${existingDocument} records found). Skipping.`);
-            return;
-        }
-
         console.log('Seeding database with fresh data...');
 
         // Read JSON file
@@ -27,6 +20,11 @@ export async function seedDocumentDefDatabase() {
         const companies = JSON.parse(jsonData);
 
         for (const companyData of companies) {
+            const existing = await documentRepo.findOne({ where: { uniqueKey: companyData.uniqueKey } });
+            if (existing) {
+                continue; // skip if already exists
+            }
+
             const company = documentRepo.create({
                 uniqueKey: companyData.uniqueKey,
                 name: companyData.name,

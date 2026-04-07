@@ -81,16 +81,7 @@
       "documentType": "Sale",
       "name": "Final Invoice"
     },
-    {
-      "uniqueKey": "labor-registration",
-      "documentType": "Operation",
-      "name": "Labor Registration"
-    },
-    {
-      "uniqueKey": "labor-attendance",
-      "documentType": "Operation",
-      "name": "Labor Attendance"
-    },
+  
     {
       "uniqueKey": "multi-cash-voucher",
       "documentType": "Procurement",

@@ -45,7 +45,20 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:8004",
   "http://192.168.1.82:3000",
-  "https://prime-fresh-erp.vercel.app/"
+  "https://prime-fresh-erp.vercel.app/",
+  "http://192.168.1.60:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://192.168.1.36:5173/",
+   "http://192.168.1.36:5173",
+  "https://d721a561c2dc.ngrok-free.app",
+  "http://localhost:3000",
+  "http://localhost:8004",
+  "http://192.168.1.82:3000",
+  "http://139.59.83.235:80",
+  
+  "http://139.59.83.235"
+
 ];
 
 // process.on('unhandledRejection', (reason, promise) => {
