@@ -65,10 +65,11 @@ export class Labor extends Model {
   @Column({ nullable: true })
   healthIssues: string;
 
-  @Column({ type: "date", transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ type: "date", 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 }) 
   birthDate: Date;
 

@@ -18,10 +18,11 @@ import { DocumentPermission } from "./permission.entity";
     TRANSPORT_PAYMENT_VOUCHER = "transport-payment-voucher",
     DEAL_SLIP = "DEAL_SLIP",
     RFPA = "RFPA",
-     DC_TYPE_CUSTOMER = "DC_TYPE_CUSTOMER",
-  DC_TYPE_STOCK_TRANSFER = "DC_TYPE_STOCK_TRANSFER",
-  DC_TYPE_OTHER="DC_TYPE_OTHER"
-    
+    DC_TYPE_CUSTOMER = "DC_TYPE_CUSTOMER",
+    DC_TYPE_STOCK_TRANSFER = "DC_TYPE_STOCK_TRANSFER",
+    DC_TYPE_OTHER = "DC_TYPE_OTHER",
+    // REPORT = "REPORT",
+    // INVENTORY = "INVENTORY",
   }
   
 @Entity("document_definitions")

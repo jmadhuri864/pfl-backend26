@@ -34,10 +34,10 @@ export class Invoice extends Model {
   @Column({
     type: 'date',
     nullable: true,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) => (value ? format(new Date(value), 'dd-MM-yyyy') : null),
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) => (value ? format(new Date(value), 'dd-MM-yyyy') : null),
+    // },
   })
   invoiceDate: Date;
 

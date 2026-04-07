@@ -58,10 +58,11 @@ export class Farmer extends Model {
   @JoinColumn()
   residensialAddress: Address;
 
-  @Column({type:'date' ,nullable: true , transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "yyyy-MM-dd") : null, // Convert to YYYY-MM-DD format
-  },
+  @Column({type:'date' ,nullable: true ,
+  //    transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "yyyy-MM-dd") : null, // Convert to YYYY-MM-DD format
+  // },
 })
   dob: Date;
 
@@ -106,10 +107,11 @@ totalLandArea: number;
   @Column("text", { nullable: true })
   idProofNo: string;
 
-  @Column( {type:'date', nullable: true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column( {type:'date', nullable: true, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 }) 
   dateOfVisit: Date;
 

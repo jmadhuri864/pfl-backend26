@@ -30,7 +30,7 @@ export class SecondSaleProduct extends Model {
   @Column({ nullable: true, type: 'decimal', precision: 10, scale: 3 })
   netWeight: number;
   @Column({ nullable: true, type: 'decimal', precision: 10, scale: 3 })
-  packingMaterialWeight: number;
+  packagingMaterialWeight: number;
   @Column({ nullable: true, type: 'decimal', precision: 10, scale: 3 })
   grossWeight: number;
 

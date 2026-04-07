@@ -187,7 +187,7 @@ export class GRN extends Model {
       if (!value) return null;
       try {
         const istDate = toZonedTime(new Date(value), 'Asia/Kolkata');
-        return format(istDate, 'hh:mm a');
+        return format(istDate, 'HH:mm');
       } catch (error) {
         console.error('Date transformation error (from DB):', error);
         return null;

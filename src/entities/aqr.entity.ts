@@ -89,10 +89,11 @@ export class Aqr extends Model {
 
   @Column({ nullable: true })
   arrivedQty: string;
-   @Column({ type: 'date', nullable: true, default: null , transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
-},
+   @Column({ type: 'date', nullable: true, default: null , 
+//     transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
+// },
 })
  arrivalDate: Date ;
 

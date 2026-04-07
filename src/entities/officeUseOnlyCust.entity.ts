@@ -28,10 +28,12 @@ export class OfficeUseOnly extends Model {
   @Column({ name: 'customer_office_use_only_verification_agency', nullable: true })
   verificationAgency: string;
 
-  @Column({ name: 'customer_office_use_only_validity_period',  type: 'date',  nullable: true ,transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },})
+  @Column({ name: 'customer_office_use_only_validity_period',  type: 'date',  nullable: true ,
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
+})
   validityPeriod: Date;
 
   @Column({ name: 'customer_office_use_only_due_diligence_done', nullable: true })
@@ -42,20 +44,22 @@ export class OfficeUseOnly extends Model {
 
   @Column({ name: 'customer_office_use_only_key_account_person_assigned', nullable: true })
   keyAccountPersonAssigned: string;
-  @Column({ name: 'customer_office_use_only_since_when', nullable: true , transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ name: 'customer_office_use_only_since_when', nullable: true , 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 })
   sinceWhen: Date;
   @Column({ 
     name: 'customer_office_use_only_ledger_created_date', 
     type: 'date', 
     nullable: true 
-  , transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  , 
+  // transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 })
   ledgerCreatedDate: Date;
 

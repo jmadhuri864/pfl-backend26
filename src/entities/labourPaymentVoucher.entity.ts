@@ -40,10 +40,11 @@ import { format } from 'date-fns-tz';
     @Column('int',{nullable:true})
     noOfLabours: number;
   
-    @Column({nullable:true, type: 'date', transformer: {
-      to: (value: Date) => value, 
-      from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-    },
+    @Column({nullable:true, type: 'date', 
+    //   transformer: {
+    //   to: (value: Date) => value, 
+    //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+    // },
   })
     loadingDate: Date;
   

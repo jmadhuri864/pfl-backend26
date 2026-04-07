@@ -70,10 +70,11 @@ export class ReturnToVendor extends Model {
     @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
      totalAmt: number | null;
 
-      @Column({ type: 'date', nullable: true, default: null , transformer: {
-        to: (value: Date) => value,
-        from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-      },
+      @Column({ type: 'date', nullable: true, default: null , 
+      //   transformer: {
+      //   to: (value: Date) => value,
+      //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+      // },
       })
       returnDate: Date | null;
        

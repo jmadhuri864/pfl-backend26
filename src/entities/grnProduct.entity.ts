@@ -71,31 +71,35 @@ export class GrnProduct extends Model {
   // New fields
   @Column('boolean', { name: "rtv", nullable: true})
   rtv: boolean;
- @Column({ type: 'date', nullable: true, transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-},
+ @Column({ type: 'date', nullable: true, 
+//   transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+// },
 }) // Purchase Date
  purchaseDate: Date|null;
 
- @Column({ type: 'date', nullable: true , transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-},
+ @Column({ type: 'date', nullable: true ,
+//    transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+// },
 }) // Expected Harvest Date
  expectedHarvestDate: Date|null;
 
- @Column({ type: 'date', nullable: true , transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-},
+ @Column({ type: 'date', nullable: true , 
+//   transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+// },
 }) // Dispatch Date
  dispatchDate: Date|null;
 
- @Column({ type: 'date', nullable: true, transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-},
+ @Column({ type: 'date', nullable: true,
+//    transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+// },
 }) // Delivery Date
  deliveryDate: Date|null;
 

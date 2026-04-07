@@ -47,24 +47,27 @@ export class ProductReturnToVendor extends Model {
         @Column({ nullable: true, transformer: { from: (value: any) => value === 1, to: (value: boolean) => value ? 1 : 0 }})
          rtv: boolean;
 
-         @Column({ type: 'date', nullable: true, default: null , transformer: {
-                 to: (value: Date) => value, 
-                 from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-               },
+         @Column({ type: 'date', nullable: true, default: null ,
+          //  transformer: {
+          //        to: (value: Date) => value, 
+          //        from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+          //      },
                })
           purchaseDate: Date | null; 
 
-          @Column({ type: 'date', nullable: true, default: null , transformer: {
-                  to: (value: Date) => value, 
-                  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-                },
+          @Column({ type: 'date', nullable: true, default: null , 
+            // transformer: {
+            //       to: (value: Date) => value, 
+            //       from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+            //     },
                 })
           dispatchDate: Date | null; 
 
-          @Column({ type: 'date', nullable: true, default: null , transformer: {
-                  to: (value: Date) => value, 
-                  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-                },
+          @Column({ type: 'date', nullable: true, default: null , 
+            // transformer: {
+                //   to: (value: Date) => value, 
+                //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+                // },
                 })
           deliveryDate: Date | null; 
 

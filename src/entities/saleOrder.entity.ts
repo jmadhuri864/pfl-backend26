@@ -48,17 +48,19 @@ export class SaleOrder extends Model {
   @Column({ name: "po_number", type: "varchar", length: 50, unique: true })
   poNumber: string;
 
-  @Column({ name: "po_date", type: "date",nullable:true , transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ name: "po_date", type: "date",nullable:true , 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 })
   poDate: Date;
 
-  @Column({ name: "expected_delivery_date", type: "date" ,nullable:true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ name: "expected_delivery_date", type: "date" ,nullable:true, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 })
   expectedDeliveryDate: Date;
 

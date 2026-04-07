@@ -14,10 +14,11 @@ export class Transfer extends Model {
   @Column() //relocation location
   reLocation: string;
 
-  @Column({ type: 'date',  transformer: {
-      to: (value: Date) => value, 
-      from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-    },
+  @Column({ type: 'date',  
+  //   transformer: {
+  //     to: (value: Date) => value, 
+  //     from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  //   },
   })
   transferDate: Date;
 

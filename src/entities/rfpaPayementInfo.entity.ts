@@ -8,10 +8,11 @@ export class PaymentInfoForRFPA extends Model {
   @Column("character varying", { name: "payment_mode", length: 100 })
   paymentMode: string;
 
-  @Column( { name: "payment_date", type: 'date', nullable: true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
-  },
+  @Column( { name: "payment_date", type: 'date', nullable: true, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
+  // },
 })
   paymentDate: Date;
 
@@ -23,10 +24,11 @@ export class PaymentInfoForRFPA extends Model {
   @Column("numeric", { name: "payment_terms",  precision: 10, scale: 2 ,nullable: true })
   paymentTerms: number;
 
-  @Column( { name: "payment_dute_date", nullable: true, type: 'date', transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
-  },
+  @Column( { name: "payment_dute_date", nullable: true, type: 'date', 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, 
+  // },
 }) 
   dueDate: Date;
 

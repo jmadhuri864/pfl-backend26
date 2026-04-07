@@ -85,12 +85,12 @@ export class WorkflowHierarchyController {
 
       // Send notification for bulk workflow relations addition
       const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Bulk workflow relations added successfully: ${relations.length} relations`,
-          userId
-        );
-      }
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Bulk workflow relations added successfully: ${relations.length} relations`,
+      //     userId
+      //   );
+      // }
 
       return res.status(201).json({
         status: "success",
@@ -257,13 +257,13 @@ const newSubordinateId=newSubordinate;
     ControllerLogger.logSuccess('Workflow branch updated', managerId, req, res);
 
     // Send notification for workflow branch update
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Workflow branch updated successfully: ${managerId}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Workflow branch updated successfully: ${managerId}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",
@@ -303,13 +303,13 @@ const newSubordinateId=newSubordinate;
       ControllerLogger.logSuccess('Workflow node deleted', nodeId, req, res);
 
       // Send notification for workflow node deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Workflow node deleted successfully: ${nodeId}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Workflow node deleted successfully: ${nodeId}`,
+      //     userId
+      //   );
+      // }
 
       return res.status(200).json({
         status: "success",
@@ -369,13 +369,13 @@ const newSubordinateId=newSubordinate;
       ControllerLogger.logSuccess('Workflow duplicates cleaned', `${result.deletedCount} removed`, req, res);
 
       // Send notification for workflow duplicates cleanup
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Workflow duplicates cleaned: ${result.deletedCount} entries removed`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Workflow duplicates cleaned: ${result.deletedCount} entries removed`,
+      //     userId
+      //   );
+      // }
 
       return res.status(200).json({
         status: "success",

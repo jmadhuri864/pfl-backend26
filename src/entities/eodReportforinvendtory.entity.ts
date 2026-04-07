@@ -20,10 +20,12 @@ export class StockReportEod extends Model {
    @JoinColumn({ name: "branch_id" })
    location: Branches;
 
-  @Column({ name: 'stock_date', type: 'date', nullable: true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null,
-  },})
+  @Column({ name: 'stock_date', type: 'date', nullable: true, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null,
+  // },
+})
   stockDate: Date;
 
   @Column({ nullable: true })

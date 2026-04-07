@@ -19,10 +19,11 @@ export class LaborAttendance extends Model {
   @JoinColumn({ name: 'location_id' })  
   location: Branches;
 
-  @Column({ type: "date", nullable: false, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ type: "date", nullable: false, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 }) 
   date: Date;
 

@@ -47,44 +47,44 @@ export class RFPAProduct extends Model {
     type: 'date',
     nullable: true,
     default: null,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'dd-MM-yyyy') : null,
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'dd-MM-yyyy') : null,
+    // },
   })
   purchaseDate: Date;
   @Column({
     type: 'date',
     nullable: true,
     default: null,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'dd-MM-yyyy') : null,
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'dd-MM-yyyy') : null,
+    // },
   })
   expectedHarvestDate: Date;
 
   @Column({
     type: 'date',
     nullable: true,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'dd-MM-yyyy') : null,
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'dd-MM-yyyy') : null,
+    // },
   })
   dispatchDate: Date;
 
   @Column({
     type: 'date',
     nullable: true,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'dd-MM-yyyy') : null,
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'dd-MM-yyyy') : null,
+    // },
   })
   deliveryDate: Date;
 

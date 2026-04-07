@@ -1,18 +1,32 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import Model from './model.entity';
 import { DocumentDefinition } from './documentdef.entity';
-import { Levels } from './levels.entity';
 import { User } from './user.entity';
 
+/**
+ * PERMISSION DESIGN
+ * -----------------
+ * One table handles document, report, and inventory permissions.
+ *
+ * documentDefinition → points to a DocumentDefinition row whose
+ *   documentType can be:
+ *     - Procurement / Sale / Operation / GRN / etc.  → document permission
+ *     - REPORT       → report permission
+ *     - INVENTORY    → inventory permission
+ *
+ * Inventory location filtering:
+ *   canViewAllLocations = true  → user sees inventory for ALL locations
+ *   canViewAllLocations = false → query filters by:
+ *       location.id = user.currentWorkLocation.id
+ *       OR location.id IN (user.accessLocation[].id)
+ */
 @Entity('document_permissions')
 export class DocumentPermission extends Model {
 
-  
   @ManyToOne(() => DocumentDefinition, (docDef) => docDef.permissions)
   @JoinColumn({ name: 'document_definition_id' })
   documentDefinition: DocumentDefinition;
 
- 
   @ManyToOne(() => User)
   employee: User;
 
@@ -30,4 +44,12 @@ export class DocumentPermission extends Model {
 
   @Column({ default: false })
   canDownload: boolean;
+
+  /**
+   * Only relevant when documentDefinition.documentType === 'INVENTORY'
+   * true  → show inventory across all locations
+   * false → filter by user.currentWorkLocation + user.accessLocation
+   */
+  // @Column({ default: false })
+  // canViewAllLocations: boolean;
 }

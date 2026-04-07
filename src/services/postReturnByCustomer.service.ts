@@ -455,9 +455,9 @@ export class PostReturnByCustomerService {
     const document1 = await this.docDoubleApproverService.getDocumentById(
       docid,
     );
-    if (!document1) {
-      throw new Error(`Document with ID ${docid} not found`);
-    }
+    // if (!document1) {
+      //throw new Error(`Document with ID ${docid} not found`);
+    //}
     console.log('document....', document1);
     const relatedId = document1.documentTypeId;
     console.log('relatedId:', relatedId);
@@ -616,6 +616,26 @@ export class PostReturnByCustomerService {
   }
 
   async getByIdPostReturnByCustomer(id: string): Promise<any> {
+    // Resolve actual postReturn ID — the caller may pass either the postReturn ID
+    // or the document ID (from the documentb table). Try direct lookup first,
+    // then fall back to resolving via document_type_id.
+    let resolvedId = id;
+    let directResult = await this.postReturnByCustomerRepository
+      .createQueryBuilder('postReturn')
+      .where('postReturn.id = :id', { id })
+      .getOne();
+
+    if (!directResult) {
+      try {
+        const document = await this.docDoubleApproverService.getDocumentById(id);
+        if (document?.documentTypeId) {
+          resolvedId = document.documentTypeId;
+        }
+      } catch (_) {
+        // document not found either — will throw below
+      }
+    }
+
     const result = await this.postReturnByCustomerRepository
       .createQueryBuilder('postReturn')
       .leftJoinAndSelect('postReturn.companyName', 'company')
@@ -625,7 +645,7 @@ export class PostReturnByCustomerService {
       .leftJoinAndSelect('returnedProduct.variant','variant')
       .leftJoinAndSelect('returnedProduct.saleUoM', 'saleUoM')
 
-      .where('postReturn.id = :id', { id })
+      .where('postReturn.id = :id', { id: resolvedId })
       .getOne();
 
     if (!result) {

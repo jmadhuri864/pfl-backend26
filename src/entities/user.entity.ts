@@ -99,11 +99,11 @@ export class User extends Model {
   @Column({
     type: 'date',
     nullable: true,
-    transformer: {
-      to: (value: Date) => value,
-      from: (value: string) =>
-        value ? format(new Date(value), 'yyyy-MM-dd') : null,
-    },
+    // transformer: {
+    //   to: (value: Date) => value,
+    //   from: (value: string) =>
+    //     value ? format(new Date(value), 'yyyy-MM-dd') : null,
+    // },
   })
   joiningDate: Date;
   @Column({ nullable: true })

@@ -8,10 +8,11 @@ export class PaymentInfoForGRN extends Model {
   @Column("character varying", { name: "payment_mode", length: 100 ,nullable:true})
   paymentMode: string;
 
-  @Column({ type:'date',name: "payment_date", nullable: true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column({ type:'date',name: "payment_date", nullable: true,
+  //   transformer : {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 }) 
   paymentDate: Date;
 
@@ -23,10 +24,11 @@ export class PaymentInfoForGRN extends Model {
   @Column("text", { name: "payment_terms", nullable: true })
   paymentTerms: string;
 
-  @Column( {type:'date', name: "payment_dute_date", nullable: true , transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  },
+  @Column( {type:'date', name: "payment_dute_date", nullable: true ,
+  //    transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // },
 })
   dueDate: Date;
   @Column({ name: "credite_period", nullable: true })
