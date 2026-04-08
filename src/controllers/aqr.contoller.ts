@@ -126,14 +126,14 @@ console.log(aqrData)
         }
 
         // 🔔 Send notification for accessing recycle bin
-        try {
-          this.notificationService.createNoti(
-            `Accessed AQR recycle bin (${aqrs.data.length} items)`,
-            userId
-          );
-        } catch (notifError) {
-          console.log('Notification error:', notifError);
-        }
+        // try {
+        //   this.notificationService.createNoti(
+        //     `Accessed AQR recycle bin (${aqrs.data.length} items)`,
+        //     userId
+        //   );
+        // } catch (notifError) {
+        //   console.log('Notification error:', notifError);
+        // }
         
         // Log successful retrieval with specific message
         ControllerLogger.logGetAllRecords('AQR', req, res);
@@ -304,15 +304,15 @@ console.log(aqrData)
       }
 
       // 🔔 Send notification for AQR deletion
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `AQR ${id} deleted successfully`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `AQR ${id} deleted successfully`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       //logger.info('AQR deleted successfully', { aqrId: id });
       
@@ -559,15 +559,15 @@ try {
       const result = await this.aqrService.deleteMultipleAqrs(ids);
 
       // 🔔 Send notification for bulk AQR deletion
-      try {
-        const userId = res.locals.user.id;
-       this.notificationService.createNoti(
-          `Bulk delete operation completed: ${result.success} AQRs deleted successfully, ${result.failed} failed`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //  this.notificationService.createNoti(
+      //     `Bulk delete operation completed: ${result.success} AQRs deleted successfully, ${result.failed} failed`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.status(200).json({
         message: result.message,

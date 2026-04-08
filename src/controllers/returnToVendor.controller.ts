@@ -230,17 +230,17 @@ export class ReturnToVendorController {
       const result = await this.returnToVendorService.softDeleteReturn(id);
 
       // 🔔 Send notification for return to vendor deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Return to vendor with ID ${id} deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Return to vendor delete notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Return to vendor with ID ${id} deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Return to vendor delete notification error:', notifError);
+      // }
 
       return res.status(200).json({
         success: true,

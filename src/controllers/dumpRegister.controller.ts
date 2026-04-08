@@ -310,17 +310,17 @@ export class DumpRegisterController {
       }
 
       // 🔔 Send notification for dump register deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Dump register deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Dump register deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Dump register deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Dump register deletion notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Dump Register deleted', id, req, res);
       res.status(204).send();
@@ -520,17 +520,17 @@ export class DumpRegisterController {
       const result = await this.dumpRegisterService.deleteMultipleDumpRegisters(ids);
       
       // 🔔 Send notification for multiple dump registers deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `${ids.length} dump registers deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Multiple dump registers deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `${ids.length} dump registers deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Multiple dump registers deletion notification error:', notifError);
+      // }
       
       ControllerLogger.logSuccess('Multiple Dump Registers deleted', `${ids.length} items`, req, res);
       res.status(200).json({

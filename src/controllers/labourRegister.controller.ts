@@ -213,13 +213,13 @@ import { NotificationService } from "../services/notification.service";
         }
 
         // Send notification for labour register deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Labour Register record deleted successfully`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `Labour Register record deleted successfully`,
+        //     userId
+        //   );
+        // }
 
   //res.status(204).send();
   res.status(200).json({

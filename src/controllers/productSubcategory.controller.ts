@@ -202,13 +202,13 @@ export class ProductSubcategoryController {
         ControllerLogger.logSuccess('Product Subcategory deleted', id, req, res);
 
         // Send notification for product subcategory deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Product Subcategory deleted successfully`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `Product Subcategory deleted successfully`,
+        //     userId
+        //   );
+        // }
 
         res.status(200).json({
           status: "success",
@@ -253,13 +253,13 @@ public async softDeleteMultipleProductSubcategory(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple ProductSubcategory soft deleted: ${productSubcategoryIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple ProductSubcategory soft deleted: ${productSubcategoryIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

@@ -326,13 +326,13 @@ export class TPVoucherController {
       ControllerLogger.logSuccess('Transport Payment Voucher deleted', id, req, res);
 
       // Send notification for transport payment voucher deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Transport Payment Voucher deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Transport Payment Voucher deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -362,13 +362,13 @@ export class TPVoucherController {
           ControllerLogger.logSuccess('Transport Payment Voucher multiple deletion', `${ids.length} records`, req, res);
 
           // Send notification for multiple transport payment voucher deletion
-          const userId = res.locals.user?.id;
-          if (userId) {
-            await this.notificationService.createNoti(
-              `Multiple Transport Payment Vouchers deleted successfully: ${ids.length} records`,
-              userId
-            );
-          }
+          // const userId = res.locals.user?.id;
+          // if (userId) {
+          //   await this.notificationService.createNoti(
+          //     `Multiple Transport Payment Vouchers deleted successfully: ${ids.length} records`,
+          //     userId
+          //   );
+          // }
 
           res.status(200).json({
             message: result.message,

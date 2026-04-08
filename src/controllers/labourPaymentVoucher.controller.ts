@@ -279,13 +279,13 @@ export class LabourPaymentVoucherController {
       ControllerLogger.logSuccess('Labour Payment Voucher deleted', id, req, res);
 
       // Send notification for labour payment voucher deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Labour Payment Voucher deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Labour Payment Voucher deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({ 
         status: "success", 

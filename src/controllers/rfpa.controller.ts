@@ -573,13 +573,13 @@ export class RfpaController {
       ControllerLogger.logSuccess('RFPA deleted', id, req, res);
 
       // Send notification for RFPA deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `RFPA deleted successfully`,
-          userId,
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `RFPA deleted successfully`,
+      //     userId,
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',

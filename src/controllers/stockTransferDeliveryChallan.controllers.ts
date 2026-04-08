@@ -120,13 +120,13 @@ export class StockTranferDeliveryChallanController {
       ControllerLogger.logSuccess('Stock Transfer Delivery Challan multiple deletion', `${ids.length} records`, req, res);
 
       // Send notification for multiple stock transfer delivery challan deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Multiple Stock Transfer Delivery Challans deleted successfully: ${ids.length} records`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multiple Stock Transfer Delivery Challans deleted successfully: ${ids.length} records`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         message: result.message,
@@ -297,13 +297,13 @@ export class StockTranferDeliveryChallanController {
       ControllerLogger.logSuccess('Stock Transfer Delivery Challan deleted', id, req, res);
 
       // Send notification for stock transfer delivery challan deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Stock Transfer Delivery Challan deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Stock Transfer Delivery Challan deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: 'success',

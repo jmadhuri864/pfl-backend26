@@ -226,13 +226,13 @@ export class UOMController {
         ControllerLogger.logSuccess('UOM deleted', id, req, res);
 
         // Send notification for UOM deletion
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `UOM deleted successfully`,
-            userId
-          );
-        }
+        // const userId = res.locals.user?.id;
+        // if (userId) {
+        //   await this.notificationService.createNoti(
+        //     `UOM deleted successfully`,
+        //     userId
+        //   );
+        // }
 
         res.status(204).json({
           status: "success",
@@ -273,13 +273,13 @@ export class UOMController {
       ControllerLogger.logSuccess('UOM multiple deletion', `${ids.length} records`, req, res);
 
       // Send notification for multiple UOM deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Multiple UOMs deleted successfully: ${ids.length} records`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multiple UOMs deleted successfully: ${ids.length} records`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",

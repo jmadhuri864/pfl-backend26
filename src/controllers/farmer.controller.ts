@@ -504,17 +504,17 @@ console.log(files)
       }
 
       // 🔔 Send notification for farmer deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Farmer deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Farmer deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Farmer deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Farmer deletion notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('Farmer deleted', id, req, res);
       res.status(200).json({
@@ -725,13 +725,13 @@ console.log(files)
       );
   
       // Send notification
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Multiple farmers soft deleted: ${farmerIds.length}`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multiple farmers soft deleted: ${farmerIds.length}`,
+      //     userId
+      //   );
+      // }
   
       return res.status(200).json({
         status: "success",

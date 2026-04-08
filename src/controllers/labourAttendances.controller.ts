@@ -211,13 +211,13 @@ export class LaborAttendancesController {
       ControllerLogger.logSuccess('Labour Attendance deleted', id, req, res);
 
       // Send notification for labour attendance deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Labour Attendance record deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Labour Attendance record deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",

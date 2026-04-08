@@ -333,13 +333,13 @@ export class PMPVoucherController {
       ControllerLogger.logSuccess('PMP Voucher deleted', id, req, res);
 
       // Send notification for PMP voucher deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `PMP Voucher deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `PMP Voucher deleted successfully`,
+      //     userId
+      //   );
+      // }
       
       res.status(200).json({ 
         status: "success",

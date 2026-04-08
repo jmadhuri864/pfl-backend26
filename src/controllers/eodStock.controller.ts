@@ -353,17 +353,17 @@ export class EodStockController {
       }
 
       // 🔔 Send notification for EOD stock deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `EOD stock report deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('EOD stock deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `EOD stock report deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('EOD stock deletion notification error:', notifError);
+      // }
 
       ControllerLogger.logSuccess('EOD Stock deleted', id, req, res);
       res.status(204).send();
@@ -387,15 +387,15 @@ export class EodStockController {
       const result = await this.eodStockService.deleteMultipleEodStock(ids);
 
       // 🔔 Send notification for bulk AQR deletion
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `EodStock deleted successfully`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `EodStock deleted successfully`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.status(200).json({
         message: result.message,
