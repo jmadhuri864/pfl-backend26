@@ -241,7 +241,7 @@ console.log(files)
         return next(new AppError(400, 'No file uploaded'));
       }
 
-      await this.farmerService.createFarmerwithExcel((req.file as any).location!);
+      await this.farmerService.createFarmerwithExcel((req.file as any).location || (req.file as any).path || req.file.filename);
 
       ControllerLogger.logSuccess('Farmer Excel uploaded', 'bulk', req, res);
       res.status(200).json({ message: 'File processed successfully' });

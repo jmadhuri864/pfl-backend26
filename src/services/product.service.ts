@@ -120,38 +120,47 @@ export class ProductService {
     const productCode = await this.generateProductCode(prefix);
     dto.productCode = productCode;
 
-    const product = this.productRepository.create(dto);
+    // Strip variant from dto before saving product to prevent incomplete cascade save
+    const varientData = dto.varient;
+    const { varient, ...productDto } = dto;
+
+    const product = this.productRepository.create(productDto);
     const savedProduct = await this.productRepository.save(product);
 
     const savedProduct1 = Array.isArray(savedProduct)
       ? savedProduct[0]
       : savedProduct;
 
-    if (dto.varient) {
-      dto.varient.product = savedProduct;
-      (dto.varient.variantName = await getVariantIdentifier(
+    if (varientData) {
+      const variantName = await getVariantIdentifier(
         savedProduct1.name,
-        dto.varient.count,
-        dto.varient.size,
-        dto.varient.variety,
-        dto.varient.origin,
-        dto.varient.brand,
-      )),
-        (dto.varient.variantCode = await generateVariantCode(
-          savedProduct1.id,
-          savedProduct1.prefix,
-          dto.varient.count,
-          dto.varient.size,
-          dto.varient.variety,
-          dto.varient.origin,
-          dto.varient.brand,
-        ));
-      const variantEntity = this.productVarientsRepository.create(dto.varient);
+        varientData.count,
+        varientData.size,
+        varientData.variety,
+        varientData.origin,
+        varientData.brand,
+      );
+      const variantCode = await generateVariantCode(
+        savedProduct1.id,
+        savedProduct1.prefix,
+        varientData.count,
+        varientData.size,
+        varientData.variety,
+        varientData.origin,
+        varientData.brand,
+      );
+
+      const variantEntity = this.productVarientsRepository.create({
+        ...varientData,
+        product: savedProduct1,
+        variantName,
+        variantCode,
+      });
 
       await this.productVarientsRepository.save(variantEntity);
     }
 
-    return savedProduct;
+    return savedProduct1;
   }
 
  async getAll(options: PaginationOptions): Promise<any> {

@@ -996,9 +996,10 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     .leftJoinAndSelect('vendor.mainProduct','product')
     .leftJoinAndSelect('vendor.listOfAllProducts','listOfAllProducts')
     // .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
-    // .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
+     .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
     .leftJoinAndSelect('vendor.category', 'category')
+    //.leftJoinAndSelect('vendor.classification,'classification')
     .orderBy('vendor.createdAt', 'DESC');
 
   const vendors = await buildQuery(queryBuilder, queryOptions, 'vendor');
@@ -1008,18 +1009,14 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
 
     return {
-      //...vendor,
+      
       createdBy: `${vendor.createdBy?.firstName ?? ''} ${vendor.createdBy?.lastName ?? ''}`.trim(),
       id:vendor.id,
       status:vendor.status,
       vendorCode:`${vendor.vendorCode}`.toUpperCase(),
       companyName:vendor.companyName,
       category:vendor.category.name,
-        // id:vendor.category.id,
-        // name:vendor.category.name},
       subcategory:vendor.subcategory.name,
-        // id:vendor.subcategory.id,
-        // name:vendor.subcategory.name},
       officeAddress:vendor.officeAddress? formatAddress(vendor.officeAddress) : '',
       officeContactNo:vendor.officeContactNo,
       listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
@@ -1027,31 +1024,22 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
                         .join(','):'',
       mainProduct:vendor.mainProduct?.name || '', 
       dispatchCenter:vendor.dispatchCenter,
-      wareHouseLocation:vendor.warehouseLocations,
+      warehouseLocations:vendor.warehouseLocations,
       packingCenterLocation:vendor.packingCenterLocation,
       createdDate,
       createdTime,
-     // classification:vendor.classification,
-      //officeEmail:vendor.officeEmail,
-      //gstn:`${vendor.gstn}`.toUpperCase(),
-      // panNo:`${vendor.panNo}`.toUpperCase() ,
-      // msmeNo:`${vendor.msmeNo}`.toUpperCase(),
-      // tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
-      // paymentMode:vendor.paymentMode,
-      // proposedPaymentTerms:vendor.proposedPaymentTerms,
-      //creditTerms:vendor.creditTerms,
-      // listOfAllPackingMaterials:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
-      //                            .map((material:PackingMaterial)=>material?.packagingMaterialName)
-      //                            .join(',') : '',
-      // mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
-      // vendorSalesInfo:{
-      //   contactFName:vendor.vendorSaleInfo.contactFName ,
-      //   contactMName:vendor.vendorSaleInfo.contactMName ,
-      //   contactLName:vendor.vendorSaleInfo.contactLName ,
-      //   directContactNumber:vendor.vendorSaleInfo.directContactNumber ,
-      //   mobileNumber:vendor.vendorSaleInfo.mobileNumber,
-      //   email:vendor.vendorSaleInfo.email
-      // }, 
+      classification:vendor.classification,
+      officeEmail:vendor.officeEmail,
+      gstn:`${vendor.gstn}`.toUpperCase()||'',
+       panNo:`${vendor.panNo}`.toUpperCase() ||'',
+       msmeNo:`${vendor.msmeNo}`.toUpperCase()||'',
+       tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
+      paymentMode:vendor.paymentMode,
+      proposedPaymentTerms:vendor.proposedPaymentTerms,
+      creditTerms:vendor.creditTerms,
+      mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
+      
+      
     };
   });
 

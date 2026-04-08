@@ -284,59 +284,23 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
 
     return {
       id: cust.id,
-      createdBy: cust.createdBy 
-        ? `${cust.createdBy.firstName} ${cust.createdBy.lastName}`
-        : 'Unknown User',
-      customerTypes: {
-        id:cust.customerTypes.id,
-        name:cust.customerTypes?.name || null
-      },
+      createdBy: `${cust.createdBy.firstName} ${cust.createdBy.lastName}`||null,
+      customerTypes:cust.customerTypes?.name||null,
       createdDate,
       createdTime,
       status: cust.status.charAt(0).toUpperCase() + cust.status.slice(1),
       customerCode: cust.customerCode.toUpperCase(),
       organisationName: cust.organisationName,
       organisationType: cust.organisationType,
-      customerCategory: {
-        id:cust.customerCategory.id,
-        name:cust.customerCategory?.name || null
-      },
+      customerCategory: cust.customerCategory?.name,
       primaryContactNo: cust.primaryContactNo,
       emailPrimary: cust.emailPrimary,
-      refferdBy:{
-        id:cust.keyMobileNumbers.id,
-        refferdBy:`${cust.keyMobileNumbers?.ref1FName??''} ${cust.keyMobileNumbers?.ref1MName??''} ${cust.keyMobileNumbers?.ref1LName??''}`
-      },
-      customerAddress: {
-        id:cust.customerAddress.id,
-        customerAddress:`${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim(),
-      contactPersonName:{
-        id:cust.billingDetails.id,
-        //billingName: cust.billingDetails?.billingName || null,
-        // contactPersonFName: cust.billingDetails?.contactPersonFName || null,
-        // contactPersonLName: cust.billingDetails?.contactPersonLName || null,
-        // contactPersonMName: cust.billingDetails?.contactPersonMName || null,
-        contactPersonName:`${cust.billingDetails?.contactPersonFName??''} ${cust.billingDetails?.contactPersonMName??''} ${cust.billingDetails?.contactPersonLName??''}`
+    customerAddress: `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()||null,
+      contactPersonName:`${cust.billingDetails?.contactPersonFName??''} ${cust.billingDetails?.contactPersonMName??''} ${cust.billingDetails?.contactPersonLName??''}`||null
+    
+        
       }
-
-      //   billingAddress: cust.billingDetails?.billingAddress 
-      //     ? `${cust.billingDetails.billingAddress.address1 || ''} ${cust.billingDetails.billingAddress.address2 || ''} ${cust.billingDetails.billingAddress.city || ''} ${cust.billingDetails.billingAddress.state || ''} ${cust.billingDetails.billingAddress.pincode || ''}`.trim()
-      //     : null,
-      //   primaryContactNo: cust.billingDetails?.primaryContactNo || null,
-      //   emailPrimary: cust.billingDetails?.emailPrimary || null,
-      // },
-        // deliveryDetails:{
-        // receivingPersonFName: cust.deliveryDetails?.receivingPersonFName || null,
-        // receivingPersonLName: cust.deliveryDetails?.receivingPersonLName || null,
-        // receivingPersonMName: cust.deliveryDetails?.receivingPersonMName || null,
-        // deliveryAddress: cust.deliveryDetails?.deliveryAddress 
-        //   ? `${cust.deliveryDetails.deliveryAddress.address1 || ''} ${cust.deliveryDetails.deliveryAddress.address2 || ''} ${cust.deliveryDetails.deliveryAddress.city || ''} ${cust.deliveryDetails.deliveryAddress.state || ''} ${cust.deliveryDetails.deliveryAddress.pincode || ''}`.trim()
-        //   : null,
-        // primaryContactNo: cust.deliveryDetails?.primaryContactNo || null,
-        // emailPrimary: cust.deliveryDetails?.emailPrimary || null,
-        // },
-      }
-    }
+    
   })
 
   console.log("customer data",customers)

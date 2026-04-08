@@ -990,20 +990,29 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
   async createFarmerwithExcel(fileUrl: string): Promise<any> {
     try {
       console.log('in create farmer with Excel, fileUrl:', fileUrl);
+
+      if (!fileUrl) {
+        throw new Error('No file URL or path provided for Excel processing');
+      }
       
       // First, download the file from DigitalOcean Spaces
       let fileBuffer: Buffer;
       
       if (fileUrl.startsWith('https://')) {
-        // Extract the key from the URL
-        const urlParts = fileUrl.split('/');
-        const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
+        // Extract the key from the URL - handle any depth of path
+        const urlObj = new URL(fileUrl);
+        const key = urlObj.pathname.replace(/^\//, ''); // strip leading slash
         console.log('Downloading file from Spaces with key:', key);
         
         // Download file from Spaces
         fileBuffer = await this.getExcelFromSpaces(key);
+      } else if (fileUrl.startsWith('/') || fileUrl.includes('\\') || fileUrl.includes('uploads/')) {
+        // Local file path fallback
+        const fs = await import('fs');
+        console.log('Reading file from local path:', fileUrl);
+        fileBuffer = fs.readFileSync(fileUrl);
       } else {
-        // If it's already a local path or key, try to get it from Spaces
+        // Treat as Spaces key directly
         fileBuffer = await this.getExcelFromSpaces(fileUrl);
       }
       
@@ -1246,7 +1255,7 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
       return fileBuffer;
     } catch (error) {
       console.error('❌ Error reading Excel file from Spaces:', error);
-      throw new Error(`Failed to read Excel file: ${key}`);
+      throw new Error(`Failed to read Excel file from Spaces (key: ${key}): ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
