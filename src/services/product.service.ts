@@ -120,9 +120,8 @@ export class ProductService {
     const productCode = await this.generateProductCode(prefix);
     dto.productCode = productCode;
 
-    // Strip variant from dto before saving product to prevent incomplete cascade save
-    const varientData = dto.varient;
-    const { varient, ...productDto } = dto;
+    const varientData = dto.varient ?? dto.variant;
+    const { varient, variant, ...productDto } = dto;
 
     const product = this.productRepository.create(productDto);
     const savedProduct = await this.productRepository.save(product);
@@ -132,32 +131,44 @@ export class ProductService {
       : savedProduct;
 
     if (varientData) {
-      const variantName = await getVariantIdentifier(
-        savedProduct1.name,
-        varientData.count,
-        varientData.size,
-        varientData.variety,
-        varientData.origin,
-        varientData.brand,
-      );
-      const variantCode = await generateVariantCode(
-        savedProduct1.id,
-        savedProduct1.prefix,
-        varientData.count,
-        varientData.size,
-        varientData.variety,
-        varientData.origin,
-        varientData.brand,
-      );
+      // handle both array and single object payloads
+      const variants = Array.isArray(varientData) ? varientData : [varientData];
 
-      const variantEntity = this.productVarientsRepository.create({
-        ...varientData,
-        product: savedProduct1,
-        variantName,
-        variantCode,
-      });
+      for (const item of variants) {
+        const variantName = await getVariantIdentifier(
+          savedProduct1.name,
+          item.count,
+          item.size,
+          item.variety,
+          item.origin,
+          item.brand,
+        );
 
-      await this.productVarientsRepository.save(variantEntity);
+        console.log("Variant name ",variantName)
+
+        const variantCode = await generateVariantCode(
+          savedProduct1.id,
+          savedProduct1.prefix,
+          item.count,
+          item.size,
+          item.variety,
+          item.origin,
+          item.brand,
+        );
+
+        console.log("Variant code ", variantCode);
+        
+
+        const variantEntity = this.productVarientsRepository.create({
+          ...item,
+          product: savedProduct,
+          productName: savedProduct1.name,
+          variantName:variantName,
+          variantCode:variantCode,
+        });
+
+        await this.productVarientsRepository.save(variantEntity);
+      }
     }
 
     return savedProduct1;
@@ -252,6 +263,7 @@ export class ProductService {
           'uom.id',
           'qualityParameters',
           //'variants.varientName',
+          'variants.id',
           'variants.count',
           'variants.size',
           'variants.variety',
@@ -282,6 +294,7 @@ export class ProductService {
         qualityParameters: product.qualityParameters,
         variant:
           product.variant?.map((v) => ({
+            id: v.id,
             variantCode: v.variantCode,
             count: v.count,
             size: v.size,
@@ -956,6 +969,7 @@ export class ProductService {
     }
 
     const oldData = { ...product };
+    const existingVariants = product.variant ?? [];
 
     if (productData?.qualityParameters) {
       await this.qualityParameterRepository.save(
@@ -982,54 +996,35 @@ export class ProductService {
 
     oldData.productCode = productData.productCode;
 
+    // strip variant to prevent TypeORM cascade re-inserting them
+    const { variant, varient, ...cleanProductData } = productData;
+    product.variant = [];
+
     const updatedProduct = await this.productRepository.save({
       ...product,
-      ...productData,
+      ...cleanProductData,
     });
     console.log('product id is ', updatedProduct.id);
 
-    for (const variantData of productData.variant) {
-      const existingVariant = await this.productVarientsRepository.findOne({
-        where: {
-          product: { id: updatedProduct.id },
-          count: variantData.count,
-          size: variantData.size,
-          variety: variantData.variety,
-          origin: variantData.origin,
-          brand: variantData.brand,
-        },
-      });
+    const incomingVariants: any[] = variant ?? varient ?? [];
 
-      console.log('Existing variant found:', existingVariant?.id);
+    for (const variantData of incomingVariants) {
+      // match by id if present, otherwise fall back to field values
+      const existingVariant = variantData.id
+        ? (existingVariants).find((v: any) => v.id === variantData.id)
+        : (existingVariants).find((v: any) =>
+            v.count === variantData.count &&
+            v.size === variantData.size &&
+            v.variety === variantData.variety &&
+            v.origin === variantData.origin &&
+            v.brand === variantData.brand
+          );
+
       if (existingVariant) {
-        const updatedVariant = {
-          ...variantData,
+        await this.productVarientsRepository.save({
           ...existingVariant,
-          product: updatedProduct,
-          productName: updatedProduct.name,
-          variantName: await getVariantIdentifier(
-            updatedProduct.name,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-          variantCode: await generateVariantCode(
-            updatedProduct.id,
-            updatedProduct.prefix,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-        };
-
-        await this.productVarientsRepository.save(updatedVariant);
-      } else {
-        const newVariant = this.productVarientsRepository.create({
           ...variantData,
+          id: existingVariant.id,
           product: updatedProduct,
           productName: updatedProduct.name,
           variantName: await getVariantIdentifier(
@@ -1050,7 +1045,30 @@ export class ProductService {
             variantData.brand,
           ),
         });
-
+      } else {
+        const { id: _id, ...itemData } = variantData;
+        const newVariant = this.productVarientsRepository.create({
+          ...itemData,
+          product: updatedProduct,
+          productName: updatedProduct.name,
+          variantName: await getVariantIdentifier(
+            updatedProduct.name,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+          variantCode: await generateVariantCode(
+            updatedProduct.id,
+            updatedProduct.prefix,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+        });
         await this.productVarientsRepository.save(newVariant);
       }
     }

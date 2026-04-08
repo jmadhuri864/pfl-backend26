@@ -259,14 +259,14 @@ export class ProductController {
 
   @httpPost('/', uploadSingle.single('image'))
   public async create(
-    @requestBody() productData: any,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       logger.info('Creating a new product');
-      console.log('req   ', productData);
+      const productData = req.body;
+      console.log('req body', productData);
 
       if (req.file) {
         const imageUrl = (req.file as any).location;
@@ -356,7 +356,10 @@ export class ProductController {
     @next() next: NextFunction,
   ) {
     try {
-      //console.log(productData);
+      // Log incoming data for debugging
+      console.log('Raw req.body from frontend:', req.body);
+      console.log('Parsed productData parameter:', productData);
+
       if (req.file) {
         const imageUrl = (req.file as any).location;
         productData.image = imageUrl;
