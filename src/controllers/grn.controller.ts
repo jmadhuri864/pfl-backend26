@@ -762,10 +762,10 @@ export class GrnController {
 
       // 🔔 Send SSE notification to deleter
       
-        await this.notificationService.createNoti(
-          `GRN ${grnNo} deleted successfully`,
-          deletedBy
-        );
+        // await this.notificationService.createNoti(
+        //   `GRN ${grnNo} deleted successfully`,
+        //   deletedBy
+        // );
         
 
         
@@ -942,10 +942,10 @@ export class GrnController {
       );
 
       const result = await this.grnService.deleteMultipleGrns(ids);
-await this.notificationService.createNoti(
-          `${ids.length} GRNs deleted successfully`,
-          deletedBy
-        );
+// await this.notificationService.createNoti(
+//           `${ids.length} GRNs deleted successfully`,
+//           deletedBy
+//         );
       // 🔔 Send SSE notification to deleter
     
 

@@ -187,13 +187,13 @@ export class ProductClassificationController {
       ControllerLogger.logSuccess('Product Classification deleted', id, req, res);
 
       // Send notification for product classification deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Product Classification deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Product Classification deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       res.status(200).json({
         status: "success",
@@ -234,13 +234,13 @@ public async softDeleteMultipleProductClassification(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple classification soft deleted: ${productClassificationIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple classification soft deleted: ${productClassificationIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

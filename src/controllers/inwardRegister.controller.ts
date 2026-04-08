@@ -404,13 +404,13 @@ try {
       await this.inwardRegisterService.deleteInwardRegister(id);
       
       // Send notification for inward register deletion
-      const currentUserId = res.locals.user?.id;
-      if (currentUserId) {
-        await this.notificationService.createNoti(
-          `Inward register deleted`,
-          currentUserId
-        );
-      }
+      // const currentUserId = res.locals.user?.id;
+      // if (currentUserId) {
+      //   await this.notificationService.createNoti(
+      //     `Inward register deleted`,
+      //     currentUserId
+      //   );
+      // }
       
       res
         .status(200)

@@ -221,17 +221,17 @@ export class CustomerTypeController {
       }
     
       // 🔔 Send notification for customer type deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Customer type  deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer type deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Customer type  deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer type deletion notification error:', notifError);
+      // }
     
       ControllerLogger.logSuccess('Customer Type deleted', id, req, res);
       res.status(200).json({
@@ -274,13 +274,13 @@ public async softDeleteMultipleCustomerType(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple CustomerType soft deleted: ${customerTypeIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple CustomerType soft deleted: ${customerTypeIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

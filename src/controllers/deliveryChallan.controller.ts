@@ -121,17 +121,17 @@ next(err); // Unhandled errors
       const deliveryChallans = await this.deliveryChallanService.getAllDeliveryChallans(queryOptions);
       
       // 🔔 Send notification for get all delivery challans
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Retrieved ${deliveryChallans.meta.total} delivery challans`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Get all delivery challans notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${deliveryChallans.meta.total} delivery challans`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all delivery challans notification error:', notifError);
+      // }
       
       logger.info('Successfully fetched all Delivery Challans');
       res.status(200).json({
@@ -182,17 +182,17 @@ next(err); // Unhandled errors
       }
       
       // 🔔 Send notification for delivery challan view
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Viewed delivery challan "${deliveryChallan.challanNo}" details`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Delivery challan view notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Viewed delivery challan "${deliveryChallan.challanNo}" details`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Delivery challan view notification error:', notifError);
+      // }
       
       logger.info(`Delivery Challan retrieved successfully`);
       res.status(200).json({
@@ -269,17 +269,17 @@ next(err); // Unhandled errors
     }
     
       // 🔔 Send notification for delivery challan deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Delivery challan with ID ${id} deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Delivery challan deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Delivery challan with ID ${id} deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Delivery challan deletion notification error:', notifError);
+      // }
     
       logger.info(`Delivery Challan deleted successfully`);
       res.status(204).json({

@@ -493,13 +493,13 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
       }
 
       // Send notification for vendor deletion
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor deleted successfully`,
-          userId
-        );
-      }
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Vendor deleted successfully`,
+      //     userId
+      //   );
+      // }
 
       //ControllerLogger.logSuccess('Vendor deleted', id, req, res);
       res.status(200).json({
@@ -680,13 +680,13 @@ public async softDeleteMultipleVendors(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple vendor soft deleted: ${vendorIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple vendor soft deleted: ${vendorIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

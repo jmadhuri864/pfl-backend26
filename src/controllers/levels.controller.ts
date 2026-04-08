@@ -117,13 +117,13 @@ export class  LevelsController {
                  ControllerLogger.logSuccess('Level deleted', id, req, res);
 
                  // Send notification for level deletion
-                 const userId = res.locals.user?.id;
-                 if (userId) {
-                   await this.notificationService.createNoti(
-                     `Level deleted successfully`,
-                     userId
-                   );
-                 }
+                //  const userId = res.locals.user?.id;
+                //  if (userId) {
+                //    await this.notificationService.createNoti(
+                //      `Level deleted successfully`,
+                //      userId
+                //    );
+                //  }
 
                  res.status(200).json({ 
                   status: "success", 

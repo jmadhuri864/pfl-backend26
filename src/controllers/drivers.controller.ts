@@ -179,17 +179,17 @@ export class DriverController {
       await this.driversService.deleteDriver(id);
       
       // 🔔 Send notification for driver deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Driver "${driver.firstName}" deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Driver deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Driver "${driver.firstName}" deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Driver deletion notification error:', notifError);
+      // }
       
       res.status(200).json({
         status: 'success',

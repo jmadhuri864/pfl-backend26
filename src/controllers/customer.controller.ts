@@ -685,17 +685,17 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Customer with ID ${id} deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Customer with ID ${id} deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Customer deletion notification error:', notifError);
+      // }
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer deleted', id, req, res);
@@ -817,13 +817,13 @@ public async softDeleteMultipleCustomers(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Multiple customers soft deleted: ${customerIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Multiple customers soft deleted: ${customerIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",

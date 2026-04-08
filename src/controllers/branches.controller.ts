@@ -108,13 +108,13 @@ public async softDeleteMultipleBranches(
     );
 
     // Send notification
-    const userId = res.locals.user?.id;
-    if (userId) {
-      await this.notificationService.createNoti(
-        `Branches deleted: ${branchIds.length}`,
-        userId
-      );
-    }
+    // const userId = res.locals.user?.id;
+    // if (userId) {
+    //   await this.notificationService.createNoti(
+    //     `Branches deleted: ${branchIds.length}`,
+    //     userId
+    //   );
+    // }
 
     return res.status(200).json({
       status: "success",
@@ -348,17 +348,17 @@ console.log("serach data is ",search)
       }
 
       // 🔔 Send notification for branch deletion
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `${branchType} with ID ${id} deleted successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Branch deletion notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `${branchType} with ID ${id} deleted successfully`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Branch deletion notification error:', notifError);
+      // }
 
       // Log successful deletion
       ControllerLogger.logSuccess('Branch deleted', id, req, res);

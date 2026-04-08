@@ -299,15 +299,15 @@ export class FinalInvoiceController {
       const result = await this.finalInvoiceService.deleteMultipleFinalInvoices(ids);
 
       // 🔔 Send notification for bulk AQR deletion
-      try {
-        const userId = res.locals.user.id;
-        await this.notificationService.createNoti(
-          `Final Invoices deleted successfully`,
-          userId
-        );
-      } catch (notifError) {
-        console.log('Notification error:', notifError);
-      }
+      // try {
+      //   const userId = res.locals.user.id;
+      //   await this.notificationService.createNoti(
+      //     `Final Invoices deleted successfully`,
+      //     userId
+      //   );
+      // } catch (notifError) {
+      //   console.log('Notification error:', notifError);
+      // }
 
       res.status(200).json({
         message: result.message,
