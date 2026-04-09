@@ -38,20 +38,24 @@ export class PaymentTerms extends Model {
   IELRecommendedBy: string;
   
    
-  @Column({ type: 'date',name: 'initial_exposure_limit_RecommendedDate', nullable: true, transformer: {
-    to: (value: Date) => value, 
-    from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-  }, })
+  @Column({ type: 'date',name: 'initial_exposure_limit_RecommendedDate', nullable: true, 
+  //   transformer: {
+  //   to: (value: Date) => value, 
+  //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+  // }, 
+})
   IELRecommendedDate: Date;
 //Revision of Exposure Limit (REL)
 @Column({ name: 'Revision_exposure_limit_amount', nullable: true })
 RELinAmt: number;
 @Column({ name: 'Revision_exposure_limit_RecommendedBy', nullable: true })
 RELRecommendedBy: string;
-@Column({ type: 'date',name: 'Revision_exposure_limit_RecommendedDate', nullable: true, transformer: {
-  to: (value: Date) => value, 
-  from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
-}, })
+@Column({ type: 'date',name: 'Revision_exposure_limit_RecommendedDate', nullable: true, 
+//   transformer: {
+//   to: (value: Date) => value, 
+//   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format
+// },
+ })
 RELRecommendedDate: Date;
 @Column({ name: 'Reason', nullable: true })
 reason: string;

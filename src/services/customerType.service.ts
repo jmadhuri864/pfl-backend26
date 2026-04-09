@@ -1,13 +1,16 @@
 import { inject, injectable } from 'inversify';
-
 import { DataSource, In } from 'typeorm';
-
 import { TYPES } from '../types';
 import { CustomerType } from '../entities/customerType.entity';
 import { CustomerTypeRepository } from '../repositories/customerType.repository';
 import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'customerType';
+const CACHE_TTL = 300;        // 5 min for lists
+const CACHE_TTL_DETAIL = 300; // 5 min for single record
 
 @injectable()
 export class CustomerTypeService {
@@ -17,46 +20,72 @@ export class CustomerTypeService {
     @inject(TYPES.DataSource) private dataSource: DataSource,
     @inject(TYPES.AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {
     this.customerTypeRepository = this.dataSource.getRepository(
       CustomerType,
     ) as CustomerTypeRepository;
   }
- async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<any> {
-    let queryBuilder = await this.customerTypeRepository
-      .createQueryBuilder('customerType')
-      .orderBy('customerType.createdAt', 'DESC');
-    const result = await buildQuery(
-      queryBuilder,
-      queryOptions,
-      'productClassification',
-    );
 
-    //TODO:New Added code 
-    const formattedData = result.data.map((cust: any) => {
-      return{
-      id:cust.id,
-      name:cust.name
-      } 
-    })
-    return {
-    ...result,
-    data: formattedData,
-  };
-    //return result;
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+    }
+    await Promise.all(tasks);
   }
 
+  // ─── Methods ──────────────────────────────────────────────────────────────
+
+  async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.customerTypeRepository
+      .createQueryBuilder('customerType')
+      .select(['customerType.id', 'customerType.name'])
+      .orderBy('customerType.createdAt', 'DESC');
+
+    const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
+
+    const formatted = {
+      ...result,
+      data: result.data.map((cust: any) => ({
+        id: cust.id,
+        name: cust.name,
+      })),
+    };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
+  }
 
   async getCustomerTypeById(id: string): Promise<CustomerType | null> {
-    return this.customerTypeRepository.findOne({ 
-      where: {id},
-      select: ["id", "name"]
-     });
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<CustomerType>(key);
+    if (cached) return cached;
+
+    const customerType = await this.customerTypeRepository
+      .createQueryBuilder('customerType')
+      .select(['customerType.id', 'customerType.name'])
+      .where('customerType.id = :id', { id })
+      .getOne();
+
+    if (customerType) await this.cacheService.set(key, customerType, CACHE_TTL_DETAIL);
+    return customerType;
   }
 
   async createCustomerType(name: string): Promise<CustomerType> {
     const customerType = this.customerTypeRepository.create({ name });
-    return this.customerTypeRepository.save(customerType);
+    const saved = await this.customerTypeRepository.save(customerType);
+    await this.invalidateCache();
+    return saved;
   }
 
   public async updateCustomerType(
@@ -64,30 +93,27 @@ export class CustomerTypeService {
     name: string,
     updatedBy: string,
   ): Promise<CustomerType | null> {
-    // Step 1: Fetch the existing CustomerType (before update)
     const customerType = await this.customerTypeRepository.findOneBy({ id });
 
     if (!customerType) {
-      return null; // If the customer type doesn't exist, return null
+      return null;
     }
 
-    // Step 2: Log the changes (audit log) before updating the CustomerType
     await this.auditLogService.logChange(
-      'CustomerType', // entity name
-      id, // entity id
-      customerType, // old data
-      { name }, // new data (only name is updated)
-      updatedBy, // user who updated it
+      'CustomerType',
+      id,
+      customerType,
+      { name },
+      updatedBy,
     );
 
-    // Step 3: Update the name in the entity
     customerType.name = name;
-
-    // Step 4: Save the updated CustomerType
-    return this.customerTypeRepository.save(customerType);
+    const saved = await this.customerTypeRepository.save(customerType);
+    await this.invalidateCache(id);
+    return saved;
   }
+
   public async deleteCustomerType(id: string): Promise<boolean> {
-    // Find the customer type by ID
     const customerType = await this.customerTypeRepository.findOne({
       where: { id },
     });
@@ -96,32 +122,23 @@ export class CustomerTypeService {
       throw new AppError(404, `Customer Type with ID ${id} not found`);
     }
 
-    // Calculate the date 6 months ahead
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Log the scheduled deletion
-    console.log(
-      `Customer Type with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
-    // Set the deletionScheduledAt field for the customer type
     customerType.deletionScheduledAt = sixMonthsFromNow;
-
-    // Save the updated customer type with the scheduled deletion date
     await this.customerTypeRepository.save(customerType);
+    await this.invalidateCache(id);
 
-    console.log(`Customer Type with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
+
   async softDeleteCustomerType(typeIds: string[]) {
-
-  const result = await this.customerTypeRepository.softDelete({
-    id: In(typeIds)
-  });
-
-  return result;
-}
+    const result = await this.customerTypeRepository.softDelete({
+      id: In(typeIds),
+    });
+    await this.invalidateCache();
+    return result;
+  }
 }

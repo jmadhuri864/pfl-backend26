@@ -4,13 +4,7 @@ import { UserService } from '../services/user.service';
 import AppError from '../utils/appError';
 import { signJwt, verifyJwt } from '../utils/jwt';
 import { inject } from 'inversify';
-import {
-  controller,
-  httpPost,
-  request,
-  response,
-  next,
-} from 'inversify-express-utils';
+import { controller, httpPost, request, response, next } from 'inversify-express-utils';
 import { TYPES } from '../types';
 import logger from '../utils/logger';
 import { ControllerLogger } from '../utils/controllerLogger';
@@ -21,6 +15,7 @@ import { NotificationService } from '../services/notification.service';
 import { SSEService } from '../services/sse.service';
 import { UserRepository } from '../repositories/user.repository';
 import { ActiveSessionRepository } from '../repositories/activeSession.repository';
+import { CacheService } from '../services/cache.service';
 
 const blacklistedTokensRepo = AppDataSource.getRepository(BlacklistedToken);
 
@@ -33,19 +28,19 @@ const cookiesOptions: CookieOptions = {
 
 const accessTokenCookieOptions: CookieOptions = {
   ...cookiesOptions,
-  expires: new Date(
-    Date.now() + config.get<number>('accessTokenExpiresIn') * 60 * 1000,
-  ),
+  expires: new Date(Date.now() + config.get<number>('accessTokenExpiresIn') * 60 * 1000),
   maxAge: config.get<number>('accessTokenExpiresIn') * 60 * 1000,
 };
 
 const refreshTokenCookieOptions: CookieOptions = {
   ...cookiesOptions,
-  expires: new Date(
-    Date.now() + config.get<number>('refreshTokenExpiresIn') * 60 * 1000,
-  ),
+  expires: new Date(Date.now() + config.get<number>('refreshTokenExpiresIn') * 60 * 1000),
   maxAge: config.get<number>('refreshTokenExpiresIn') * 60 * 1000,
 };
+
+// Cache TTLs
+const USER_CACHE_TTL = 300;        // 5 min — user data for login/refresh
+const BLACKLIST_CACHE_TTL = 3600;  // 1 hour — blacklisted tokens
 
 @controller('/auth')
 export class AuthController {
@@ -61,7 +56,48 @@ export class AuthController {
     private sseService: SSEService,
     @inject(TYPES.UserRepository)
     private userRepository: UserRepository,
+    @inject(TYPES.CacheService)
+    private cacheService: CacheService,
   ) {}
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  private blacklistCacheKey(token: string): string {
+    // Use a short hash prefix to avoid huge keys
+    return `auth:blacklist:${token.slice(-32)}`;
+  }
+
+  private userCacheKey(uid: string): string {
+    return `auth:user:${uid}`;
+  }
+
+  private async isTokenBlacklisted(token: string): Promise<boolean> {
+    // Check Redis first
+    const key = this.blacklistCacheKey(token);
+    const cached = await this.cacheService.get<boolean>(key);
+    if (cached !== null) return cached;
+
+    // Fall back to DB
+    const found = await blacklistedTokensRepo.findOne({ where: { token } });
+    const result = !!found;
+
+    // Cache the result
+    await this.cacheService.set(key, result, BLACKLIST_CACHE_TTL);
+    return result;
+  }
+
+  private async blacklistToken(token: string, expiresAt: Date): Promise<void> {
+    const entity = new BlacklistedToken();
+    entity.token = token;
+    entity.createdAt = new Date();
+    entity.expiresAt = expiresAt;
+    await blacklistedTokensRepo.save(entity);
+
+    // Cache as blacklisted immediately
+    await this.cacheService.set(this.blacklistCacheKey(token), true, BLACKLIST_CACHE_TTL);
+  }
+
+  // ─── Refresh Token ────────────────────────────────────────────────────────
 
   @httpPost('/refresh-token')
   public async refreshAccessTokenHandler(
@@ -70,54 +106,34 @@ export class AuthController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Received request to refresh access token');
-
       const refresh_token = req.body.refreshToken;
       if (!refresh_token) {
-        logger.warn('Refresh token not provided');
-        return next(
-          new AppError(403, 'You need to re-authenticate. Please log in.'),
-        );
+        return next(new AppError(403, 'You need to re-authenticate. Please log in.'));
       }
 
-      const blacklistedToken = await blacklistedTokensRepo.findOne({
-        where: { token: refresh_token },
-      });
-
-      if (blacklistedToken) {
-        // 🔔 Log security event for blacklisted token usage
-        logger.warn(`Attempt to use blacklisted refresh token from IP: ${req.ip}`);
-        
-        return next(
-          new AppError(401, 'You need to re-authenticate. Please log in.'),
-        );
+      // Fast blacklist check via Redis
+      if (await this.isTokenBlacklisted(refresh_token)) {
+        logger.warn(`Blacklisted refresh token used from IP: ${req.ip}`);
+        return next(new AppError(401, 'You need to re-authenticate. Please log in.'));
       }
 
-      const decoded = verifyJwt<{ sub: string }>(
-        refresh_token,
-        'refreshTokenPublicKey',
-      );
+      const decoded = verifyJwt<{ sub: string }>(refresh_token, 'refreshTokenPublicKey');
       if (!decoded) {
-        logger.warn('Invalid refresh token provided');
-        
-        // 🔔 Log security event for invalid token
-        logger.warn(`Invalid refresh token attempt from IP: ${req.ip}`);
-        
-        return next(
-          new AppError(403, 'You need to re-authenticate. Please log in.'),
-        );
+        logger.warn(`Invalid refresh token from IP: ${req.ip}`);
+        return next(new AppError(403, 'You need to re-authenticate. Please log in.'));
       }
 
-      const user = await this.userService.findUserById(decoded.sub);
+      // Try cache first for user lookup
+      const userCacheKey = this.userCacheKey(decoded.sub);
+      let user = await this.cacheService.get<any>(userCacheKey);
       if (!user) {
-        logger.warn(`User not found for refresh token`);
-        
-        // 🔔 Log security event for token with non-existent user
+        user = await this.userService.findUserById(decoded.sub);
+        if (user) await this.cacheService.set(userCacheKey, user, USER_CACHE_TTL);
+      }
+
+      if (!user) {
         logger.warn(`Refresh token for non-existent user from IP: ${req.ip}`);
-        
-        return next(
-          new AppError(403, 'You need to re-authenticate. Please log in.'),
-        );
+        return next(new AppError(403, 'You need to re-authenticate. Please log in.'));
       }
 
       const access_token = signJwt({ sub: user.id }, 'accessTokenPrivateKey', {
@@ -125,33 +141,17 @@ export class AuthController {
       });
 
       res.cookie('access_token', access_token, accessTokenCookieOptions);
-      res.cookie('logged_in', true, {
-        ...accessTokenCookieOptions,
-        httpOnly: false,
-      });
+      res.cookie('logged_in', true, { ...accessTokenCookieOptions, httpOnly: false });
+
       logger.info('Access token refreshed successfully', { userId: user.id });
-
-      // // 🔔 Simple session refresh notification
-      // try {
-      //   await this.notificationService.createNoti(
-      //     `Session refreshed`,
-      //     user.id
-      //   );
-      // } catch (notifError) {
-      //   console.log('Notification error:', notifError);
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        access_token,
-      });
+      res.status(200).json({ status: 'success', access_token });
     } catch (err: any) {
-      logger.error('Error while refreshing access token', {
-        error: err.message,
-      });
+      logger.error('Error while refreshing access token', { error: err.message });
       next(err);
     }
   }
+
+  // ─── Login ────────────────────────────────────────────────────────────────
 
   @httpPost('/login')
   public async loginUserHandler(
@@ -160,72 +160,44 @@ export class AuthController {
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Login request received', { uid: req.body.uid });
-
       const { uid, password } = req.body;
 
       if (!uid || !password) {
-        logger.warn('Missing required fields in login request');
         throw new AppError(400, 'UID and Password are required.');
       }
 
       const trimmedPassword = password.trim();
 
-      const user = await this.userService.findUserByIdentifier(uid);
-      console.log(user);
+      // Try cache first — avoids heavy DB join on repeated login attempts
+      const userCacheKey = this.userCacheKey(uid);
+      let user = await this.cacheService.get<any>(userCacheKey);
+      if (!user) {
+        user = await this.userService.findUserByIdentifier(uid);
+        if (user) await this.cacheService.set(userCacheKey, user, USER_CACHE_TTL);
+      }
 
       if (!user) {
-        logger.error('User not found during login', { uid });
-        
-        // 🔔 Log failed login attempt (no notification since user not found)
-        logger.warn(`Failed login attempt for non-existent user: ${uid} from IP: ${req.ip}`);
-        
+        logger.warn(`Failed login for non-existent user: ${uid} from IP: ${req.ip}`);
         throw new AppError(404, 'Username or email is incorrect');
       }
 
       if (user.status === 'INACTIVE') {
-        logger.error('User is inactive during login', { uid });
-        
-        // 🔔 Send notification for inactive account login attempt
-        // try {
-        //   await this.notificationService.createNoti(
-        //     `Invalid password and email`,
-        //     user.id
-        //   );
-        // } catch (notifError) {
-        //   console.log('Inactive account notification error:', notifError);
-        // }
-        
-        throw new AppError(
-          403,
-          'Your account is inactive. Please contact administrator.',
-        );
+        throw new AppError(403, 'Your account is inactive. Please contact administrator.');
       }
-      let isPasswordMatch;
-      //const isPasswordMatch = await User.comparePasswords(trimmedPassword, user.tempPlainPassword);
-      if (user.tempPlainPassword === trimmedPassword) {
-        isPasswordMatch = true;
-      }
+
+      const isPasswordMatch = user.tempPlainPassword === trimmedPassword;
+
+      // Mark online — invalidate cache so fresh data is fetched next time
       user.isOnline = true;
       await this.userRepository.save(user);
+      await this.cacheService.del(userCacheKey);
+
       if (!isPasswordMatch) {
-        logger.warn('Invalid password during login', { uid });
-        
-        // 🔔 Send notification for failed password attempt
-        // try {
-        //   await this.notificationService.createNoti(
-        //     `Wrong password`,
-        //     user.id
-        //   );
-        // } catch (notifError) {
-        //   console.log('Failed password notification error:', notifError);
-        // }
-        
         ControllerLogger.logAuth('User login', req, res, false);
         throw new AppError(401, 'Wrong password');
       }
 
-      const permissions = user.permissions.map((permission) => ({
+      const permissions = user.permissions.map((permission: any) => ({
         documentDefinition: permission.documentDefinition
           ? {
               id: permission.documentDefinition.id,
@@ -240,17 +212,14 @@ export class AuthController {
         canDownload: permission.canDownload,
       }));
 
-      const name = user.firstName + ' ' + user.lastName;
+      const name = `${user.firstName} ${user.lastName}`;
 
-      // Store active session
+      // Store active session if none exists
       const existingSessions = await this.activeSessionRepository.find({
         where: { user_id: user.id, is_active: true },
       });
-      console.log('existingSessions', existingSessions);
 
       if (!existingSessions || existingSessions.length === 0) {
-        console.log('no existing session');
-
         const session = this.activeSessionRepository.create({
           user_id: user.id,
           username: name,
@@ -260,138 +229,42 @@ export class AuthController {
         logger.info('Active session stored', { userId: user.id });
       }
 
-      const {
-        ip,
-        osPlatform,
-        osRelease,
-        osType,
-        cpuArch,
-        browser,
-        device,
-        osName,
-      } = req.systemInfo ?? {};
-
+      // Save system info log
+      const { ip, osPlatform, osRelease, osType, cpuArch, browser, device, osName } = req.systemInfo ?? {};
       const systemLog = this.systemLogRepository.create({
-        userId: user.id,
-        ip,
-        osPlatform,
-        osRelease,
-        osType,
-        cpuArch,
-        browser,
-        device,
-        osName,
+        userId: user.id, ip, osPlatform, osRelease, osType, cpuArch, browser, device, osName,
       });
-
       await this.systemLogRepository.save(systemLog);
-      logger.info('System log saved', { userId: user.id });
 
-      const { access_token, refresh_token } = await this.userService.signTokens(
-        user,
-      );
-      logger.info('User logged in successfully', { userId: user.id });
+      const { access_token, refresh_token } = await this.userService.signTokens(user);
 
       res.cookie('access_token', access_token, accessTokenCookieOptions);
       res.cookie('refresh_token', refresh_token, refreshTokenCookieOptions);
-      res.cookie('logged_in', true, {
-        ...accessTokenCookieOptions,
-        httpOnly: false,
-      });
+      res.cookie('logged_in', true, { ...accessTokenCookieOptions, httpOnly: false });
 
-      // 🔔 Simple login success notification
-      try {
-        await this.notificationService.createNoti(
-          `Login successfully`,
-          user.id
-        );
-      } catch (notifError) {
-        console.log('Login notification error:', notifError);
-      }
+      this.notificationService.createNoti('Login successfully', user.id).catch(() => {});
 
-      // Log successful login
       ControllerLogger.logAuth('User login', req, res, true);
+      logger.info('User logged in successfully', { userId: user.id });
 
       res.status(200).json({
         status: 'success',
-
         access_token,
         refresh_token,
-
         id: user.id,
         userName: name,
-        // company: user.companyName?.name,
-        //department: user.departments,
         roles: user.roles,
         currentWorkLocation: user.currentWorkLocation?.id,
-        // level: user.currentLevel
-        //   ? { id: user.currentLevel.id, name: user.currentLevel.name }
-        //   : null,
         employeeId: user.employeeId,
         permissions,
       });
     } catch (err) {
-      logger.error('Unexpected error during login process', { error: err });
+      logger.error('Unexpected error during login', { error: err });
       next(err);
     }
   }
 
-  // @httpPost('/logout')
-  // public async logoutUserHandler(
-  //   req: Request,
-  //   res: Response,
-  //   next: NextFunction,
-  // ) {
-  //   try {
-  //     const { refresh_token, access_token } = req.body;
-
-  //     if (!refresh_token) {
-  //       return next(new AppError(400, 'Refresh token not provided'));
-  //     }
-  //     if (!access_token) {
-  //       return next(new AppError(400, 'Access token not provided'));
-  //     }
-
-  //    const decoded = verifyJwt<{ sub: string }>(
-  //       access_token,
-  //       'accessTokenPublicKey',
-  //     );
-  //   console.log("decoded",decoded);
-  //   const user = await this.userRepository.findOne({ where: { id: decoded?.sub} });
-
-  //   if (user) {
-  //     user.isOnline = false;
-  //     await this.userRepository.save(user);
-  //   }
-  //     const accessTokenExpiry =
-  //       Math.floor(Date.now() / 1000) +
-  //       config.get<number>('accessTokenExpiresIn') * 60;
-  //     const accessTokenBlacklist = new BlacklistedToken();
-  //     accessTokenBlacklist.token = access_token;
-  //     accessTokenBlacklist.createdAt = new Date();
-  //     accessTokenBlacklist.expiresAt = new Date(accessTokenExpiry * 1000);
-  //     await blacklistedTokensRepo.save(accessTokenBlacklist);
-
-  //     const refreshTokenExpiry =
-  //       Math.floor(Date.now() / 1000) +
-  //       config.get<number>('refreshTokenExpiresIn') * 60;
-  //     const refreshTokenBlacklist = new BlacklistedToken();
-  //     refreshTokenBlacklist.token = refresh_token;
-  //     refreshTokenBlacklist.createdAt = new Date();
-  //     refreshTokenBlacklist.expiresAt = new Date(refreshTokenExpiry * 1000);
-  //     await blacklistedTokensRepo.save(refreshTokenBlacklist);
-
-  //     res.clearCookie('access_token');
-  //     res.clearCookie('refresh_token');
-  //     logger.info('User logged out successfully');
-
-  //     res.status(200).json({
-  //       status: 'success',
-  //       message: 'User logged out successfully',
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // }
+  // ─── Logout ───────────────────────────────────────────────────────────────
 
   @httpPost('/logout')
   public async logoutUserHandler(
@@ -402,87 +275,61 @@ export class AuthController {
     try {
       const { refresh_token, access_token } = req.body;
 
-      if (!refresh_token) {
-        return next(new AppError(400, 'Refresh token not provided'));
-      }
-      if (!access_token) {
-        return next(new AppError(400, 'Access token not provided'));
-      }
-      const decoded = verifyJwt<{ sub: string }>(
-        access_token,
-        'accessTokenPublicKey',
-      );
-      console.log('decoded', decoded);
-      const user = await this.userRepository.findOne({
-        where: { id: decoded?.sub },
-      });
+      if (!refresh_token) return next(new AppError(400, 'Refresh token not provided'));
+      if (!access_token) return next(new AppError(400, 'Access token not provided'));
+
+      const decoded = verifyJwt<{ sub: string }>(access_token, 'accessTokenPublicKey');
+      const user = decoded?.sub
+        ? await this.userRepository.findOne({ where: { id: decoded.sub } })
+        : null;
 
       if (user) {
         user.isOnline = false;
         await this.userRepository.save(user);
+        // Invalidate user cache on logout
+        await this.cacheService.del(this.userCacheKey(user.id));
       }
-      const accessTokenExpiry =
-        Math.floor(Date.now() / 1000) +
-        config.get<number>('accessTokenExpiresIn') * 60;
-      const accessTokenBlacklist = new BlacklistedToken();
-      accessTokenBlacklist.token = access_token;
-      accessTokenBlacklist.createdAt = new Date();
-      accessTokenBlacklist.expiresAt = new Date(accessTokenExpiry * 1000);
-      await blacklistedTokensRepo.save(accessTokenBlacklist);
 
-      const refreshTokenExpiry =
-        Math.floor(Date.now() / 1000) +
-        config.get<number>('refreshTokenExpiresIn') * 60;
-      const refreshTokenBlacklist = new BlacklistedToken();
-      refreshTokenBlacklist.token = refresh_token;
-      refreshTokenBlacklist.createdAt = new Date();
-      refreshTokenBlacklist.expiresAt = new Date(refreshTokenExpiry * 1000);
-      await blacklistedTokensRepo.save(refreshTokenBlacklist);
+      // Blacklist both tokens (DB + Redis cache)
+      const accessExpiry = new Date((Math.floor(Date.now() / 1000) + config.get<number>('accessTokenExpiresIn') * 60) * 1000);
+      const refreshExpiry = new Date((Math.floor(Date.now() / 1000) + config.get<number>('refreshTokenExpiresIn') * 60) * 1000);
 
-      const decodedSession = verifyJwt<{ sub: string }>(
-        access_token || refresh_token,
-        'accessTokenPublicKey',
-      );
+      await Promise.all([
+        this.blacklistToken(access_token, accessExpiry),
+        this.blacklistToken(refresh_token, refreshExpiry),
+      ]);
 
-      await this.activeSessionRepository.delete({
-        user_id: decodedSession?.sub,
-        is_active: true,
-      });
+      // Remove active session
+      if (decoded?.sub) {
+        await this.activeSessionRepository.delete({ user_id: decoded.sub, is_active: true });
+      }
 
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
-      logger.info('User logged out successfully');
 
-      //🔔 Simple logout notification — SSE only, no DB save
-      try {
-        if (user && this.sseService.isUserConnected(user.id)) {
-          const now = new Date();
-          const pad = (n: number) => n.toString().padStart(2, '0');
-          let hours = now.getHours();
-          const minutes = pad(now.getMinutes());
-          const ampm = hours >= 12 ? 'PM' : 'AM';
-          hours = hours % 12 || 12;
-          this.sseService.sendToUser(user.id, {
-            type: 'notification',
-            message: 'Logout successfully',
-            date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-            time: `${pad(hours)}:${minutes} ${ampm}`,
-            isRead: false,
-            userId: user.id,
-            timestamp: now.toISOString(),
-          });
-        }
-      } catch (notifError) {
-        console.log('Logout notification error:', notifError);
+      // SSE logout notification (fire-and-forget)
+      if (user && this.sseService.isUserConnected(user.id)) {
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        let hours = now.getHours();
+        const minutes = pad(now.getMinutes());
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        this.sseService.sendToUser(user.id, {
+          type: 'notification',
+          message: 'Logout successfully',
+          date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+          time: `${pad(hours)}:${minutes} ${ampm}`,
+          isRead: false,
+          userId: user.id,
+          timestamp: now.toISOString(),
+        });
       }
 
-      // Log successful logout
       ControllerLogger.logAuth('User logout', req, res, true);
+      logger.info('User logged out successfully');
 
-      res.status(200).json({
-        status: 'success',
-        message: 'User logged out successfully',
-      });
+      res.status(200).json({ status: 'success', message: 'User logged out successfully' });
     } catch (error) {
       next(error);
     }

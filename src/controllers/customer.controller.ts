@@ -19,9 +19,7 @@ import { NextFunction, Request, Response } from 'express';
 
 import { ControllerLogger } from '../utils/controllerLogger';
 import { PaginationOptions } from '../utils/pagination';
-;
 import { deserializeUser, requireUser } from '../middleware/deserializeUser';
-import { generateIncrementalCode } from '../utils/codeGeneration';
 import { Status } from '../utils/status.enum';
 import { NotificationService } from '../services/notification.service';
 import { handleMulterFields, upload } from '../middleware/upload.middleware';
@@ -129,7 +127,6 @@ customerData.createdBy = res.locals.user.id;
         customerData.keyMobileNumbers.visitingCardCopy =
           (files.visitingCardCopy[0] as any).location;
 
-customerData.customerCode = await generateIncrementalCode('customer')
       const customer = await this.customerService.create(customerData);
       console.log('customer is ', customer);
 
@@ -142,17 +139,10 @@ customerData.customerCode = await generateIncrementalCode('customer')
       }
       
       // 🔔 Send notification for customer creation
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customerData.organisationName || 'New Customer';
-          await this.notificationService.createNoti(
-            `Customer "${customerName}" created successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer creation notification error:', notifError);
+      const userId = res.locals.user?.id;
+      if (userId) {
+        const customerName = customerData.organisationName || 'New Customer';
+        this.notificationService.createNoti(`Customer "${customerName}" created successfully`, userId).catch(() => {});
       }
       
       // Log successful creation
@@ -261,7 +251,7 @@ async approveCustomer(
     next(error);
   }
 }
- @httpGet('/')
+  @httpGet('/')
   public async getAllCustomers(
     @request() req: Request,
     @response() res: Response,
@@ -641,17 +631,10 @@ async approveCustomer(
       }
       
       // 🔔 Send notification for customer update
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          const customerName = customerData.organisationName || updatedCustomer?.organisationName || 'Customer';
-          await this.notificationService.createNoti(
-            `Customer "${customerName}" updated successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-        console.log('Customer update notification error:', notifError);
+      const userId2 = res.locals.user?.id;
+      if (userId2) {
+        const customerName = customerData.organisationName || updatedCustomer?.organisationName || 'Customer';
+        this.notificationService.createNoti(`Customer "${customerName}" updated successfully`, userId2).catch(() => {});
       }
       
       // Log successful update
@@ -742,7 +725,7 @@ async approveCustomer(
         }
 
 
-         @httpGet('/download/template')
+  @httpGet('/download/template')
   public async downloadExcelTemplate(
     @request() req: Request,
     @response() res: Response,

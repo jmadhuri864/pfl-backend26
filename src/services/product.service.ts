@@ -24,6 +24,11 @@ import {
 import { AppDataSource } from '../utils/data-source';
 import { ProductVarient } from '../entities/productVarient.entity';
 import { QualityParameter } from '../entities/quantityParameter.entity';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'product';
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 
 @injectable()
 export class ProductService {
@@ -48,6 +53,8 @@ export class ProductService {
 
     @inject(TYPES.ProductVarientRepository)
     private productVarientsRepository: ProductVarientRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {
     this.categoryRepository = this.dataSource.getRepository(ProductCategory);
     this.subcategoryRepository =
@@ -58,8 +65,23 @@ export class ProductService {
     this.uomRepository = this.dataSource.getRepository(UOM);
   }
 
-  public generateCombinations(
-    counts: string[] = [],
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateProductCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:search:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:variants:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
+
+  public generateCombinations(    counts: string[] = [],
     sizes: string[] = [],
     varieties: string[] = [],
     origins: string[] = [],
@@ -171,11 +193,16 @@ export class ProductService {
       }
     }
 
+    await this.invalidateProductCache();
     return savedProduct1;
   }
 
- async getAll(options: PaginationOptions): Promise<any> {
-    const queryBuilder = await this.productRepository
+  async getAll(options: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.classification', 'classification')
       .leftJoinAndSelect('product.category', 'category')
@@ -185,60 +212,60 @@ export class ProductService {
       .orderBy('product.createdAt', 'DESC');
 
     //return await buildQuery(queryBuilder, options, 'product');
-    let data1=await buildQuery(queryBuilder, options, 'product');
-    return{
-     data:data1.data.map((pro:any)=>{
-      return{
-        id:pro.id,
-         name:pro.name,
-     packingType:pro.packingType,
-     productCode:pro.productCode,
-     shelfLife:pro.shelfLife || '',
-     storageTemp:pro.storageTemp,
-      category: {
-                id:pro.category.id,
-                name:pro.category.name 
-            },
-      classification:{
-              id:pro.classification?.id,
-                name:pro.classification?.name 
-            },
-      uom:{
-        id:pro.uom.id,
-        unit:pro.uom.unit
-      },
-      subcategory:{
-        id:pro.subcategory.id,
-        name:pro.subcategory.name 
-      },
-     
-     }
-    
-    }),
-    meta:data1.meta
+    const data1 = await buildQuery(queryBuilder, options, 'product');
+    const result = {
+      data: data1.data.map((pro: any) => ({
+        id: pro.id,
+        name: pro.name,
+        packingType: pro.packingType,
+        productCode: pro.productCode,
+        shelfLife: pro.shelfLife || '',
+        storageTemp: pro.storageTemp,
+        category: { id: pro.category.id, name: pro.category.name },
+        classification: { id: pro.classification?.id, name: pro.classification?.name },
+        uom: { id: pro.uom.id, unit: pro.uom.unit },
+        subcategory: { id: pro.subcategory.id, name: pro.subcategory.name },
+      })),
+      meta: data1.meta,
+    };
+
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
-}
 
   async getAllwithSearch(search?: string): Promise<any> {
-    console.log(search);
-    const queryBuilder = await this.productRepository
+    const key = `${CACHE_PREFIX}:search:${search ?? 'all'}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.classification', 'classification')
-      .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.subcategory', 'subcategory')
-      .leftJoinAndSelect('product.uom', 'uom')
-      .leftJoinAndSelect('product.qualityParameters', 'qualityParameters');
+      .leftJoin('product.classification', 'classification')
+      .leftJoin('product.category', 'category')
+      .leftJoin('product.subcategory', 'subcategory')
+      .leftJoin('product.uom', 'uom')
+      .select([
+        'product.id', 'product.name', 'product.productCode',
+        'classification.id', 'classification.name',
+        'category.id', 'category.name',
+        'subcategory.id', 'subcategory.name',
+        'uom.id', 'uom.unit',
+      ]);
 
     if (search) {
-      queryBuilder.andWhere('product.name ILIKE :search', {
-        search: `%${search}%`,
-      });
+      queryBuilder.where('product.name ILIKE :search', { search: `%${search}%` });
     }
 
-    return await queryBuilder.getMany();
+    const result = await queryBuilder.getMany();
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
 
   async getById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     try {
       const product = await this.productRepository
         .createQueryBuilder('product')
@@ -305,6 +332,7 @@ export class ProductService {
           })) || [],
       };
 
+      await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
       return response;
     } catch (error) {
       console.error('Error fetching product by ID:', error);
@@ -1073,14 +1101,8 @@ export class ProductService {
       }
     }
 
-    await this.auditLogService.logChange(
-      'Product',
-      id,
-      oldData,
-      updatedProduct,
-      updatedBy,
-    );
-
+    await this.auditLogService.logChange('Product', id, oldData, updatedProduct, updatedBy);
+    await this.invalidateProductCache(id);
     return updatedProduct;
   }
 
@@ -1106,15 +1128,8 @@ export class ProductService {
 
     // Set the deletionScheduledAt field for the product
     product.deletionScheduledAt = sixMonthsFromNow;
-
-    // Step 4: Save the updated product with the scheduled deletion date
     await this.productRepository.save(product);
-
-    // Step 5: Soft delete the product
-    //await this.productRepository.softDelete(id);
-
-    // Step 6: Return true to indicate the deletion was scheduled and performed
-    console.log(`Product with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateProductCache(id);
     return true;
   }
 
@@ -1211,11 +1226,8 @@ export class ProductService {
     return formattedproduct;
   }
   async softDeleteProducts(userIds: string[]) {
-
-  const result = await this.productRepository.softDelete({
-    id: In(userIds)
-  });
-
-  return result;
-}
+    const result = await this.productRepository.softDelete({ id: In(userIds) });
+    await this.invalidateProductCache();
+    return result;
+  }
 }

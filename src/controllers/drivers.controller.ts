@@ -132,7 +132,7 @@ export class DriverController {
       const driverData = req.body;
       const parsedData = driverSchema.parse(driverData);
       console.log("Driver data:", driverData);
-      const updatedBy=res.locals.id
+      const updatedBy = res.locals.user?.id
 
       const updatedDriver = await this.driversService.updateDriver(id, parsedData,updatedBy);
       if (!updatedDriver) {

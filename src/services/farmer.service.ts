@@ -25,6 +25,11 @@ import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
 import { CreateBranchBodySchema } from '../schemas/branch.schema';
 import { In } from 'typeorm';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'farmer';
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 
 @injectable()
 export class FarmerService {
@@ -39,7 +44,25 @@ export class FarmerService {
     private userRepository: UserRepository,
     @inject(TYPES.AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateFarmerCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   // public async getAllFarmers(queryOptions: PaginationOptions): Promise<any> {
   //   const queryBuilder = this.farmerRepository.createQueryBuilder('farmer')
@@ -65,6 +88,10 @@ export class FarmerService {
   //   }
 
 async getAllFarmers(options: PaginationOptions): Promise<any> {
+  const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
   const queryBuilder = this.farmerRepository
     .createQueryBuilder('farmer')
     .leftJoinAndSelect('farmer.createdBy', 'createdBy') // ✅ include this
@@ -109,7 +136,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       createdTime,
       status: farmer.status,
       farmerCode: farmer.farmerCode.toUpperCase(),
-      faermerfName: farmer.farmerfName,
+      farmerfName: farmer.farmerfName,
       farmermName: farmer.farmermName,
       farmerlName: farmer.farmerlName,
       primaryMobileNo: farmer.primaryMobileNo,
@@ -140,18 +167,18 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       cultivationArea: farmer.cultivationArea,
       landHoldingStatus: farmer.landHoldingStatus,
       landStatus: farmer.landStatus,
-      idProofNo: farmer.idProofNo.toUpperCase(),
+      idProofNo: farmer.idProofNo,
       //sevenTwelveNo: farmer.sevenTwelveNo,
     };
   });
 
   // ✅ Return final structured response
-  return {
-   // ...farmers,
-
+  const response = {
     data: formattedData,
-    meta:farmers.meta
+    meta: farmers.meta,
   };
+  await this.cacheService.set(key, response, CACHE_TTL);
+  return response;
 }
 
 
@@ -393,8 +420,12 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     };
   }
 
-    public async getfarmerbyidforview(id: string): Promise<any> {
-      console.log('inservice',id)
+  public async getfarmerbyidforview(id: string): Promise<any> {
+    console.log('inservice',id)
+    const key = `${CACHE_PREFIX}:view:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const farmer = await this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
@@ -407,7 +438,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     if (!farmer) return null;
 const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-    return {
+    const result = {
       id: farmer.id,
       farmerfName:farmer.farmerfName ||  null,
       createdBy: farmer.createdBy
@@ -470,10 +501,16 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
 
     })),
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   public async getfarmerbyidforupdate(id: string): Promise<any> {
-      console.log('inservice',id)
+    console.log('inservice',id)
+    const key = `${CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const farmer = await this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
@@ -486,7 +523,7 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
 
     if (!farmer) return null;
   const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-    return {
+    const updateResult = {
       id: farmer.id,
       farmerfName:farmer.farmerfName ||  null,
       farmermName:farmer.farmermName || null ,
@@ -517,7 +554,7 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
      farmPhoto:farmer.farmPhoto,
       residensialAddress: farmer.residensialAddress.id
         ? {
-            id: farmer.residensialAddress.id,
+            id: farmer.residensialAddress?.id,
             address1: farmer.residensialAddress.address1,
             address2: farmer.residensialAddress.address2,
             location: farmer.residensialAddress.location,
@@ -528,7 +565,7 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
         : null,
       farmAddress: farmer.farmAddress.id
         ? {
-            id: farmer.farmAddress.id,
+            id: farmer.farmAddress?.id,
             address1: farmer.farmAddress.address1,
             address2: farmer.farmAddress.address2,
             location: farmer.farmAddress.location,
@@ -550,6 +587,8 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
 
     })),
     };
+    await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
+    return updateResult;
   }
 
  public async getAllFarmerWithFilter(filter: string): Promise<any[]> {
@@ -651,23 +690,37 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     if (!farmer) throw new Error('farmer not found');
 
     farmer.status = status;
-    return await this.farmerRepository.save(farmer);
+    const saved = await this.farmerRepository.save(farmer);
+    await this.invalidateFarmerCache(farmerId);
+    return saved;
   }
   async getFarmerById(id: string): Promise<Farmer | null> {
-    return this.farmerRepository.findOne({
-      where: { id },
-      relations: ['crops', 'residensialAddress', 'farmAddress','crops.crop'], // Corrected to use an array
-    });
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<Farmer>(key);
+    if (cached) return cached;
+
+    const farmer = await this.farmerRepository
+      .createQueryBuilder('farmer')
+      .leftJoinAndSelect('farmer.crops', 'crops')
+      .leftJoinAndSelect('crops.crop', 'crop')
+      .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
+      .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+      .where('farmer.id = :id', { id })
+      .getOne();
+
+    if (farmer) await this.cacheService.set(key, farmer, CACHE_TTL_DETAIL);
+    return farmer;
   }
   async getFarmerByIdForUpdate(id: string) {
-    const farmer = await this.farmerRepository.findOne({
-      where: { id },
-      relations: ['residensialAddress', 'farmAddress', 'crops'],
-    });
+    const farmer = await this.farmerRepository
+      .createQueryBuilder("farmer")
+      .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
+      .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
+      .leftJoinAndSelect("farmer.crops", "crops")
+      .where("farmer.id = :id", { id })
+      .getOne();
 
-    if (!farmer) {
-      throw new Error('Farmer not found');
-    }
+    if (!farmer) throw new Error("Farmer not found");
 
     return {
       id: farmer.id,
@@ -696,7 +749,9 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     ).padStart(4, '0')}`;
     const farmer = this.farmerRepository.create(farmerData);
     console.log('it will create farmer');
-    return this.farmerRepository.save(farmer);
+    const saved = await this.farmerRepository.save(farmer);
+    await this.invalidateFarmerCache();
+    return saved;
   }
 
   // public async updateFarmer(
@@ -945,288 +1000,229 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     }
 
     await this.farmerRepository.save(farmer);
+    await this.invalidateFarmerCache(farmerId);
     return farmer;
   }
   // Delete a farmer with scheduled deletion (6 months)
   async deleteFarmer(id: string): Promise<boolean> {
-    // Find the farmer by ID
-    const farmer = await this.farmerRepository.findOne({
-      where: { id },
-      relations: ['crops'], // Include related crops to handle deletion if necessary
-    });
+    const farmer = await this.farmerRepository.findOne({ where: { id } });
 
     if (!farmer) {
       throw new AppError(404, `Farmer with ID ${id} not found`);
     }
 
-    // Calculate the date 6 months ahead
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Log the scheduled deletion
-    console.log(
-      `Farmer with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
+    // Bulk update all crops for this farmer in one query instead of N individual saves
+    await this.cropRepository
+      .createQueryBuilder()
+      .update()
+      .set({ deletionScheduledAt: sixMonthsFromNow })
+      .where('"farmerId" = :id', { id })
+      .execute();
 
-    // Set the deletionScheduledAt field for the farmer
     farmer.deletionScheduledAt = sixMonthsFromNow;
-
-    // Optionally, handle related crops and mark them for deletion in 6 months as well
-    if (farmer.crops && farmer.crops.length > 0) {
-      for (const crop of farmer.crops) {
-        crop.deletionScheduledAt = sixMonthsFromNow;
-        await this.farmerRepository.manager.save(crop);
-      }
-    }
-
-    // Save the updated farmer with the scheduled deletion date
     await this.farmerRepository.save(farmer);
+    await this.invalidateFarmerCache(id);
 
     console.log(`Farmer with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
-  async createFarmerwithExcel(fileUrl: string): Promise<any> {
-    try {
-      console.log('in create farmer with Excel, fileUrl:', fileUrl);
+ 
+async createFarmerwithExcel(fileUrl: string): Promise<any> {
+  try {
+    console.log('📂 File URL:', fileUrl);
 
-      if (!fileUrl) {
-        throw new Error('No file URL or path provided for Excel processing');
-      }
-      
-      // First, download the file from DigitalOcean Spaces
-      let fileBuffer: Buffer;
-      
-      if (fileUrl.startsWith('https://')) {
-        // Extract the key from the URL - handle any depth of path
-        const urlObj = new URL(fileUrl);
-        const key = urlObj.pathname.replace(/^\//, ''); // strip leading slash
-        console.log('Downloading file from Spaces with key:', key);
-        
-        // Download file from Spaces
-        fileBuffer = await this.getExcelFromSpaces(key);
-      } else if (fileUrl.startsWith('/') || fileUrl.includes('\\') || fileUrl.includes('uploads/')) {
-        // Local file path fallback
-        const fs = await import('fs');
-        console.log('Reading file from local path:', fileUrl);
-        fileBuffer = fs.readFileSync(fileUrl);
-      } else {
-        // Treat as Spaces key directly
-        fileBuffer = await this.getExcelFromSpaces(fileUrl);
-      }
-      
-      // Read the Excel file from buffer instead of file path
-      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-      const sheetNames = workbook.SheetNames;
-      console.log('Sheet names found:', sheetNames);
+    if (!fileUrl) {
+      throw new Error('No file URL or path provided');
+    }
 
-      const farmerRepository = AppDataSource.getRepository(Farmer);
-      const productRepository = AppDataSource.getRepository(Product);
-      const userRepository = AppDataSource.getRepository(User);
+    let fileBuffer: Buffer;
 
-      for (const sheetName of sheetNames) {
-        const worksheet = workbook.Sheets[sheetName];
-        console.log('Processing sheet:', sheetName);
+    // 📥 Get file
+    if (fileUrl.startsWith('https://')) {
+      const urlObj = new URL(fileUrl);
+      const key = urlObj.pathname.replace(/^\//, '');
+      fileBuffer = await this.getExcelFromSpaces(key);
+    } else {
+      const fs = await import('fs');
+      fileBuffer = fs.readFileSync(fileUrl);
+    }
 
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: null,
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheetNames = workbook.SheetNames;
+
+    const farmerRepository = AppDataSource.getRepository(Farmer);
+    const productRepository = AppDataSource.getRepository(Product);
+    const userRepository = AppDataSource.getRepository(User);
+
+    for (const sheetName of sheetNames) {
+      console.log('📄 Sheet:', sheetName);
+
+      const worksheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: null,
+      });
+
+      if (jsonData.length < 2) continue;
+
+      const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
+        h ? String(h).trim() : '',
+      );
+
+      console.log('🧾 Headers:', headers);
+
+      const rows = jsonData.slice(1);
+
+      for (const rowUntyped of rows) {
+        if (!Array.isArray(rowUntyped)) continue;
+
+        const rowData: Record<string, any> = {};
+        headers.forEach((header, index) => {
+          rowData[header] = rowUntyped[index];
         });
 
-        if (jsonData.length < 2) {
-          console.warn('Sheet does not have enough rows:', sheetName);
+        console.log('➡️ Row:', rowData);
+
+        // ✅ Required check
+        if (!rowData['First Name'] || !rowData['Primary Mobile No']) {
+          console.warn('⛔ Skipping row (missing data)');
           continue;
         }
 
-        const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
-          h ? String(h).trim() : `UNKNOWN`,
-        );
-        console.log('Headers found:', headers);
+        // ✅ Generate code
+        const count = await farmerRepository.count();
+        const farmerCode = `FARM${new Date().getFullYear()}${String(
+          count + 1,
+        ).padStart(4, '0')}`;
 
-        const dataRows = jsonData.slice(1); // Skip header row
+        const farmer = new Farmer();
 
-        for (const rowUntyped of dataRows) {
-          if (!Array.isArray(rowUntyped) || rowUntyped.length === 0) continue;
+        farmer.farmerfName = rowData['First Name'];
+        farmer.farmermName =
+          rowData['Middle Name'] || rowData['Middl Name'];
+        farmer.farmerlName = rowData['Last Name'];
+        farmer.primaryMobileNo = rowData['Primary Mobile No'];
+        farmer.secondaryMobileNo = rowData['Secondary Mobile No'];
+        farmer.email = rowData['Email'];
+        farmer.gender = rowData['Gender'];
 
-          const rowData: Record<string, any> = {};
-          headers.forEach((header, index) => {
-            rowData[header] = rowUntyped[index];
-          });
+        // 📅 DOB
+        if (rowData['Date Of Birth']) {
+          const dob = parseExcelDate(rowData['Date Of Birth']);
+          if (dob) farmer.dob = new Date(dob);
+        }
 
-          console.log('Mapped Row:', rowData);
+        farmer.landHoldingStatus = rowData['Land Holding'];
+        farmer.landStatus = rowData['Land Status'];
+        farmer.totalLandArea = rowData['Total Land Area'];
+        farmer.cultivationArea = rowData['Cultivation Area'];
+        farmer.farmerCode = farmerCode;
 
-          if (!rowData['First Name'] || !rowData['Primary Mobile No']) {
-            console.warn('Skipping incomplete row:', rowData);
+        // 👤 createdBy
+        if (rowData['Created By']) {
+          const name = rowData['Created By'].trim();
+
+          const user = await userRepository
+            .createQueryBuilder('user')
+            .where(
+              "LOWER(CONCAT(user.firstName,' ',user.lastName)) = LOWER(:name)",
+              { name },
+            )
+            .getOne();
+
+          if (user) {
+            farmer.createdBy = user;
+          } else {
+            console.warn('⚠️ User not found:', name);
+          }
+        }
+
+        // 🏠 Residential Address
+        const res = new Address();
+        res.address1 = rowData['Residential Address1'];
+        res.address2 = rowData['Residential Address2'];
+        res.city = rowData['Residential City'];
+        res.state = rowData['Residential State'];
+        res.pincode = rowData['Residential Pincode'];
+        farmer.residensialAddress = res;
+
+        // 🚜 Farm Address
+        const farm = new Address();
+        farm.address1 = rowData['Farm Address1'];
+        farm.address2 = rowData['Farm Address2'];
+        farm.city = rowData['Farm City'];
+        farm.state = rowData['Farm State'];
+        farm.pincode = rowData['Farm Pincode'];
+        farmer.farmAddress = farm;
+
+        // 🌱 CROPS (FIXED LOOP)
+        farmer.crops = [];
+
+        let i = 1;
+
+        while (rowData[`Crop${i}.Crop`]) {
+          const cropName = rowData[`Crop${i}.Crop`];
+
+          if (!cropName) {
+            i++; // ✅ FIX
             continue;
           }
 
-          let sequenceNumber = await farmerRepository.count();
-          const farmerCode = `FARM${new Date().getFullYear()}${String(
-            ++sequenceNumber,
-          ).padStart(4, '0')}`;
+          console.log('🌾 Crop:', cropName);
 
-          const farmer = new Farmer();
-          farmer.farmerfName = rowData['First Name'];
-          farmer.farmermName = rowData['Middl Name'] || rowData['MiddleName']; // support both spellings
-          farmer.farmerlName = rowData['Last Name'];
-          farmer.primaryMobileNo = rowData['Primary Mobile No'];
-          farmer.secondaryMobileNo = rowData['Secondary Mobile No'];
-          farmer.email = rowData['Email'];
-          farmer.gender = rowData['Gender'];
+          const product = await productRepository
+            .createQueryBuilder('product')
+            .where('LOWER(product.name)=LOWER(:name)', {
+              name: cropName.trim(),
+            })
+            .getOne();
 
-          // ---- Fix for DOB ----
-          console.log('Raw DOB value:', rowData['Date Of Birth']);
-
-          if (rowData['Date Of Birth']) {
-            const dob = parseExcelDate(rowData['Date Of Birth']);
-            if (dob) {
-              farmer.dob = new Date(dob);
-            }
+          if (!product) {
+            console.warn('⚠️ Product not found:', cropName);
+            i++; // ✅ FIX
+            continue;
           }
 
-          farmer.landHoldingStatus = rowData['Land Holding'];
-          farmer.landStatus = rowData['Land Status'];
-          farmer.totalLandArea = rowData['Total Land Area'];
-          farmer.cultivationArea = rowData['Cultivation Area'];
-          farmer.farmerCode = farmerCode;
-          farmer.farmerGrading = rowData['Farmer Grading'];
-          farmer.sevenTwelveCopy = rowData['Seven Twelve Copy'];
-          farmer.sevenTwelveNo = rowData['Seven Twelve No'];
-          farmer.idProofCopy = rowData['Id Proof Copy'];
-          farmer.idProofNo = rowData['Id Proof  No'];
+          const crop = new Crop();
+          crop.crop = product;
+          crop.variety = rowData[`Crop${i}.Variety`];
+          crop.noOfPlants = rowData[`Crop${i}.No_Of_Plants`];
 
-          if (rowData['Date Of Visit']) {
-            farmer.dateOfVisit = new Date(rowData['Date Of Visit']);
-          }
+          farmer.crops.push(crop);
 
-          farmer.howDoYouSell = rowData['How Do You Sell'];
+          i++; // ✅ MUST
+        }
 
-          farmer.farmerPhoto = rowData['Farmer Photo'];
-          farmer.farmPhoto = rowData['Farm Photo'];
-
-          // Handle createdBy field if provided in Excel
-          if (rowData['Created By']) {
-            console.log(`Looking up user for createdBy: ${rowData['Created By']}`);
-            
-            // Find user by name (case-insensitive search)
-            const createdByName = rowData['Created By'].trim();
-            const user = await userRepository
-              .createQueryBuilder('user')
-              .where('LOWER(CONCAT(user.firstName, \' \', user.lastName)) = LOWER(:name)', { name: createdByName })
-              .getOne();
-            
-            if (user) {
-              farmer.createdBy = user;
-              console.log(`✅ Found user: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
-            } else {
-              console.warn(`⚠️  User not found for createdBy: ${createdByName}`);
-              // Continue without setting createdBy - it's nullable
-            }
-          }
-
-          // Residential Address
-          const resAddress = new Address();
-          resAddress.address1 = rowData['Residensial Address1'];
-          resAddress.address2 = rowData['Residensial Address2'];
-          resAddress.location = rowData['Residensial Location'];
-          resAddress.city = rowData['Residensial City'];
-          resAddress.state = rowData['Residensial State'];
-          resAddress.pincode = rowData['Residensial Pincode'];
-          farmer.residensialAddress = resAddress;
-
-          // Farm Address
-          const farmAddress = new Address();
-          farmAddress.address1 = rowData['Farm Address1'];
-          farmAddress.address2 = rowData['Farm Address2'];
-          farmAddress.location = rowData['Farm Location'];
-          farmAddress.city = rowData['Farm City'];
-          farmAddress.state = rowData['Farm State'];
-          farmAddress.pincode = rowData['Farm Pincode'];
-          farmer.farmAddress = farmAddress;
-
-          // ---- Crops with Product Lookup ----
-          farmer.crops = [];
-          let i = 1;
-          while (rowData[`Crop${i}.Crop`]) {
-            const crop = new Crop();
-            
-            // 🔍 Look up Product by name instead of directly assigning string
-            const cropName = rowData[`Crop${i}.Crop`];
-            if (cropName) {
-              console.log(`Looking up product for crop: ${cropName}`);
-              
-              // Find product by name (case-insensitive search)
-              const product = await productRepository
-                .createQueryBuilder('product')
-                .where('LOWER(product.name) = LOWER(:name)', { name: cropName.trim() })
-                .getOne();
-              
-              if (product) {
-                crop.crop = product; // Assign the actual Product entity
-                console.log(`✅ Found product: ${product.name} (ID: ${product.id})`);
-              } else {
-                console.warn(`⚠️  Product not found for crop name: ${cropName}`);
-                console.warn(`   Available products can be checked in the Product master data`);
-                console.warn(`   Skipping this crop entry for farmer: ${farmer.farmerfName}`);
-                // Skip crops with unknown products
-                continue;
-              }
-            } else {
-              console.warn(`⚠️  Empty crop name found, skipping crop entry`);
-              continue;
-            }
-            
-            crop.variety = rowData[`Crop${i}.Variety`];
-            crop.noOfPlants = rowData[`Crop${i}.No_Of_Plants`];
-
-            if (rowData[`Crop${i}.Pruning_Date`]) {
-              const pruningDate = parseExcelDate(
-                rowData[`Crop${i}.Pruning_Date`],
-              );
-              if (pruningDate) {
-                crop.pruningDate = new Date(pruningDate);
-              }
-            }
-            if (rowData[`Crop${i}.Expected_Harvest_Date`]) {
-              const expectedHarvestDate = parseExcelDate(
-                rowData[`Crop${i}.Expected_Harvest_Date`],
-              );
-              if (expectedHarvestDate) {
-                crop.expectedHarvestDate = new Date(expectedHarvestDate);
-              }
-            }
-
-            crop.expectedQuantityInTonnes =
-              rowData[`Crop${i}.ExpectedQuantityInTonnes`];
-
-            farmer.crops.push(crop);
-            i++;
-          }
-
-          console.log('Saving farmer:', farmer.farmerfName);
-          const result = await farmerRepository.save(farmer);
-          console.log('Saved farmer with ID:', result.id);
+        // 💾 SAVE
+        try {
+          console.log('💾 Saving farmer:', farmer.farmerfName);
+          const saved = await farmerRepository.save(farmer);
+          console.log('✅ Saved ID:', saved.id);
+        } catch (err) {
+          console.error('❌ SAVE ERROR:', err);
         }
       }
-
-      // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
-      await this.deleteFileFromSpaces(fileUrl);
-      
-    } catch (error) {
-      console.error('Error processing farmer upload:', error);
-      
-      // 🗑️ Still attempt to delete the file even if processing failed
-      try {
-        await this.deleteFileFromSpaces(fileUrl);
-      } catch (deleteError) {
-        console.error('Error deleting file after failed processing:', deleteError);
-      }
-      
-      throw error;
     }
-  }
 
+    await this.deleteFileFromSpaces(fileUrl);
+
+    console.log('🎉 Upload completed');
+  } catch (error) {
+    console.error('🔥 ERROR:', error);
+
+    try {
+      await this.deleteFileFromSpaces(fileUrl);
+    } catch {}
+
+    throw error;
+  }
+}
   /**
    * Get Excel file from DigitalOcean Spaces
    * @param key - Spaces key/path to the Excel file
@@ -1305,11 +1301,10 @@ const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
     return farmer;
   }
   async softDeleteFarmers(farmerIds: string[]) {
-  
     const result = await this.farmerRepository.softDelete({
       id: In(farmerIds)
     });
-  
+    await this.invalidateFarmerCache();
     return result;
   }
     

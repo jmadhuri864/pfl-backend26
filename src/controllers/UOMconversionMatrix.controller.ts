@@ -185,7 +185,7 @@ export class UOMConversionMatrixController {
     @next() next: NextFunction
   ) {
     try {
-      const updateBy=res.locals.id
+      const updateBy = res.locals.user?.id
       const conversion = await this.uomConversionMatrixService.update(
         id,
         conversionData,

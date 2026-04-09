@@ -68,7 +68,7 @@ export class  LevelsController {
         @next() next: NextFunction
       ) {
         try {
-          const updatedBy= res.locals.id
+          const updatedBy = res.locals.user?.id
           logger.info("Attempting to update level", { levelId: id });
           const level = await this.levelsService.updateLevel(id, req.body,updatedBy);
     

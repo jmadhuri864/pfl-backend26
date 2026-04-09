@@ -98,7 +98,7 @@ export class DepartmentforApproveController {
   ) {
     try {
      
-      const updateBy = res.locals.id
+      const updateBy = res.locals.user?.id
       const { name } = req.body;
       const department = await this.departmentService.updateDepartment(id, name,updateBy);
       if (!department) {

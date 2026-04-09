@@ -1,161 +1,101 @@
-import { inject, injectable } from "inversify";
-import { AddressRepository } from "../repositories/address.repository";
-import { TYPES } from "../types";
-import { DataSource } from "typeorm";
-import { Address } from "../entities/address.entity";
-import { AuditLogService } from "./auditLog.service";
-import AppError from "../utils/appError";
-import axios from "axios";
+import { inject, injectable } from 'inversify';
+import { AddressRepository } from '../repositories/address.repository';
+import { TYPES } from '../types';
+import { DataSource } from 'typeorm';
+import { Address } from '../entities/address.entity';
+import { CacheService } from './cache.service';
+import AppError from '../utils/appError';
+import axios from 'axios';
 
+const CACHE_TTL_PINCODE = 86400; // 24 hours — pincode data rarely changes
+const CACHE_TTL_ADDRESS = 300;   // 5 minutes
+const CACHE_PREFIX = 'address';
 
 @injectable()
 export class AddressService {
   private addressRepository: AddressRepository;
 
-  constructor(@inject(TYPES.DataSource) private dataSource: DataSource,
-   )
-  {
+  constructor(
+    @inject(TYPES.DataSource) private dataSource: DataSource,
+    @inject(TYPES.CacheService) private readonly cacheService: CacheService,
+  ) {
     this.addressRepository = this.dataSource.getRepository(Address);
   }
 
-  // Create a new address
-  public async create(addressData: Partial<Address>): Promise<Address> 
-  {
+  // ─── Create ───────────────────────────────────────────────────────────────
+
+  public async create(addressData: Partial<Address>): Promise<Address> {
     const address = this.addressRepository.create(addressData);
-    
-    return await this.addressRepository.save(address);
+    return this.addressRepository.save(address);
   }
 
-  // // Update an existing address
-  // public async update(id: string, addressData: Partial<Address>): Promise<Address | null> 
-  // {
-  //   console.log(" data address is ",addressData);
-  //   const address = await this.addressRepository.findOneBy({ id });
-  //   console.log(" address is ",address);
-  //   if (!address)
-  //   {
-  //     throw new AppError(404, "Address not found");
-  //   }
+  // ─── Update ───────────────────────────────────────────────────────────────
 
-  //   // Merge the existing address with the new data
-  //   Object.assign(address, addressData);
-
-  //   return await this.addressRepository.save(address);
-  // }
   public async update(id: string, addressData: Partial<Address>): Promise<Address> {
-    console.log("Data address is:", addressData);
-
-    // Try to find the existing address by ID
     let address = await this.addressRepository.findOneBy({ id });
-    console.log("Address is:", address);
 
     if (address) {
-        // If address found, merge the existing address with the new data
-        Object.assign(address, addressData);
-        // Save the updated address
-        return await this.addressRepository.save(address);
-    } else {
-        // If address is not found, create a new address
-        return await this.create(addressData);
+      Object.assign(address, addressData);
+      const saved = await this.addressRepository.save(address);
+      await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
+      return saved;
     }
-}
 
-  
-
-public async deleteAddress(id: string): Promise<boolean> {
-  const address = await this.addressRepository.findOne({
-    where: { id },
-  });
-
-  if (!address) {
-    throw new AppError(404, `Address with ID ${id} not found`);
+    return this.create(addressData);
   }
 
-  const now = new Date();
-  
-  // Calculate the date 6 months ahead
-  const sixMonthsFromNow = new Date(now);
-  sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-  sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+  // ─── Find By ID ───────────────────────────────────────────────────────────
 
-  console.log(sixMonthsFromNow); // Log the calculated date
+  public async findById(id: string): Promise<Address | null> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<Address>(key);
+    if (cached) return cached;
 
-  // Set the deletionScheduledAt field
-  address.deletionScheduledAt = sixMonthsFromNow;
-
-  console.log("In delete service for address", address.deletionScheduledAt);
-
-  // Save the updated address with the scheduled deletion date
-  await this.addressRepository.save(address);
-
-  console.log(`Address with ID ${id} marked for deletion in 6 months.`);
-  return true
-}
-
-
-  // Retrieve an address by ID
-  public async findById(id: string): Promise<Address | null> 
-  {
-    return await this.addressRepository.findOneBy({ id });
+    const address = await this.addressRepository.findOneBy({ id });
+    if (address) await this.cacheService.set(key, address, CACHE_TTL_ADDRESS);
+    return address;
   }
 
-   public async fetchAddressByPincode(pincode:string):Promise<any>
-  {
-      const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);
-      const data:any = response.data;
-      console.log("data",response.data);
-      for(const a of data)
-      {
-        console.log("a",a)
-      }
-    if (data[0].Status === 'Success' && data[0].PostOffice?.length > 0) {
+  // ─── Delete (schedule) ────────────────────────────────────────────────────
+
+  public async deleteAddress(id: string): Promise<boolean> {
+    const address = await this.addressRepository.findOne({ where: { id } });
+    if (!address) throw new AppError(404, `Address with ID ${id} not found`);
+
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
+
+    address.deletionScheduledAt = sixMonthsFromNow;
+    await this.addressRepository.save(address);
+    await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
+
+    return true;
+  }
+
+  // ─── Fetch By Pincode (cached) ────────────────────────────────────────────
+
+  public async fetchAddressByPincode(pincode: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:pincode:${pincode}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);
+    const data: any = response.data;
+
+    if (data[0]?.Status === 'Success' && data[0].PostOffice?.length > 0) {
       const postOffice = data[0].PostOffice[0];
-
-      return {
-        pincode:pincode,
+      const result = {
+        pincode,
         district: postOffice.District,
         state: postOffice.State,
         country: postOffice.Country,
       };
+
+      await this.cacheService.set(key, result, CACHE_TTL_PINCODE);
+      return result;
     }
-    throw new Error("Invalid pincode or no data found");
-  
+
+    throw new Error('Invalid pincode or no data found');
   }
-  // public async fetchAddressByPincode(pincode: string): Promise<any> {
-  //   try {
-  //     const response = await axios.get(
-  //       `https://pinlookup.in/api/pincode?pincode=${pincode}`
-  //     );
-
-  //     console.log("Full response:", response.data);
-
-  //     const record = response.data?.data;
-
-  //     if (!record) {
-  //       throw new Error("Invalid pincode or no data found");
-  //     }
-
-  //     const result = {
-  //       pincode: record.pincode,
-  //       officeName: record.office_name,
-  //       officeType: record.office_type,
-  //       division: record.division_name,
-  //       region: record.region_name,
-  //       circle: record.circle_name,
-  //       taluk: record.taluk,
-  //       district: record.district_name,
-  //       state: record.state_name,
-  //       country: "India", // Pinlookup doesn’t return country, we set it
-  //       // latitude: record.latitude,
-  //       // longitude: record.longitude,
-  //     };
-
-  //     console.log("Parsed result:", result);
-  //     return result;
-  //   } catch (err) {
-  //     console.error("Error fetching from pinlookup:", err);
-  //     throw err;
-  //   }
-  // }
-
 }

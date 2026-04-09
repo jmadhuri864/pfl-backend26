@@ -1,14 +1,17 @@
 import "reflect-metadata";
 import { inject, injectable } from "inversify";
-import { DataSource, In } from "typeorm";
+import { In } from "typeorm";
 import { VendorSubcategoryRepository } from "../repositories/vendorSubcategory.repository";
 import { VendorSubcategory } from "../entities/vendorSubcategory.entity";
 import { TYPES } from "../types";
-import { VendorCategory } from "../entities/vendorCategory.entity";
 import { VendorCategoryRepository } from "../repositories/vendorCategory.repository";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = "vendorSubcategory";
+const CACHE_TTL = 300;
 
 @injectable()
 export class VendorSubcategoryService {
@@ -18,95 +21,83 @@ export class VendorSubcategoryService {
     @inject(TYPES.VendorCategoryRepository)
     private readonly vendorCategoryRepository: VendorCategoryRepository,
     @inject(TYPES.AuditLogService)
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
 
-  public async create(subcategoryData: {
-    name: string;
-    category: string;
-  }): Promise<VendorSubcategory | null> {
-    console.log(
-      "to create the category service",
-      subcategoryData.name,
-      subcategoryData.category
-    );
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
 
-    // Fetch the VendorCategory using the provided category ID
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.del(`${CACHE_PREFIX}:bycategory:all`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+    }
+    await Promise.all(tasks);
+  }
+
+  // ─── Methods ──────────────────────────────────────────────────────────────
+
+  public async create(subcategoryData: { name: string; category: string }): Promise<VendorSubcategory | null> {
     const vendorCategory = await this.vendorCategoryRepository.findOne({
       where: { id: subcategoryData.category },
     });
 
     if (!vendorCategory) {
-      throw new Error(
-        `Vendor category with ID ${subcategoryData.category} not found`
-      );
+      throw new Error(`Vendor category with ID ${subcategoryData.category} not found`);
     }
 
-    // Assign the fetched VendorCategory to the subcategory
     const subcategory = this.vendorSubcategoryRepository.create({
       name: subcategoryData.name,
       category: vendorCategory,
     });
 
-    return this.vendorSubcategoryRepository.save(subcategory);
+    const saved = await this.vendorSubcategoryRepository.save(subcategory);
+    await this.invalidateCache();
+    return saved;
   }
 
- public async getSubcategories(
-    categoryIdOrName?: string
-  ): Promise<Partial<VendorSubcategory>[]> {
-    const queryBuilder =
-      this.vendorSubcategoryRepository.createQueryBuilder("subcategory")
-      .leftJoinAndSelect("subcategory.category", "category");
+  public async getSubcategories(categoryIdOrName?: string): Promise<Partial<VendorSubcategory>[]> {
+    const cacheKey = `${CACHE_PREFIX}:bycategory:${categoryIdOrName ?? "all"}`;
+    const cached = await this.cacheService.get<Partial<VendorSubcategory>[]>(cacheKey);
+    if (cached) return cached;
 
-    // Apply the filter if categoryIdOrName is provided
+    const queryBuilder = this.vendorSubcategoryRepository
+      .createQueryBuilder("subcategory")
+      .leftJoin("subcategory.category", "category")
+      .select(["subcategory.id", "subcategory.name"])
+      .orderBy("subcategory.createdAt", "DESC");
+
     if (categoryIdOrName) {
-      // Check if it's a UUID (36 characters with hyphens) or a name
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryIdOrName);
-      
       if (isUUID) {
-        // If it's a UUID, search by category ID
-        queryBuilder.where("subcategory.categoryId = :categoryId", {
-          categoryId: categoryIdOrName,
-        });
+        queryBuilder.where("subcategory.categoryId = :categoryId", { categoryId: categoryIdOrName });
       } else {
-        // If it's not a UUID, search by category name
-        queryBuilder.where("category.name = :categoryName", {
-          categoryName: categoryIdOrName,
-        });
+        queryBuilder.where("category.name = :categoryName", { categoryName: categoryIdOrName });
       }
     }
 
-    // Select only the subcategory fields (excluding relations like category)
-    queryBuilder.select(["subcategory.id", "subcategory.name"]);
-
-    // Order by createdAt in descending order
-    queryBuilder.orderBy("subcategory.createdAt", "DESC");
-
-    return queryBuilder.getMany();
+    const result = await queryBuilder.getMany();
+    await this.cacheService.set(cacheKey, result, CACHE_TTL);
+    return result;
   }
-  // public async getByall(): Promise<any> {
-  //   const queryBuilder = this.vendorSubcategoryRepository.createQueryBuilder('vendorSubcategory')
-  //     .leftJoinAndSelect('vendorSubcategory.category', 'category') // Include category
-  //     .orderBy('vendorSubcategory.createdAt', 'DESC'); // Default sorting by createdAt
-  // return queryBuilder
-  //   // Return paginated results using the paginateQuery utility
-  //   //return await paginateQuery(queryBuilder, queryOptions);
-  // }
-  
+
   public async getByall(queryOptions: PaginationOptions): Promise<any> {
-    let baseQuery = this.vendorSubcategoryRepository
-      .createQueryBuilder('vendorSubcategory')
-      .leftJoin('vendorSubcategory.category', 'category')
-      .select([
-        'vendorSubcategory.id',
-        'vendorSubcategory.name',
-        'category.name',
-      ])
-      .orderBy('vendorSubcategory.createdAt', 'DESC');
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
-    const result = await buildQuery(baseQuery, queryOptions, 'vendorSubcategory');
+    const baseQuery = this.vendorSubcategoryRepository
+      .createQueryBuilder("vendorSubcategory")
+      .leftJoin("vendorSubcategory.category", "category")
+      .select(["vendorSubcategory.id", "vendorSubcategory.name", "category.name"])
+      .orderBy("vendorSubcategory.createdAt", "DESC");
 
-    // Flatten category object to just the name string
+    const result = await buildQuery(baseQuery, queryOptions, "vendorSubcategory");
+
     if (result?.data) {
       result.data = result.data.map((item: any) => ({
         ...item,
@@ -114,104 +105,69 @@ export class VendorSubcategoryService {
       }));
     }
 
+    await this.cacheService.set(key, result, CACHE_TTL);
     return result;
   }
 
   public async getById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const result = await this.vendorSubcategoryRepository
-      .createQueryBuilder('vendorSubcategory')
-      .leftJoin('vendorSubcategory.category', 'category')
-      .select([
-        'vendorSubcategory.id',
-        'vendorSubcategory.name',
-        'category.id',
-      ])
-      .where('vendorSubcategory.id = :id', { id })
+      .createQueryBuilder("vendorSubcategory")
+      .leftJoin("vendorSubcategory.category", "category")
+      .select(["vendorSubcategory.id", "vendorSubcategory.name", "category.id"])
+      .where("vendorSubcategory.id = :id", { id })
       .getOne();
 
     if (!result) return null;
-    return {
-      ...result,
-      category: result.category?.id ?? null,
-    };
+
+    const formatted = { ...result, category: result.category?.id ?? null };
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
   public async update(
     id: string,
     subcategoryData: { name?: string; category?: string },
-    updatedBy: string // Added the updatedBy parameter
+    updatedBy: string,
   ): Promise<VendorSubcategory | null> {
-    //console.log("before update ",subcategoryData)
-    // Step 1: Retrieve the existing VendorSubcategory to capture the original data
-    const existingSubcategory = await this.vendorSubcategoryRepository.findOne({
-      where: { id },
-    });
-    //console.log(existingSubcategory)
-    if (!existingSubcategory) {
-      return null;
-    }
+    const existingSubcategory = await this.vendorSubcategoryRepository.findOne({ where: { id } });
 
-    // Step 2: Merge the new data into the existing VendorSubcategory
+    if (!existingSubcategory) return null;
+
     Object.assign(existingSubcategory, subcategoryData);
+    const updatedSubcategory = await this.vendorSubcategoryRepository.save(existingSubcategory);
 
-    // Step 3: Save the updated VendorSubcategory
-    const updatedSubcategory = await this.vendorSubcategoryRepository.save(
-      existingSubcategory
-    );
-    //console.log("after update ",updatedSubcategory)
-    // Step 4: Log the change using the audit log service
-    await this.auditLogService.logChange(
-      "VendorSubcategory", // Entity name
-      id, // Entity ID
-      existingSubcategory, // Original data (before update)
-      updatedSubcategory, // Updated data (after update)
-      updatedBy // User who made the update
-    );
+    await this.auditLogService.logChange("VendorSubcategory", id, existingSubcategory, updatedSubcategory, updatedBy);
+    await this.invalidateCache(id);
 
-    // Return the updated VendorSubcategory
     return updatedSubcategory;
   }
 
   public async delete(id: string): Promise<boolean> {
-    // Step 1: Find the vendor subcategory by ID
-    const vendorSubcategory = await this.vendorSubcategoryRepository.findOne({
-      where: { id },
-    });
+    const vendorSubcategory = await this.vendorSubcategoryRepository.findOne({ where: { id } });
 
-    // Step 2: If the vendor subcategory doesn't exist, return false
     if (!vendorSubcategory) {
       throw new AppError(404, "Vendor Subcategory not found");
     }
 
-    // Step 3: Calculate the date 6 months ahead
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Log the scheduled deletion
-    console.log(
-      `Vendor Subcategory with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
-    );
-
-    // Step 4: Set the deletionScheduledAt field for the vendor subcategory
     vendorSubcategory.deletionScheduledAt = sixMonthsFromNow;
-
-    // Step 5: Save the updated vendor subcategory with the scheduled deletion date
     await this.vendorSubcategoryRepository.save(vendorSubcategory);
+    await this.invalidateCache(id);
 
-    // Step 6: Return true to indicate the deletion was scheduled
-    console.log(
-      `Vendor Subcategory with ID ${id} marked for deletion in 6 months.`
-    );
     return true;
   }
+
   async softDeleteSubcategory(userIds: string[]) {
-  const result = await this.vendorSubcategoryRepository.softDelete({
-    id: In(userIds)
-  });
-  return result;
-}
-
-
+    const result = await this.vendorSubcategoryRepository.softDelete({ id: In(userIds) });
+    await this.invalidateCache();
+    return result;
+  }
 }

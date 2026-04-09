@@ -10,7 +10,6 @@ import AppError from '../utils/appError';
 import { TYPES } from '../types';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { s3 } from '../middleware/spaces.config';
-
 import { Address } from '../entities/address.entity';
 import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
@@ -29,6 +28,11 @@ import { UserRepository } from '../repositories/user.repository';
 import { Role } from '../entities/user.entity';
 import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'customer';
+const CACHE_TTL = 180;       // 3 min for lists
+const CACHE_TTL_DETAIL = 300; // 5 min for detail views
 
 @injectable()
 export class CustomerService {
@@ -46,13 +50,31 @@ export class CustomerService {
     @inject(TYPES.AddressService) addressService: AddressService,
     @inject(TYPES.AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {
-    this.customerRepository = this.dataSource.getRepository(
-      Customer,
-    ) as CustomerRepository;
+    this.customerRepository = this.dataSource.getRepository(Customer) as CustomerRepository;
     this.customerCategoryService = customerCategoryService;
     this.customerTypeService = customerTypeService;
     this.addressService = addressService;
+  }
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateCustomerCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.del(`${CACHE_PREFIX}:names`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:filter:${id}`),
+      );
+    }
+    await Promise.all(tasks);
   }
 
   public async create(customerData: any): Promise<Customer> {
@@ -236,56 +258,57 @@ export class CustomerService {
 
       // Return customer without productSpecification to avoid circular reference
       const { productSpecification, ...customerWithoutSpecs } = savedCustomer;
+      await this.invalidateCustomerCache();
       return customerWithoutSpecs as Customer;
     });
   }
 
 async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
+  const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
+  // Only join what the list view actually uses — drop 7 unused joins
   const queryBuilder = this.customerRepository
     .createQueryBuilder('customer')
-    .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
-    .leftJoinAndSelect('customer.createdBy', 'createdBy')
-    .leftJoinAndSelect('customer.customerTypes', 'customerTypes')
-    .leftJoinAndSelect('customer.bankDetails', 'bankDetailsCust')
-    .leftJoinAndSelect('customer.customerAddress', 'customerAddress')
-    .leftJoinAndSelect('customer.statutoryDetails', 'statutoryDetails')
-    .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
-    .leftJoinAndSelect('customer.deliveryDetails', 'deliveryDetails')
-    .leftJoinAndSelect('customer.paymentTerms', 'paymentTerms')
-    .leftJoinAndSelect('customer.officeUseOnly', 'officeUseOnly')
-    .leftJoinAndSelect('customer.keyMobileNumbers', 'keyMobileNumbers')
-    .leftJoinAndSelect('customer.productSpecification', 'productSpecification')
+    .leftJoin('customer.customerCategory', 'customerCategory')
+    .leftJoin('customer.createdBy', 'createdBy')
+    .leftJoin('customer.customerTypes', 'customerTypes')
+    .leftJoin('customer.customerAddress', 'customerAddress')
+    .leftJoin('customer.billingDetails', 'billingDetails')
+    .select([
+      'customer.id',
+      'customer.organisationName',
+      'customer.organisationType',
+      'customer.primaryContactNo',
+      'customer.emailPrimary',
+      'customer.customerCode',
+      'customer.status',
+      'customer.createdAt',
+      'customerCategory.name',
+      'createdBy.firstName',
+      'createdBy.lastName',
+      'customerTypes.name',
+      'customerAddress.address1',
+      'customerAddress.address2',
+      'customerAddress.city',
+      'customerAddress.state',
+      'customerAddress.pincode',
+      'billingDetails.contactPersonFName',
+      'billingDetails.contactPersonMName',
+      'billingDetails.contactPersonLName',
+    ])
     .orderBy('customer.createdAt', 'DESC');
 
   const customers = await buildQuery(queryBuilder, queryOptions, 'customer');
-
-  // ✅ Helper to format date and time in "dd-mm-yyyy" and "hh:mm AM/PM"
-  // function formatDateTime(dateString?: string) {
-  //   if (!dateString) return { createdDate: null, createdTime: null };
-
-  //   const date = new Date(dateString);
-  //   const day = String(date.getDate()).padStart(2, '0');
-  //   const month = String(date.getMonth() + 1).padStart(2, '0');
-  //   const year = date.getFullYear();
-
-  //   const hours = date.getHours();
-  //   const minutes = String(date.getMinutes()).padStart(2, '0');
-  //   const ampm = hours >= 12 ? 'PM' : 'AM';
-  //   const hour12 = hours % 12 || 12; // convert to 12-hour format
-  //   const formattedTime = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
-
-  //   const formattedDate = `${day}-${month}-${year}`;
-
-  //   return { createdDate: formattedDate, createdTime: formattedTime };
-  // }
 
   const formattedData = customers.data.map((cust) => {
     const { createdDate, createdTime } = formatDateTime(cust.createdAt);
 
     return {
       id: cust.id,
-      createdBy: `${cust.createdBy.firstName} ${cust.createdBy.lastName}`||null,
-      customerTypes:cust.customerTypes?.name||null,
+      createdBy: `${cust.createdBy?.firstName ?? ''} ${cust.createdBy?.lastName ?? ''}`.trim() || null,
+      customerTypes: cust.customerTypes?.name || null,
       createdDate,
       createdTime,
       status: cust.status.charAt(0).toUpperCase() + cust.status.slice(1),
@@ -295,71 +318,76 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       customerCategory: cust.customerCategory?.name,
       primaryContactNo: cust.primaryContactNo,
       emailPrimary: cust.emailPrimary,
-    customerAddress: `${cust.customerAddress.address1 || ''} ${cust.customerAddress.address2 || ''} ${cust.customerAddress.city || ''} ${cust.customerAddress.state || ''} ${cust.customerAddress.pincode || ''}`.trim()||null,
-      contactPersonName:`${cust.billingDetails?.contactPersonFName??''} ${cust.billingDetails?.contactPersonMName??''} ${cust.billingDetails?.contactPersonLName??''}`||null
-    
-        
-      }
-    
-  })
+      customerAddress: `${cust.customerAddress?.address1 || ''} ${cust.customerAddress?.address2 || ''} ${cust.customerAddress?.city || ''} ${cust.customerAddress?.state || ''} ${cust.customerAddress?.pincode || ''}`.trim() || null,
+      contactPersonName: `${cust.billingDetails?.contactPersonFName ?? ''} ${cust.billingDetails?.contactPersonMName ?? ''} ${cust.billingDetails?.contactPersonLName ?? ''}`.trim() || null,
+    };
+  });
+  
 
-  console.log("customer data",customers)
-
-  return {
-    ...customers,
-    data: formattedData,
-  };
+  const result = { ...customers, data: formattedData };
+  await this.cacheService.set(key, result, CACHE_TTL);
+  return result;
 }
 
 
 
 
   async findCustomerById(id: string): Promise<any> {
-    return this.customerRepository.findOne({
-      where: { id },
-      relations: [
-        'customerCategory',
-        'customerTypes',
-        'bankDetails',
-        'customerAddress',
-        'statutoryDetails',
-        'billingDetails.billingAddress',
-        'deliveryDetails.deliveryAddress',
-        'keyMobileNumbers.ref1Address',
-        'keyMobileNumbers.ref2Address',
-        'billingDetails',
-        'deliveryDetails',
-        'paymentTerms',
-        'officeUseOnly',
-        'keyMobileNumbers',
-        'productSpecification',
-      ],
-    });
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const result = await this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
+      .leftJoinAndSelect('customer.customerTypes', 'customerTypes')
+      .leftJoinAndSelect('customer.bankDetails', 'bankDetails')
+      .leftJoinAndSelect('bankDetails.bankAddress', 'bankAddress')
+      .leftJoinAndSelect('customer.customerAddress', 'customerAddress')
+      .leftJoinAndSelect('customer.statutoryDetails', 'statutoryDetails')
+      .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
+      .leftJoinAndSelect('billingDetails.billingAddress', 'billingAddress')
+      .leftJoinAndSelect('customer.deliveryDetails', 'deliveryDetails')
+      .leftJoinAndSelect('deliveryDetails.deliveryAddress', 'deliveryAddress')
+      .leftJoinAndSelect('customer.paymentTerms', 'paymentTerms')
+      .leftJoinAndSelect('customer.officeUseOnly', 'officeUseOnly')
+      .leftJoinAndSelect('customer.keyMobileNumbers', 'keyMobileNumbers')
+      .leftJoinAndSelect('keyMobileNumbers.ref1Address', 'ref1Address')
+      .leftJoinAndSelect('keyMobileNumbers.ref2Address', 'ref2Address')
+      .leftJoinAndSelect('customer.productSpecification', 'productSpecification')
+      .where('customer.id = :id', { id })
+      .getOne();
+
+    if (result) await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   async findCustomerByIdforview(id: string): Promise<any> {
-    const data = await this.customerRepository.findOne({
-      where: { id },
-      relations: [
-        'customerCategory',
-        'customerTypes',
-        'bankDetails',
-        'bankDetails.bankAddress',
-        'customerAddress',
-        'statutoryDetails',
-        'billingDetails.billingAddress',
-        'deliveryDetails.deliveryAddress',
-        'keyMobileNumbers.ref1Address',
-        'keyMobileNumbers.ref2Address',
-        'billingDetails',
-        'deliveryDetails',
-        'paymentTerms',
-        'officeUseOnly',
-        'keyMobileNumbers',
-        'productSpecification',
-        'createdBy'
-      ],
-    });
+    const key = `${CACHE_PREFIX}:view:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const data = await this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
+      .leftJoinAndSelect('customer.customerTypes', 'customerTypes')
+      .leftJoinAndSelect('customer.createdBy', 'createdBy')
+      .leftJoinAndSelect('customer.bankDetails', 'bankDetails')
+      .leftJoinAndSelect('bankDetails.bankAddress', 'bankAddress')
+      .leftJoinAndSelect('customer.customerAddress', 'customerAddress')
+      .leftJoinAndSelect('customer.statutoryDetails', 'statutoryDetails')
+      .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
+      .leftJoinAndSelect('billingDetails.billingAddress', 'billingAddress')
+      .leftJoinAndSelect('customer.deliveryDetails', 'deliveryDetails')
+      .leftJoinAndSelect('deliveryDetails.deliveryAddress', 'deliveryAddress')
+      .leftJoinAndSelect('customer.paymentTerms', 'paymentTerms')
+      .leftJoinAndSelect('customer.officeUseOnly', 'officeUseOnly')
+      .leftJoinAndSelect('customer.keyMobileNumbers', 'keyMobileNumbers')
+      .leftJoinAndSelect('keyMobileNumbers.ref1Address', 'ref1Address')
+      .leftJoinAndSelect('keyMobileNumbers.ref2Address', 'ref2Address')
+      .leftJoinAndSelect('customer.productSpecification', 'productSpecification')
+      .where('customer.id = :id', { id })
+      .getOne();
 
     if (!data) {
       throw new AppError(404, 'Customer not found');
@@ -441,8 +469,8 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
             panCopy: data.statutoryDetails.panCopy,
             aadharCopy: data.statutoryDetails.aadharCopy,
             billBookCopy: data.statutoryDetails.billBookCopy,
-            certificationDetails: data.statutoryDetails.certificationsDetails,
-            otherCertification: data.statutoryDetails.otherCertifications,
+            certificationsDetails: data.statutoryDetails.certificationsDetails,
+            otherCertifications: data.statutoryDetails.otherCertifications,
             corpRegiDetails: data.statutoryDetails.corpRegiDetails,
             otherCorpRegiDetails: data.statutoryDetails.otherCorpRegiDetails,
             incorpoCertificateCopy:
@@ -620,7 +648,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
               : null,
           }
         : null,
-      productSpecification: data.productSpecification.map((spec) => ({
+      productSpecification: (data.productSpecification ?? []).map((spec) => ({
         id: spec.id,
         articleName: spec.articleName,
         specifications: spec.specifications,
@@ -631,32 +659,36 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         comment: spec.comment,
       })),
     };
+    await this.cacheService.set(key, formatteddata, CACHE_TTL_DETAIL);
     return formatteddata;
   }
 
   async findCustomerByIdforupdate(id: string): Promise<any> {
-    const data = await this.customerRepository.findOne({
-      where: { id },
-      relations: [
-        'customerCategory',
-        'customerTypes',
-        'createdBy', // Added missing relation
-        'bankDetails',
-        'bankDetails.bankAddress',
-        'customerAddress',
-        'statutoryDetails',
-        'billingDetails.billingAddress',
-        'deliveryDetails.deliveryAddress',
-        'keyMobileNumbers.ref1Address',
-        'keyMobileNumbers.ref2Address',
-        'billingDetails',
-        'deliveryDetails',
-        'paymentTerms',
-        'officeUseOnly',
-        'keyMobileNumbers',
-        'productSpecification',
-      ],
-    });
+    const key = `${CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const data = await this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
+      .leftJoinAndSelect('customer.customerTypes', 'customerTypes')
+      .leftJoinAndSelect('customer.createdBy', 'createdBy')
+      .leftJoinAndSelect('customer.bankDetails', 'bankDetails')
+      .leftJoinAndSelect('bankDetails.bankAddress', 'bankAddress')
+      .leftJoinAndSelect('customer.customerAddress', 'customerAddress')
+      .leftJoinAndSelect('customer.statutoryDetails', 'statutoryDetails')
+      .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
+      .leftJoinAndSelect('billingDetails.billingAddress', 'billingAddress')
+      .leftJoinAndSelect('customer.deliveryDetails', 'deliveryDetails')
+      .leftJoinAndSelect('deliveryDetails.deliveryAddress', 'deliveryAddress')
+      .leftJoinAndSelect('customer.paymentTerms', 'paymentTerms')
+      .leftJoinAndSelect('customer.officeUseOnly', 'officeUseOnly')
+      .leftJoinAndSelect('customer.keyMobileNumbers', 'keyMobileNumbers')
+      .leftJoinAndSelect('keyMobileNumbers.ref1Address', 'ref1Address')
+      .leftJoinAndSelect('keyMobileNumbers.ref2Address', 'ref2Address')
+      .leftJoinAndSelect('customer.productSpecification', 'productSpecification')
+      .where('customer.id = :id', { id })
+      .getOne();
 
     if (!data) {
       throw new AppError(404, 'Customer not found');
@@ -673,7 +705,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
        emailPrimary: data.emailPrimary,
        secondaryContactNo: data.secondaryContactNo,
        primaryContactNo: data.primaryContactNo,
-        createdBy: data.createdBy.id,
+        createdBy: data.createdBy?.id ?? null,
           
       createdTime: formatDateTime(data.createdAt).createdTime,
       createdDate: formatDateTime(data.createdAt).createdDate,
@@ -916,7 +948,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
               : null,
           }
         : null,
-      productSpecification: data.productSpecification.map((spec) => ({
+      productSpecification: (data.productSpecification ?? []).map((spec) => ({
         id: spec.id,
         articleName: spec.articleName,
         specifications: spec.specifications,
@@ -927,6 +959,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         comment: spec.comment,
       })),
     };
+    await this.cacheService.set(key, formatteddata, CACHE_TTL_DETAIL);
     return formatteddata;
   }
 
@@ -967,6 +1000,10 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
   //   return customer
   // }
   async getCustomerFilterById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:filter:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const customer = await this.customerRepository
       .createQueryBuilder('customer')
       .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
@@ -1001,7 +1038,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       throw new Error('Customer not found');
     }
 
-    return {
+    const result = {
       customer: {
         id: customer.id,
         organisationName: customer.organisationName,
@@ -1027,6 +1064,8 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         panNumber: customer.panNumber,
       },
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   public async updateCustomer(
@@ -1081,26 +1120,25 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
 
     const updatedCustomer1 = await this.customerRepository.save(updatedCustomer);
 
-    await this.auditLogService.logChange(
-      'Customer',
-      id,
-      originalCustomer,
-      updatedCustomer1,
-      updatedBy,
-    );
+    await this.auditLogService.logChange('Customer', id, originalCustomer, updatedCustomer1, updatedBy);
+    await this.invalidateCustomerCache(id);
 
     return updatedCustomer1;
   }
-  public async getCustomersName(): Promise<
-    { id: string; organisationName: string }[]
-  > {
+  public async getCustomersName(): Promise<{ id: string; organisationName: string }[]> {
+    const key = `${CACHE_PREFIX}:names`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const customers = await this.customerRepository.find({
       select: ['id', 'organisationName'],
     });
-    return customers.map((customer) => ({
+    const result = customers.map((customer) => ({
       id: customer.id,
       organisationName: customer.organisationName,
     }));
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
   //TODO:upload customer excel file
   async upload(filePath: string): Promise<any> {
@@ -1405,24 +1443,13 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       if (!customer) throw new Error('customer not found');
   
       customer.status = status;
-      return await this.customerRepository.save(customer);
+      const saved = await this.customerRepository.save(customer);
+      await this.invalidateCustomerCache(customerId);
+      return saved;
     }
   public async deleteCustomer(id: string): Promise<boolean> {
     const customer = await this.customerRepository.findOne({
       where: { id },
-      relations: [
-        'customerCategory',
-        'customerType',
-        'bankDetailsCust',
-        'customerAddress',
-        'statutoryDetails',
-        'billingDetails',
-        'deliveryDetails',
-        'paymentTerms',
-        'officeUseOnly',
-        'keyMobileno',
-        'productSpecification',
-      ],
     });
 
     if (!customer) {
@@ -1439,18 +1466,13 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     );
 
     customer.deletionScheduledAt = sixMonthsFromNow;
-
     await this.customerRepository.save(customer);
-
-    console.log(`Customer with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCustomerCache(id);
     return true;
   }
   async softDeleteCustomers(userIds: string[]) {
-
-  const result = await this.customerRepository.softDelete({
-    id: In(userIds)
-  });
-
-  return result;
-}
+    const result = await this.customerRepository.softDelete({ id: In(userIds) });
+    await this.invalidateCustomerCache();
+    return result;
+  }
 }

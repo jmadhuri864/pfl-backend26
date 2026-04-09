@@ -8,11 +8,29 @@ export class CacheService {
   private isConnected = false;
 
   constructor() {
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisPassword = process.env.REDIS_PASSWORD;
+
+    // Parse password from URL if not set separately
+    // Handles format: redis://:password@host:port
+    let password = redisPassword;
+    if (!password) {
+      try {
+        const parsed = new URL(redisUrl);
+        if (parsed.password) password = decodeURIComponent(parsed.password);
+      } catch {}
+    }
+
     this.client = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      url: redisUrl,
+      password: password || undefined,
       socket: {
         connectTimeout: 60000,
-      }
+        reconnectStrategy: (retries) => {
+          if (retries > 5) return new Error('Redis max retries reached');
+          return Math.min(retries * 500, 3000);
+        },
+      },
     });
 
     this.client.on('error', (err) => {

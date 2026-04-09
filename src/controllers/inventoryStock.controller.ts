@@ -226,7 +226,7 @@ export class InventoryStockController {
     ) {
       try {
       
-       const id = res.locals.id
+       const id = res.locals.user?.id
        
         const stock = await this.inventoryStockService.getInventoryStockbyuserAccesslocation(id)
      
@@ -254,7 +254,7 @@ public async gettingStocksaccessLocation(
 ) {
   try {
     const location = req.query.location as string | undefined;
-    const id = res.locals.id;
+    const id = res.locals.user?.id;
 
    
 

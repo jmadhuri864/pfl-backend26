@@ -1,16 +1,16 @@
-import { inject, injectable } from "inversify";
-import { TYPES } from "../types";
-import { BranchessRepository } from "../repositories/branches.repository";
-import { Branches, BranchType } from "../entities/branches.entity";
-import { AddressRepository } from "../repositories/address.repository";
-import { Address } from "../entities/address.entity";
-import { AddressService } from "./address.service";
-import { AuditLogService } from "./auditLog.service";
-import AppError from "../utils/appError";
-import { format } from "date-fns";
-import { classToPlain } from "class-transformer";
-import { buildQuery,  PaginationOptions } from "../utils/pagination";
-import { In } from "typeorm";
+import { inject, injectable } from 'inversify';
+import { TYPES } from '../types';
+import { BranchessRepository } from '../repositories/branches.repository';
+import { Branches, BranchType } from '../entities/branches.entity';
+import { AddressService } from './address.service';
+import { AuditLogService } from './auditLog.service';
+import { CacheService } from './cache.service';
+import AppError from '../utils/appError';
+import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { In } from 'typeorm';
+
+const CACHE_TTL = 300; // 5 minutes
+const CACHE_PREFIX = 'branches';
 
 @injectable()
 export class BranchessService {
@@ -20,103 +20,95 @@ export class BranchessService {
     @inject(TYPES.AddressService)
     private readonly addressService: AddressService,
     @inject(TYPES.AuditLogService)
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private cacheKey(...parts: string[]): string {
+    return this.cacheService.generateKey(CACHE_PREFIX, ...parts);
+  }
+
+  private async invalidateBranchCache(id?: string, branchType?: string): Promise<void> {
+    await this.cacheService.invalidatePattern(`${CACHE_PREFIX}:*`);
+  }
+
+  // ─── Create ───────────────────────────────────────────────────────────────
 
   async createBranch(branchData: any): Promise<any> {
     const { address, totalCapacity, ...data } = branchData;
-console.log(branchData)
-    // Create the address
-    const newAddress =  await this.addressService.create(address);
-    console.log(newAddress);
 
-     // Assuming new branch starts with 0 current capacity
-    //const balanceCapacity = totalCapacity - data.currentCapacity;
+    const newAddress = await this.addressService.create(address);
 
-    // Create the branch with calculated capacities
     const branch = this.branchesRepository.create({
-        ...data,
-        address: newAddress,
-        totalCapacity,
-       
-        //balanceCapacity,
+      ...data,
+      address: newAddress,
+      totalCapacity,
     });
 
-    return this.branchesRepository.save(branch);
-}
-async updateBranch(id: string, branchData: any,updatedBy:string): Promise<Branches | null> {
-  // Find the branch including its address
-  console.log(branchData);
-  const branch = await this.branchesRepository.findOne({
-    where: { id },
-    relations: ['address'],
-  });
-
-  if (!branch) return null;
-// Store the original state of the branch for audit logging
-const originalBranch = { ...branch };
-  // Update the capacities based on the equation
-  if (branchData.currentCapacity !== undefined || branchData.totalCapacity !== undefined) {
-    // Calculate balanceCapacity if currentCapacity or totalCapacity is provided
-    const currentCapacity = branchData.currentCapacity !== undefined ? branchData.currentCapacity : branch.currentCapacity;
-    const totalCapacity = branchData.totalCapacity !== undefined ? branchData.totalCapacity : branch.totalCapacity;
-
-    // Update balanceCapacity based on the equation
-    branchData.balanceCapacity = totalCapacity - currentCapacity;
+    const saved = await this.branchesRepository.save(branch);
+    await this.invalidateBranchCache();
+    return saved;
   }
 
-  // Update the address if provided
-  if (branchData.address) {
-    const originalAddress = { ...branch.address }; 
-    const updatedAddress = await this.addressService.update(branch.address.id, branchData.address);
-    console.log(updatedAddress);
-    if (!updatedAddress) {
-      throw new Error("Failed to update address");
+  // ─── Update ───────────────────────────────────────────────────────────────
+
+  async updateBranch(id: string, branchData: any, updatedBy: string): Promise<Branches | null> {
+    const branch = await this.branchesRepository.findOne({
+      where: { id },
+      relations: ['address'],
+    });
+
+    if (!branch) return null;
+
+    const originalBranch = { ...branch };
+
+    // Recalculate balanceCapacity if capacities changed
+    if (branchData.currentCapacity !== undefined || branchData.totalCapacity !== undefined) {
+      const currentCapacity = branchData.currentCapacity ?? branch.currentCapacity;
+      const totalCapacity = branchData.totalCapacity ?? branch.totalCapacity;
+      branchData.balanceCapacity = totalCapacity - currentCapacity;
     }
-    // Log changes to the address
-    await this.auditLogService.logChange(
-      'Address',
-      branch.address.id,
-      originalAddress,
-      updatedAddress,
-      updatedBy
-    );
 
-    branch.address = updatedAddress;
+    if (branchData.address) {
+      const originalAddress = { ...branch.address };
+      const updatedAddress = await this.addressService.update(branch.address.id, branchData.address);
+      if (!updatedAddress) throw new Error('Failed to update address');
+
+      await this.auditLogService.logChange('Address', branch.address.id, originalAddress, updatedAddress, updatedBy);
+      branch.address = updatedAddress;
+    }
+
+    Object.assign(branch, branchData);
+    const updatedBranch = await this.branchesRepository.save(branch);
+
+    await this.auditLogService.logChange('Branches', id, originalBranch, updatedBranch, updatedBy);
+    await this.invalidateBranchCache(id, branch.type);
+
+    return updatedBranch;
   }
 
-  // Update the branch fields
-  Object.assign(branch, branchData);
+  // ─── Soft Delete Multiple ─────────────────────────────────────────────────
 
-   // Save the updated branch
-   const updatedBranch = await this.branchesRepository.save(branch);
+  async softDeleteBranches(ids: string[], branchType: BranchType) {
+    const result = await this.branchesRepository.softDelete({
+      id: In(ids),
+      type: branchType,
+    });
+    await this.invalidateBranchCache();
+    return result;
+  }
 
-   // Log changes to the branch
-   await this.auditLogService.logChange(
-     'Branches',
-     id,
-     originalBranch,
-     updatedBranch,
-     updatedBy
-   );
- 
-   return updatedBranch;
-}
-
-async softDeleteBranches(userIds: string[],branchType:BranchType) {
-
-  const result = await this.branchesRepository.softDelete({
-     id: In(userIds),
-    type: branchType,
-    
-  });
-
-  return result;
-}
-  
+  // ─── Get By ID ────────────────────────────────────────────────────────────
 
   async getBranchByIdAndType(id: string): Promise<any> {
-    return this.branchesRepository
+    const key = this.cacheKey('id', id);
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const branch = await this.branchesRepository
       .createQueryBuilder('branch')
       .leftJoin('branch.address', 'address')
       .select([
@@ -142,117 +134,87 @@ async softDeleteBranches(userIds: string[],branchType:BranchType) {
       ])
       .where('branch.id = :id', { id })
       .getOne();
+
+    if (branch) await this.cacheService.set(key, branch, CACHE_TTL);
+    return branch;
   }
 
-async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
-    console.log(`Fetching branches with type: ${branchType}`);
+  // ─── Get All By Type (paginated) ──────────────────────────────────────────
 
-    let queryBuilder = this.branchesRepository.createQueryBuilder('branch')
-        .leftJoinAndSelect('branch.address', 'address')
-        .where('branch.type = :branchType', { branchType })
-        .orderBy('branch.createdAt', 'DESC'); // Sorting by createdAt
+  async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
+    const key = this.cacheKey('list', branchType, JSON.stringify(queryOptions));
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
-   
-    const result = await buildQuery(queryBuilder, queryOptions, "branch");
-    //const result = await buildQuery1(queryBuilder, queryOptions, "branch", Branches);
-  //   const objectToString = (obj: any): string => {
-  //   if (obj == null) return '';
-  //   if (typeof obj === 'object') {
-  //     return Object.values(obj).map((v) => objectToString(v)).join(' ');
-  //   }
-  //   return String(obj);
-  // };
+    const qb = this.branchesRepository
+      .createQueryBuilder('branch')
+      .leftJoinAndSelect('branch.address', 'address')
+      .where('branch.type = :branchType', { branchType })
+      .orderBy('branch.createdAt', 'DESC');
 
-  // if ( queryOptions.search&&  queryOptions.search.trim()) {
-  //   const term =  queryOptions.search.toLowerCase();
-  //   result.data = result.data.filter((item) =>
-  //     objectToString(item).toLowerCase().includes(term)
-  //   );
-  // }
+    const result = await buildQuery(qb, queryOptions, 'branch');
 
-  return{
-    data:result.data.map((branch)=>{
-      return{
-        id:branch.id,
-        type:branch.type,
-        address:{
-          id:branch.address.id,
-          address1:branch.address.address1,
-          address2:branch.address.address2,
-          city:branch.address.city,
-          location:branch.address.location,
-          pincode:branch.address.pincode,
-          state:branch.address.state
+    const response = {
+      data: result.data.map((branch) => ({
+        id: branch.id,
+        type: branch.type,
+        name: branch.name,
+        address: {
+          id: branch.address?.id,
+          address1: branch.address?.address1,
+          address2: branch.address?.address2,
+          city: branch.address?.city,
+          location: branch.address?.location,
+          pincode: branch.address?.pincode,
+          state: branch.address?.state,
         },
-        contactPerson: [
-        branch.cFirstName || '',
-        branch.cMiddleName || '',
-        branch.cLastName || ''
-      ].filter(Boolean).join(' '),
-        //contactPerson:`${branch.cFirstName} ${branch.cMiddleName} ${branch.cLastName}`,
-        contact:branch.contactNumber?branch.contactNumber:'',
-        name:branch.name,
-       totalCapacity:branch.totalCapacity,
-       currentCapacity:branch.currentCapacity,
-       balanceCapacity:branch.balanceCapacity
-      }
-    }),
-    meta:result.meta
+        contactPerson: [branch.cFirstName, branch.cMiddleName, branch.cLastName]
+          .filter(Boolean)
+          .join(' '),
+        contact: branch.contactNumber || '',
+        totalCapacity: branch.totalCapacity,
+        currentCapacity: branch.currentCapacity,
+        balanceCapacity: branch.balanceCapacity,
+      })),
+      meta: result.meta,
+    };
+
+    await this.cacheService.set(key, response, CACHE_TTL);
+    return response;
   }
-   // return result;
-}
 
+  // ─── Get Filter Data ──────────────────────────────────────────────────────
 
+  async getAllByFilterDataBranchType(): Promise<Pick<Branches, 'id' | 'name' | 'type'>[]> {
+    const key = this.cacheKey('filter');
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const branches = await this.branchesRepository.find({
+      select: ['id', 'name', 'type'],
+    });
+
+    await this.cacheService.set(key, branches, CACHE_TTL);
+    return branches;
+  }
+
+  // ─── Delete (schedule) ────────────────────────────────────────────────────
 
   async deleteBranch(id: string, branchType: BranchType): Promise<boolean> {
     const branch = await this.branchesRepository.findOne({
       where: { id, type: branchType },
     });
-  
-    if (!branch) {
-      throw new AppError(404, `Branch with ID ${id} not found`);
-    }
-  
-    const now = new Date();
-    
-    // Calculate the date 6 months ahead
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-  
-    console.log(sixMonthsFromNow); // Log the calculated date
-  
-    // Set the deletionScheduledAt field for the branch
+
+    if (!branch) throw new AppError(404, `Branch with ID ${id} not found`);
+
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
+
     branch.deletionScheduledAt = sixMonthsFromNow;
-  
-    console.log("In delete service for Branch", branch.deletionScheduledAt);
-  
-    // Save the updated branch with the scheduled deletion date
     await this.branchesRepository.save(branch);
-  
-    console.log(`Branch with ID ${id} marked for deletion in 6 months.`);
-  
+    await this.invalidateBranchCache(id, branchType);
+
     return true;
   }
-  
-  
- 
-  // async getAllByFilterDataBranchType(): Promise<Pick<Branches, 'id' | 'name' | 'type'>[]> {
-  //   return this.branchesRepository.find({
-  //     // where: {
-  //     //   type: branchType, // Matches the property name in the entity
-  //     // },
-  //     select: ['id', 'name', 'type'], // 'type' is the actual column name, not 'branchType'
-  //   });
-  // }
-  async getAllByFilterDataBranchType(): Promise<Pick<Branches, 'id' | 'name' | 'type'>[]> {
-    
-    return this.branchesRepository.find({
-      select: ['id', 'name', 'type'],  
-    });
-  }
-  
-  
-  
-  
 }

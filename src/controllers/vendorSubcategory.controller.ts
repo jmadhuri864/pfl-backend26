@@ -3,7 +3,6 @@ import {
   controller,
   httpGet,
   httpPost,
-  httpPut,
   httpDelete,
   request,
   response,
@@ -13,14 +12,10 @@ import {
   httpPatch,
 } from "inversify-express-utils";
 import { inject } from "inversify";
-
 import AppError from "../utils/appError";
 import { VendorSubcategoryService } from "../services/vendorSubcategory.service";
 import { NotificationService } from "../services/notification.service";
-
 import { TYPES } from "../types";
-
-import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { PaginationOptions } from "../utils/pagination";
@@ -229,8 +224,7 @@ public async getAllSubcategories1(
   ) {
     try {
       if (!id) {
-        logger.warn("User ID not provided");
-        return next(new AppError(400, "User ID is required"));
+        return next(new AppError(400, "Subcategory ID is required"));
       }
       const success = await this.subcategoryService.delete(id);
       if (!success) {

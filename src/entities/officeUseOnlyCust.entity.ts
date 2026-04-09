@@ -44,7 +44,7 @@ export class OfficeUseOnly extends Model {
 
   @Column({ name: 'customer_office_use_only_key_account_person_assigned', nullable: true })
   keyAccountPersonAssigned: string;
-  @Column({ name: 'customer_office_use_only_since_when', nullable: true , 
+  @Column({ name: 'customer_office_use_only_since_when', nullable: true ,  type: 'date', 
   //   transformer: {
   //   to: (value: Date) => value, 
   //   from: (value: string) => value ? format(new Date(value), "dd-MM-yyyy") : null, // Convert to DD-MM-YYYY format

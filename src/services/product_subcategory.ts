@@ -6,159 +6,158 @@ import { ProductSubcategory } from "../entities/product_subcategory.entity";
 import { ProductCategory } from "../entities/product_category.entity";
 import { AuditLogService } from "./auditLog.service";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = "productSubcategory";
+const CACHE_TTL = 300;
 
 @injectable()
 export class ProductSubcategoryService {
   private productSubcategoryRepository: ProductSubcategoryRepository;
 
-  constructor(@inject(TYPES.DataSource) private dataSource: DataSource,
-  @inject(TYPES.AuditLogService)private readonly auditLogService: AuditLogService,) {
+  constructor(
+    @inject(TYPES.DataSource) private dataSource: DataSource,
+    @inject(TYPES.AuditLogService)
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
+  ) {
     this.productSubcategoryRepository = this.dataSource.getRepository(
-      ProductSubcategory
+      ProductSubcategory,
     ) as ProductSubcategoryRepository;
   }
 
-  // async getAll(): Promise<ProductSubcategory[]> {
-  //   return this.productSubcategoryRepository.find({
-  //     relations: ["category", "category.productClassification"], // Load category and productClassification
-  //     order: {
-  //       createdAt: 'DESC', // Order by createdAt field, assuming it's a timestamp
-  //     },
-  //   });
-  // }
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
 
-async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
-    let baseQuery = this.productSubcategoryRepository
-      .createQueryBuilder('productSubcategory')
-      .leftJoin('productSubcategory.category', 'category')
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+    }
+    await Promise.all(tasks);
+  }
+
+  // ─── Methods ──────────────────────────────────────────────────────────────
+
+  async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const baseQuery = this.productSubcategoryRepository
+      .createQueryBuilder("productSubcategory")
+      .leftJoin("productSubcategory.category", "category")
       .select([
-        'productSubcategory.id',
-        'productSubcategory.name',
-        'category.id',
-        'category.name',
+        "productSubcategory.id",
+        "productSubcategory.name",
+        "category.id",
+        "category.name",
       ])
-      .orderBy('productSubcategory.createdAt', 'DESC');
+      .orderBy("productSubcategory.createdAt", "DESC");
 
-    const subcategories = await buildQuery(baseQuery, queryOptions, 'productSubcategory');
+    const subcategories = await buildQuery(baseQuery, queryOptions, "productSubcategory");
 
-    return {
+    const formatted = {
       data: subcategories.data.map((subcategory) => ({
         id: subcategory.id,
         name: subcategory.name,
-        //categoryId: subcategory.category?.id ?? null,
         category: subcategory.category?.name ?? null,
       })),
       meta: subcategories.meta,
     };
-}
 
-
-
-  
-  
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
+  }
 
   async getById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const result = await this.productSubcategoryRepository
-      .createQueryBuilder('productSubcategory')
-      .leftJoin('productSubcategory.category', 'category')
-      .select(['productSubcategory.id', 'productSubcategory.name', 'category.id'])
-      .where('productSubcategory.id = :id', { id })
+      .createQueryBuilder("productSubcategory")
+      .leftJoin("productSubcategory.category", "category")
+      .select(["productSubcategory.id", "productSubcategory.name", "category.id"])
+      .where("productSubcategory.id = :id", { id })
       .getOne();
 
     if (!result) return null;
-    return {
+
+    const formatted = {
       id: result.id,
       name: result.name,
       category: result.category?.id ?? null,
     };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
   async create(name: string, category: string): Promise<ProductSubcategory> {
     const subcategory = this.productSubcategoryRepository.create({
       name,
-      category: { id: category } as ProductCategory, // Correctly assign the category
+      category: { id: category } as ProductCategory,
     });
-    return this.productSubcategoryRepository.save(subcategory);
+    const saved = await this.productSubcategoryRepository.save(subcategory);
+    await this.invalidateCache();
+    return saved;
   }
 
   async update(
     id: string,
     subcategoryData: any,
-    updatedBy: string
+    updatedBy: string,
   ): Promise<ProductSubcategory | null> {
-    // Step 1: Retrieve the existing subcategory
     const existingSubcategory = await this.productSubcategoryRepository.findOne({
       where: { id },
-      relations: ['category'], // Include relations if needed
+      relations: ["category"],
     });
-  
+
     if (!existingSubcategory) {
       throw new Error(`Product subcategory with ID ${id} not found`);
     }
-  
-    // Step 2: Capture current state for audit purposes
+
     const oldData = { ...existingSubcategory };
-  
-    // Step 3: Update the subcategory data
+
     if (subcategoryData.name) {
       existingSubcategory.name = subcategoryData.name;
     }
     if (subcategoryData.category) {
-      existingSubcategory.category = { id: subcategoryData.category} as ProductCategory;
+      existingSubcategory.category = { id: subcategoryData.category } as ProductCategory;
     }
-  
-    // Step 4: Log the changes
-    await this.auditLogService.logChange(
-      'ProductSubcategory',
-      id,
-      oldData,
-      subcategoryData,
-      updatedBy
-    );
-  
-    // Step 5: Save and return the updated subcategory
-    return this.productSubcategoryRepository.save(existingSubcategory);
+
+    await this.auditLogService.logChange("ProductSubcategory", id, oldData, subcategoryData, updatedBy);
+
+    const saved = await this.productSubcategoryRepository.save(existingSubcategory);
+    await this.invalidateCache(id);
+    return saved;
   }
-  
+
   async delete(id: string): Promise<boolean> {
-    // Step 1: Find the product subcategory by ID
-    const subcategory = await this.productSubcategoryRepository.findOne({
-      where: { id },
-    });
-  
-    // Step 2: If the subcategory doesn't exist, throw an error
+    const subcategory = await this.productSubcategoryRepository.findOne({ where: { id } });
+
     if (!subcategory) {
       throw new Error(`Product subcategory with ID ${id} not found`);
     }
-  
-    // Step 3: Calculate the date 6 months ahead
+
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-  
-    // Log the scheduled deletion
-    console.log(`Product subcategory with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
-  
-    // Set the deletionScheduledAt field for the subcategory
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
+
     subcategory.deletionScheduledAt = sixMonthsFromNow;
-  
-    // Step 4: Save the updated subcategory with the scheduled deletion date
     await this.productSubcategoryRepository.save(subcategory);
-  
-    
-  
-    // Step 6: Return true to indicate the deletion was scheduled and performed
-    console.log(`Product subcategory with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
+
     return true;
   }
+
   async softDeleteSubcategory(userIds: string[]) {
-
-  const result = await this.productSubcategoryRepository.softDelete({
-    id: In(userIds)
-  });
-
-  return result;
-}
-  
+    const result = await this.productSubcategoryRepository.softDelete({ id: In(userIds) });
+    await this.invalidateCache();
+    return result;
+  }
 }

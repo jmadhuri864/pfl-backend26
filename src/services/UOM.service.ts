@@ -5,127 +5,146 @@ import { UOM } from "../entities/uom.entity";
 import { UOMRepository } from "../repositories/uom.repository";
 import { AuditLogService } from "./auditLog.service";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = "uom";
+const CACHE_TTL = 300; // 5 minutes
+
 @injectable()
 export class UOMService {
   private UOMRepository: UOMRepository;
 
-  constructor(@inject(TYPES.DataSource) private dataSource: DataSource,
-  @inject(TYPES.AuditLogService) private auditLogService: AuditLogService
-) {
+  constructor(
+    @inject(TYPES.DataSource) private dataSource: DataSource,
+    @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,
+    @inject(TYPES.CacheService) private readonly cacheService: CacheService,
+  ) {
     this.UOMRepository = this.dataSource.getRepository(UOM) as UOMRepository;
   }
- public async getAll( queryOptions:PaginationOptions): Promise<any> {
-    
-    let queryBuilder = await  this.UOMRepository.createQueryBuilder('uom')
-    .orderBy('uom.createdAt', 'DESC');
-  const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
-  return{
-    data:result.data.map((unit)=>{
-      return{
-          id:unit.id,
-          unit:unit.unit,
-          abbreviation:unit.abbreviation,
-          description:unit.description
-      }
-    }),
-    meta:result.meta
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.del(`${CACHE_PREFIX}:partial`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+    }
+    await Promise.all(tasks);
   }
-  //return result;
+
+  // ─── Methods ──────────────────────────────────────────────────────────────
+
+  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.UOMRepository.createQueryBuilder("uom")
+      .select(["uom.id", "uom.unit", "uom.abbreviation", "uom.description"])
+      .orderBy("uom.createdAt", "DESC");
+
+    const result = await buildQuery(queryBuilder, queryOptions, "uom");
+
+    const formatted = {
+      data: result.data.map((unit) => ({
+        id: unit.id,
+        unit: unit.unit,
+        abbreviation: unit.abbreviation,
+        description: unit.description,
+      })),
+      meta: result.meta,
+    };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
-  public async getAllPartial():Promise<any>{
-    const uoms = await this.UOMRepository.find({select:{
-      id:true,
-      unit:true
-    }})
+
+  public async getAllPartial(): Promise<any> {
+    const key = `${CACHE_PREFIX}:partial`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const uoms = await this.UOMRepository.createQueryBuilder("uom")
+      .select(["uom.id", "uom.unit"])
+      .orderBy("uom.unit", "ASC")
+      .getMany();
+
+    await this.cacheService.set(key, uoms, CACHE_TTL);
     return uoms;
   }
 
-  public async getById(id: string): Promise<UOM | null> {
-    return this.UOMRepository.findOne({ 
-     where: {id},
-     select:["id", "unit", "abbreviation", "description"]
-     });
+  public async getById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const uom = await this.UOMRepository.createQueryBuilder("uom")
+      .select(["uom.id", "uom.unit", "uom.abbreviation", "uom.description"])
+      .where("uom.id = :id", { id })
+      .getOne();
+
+    if (!uom) return null;
+
+    await this.cacheService.set(key, uom, CACHE_TTL);
+    return uom;
   }
 
   public async create(uomData: Partial<UOM>): Promise<UOM> {
     const uom = this.UOMRepository.create(uomData);
-    return this.UOMRepository.save(uom);
+    const saved = await this.UOMRepository.save(uom);
+    await this.invalidateCache();
+    return saved;
   }
 
   public async update(
     id: string,
     uomData: Partial<UOM>,
-    updatedBy: string
+    updatedBy: string,
   ): Promise<UOM | null> {
-    // Step 1: Fetch the existing UOM record
     const existingUOM = await this.UOMRepository.findOne({ where: { id } });
-  
+
     if (!existingUOM) {
       throw new Error(`UOM with ID ${id} not found`);
     }
-  
-    // Step 2: Capture the previous data for audit log
+
     const oldData = { ...existingUOM };
-  
-    // Step 3: Update the UOM entity with the new data
     Object.assign(existingUOM, uomData);
-  
-    // Step 4: Log the changes using the AuditLogService
-    await this.auditLogService.logChange(
-      'UOM', // Entity name
-      id, // Entity ID
-      oldData, // Old data
-      uomData, // New data
-      updatedBy // User who made the update
-    );
-  
-    // Step 5: Save the updated UOM and return it
+
+    await this.auditLogService.logChange("UOM", id, oldData, uomData, updatedBy);
+
     await this.UOMRepository.save(existingUOM);
-    return this.getById(id); // Assuming `getById` method fetches the UOM by ID
+    await this.invalidateCache(id);
+    return this.getById(id);
   }
-  
+
   public async delete(id: string): Promise<boolean> {
-    // Step 1: Find the UOM by ID
-    const uom = await this.UOMRepository.findOne({
-        where: { id },
-    });
+    const uom = await this.UOMRepository.findOne({ where: { id } });
 
-    // Step 2: If the UOM doesn't exist, return false
-    if (!uom) {
-        return false;
-    }
+    if (!uom) return false;
 
-    // Step 3: Calculate the date 6 months ahead
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Log the scheduled deletion
-    console.log(`UOM with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
-
-    // Step 4: Set the deletionScheduledAt field for the UOM
     uom.deletionScheduledAt = sixMonthsFromNow;
-
-    // Step 5: Save the updated UOM with the scheduled deletion date
     await this.UOMRepository.save(uom);
+    await this.invalidateCache(id);
 
-    // Step 6: Return true to indicate the deletion was scheduled
-    console.log(`UOM with ID ${id} marked for deletion in 6 months.`);
     return true;
-}
-
-public async multipledelete(ids: string[]): Promise<boolean> {
-  try {
-    const result = await this.UOMRepository.softDelete({ id: In(ids) });
-    return result.affected !== 0;
-  } catch(err) {
-    console.log(err);
-    return false;
   }
-}
 
-
-
-
+  public async multipledelete(ids: string[]): Promise<boolean> {
+    try {
+      const result = await this.UOMRepository.softDelete({ id: In(ids) });
+      await this.invalidateCache();
+      return result.affected !== 0;
+    } catch (err) {
+      console.log(err);
+      return false;
+    }
+  }
 }

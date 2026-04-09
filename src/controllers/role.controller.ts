@@ -80,7 +80,7 @@ export class RoleController {
     @next() next: NextFunction
   ): Promise<void> {
     try {
-      const updateBy= res.locals.id
+      const updateBy = res.locals.user?.id
       const updatedRole = await this.roleService.updateRole(roleId, roleData,updateBy);
       if (!updatedRole) {
         throw new AppError(404, "Role not found or update failed");

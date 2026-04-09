@@ -34,6 +34,10 @@ import { Branches } from '../entities/branches.entity';
 import { DocumentDefinition, DocumentTypeEnum } from '../entities/documentdef.entity';
 import { DocumentPermission } from '../entities/permission.entity';
 import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'user';
+const CACHE_TTL = 300; // 5 minutes
 
 interface Tokens {
   access_token: string;
@@ -54,15 +58,32 @@ export class UserService {
     @inject(TYPES.BranchessRepository)
     private readonly branchRepository: BranchessRepository,
     @inject(TYPES.AddressService) private addressService: AddressService,
-
     @inject(TYPES.CompanyRepository)
     private readonly companyRepository: CompanyRepository,
     @inject(TYPES.WorkflowHierarchyRepository)
     private readonly workflowHierarchyRepository: WorkflowHierarchyRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {
     this.addressRepository = this.dataSource.getRepository(
       Address,
     ) as AddressRepository;
+  }
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
+      this.cacheService.del(`${CACHE_PREFIX}:count`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:view:${id}`));
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:update:${id}`));
+    }
+    await Promise.all(tasks);
   }
 
   private generateRandomPassword(length: number = 10): string {
@@ -126,31 +147,50 @@ if (input.departments && input.departments.length > 0) {
       departments: departments,
     });
 
-    return await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    await this.invalidateCache();
+    return saved;
   }
   async updateStatus(id: string, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new Error('User not found');
     }
-
     user.status = status;
-    return await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    await this.invalidateCache(id);
+    return saved;
   }
   async getAllUsers(queryOptions: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.permanentAddress', 'permanentAddress')
-      .leftJoinAndSelect('user.residentialAddress', 'residentialAddress')
-      .leftJoinAndSelect('user.joiningLocation', 'joiningLocation')
-      .leftJoinAndSelect('user.joiningOffice', 'joiningOffice')
-      .leftJoinAndSelect('user.currentWorkLocation', 'currentWorkLocation')
-      .leftJoinAndSelect('user.currentOfficeLocation', 'currentOfficeLocation')
-      .leftJoinAndSelect('user.accessLocation','accessLocation')
-
-      //.leftJoinAndSelect('user.companyName', 'companyName')
-
-      //.leftJoinAndSelect('user.currentLevel', 'currentLevel')
+      .leftJoin('user.permanentAddress', 'permanentAddress')
+      .leftJoin('user.residentialAddress', 'residentialAddress')
+      .leftJoin('user.joiningLocation', 'joiningLocation')
+      .leftJoin('user.joiningOffice', 'joiningOffice')
+      .leftJoin('user.currentWorkLocation', 'currentWorkLocation')
+      .leftJoin('user.currentOfficeLocation', 'currentOfficeLocation')
+      .leftJoin('user.accessLocation', 'accessLocation')
+      .select([
+        'user.id', 'user.firstName', 'user.middleName', 'user.lastName',
+        'user.username', 'user.primaryMobNo', 'user.secondaryMobNo',
+        'user.primaryEmail', 'user.secondaryEmail', 'user.joiningDate',
+        'user.cugNo', 'user.workEmail', 'user.employeeId', 'user.status',
+        'user.tempPlainPassword', 'user.createdAt',
+        'permanentAddress.id', 'permanentAddress.address1', 'permanentAddress.address2',
+        'permanentAddress.location', 'permanentAddress.city', 'permanentAddress.state', 'permanentAddress.pincode',
+        'residentialAddress.id', 'residentialAddress.address1', 'residentialAddress.address2',
+        'residentialAddress.location', 'residentialAddress.city', 'residentialAddress.state', 'residentialAddress.pincode',
+        'joiningLocation.id', 'joiningLocation.name',
+        'joiningOffice.id', 'joiningOffice.name',
+        'currentWorkLocation.id', 'currentWorkLocation.name',
+        'currentOfficeLocation.id', 'currentOfficeLocation.name',
+        'accessLocation.id', 'accessLocation.name',
+      ])
       .orderBy('user.createdAt', 'DESC');
 
     const { meta, data } = await buildQuery(queryBuilder, queryOptions, 'user');
@@ -179,23 +219,19 @@ if (input.departments && input.departments.length > 0) {
       primaryEmail: user.primaryEmail,
       secondaryEmail: user.secondaryEmail,
       joiningDate: user.joiningDate,
-      //designation: user.designation,
       cugNo: user.cugNo,
-      //otherWorkLocationInput: user.otherWorkLocationInput,
-     workEmail: user.workEmail,
+      workEmail: user.workEmail,
       employeeId: user.employeeId,
       status: user.status,
       password: user.tempPlainPassword,
- accessLocation: user.accessLocation.map((location) => location.name),
+      accessLocation: user.accessLocation.map((location: any) => location.name),
       permanentAddress: mapAddress(user.permanentAddress),
       residentialAddress: mapAddress(user.residentialAddress),
-      //currentLevel:user.currentLevel?.name,
       joiningLocation: user.joiningLocation
         ? user.joiningLocation.name
         : user.joiningOffice
         ? user.joiningOffice.name
         : null,
-
       currentWorkLocation: user.currentWorkLocation
         ? user.currentWorkLocation.name
         : user.currentOfficeLocation
@@ -203,23 +239,24 @@ if (input.departments && input.departments.length > 0) {
         : null,
     }));
 
-    return {
-      data: users,
-      meta,
-    };
+    const formatted = { data: users, meta };
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
 
   async findUserById(userId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${userId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: [
         'permanentAddress',
         'companyName',
         'residentialAddress',
-
         'permissions',
-
         'permissions.documentDefinition',
         'joiningLocation',
         'joiningOffice',
@@ -231,19 +268,23 @@ if (input.departments && input.departments.length > 0) {
     if (!user) {
       throw new AppError(404, `User with ID ${userId} not found`);
     }
-    return this.mapToUserDTO(user);
+    const formatted = this.mapToUserDTO(user);
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
   async findUserByIdForUpdate(userId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:update:${userId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: [
         'permanentAddress',
         'companyName',
         'residentialAddress',
-
         'permissions',
-
         'permissions.documentDefinition',
         'joiningLocation',
         'joiningOffice',
@@ -255,7 +296,9 @@ if (input.departments && input.departments.length > 0) {
     if (!user) {
       throw new AppError(404, `User with ID ${userId} not found`);
     }
-    return this.mapToUser(user);
+    const formatted = this.mapToUser(user);
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
   private mapToUser(user: User): any {
@@ -332,15 +375,17 @@ isAddressSame: user.isAddressSame,
     };
   }
   async findUserByIdForView(userId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:view:${userId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: [
         'permanentAddress',
         'companyName',
         'residentialAddress',
-
         'permissions',
-
         'permissions.documentDefinition',
         'joiningLocation',
         'joiningOffice',
@@ -352,7 +397,9 @@ isAddressSame: user.isAddressSame,
     if (!user) {
       throw new AppError(404, `User with ID ${userId} not found`);
     }
-    return this.mapToUserDTO(user);
+    const formatted = this.mapToUserDTO(user);
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
   private mapToUserDTO(user: User): any {
@@ -464,6 +511,7 @@ isAddressSame:user.isAddressSame,
     await this.userRepository.save(user);
 
     console.log(`User with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -664,6 +712,7 @@ isAddressSame:user.isAddressSame,
       updatedBy
     );
 
+    await this.invalidateCache(id);
     return updatedUser;
   }
 
@@ -689,6 +738,10 @@ isAddressSame:user.isAddressSame,
   // }
 
   async filterUser(options: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:filter:${JSON.stringify(options)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
       .select([
@@ -697,25 +750,22 @@ isAddressSame:user.isAddressSame,
         'user.middleName',
         'user.lastName',
         'user.employeeId',
-        'user.roles'
+        'user.roles',
       ])
-      //.where('user.status = :status', { status: 'ACTIVE' }) // optional filter
       .orderBy('user.firstName', 'ASC');
 
     const result = await buildQuery(queryBuilder, options, 'user');
 
-    // Format the data after fetching
     const formattedUsers = result.data.map((user) => ({
       id: user.id,
       fullName: `${user.firstName} ${user.middleName || ''} ${user.lastName}`.trim(),
       employeeId: user.employeeId,
-      roles: user.roles || []
+      roles: user.roles || [],
     }));
 
-    return {
-      ...result,
-      data: formattedUsers,
-    };
+    const formatted = { ...result, data: formattedUsers };
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
 
@@ -774,7 +824,13 @@ isAddressSame:user.isAddressSame,
   }
 
   async getTotalNumberOfUsers(): Promise<number> {
-    return this.userRepository.count();
+    const key = `${CACHE_PREFIX}:count`;
+    const cached = await this.cacheService.get<number>(key);
+    if (cached !== null) return cached;
+
+    const count = await this.userRepository.count();
+    await this.cacheService.set(key, count, CACHE_TTL);
+    return count;
   }
 
   async generateEmployeeId(): Promise<string> {
@@ -1016,11 +1072,10 @@ isAddressSame:user.isAddressSame,
   }
 
 async softDeleteEmployees(userIds: string[]) {
-
   const result = await this.userRepository.softDelete({
     id: In(userIds)
   });
-
+  await this.invalidateCache();
   return result;
 }
   

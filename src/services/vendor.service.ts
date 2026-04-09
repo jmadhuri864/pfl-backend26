@@ -31,6 +31,11 @@ import { Status } from "../utils/status.enum";
 import { formatDateTime } from "../utils/dateUtils";
 import { PackingMaterial } from "../entities/packingMaterial.entity";
 import { formatAddress } from "../utils/addressFormate.utils";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = "vendor";
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 
 @injectable()
 export class VendorService {
@@ -56,8 +61,26 @@ export class VendorService {
     @inject(TYPES.VendorSubcategoryService)
     private readonly vendorSubCategoryService: VendorSubcategoryService,
     @inject(TYPES.AuditLogService)
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+
+  private async invalidateVendorCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 async createVendor(vendorDto: any): Promise<any> {
     // Create the new Vendor entity
     console.log("in the service", vendorDto);
@@ -91,10 +114,10 @@ async createVendor(vendorDto: any): Promise<any> {
 
     vendorDto.vendorCode = vendorCode;
     const newVendor = this.vendorRepository.create(vendorDto);
-    
-    // Save the new Vendor to the database
     console.log("new vendor is", newVendor);
-    return await this.vendorRepository.save(newVendor);
+    const saved = await this.vendorRepository.save(newVendor);
+    await this.invalidateVendorCache();
+    return saved;
   }
 async approveVendor(vendorId: string, approverId: string,status:Status) {
 const approver = await this.userRepository.findOne({ where: { id: approverId }});
@@ -111,57 +134,68 @@ if (!vendor) throw new Error("Vendor not found");
 
 
 vendor.status = status;
-return await this.vendorRepository.save(vendor);
+const saved = await this.vendorRepository.save(vendor);
+await this.invalidateVendorCache(vendorId);
+return saved;
 }
   
   async getVendorById(id: string): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository.findOne({
-      where: { id },
-      relations: [
-        "officeAddress",
-        "vendorSaleInfo",
-        "vendorBankDetails",
-        "vendorBankDetails.branchAddress",
-        "ref1Address",
-        "ref2Address",
-        "subcategory",
-        "category",
-      ]
-      
-    });
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const vendor = await this.vendorRepository
+      .createQueryBuilder("vendor")
+      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+      .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+      .leftJoinAndSelect("vendor.subcategory", "subcategory")
+      .leftJoinAndSelect("vendor.category", "category")
+      .where("vendor.id = :id", { id })
+      .getOne();
+
     if (!vendor) {
       throw new AppError(404, "Vendor not found");
     }
-    //return vendor;
-    return {
+
+    const result = {
       ...vendor,
       subcategory: vendor.subcategory?.id || null,
       category: vendor.category?.id || null,
-  } as any;
+    } as any;
+
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
 
 //service
 
 async getVendorByIdforview(id: string): Promise<any> {
-  const vendor = await this.vendorRepository.findOne({
-    where: { id },
-    relations: [
-      "officeAddress",
-      "vendorSaleInfo",
-      "vendorBankDetails",
-      "vendorBankDetails.branchAddress",
-      "ref1Address",
-      "ref2Address",
-      "subcategory",
-      "category",
-      "mainProduct",
-      "listOfAllProducts",
-      "mainPackingMaterial",
-      "listOfPackingMaterial",
-      "createdBy",
-    ],
-  });
+  const key = `${CACHE_PREFIX}:view:${id}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
+  const vendor = await this.vendorRepository
+    .createQueryBuilder("vendor")
+    .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+    .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+    .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+    .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+    .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+    .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+    .leftJoinAndSelect("vendor.subcategory", "subcategory")
+    .leftJoinAndSelect("vendor.category", "category")
+    .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
+    .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
+    .leftJoinAndSelect("vendor.mainPackingMaterial", "mainPackingMaterial")
+    .leftJoinAndSelect("vendor.listOfPackingMaterial", "listOfPackingMaterial")
+    .leftJoinAndSelect("vendor.createdBy", "createdBy")
+    .where("vendor.id = :id", { id })
+    .getOne();
 
   if (!vendor) {
     throw new AppError(404, "Vendor not found");
@@ -323,27 +357,31 @@ async getVendorByIdforview(id: string): Promise<any> {
       // : null,
   };
 
+  await this.cacheService.set(key, formattedResult, CACHE_TTL_DETAIL);
   return formattedResult;
 }
 async getVendorByIdforupdate(id: string): Promise<any> {
-  const vendor = await this.vendorRepository.findOne({
-    where: { id },
-    relations: [
-      "officeAddress",
-      "vendorSaleInfo",
-      "vendorBankDetails",
-      "vendorBankDetails.branchAddress",
-      "ref1Address",
-      "ref2Address",
-      "subcategory",
-      "category",
-      "mainProduct",
-      "listOfAllProducts",
-      "mainPackingMaterial",
-      "listOfPackingMaterial",
-      "createdBy",
-    ],
-  });
+  const key = `${CACHE_PREFIX}:update:${id}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
+  const vendor = await this.vendorRepository
+    .createQueryBuilder("vendor")
+    .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+    .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+    .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+    .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+    .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+    .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+    .leftJoinAndSelect("vendor.subcategory", "subcategory")
+    .leftJoinAndSelect("vendor.category", "category")
+    .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
+    .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
+    .leftJoinAndSelect("vendor.mainPackingMaterial", "mainPackingMaterial")
+    .leftJoinAndSelect("vendor.listOfPackingMaterial", "listOfPackingMaterial")
+    .leftJoinAndSelect("vendor.createdBy", "createdBy")
+    .where("vendor.id = :id", { id })
+    .getOne();
 
   if (!vendor) {
     throw new AppError(404, "Vendor not found");
@@ -503,6 +541,7 @@ async getVendorByIdforupdate(id: string): Promise<any> {
       // : null,
   };
 
+  await this.cacheService.set(key, formattedResult, CACHE_TTL_DETAIL);
   return formattedResult;
 }
 async createVendorWithExcel(fileUrl: string): Promise<any> {
@@ -985,6 +1024,10 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 // }
 
 public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
+  const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
   const queryBuilder = this.vendorRepository
     .createQueryBuilder('vendor')
     .leftJoinAndSelect('vendor.createdBy', 'createdBy') // ✅ include who created
@@ -1043,10 +1086,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     };
   });
 
-  return {
-    ...vendors,
-    data: formattedData,
-  };
+  const result = { ...vendors, data: formattedData };
+  await this.cacheService.set(key, result, CACHE_TTL);
+  return result;
 }
 
 
@@ -1181,53 +1223,48 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
   }
 
   async getVendorByVendorCode(vendorCode: string): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository.findOne({
-      where: { vendorCode },
-      relations: [
-        "officeAddress",
-        "vendorSaleInfo",
-        "vendorBankDetails",
-        "ref1Address",
-        "ref2Address",
-        "subcategory",
-        "category",
-      ],
-    });
+    const vendor = await this.vendorRepository
+      .createQueryBuilder("vendor")
+      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+      .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+      .leftJoinAndSelect("vendor.subcategory", "subcategory")
+      .leftJoinAndSelect("vendor.category", "category")
+      .where("vendor.vendorCode = :vendorCode", { vendorCode })
+      .getOne();
 
-    if (!vendor) {
-      throw new AppError(404, "Vendor not found");
-    }
-
+    if (!vendor) throw new AppError(404, "Vendor not found");
     return vendor;
   }
 
   async getVendorByVendorName(companyName: string): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository.findOne({
-      where: { companyName },
-      relations: [
-        "officeAddress",
-        "vendorSaleInfo",
-        "vendorBankDetails",
-        "ref1Address",
-        "ref2Address",
-        "subcategory",
-        "category",
-      ],
-    });
-    if (!vendor) {
-      throw new AppError(404, "Vendor not found");
-    }
+    const vendor = await this.vendorRepository
+      .createQueryBuilder("vendor")
+      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+      .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+      .leftJoinAndSelect("vendor.subcategory", "subcategory")
+      .leftJoinAndSelect("vendor.category", "category")
+      .where("vendor.companyName = :companyName", { companyName })
+      .getOne();
 
+    if (!vendor) throw new AppError(404, "Vendor not found");
     return vendor;
   }
 
   async getAllVendors(): Promise<Vendor[]> {
-    return await this.vendorRepository.find({
-      relations: ["officeAddress", "vendorSaleInfo"],
-      order: {
-        createdAt: "DESC", // Assuming createdAt is a timestamp field
-      },
-    });
+    return this.vendorRepository
+      .createQueryBuilder("vendor")
+      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+      .orderBy("vendor.createdAt", "DESC")
+      .getMany();
   }
 
   // async createVendor(vendorDto: any): Promise<any> {
@@ -1303,20 +1340,19 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     vendorData: Partial<Vendor>,
     updateBy: string
   ): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository.findOne({
-      where: { id },
-      relations: [
-        "officeAddress",
-        "ref1Address",
-        "ref2Address",
-        "vendorSaleInfo",
-        "vendorBankDetails",
-        "mainProduct",
-        "listOfAllProducts",
-        "subcategory",
-        "category",
-      ],
-    });
+    const vendor = await this.vendorRepository
+      .createQueryBuilder("vendor")
+      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+      .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
+      .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
+      .leftJoinAndSelect("vendor.subcategory", "subcategory")
+      .leftJoinAndSelect("vendor.category", "category")
+      .where("vendor.id = :id", { id })
+      .getOne();
 
     if (!vendor) return null;
 
@@ -1380,7 +1416,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     Object.assign(vendor, vendorData);
 
     // Save everything
-    return await this.vendorRepository.save(vendor);
+    const saved = await this.vendorRepository.save(vendor);
+    await this.invalidateVendorCache(id);
+    return saved;
   }
 
 
@@ -1406,11 +1444,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
     // Step 4: Set the deletionScheduledAt field for the vendor
     vendor.deletionScheduledAt = sixMonthsFromNow;
-
-    // Step 5: Save the updated vendor with the scheduled deletion date
     await this.vendorRepository.save(vendor);
+    await this.invalidateVendorCache(id);
 
-    // Step 6: Return true to indicate the deletion was scheduled
     console.log(`Vendor with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
@@ -1683,6 +1719,7 @@ async softDeleteVendors(vendorIds: string[]) {
   const result = await this.vendorRepository.softDelete({
     id: In(vendorIds)
   });
+  await this.invalidateVendorCache();
   return result;
 }
 

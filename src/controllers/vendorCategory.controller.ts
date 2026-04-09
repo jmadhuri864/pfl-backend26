@@ -3,11 +3,8 @@ import {
   controller,
   httpGet,
   httpPost,
-
   httpDelete,
-
   response,
-  requestBody,
   requestParam,
   next,
   httpPatch,
@@ -19,8 +16,6 @@ import { NotificationService } from "../services/notification.service";
 import { VendorCategory } from "../entities/vendorCategory.entity";
 import AppError from "../utils/appError";
 import { TYPES } from "../types";
-
-import logger from "../utils/logger";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { validate } from "../middleware/validate";
@@ -80,7 +75,7 @@ export class VendorCategoryController {
     }
   }
   
-  @httpGet("/",validate(getAllVendorCategoriesSchema))
+  @httpGet("/", validate(getAllVendorCategoriesSchema))
   public async getCategories(
     @request() req: Request,
     @response() res: Response,
@@ -127,7 +122,7 @@ export class VendorCategoryController {
     }
   }
 
-  @httpGet("/:id",validate(getVendorCategoryByIdSchema))
+  @httpGet("/:id", validate(getVendorCategoryByIdSchema))
   public async getCategoryById(
     @requestParam("id") id: string,
     @request() req: Request,
@@ -214,7 +209,6 @@ public async updateCategory(
   ) {
     try {
       if (!id) {
-        logger.warn("Vendor Category ID not provided");
         return next(new AppError(400, "Vendor Category ID is required"));
       }
       const success = await this.vendorCategoryService.delete(id);

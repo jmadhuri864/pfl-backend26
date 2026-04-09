@@ -5,6 +5,10 @@ import { DataSource, In } from "typeorm";
 import { AuditLogService } from "./auditLog.service";
 import { UOMConversionMatrix } from "../entities/uom_matrix.entity";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = "uomMatrix";
+const CACHE_TTL = 300; // 5 minutes
 
 @injectable()
 export class UOMConversionMatrixService {
@@ -12,132 +16,187 @@ export class UOMConversionMatrixService {
 
   constructor(
     @inject(TYPES.DataSource) private dataSource: DataSource,
-    @inject(TYPES.AuditLogService) private readonly auditLogService: AuditLogService
+    @inject(TYPES.AuditLogService) private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService) private readonly cacheService: CacheService,
   ) {
     this.uomConversionMatrixRepository = this.dataSource.getRepository(
       UOMConversionMatrix
     ) as UOMConversionMatrixRepository;
   }
 
-  public async getAll(queryOptions:PaginationOptions): Promise<any> {
-   let queryBuilder = await  this.uomConversionMatrixRepository.createQueryBuilder('uomConversionMatrix')
-    .leftJoinAndSelect('uomConversionMatrix.fromUOM', 'fromUOM')
-    .leftJoinAndSelect('uomConversionMatrix.toUOM', 'toUOM')
-    .orderBy('uomConversionMatrix.createdAt', 'DESC');
-  const result = await buildQuery(queryBuilder, queryOptions, 'uomConversionMatrix');
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
 
-  return{
-    data:result.data.map((uom)=>{
-      return{
-        id:uom.id,
-        conversionFactor:uom.conversionFactor,
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:id:${id}`));
+      tasks.push(this.cacheService.del(`${CACHE_PREFIX}:update:${id}`));
+    }
+    await Promise.all(tasks);
+  }
+
+  // ─── Methods ──────────────────────────────────────────────────────────────
+
+  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.uomConversionMatrixRepository
+      .createQueryBuilder("uomConversionMatrix")
+      .leftJoin("uomConversionMatrix.fromUOM", "fromUOM")
+      .leftJoin("uomConversionMatrix.toUOM", "toUOM")
+      .select([
+        "uomConversionMatrix.id",
+        "uomConversionMatrix.conversionFactor",
+        "fromUOM.id",
+        "fromUOM.unit",
+        "toUOM.id",
+        "toUOM.unit",
+      ])
+      .orderBy("uomConversionMatrix.createdAt", "DESC");
+
+    const result = await buildQuery(queryBuilder, queryOptions, "uomConversionMatrix");
+
+    const formatted = {
+      data: result.data.map((uom) => ({
+        id: uom.id,
+        conversionFactor: uom.conversionFactor,
         fromUOM: uom.fromUOM?.unit ?? null,
         toUOM: uom.toUOM?.unit ?? null,
-      }
-    }),
-    meta:result.meta
+      })),
+      meta: result.meta,
+    };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
- // return result ;
+  public async getById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const result = await this.uomConversionMatrixRepository
+      .createQueryBuilder("uomConversionMatrix")
+      .leftJoin("uomConversionMatrix.fromUOM", "fromUOM")
+      .leftJoin("uomConversionMatrix.toUOM", "toUOM")
+      .select([
+        "uomConversionMatrix.id",
+        "uomConversionMatrix.conversionFactor",
+        "fromUOM.id",
+        
+        "toUOM.id",
+       
+      ])
+      .where("uomConversionMatrix.id = :id", { id })
+      .getOne();
+
+    if (!result) return null;
+
+    const formatted = {
+      id: result.id,
+      conversionFactor: result.conversionFactor,
+      fromUOM: result.fromUOM?.id ?? null,
+      toUOM: result.toUOM?.id ?? null,
+    };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
-  public async getById(id: string): Promise<UOMConversionMatrix | null> {
-    return this.uomConversionMatrixRepository.findOne({
-      where: { id },
-      relations: ["fromUOM", "toUOM"],
-    });
-  }
   public async getByIdForUpdate(id: string): Promise<any> {
-    return await  this.uomConversionMatrixRepository.createQueryBuilder('uomConversionMatrix')
-    .leftJoinAndSelect('uomConversionMatrix.fromUOM', 'fromUOM')
-    .leftJoinAndSelect('uomConversionMatrix.toUOM', 'toUOM')
-    .select(
-      ["uomConversionMatrix",
+    const key = `${CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const result = await this.uomConversionMatrixRepository
+      .createQueryBuilder("uomConversionMatrix")
+      .leftJoin("uomConversionMatrix.fromUOM", "fromUOM")
+      .leftJoin("uomConversionMatrix.toUOM", "toUOM")
+      .select([
+        "uomConversionMatrix.id",
+        "uomConversionMatrix.conversionFactor",
         "fromUOM.id",
         "toUOM.id",
-      ]
-    )
+      ])
+      .where("uomConversionMatrix.id = :id", { id })
+      .getOne();
+
+    if (!result) return null;
+
+    const formatted = {
+      id: result.id,
+      conversionFactor: result.conversionFactor,
+      fromUOM: result.fromUOM?.id ?? null,
+      toUOM: result.toUOM?.id ?? null,
+    };
+
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
-  
-
-  public async create(
-    conversionData: Partial<UOMConversionMatrix>
-  ): Promise<UOMConversionMatrix> {
-    const conversion =
-      this.uomConversionMatrixRepository.create(conversionData);
-    return this.uomConversionMatrixRepository.save(conversion);
+  public async create(conversionData: Partial<UOMConversionMatrix>): Promise<UOMConversionMatrix> {
+    const conversion = this.uomConversionMatrixRepository.create(conversionData);
+    const saved = await this.uomConversionMatrixRepository.save(conversion);
+    await this.invalidateCache();
+    return saved;
   }
 
   public async update(
     id: string,
     conversionData: Partial<UOMConversionMatrix>,
-    updatedBy: string
+    updatedBy: string,
   ): Promise<UOMConversionMatrix | null> {
-   
     const existingConversionMatrix = await this.uomConversionMatrixRepository.findOne({
-        where: { id }
+      where: { id },
     });
 
     if (!existingConversionMatrix) {
-        throw new Error("UOM Conversion Matrix not found");
+      throw new Error("UOM Conversion Matrix not found");
     }
 
-   
+    const oldData = { ...existingConversionMatrix };
     Object.assign(existingConversionMatrix, conversionData);
 
-   
     const updatedConversionMatrix = await this.uomConversionMatrixRepository.save(existingConversionMatrix);
 
-   
     await this.auditLogService.logChange(
-        'UOMConversionMatrix',         
-        id,                            
-        existingConversionMatrix,      
-        updatedConversionMatrix,       
-        updatedBy                      
+      "UOMConversionMatrix",
+      id,
+      oldData,
+      updatedConversionMatrix,
+      updatedBy,
     );
 
-  
+    await this.invalidateCache(id);
     return updatedConversionMatrix;
   }
+
   public async delete(id: string): Promise<boolean> {
-   
     const uomConversionMatrix = await this.uomConversionMatrixRepository.findOne({
-        where: { id },
+      where: { id },
     });
 
-   
-    if (!uomConversionMatrix) {
-        return false;
-    }
+    if (!uomConversionMatrix) return false;
 
-    
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); 
-    sixMonthsFromNow.setHours(0, 0, 0, 0); 
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-   
-    console.log(`UOM Conversion Matrix with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
-
-   
     uomConversionMatrix.deletionScheduledAt = sixMonthsFromNow;
-
-    
     await this.uomConversionMatrixRepository.save(uomConversionMatrix);
+    await this.invalidateCache(id);
 
- 
-    console.log(`UOM Conversion Matrix with ID ${id} marked for deletion in 6 months.`);
     return true;
-}
-async softDeleteConversion(userIds: string[]) {
+  }
 
-  const result = await this.uomConversionMatrixRepository.softDelete({
-    id: In(userIds)
-  });
-
-  return result;
-}
-
+  public async softDeleteConversion(ids: string[]): Promise<any> {
+    const result = await this.uomConversionMatrixRepository.softDelete({ id: In(ids) });
+    await this.invalidateCache();
+    return result;
+  }
 }

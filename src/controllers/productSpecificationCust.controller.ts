@@ -79,7 +79,7 @@ export class ProductSpecificationCustController {
         @next() next: NextFunction
       ) {
         try {
-          const updatedBy= res.locals.id
+          const updatedBy = res.locals.user?.id
           const updatedSpec = await this.productSpecService.update(id, body,updatedBy);
           if (updatedSpec) {
             res.status(200).json({

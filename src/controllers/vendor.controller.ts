@@ -20,7 +20,6 @@ import AppError from "../utils/appError";
 import { UpdateVendor } from "../schemas/vendor.schema";
 
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import logger from "../utils/logger";
 import { ControllerLogger } from "../utils/controllerLogger";
 //import { upload, uploadNone } from "../middleware/multerConfig";
 
@@ -76,40 +75,45 @@ export class VendorController {
   @httpGet("/view/:id")
   public async getVendorByIdforview(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      console.log("Received request to get vendor by ID");
       const vendor = await this.vendorService.getVendorByIdforview(id);
       if (!vendor) {
         return next(new AppError(404, "Vendor not found"));
       }
+      ControllerLogger.logView('Vendor', id, req, res);
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor view', error, req, res);
       next(error);
     }
   }
- @httpGet("/update/:id")
+
+  @httpGet("/update/:id")
   public async getVendorByIdforupdate(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      console.log("Received request to get vendor by ID");
       const vendor = await this.vendorService.getVendorByIdforupdate(id);
       if (!vendor) {
         return next(new AppError(404, "Vendor not found"));
       }
+      ControllerLogger.logView('Vendor (for update)', id, req, res);
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor update view', error, req, res);
       next(error);
     }
   }
@@ -118,16 +122,19 @@ export class VendorController {
   @httpGet("/vendorcode/:vendorCode")
   public async getVendorByVendorCode(
     @requestParam("vendorCode") vendorCode: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       const vendor = await this.vendorService.getVendorByVendorCode(vendorCode);
+      ControllerLogger.logView('Vendor by code', vendorCode, req, res);
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor by code', error, req, res);
       next(error);
     }
   }
@@ -135,18 +142,19 @@ export class VendorController {
   @httpGet("/vendorname/:companyName")
   public async getVendorBycompanyName(
     @requestParam("companyName") companyName: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      const vendor = await this.vendorService.getVendorByVendorName(
-        companyName
-      );
+      const vendor = await this.vendorService.getVendorByVendorName(companyName);
+      ControllerLogger.logView('Vendor by name', companyName, req, res);
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor by name', error, req, res);
       next(error);
     }
   }
@@ -435,17 +443,6 @@ console.log(req.body)
       if (!updatedVendor) {
         return next(new AppError(404, "Vendor not found or update failed"));
       }
-      logger.info("Vendor updated successfully", { vendorId: id });
-
-      // Send notification for vendor update
-      const userId = res.locals.user?.id;
-      if (userId) {
-        await this.notificationService.createNoti(
-          `Vendor updated successfully`,
-          userId
-        );
-      }
-
       ControllerLogger.logSuccess('Vendor updated', id, req, res);
       res.status(200).json({
         status: "success",
@@ -453,60 +450,51 @@ console.log(req.body)
         data: updatedVendor, // Return updated vendor data
       });
     } catch (error) {
-      logger.error("Error updating vendor", { error: error });
+      ControllerLogger.logError('Vendor update', error, req, res);
       next(error);
     }
   }
-// PATCH /vendors/:id/approve
-@httpPatch("/approve/:id")
-async approveVendor(req: Request, res: Response, next: NextFunction) {
-try {
-const vendorId = req.params.id;
-const adminUser = res.locals.user.id;
-const status = req.query.status as Status;
+  @httpPatch("/approve/:id")
+  async approveVendor(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const vendorId = req.params.id;
+      const adminUser = res.locals.user.id;
+      const status = req.query.status as Status;
 
-const approvedVendor = await this.vendorService.approveVendor(vendorId, adminUser,status);
-return res.status(200).json({ message: "Vendor approved successfully", vendor: approvedVendor });
-} catch (error: any) {
-  next(error);
-
-}
-}
+      const approvedVendor = await this.vendorService.approveVendor(vendorId, adminUser, status);
+      ControllerLogger.logSuccess('Vendor approved', vendorId, req, res);
+      return res.status(200).json({ message: "Vendor approved successfully", vendor: approvedVendor });
+    } catch (error: any) {
+      next(error);
+    }
+  }
 
   @httpDelete("/:id")
   public async deleteVendor(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       if (!id) {
-        logger.warn("Vendor ID not provided");
         return next(new AppError(400, "Vendor ID is required"));
       }
       const result = await this.vendorService.deleteVendor(id);
       if (!result) {
-       // ControllerLogger.logError('Vendor deletion', new AppError(404, "Vendor not found or could not be deleted"), req, res);
-        return next(
-          new AppError(404, "Vendor not found or could not be deleted")
-        );
+        return next(new AppError(404, "Vendor not found or could not be deleted"));
       }
-
-      // Send notification for vendor deletion
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Vendor deleted successfully`,
-      //     userId
-      //   );
-      // }
-
-      //ControllerLogger.logSuccess('Vendor deleted', id, req, res);
+      ControllerLogger.logSuccess('Vendor deleted', id, req, res);
       res.status(200).json({
         status: "success",
         message: "Vendor deleted successfully",
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor deletion', error, req, res);
       next(error);
     }
   }
@@ -515,38 +503,42 @@ return res.status(200).json({ message: "Vendor approved successfully", vendor: a
   @httpGet("/filterData/:id")
   public async getFilterVendorById(
     @requestParam("id") id: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       const vendor = await this.vendorService.getVendorByIdWithFilter(id);
-
       if (!vendor) {
         return next(new AppError(404, "Vendor not found"));
       }
+      ControllerLogger.logView('Vendor filter', id, req, res);
       res.status(200).json({
         status: "success",
         data: vendor,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor filter view', error, req, res);
       next(error);
     }
   }
 
-  @httpGet("/filterVendor/withfilter")  
+  @httpGet("/filterVendor/withfilter")
   public async getpartialVendor(
+    @request() req: Request,
     @response() res: Response,
-    @request() req:Request,
     @next() next: NextFunction
   ) {
     try {
-      const filter=req.query.search as string;
+      const filter = req.query.search as string;
       const vendors = await this.vendorService.getAllVendorsbyquery(filter);
+      ControllerLogger.logList('Vendor partial', req, res);
       res.status(200).json({
         status: "success",
         data: vendors,
       });
     } catch (error) {
+      ControllerLogger.logError('Vendor partial list', error, req, res);
       next(error);
     }
   }
