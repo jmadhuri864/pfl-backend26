@@ -94,89 +94,62 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
   const queryBuilder = this.farmerRepository
     .createQueryBuilder('farmer')
-    .leftJoinAndSelect('farmer.createdBy', 'createdBy') // ✅ include this
-    .leftJoinAndSelect('farmer.crops', 'crops')
-    .leftJoinAndSelect('crops.crop', 'crop')
-    .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-    .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+    .leftJoin('farmer.createdBy', 'createdBy')
+    .leftJoin('farmer.residensialAddress', 'residensialAddress')
+    .leftJoin('farmer.farmAddress', 'farmAddress')
+    .select([
+      'farmer.id', 'farmer.status', 'farmer.farmerCode',
+      'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
+      'farmer.primaryMobileNo', 'farmer.secondaryMobileNo', 'farmer.email',
+      'farmer.gender', 'farmer.dob', 'farmer.totalLandArea', 'farmer.cultivationArea',
+      'farmer.landHoldingStatus', 'farmer.landStatus', 'farmer.idProofNo', 'farmer.createdAt',
+      'createdBy.firstName', 'createdBy.lastName',
+      'residensialAddress.address1', 'residensialAddress.address2', 'residensialAddress.location',
+      'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+      'farmAddress.address1', 'farmAddress.address2', 'farmAddress.location',
+      'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+    ])
     .orderBy('farmer.createdAt', 'DESC');
 
   const farmers = await buildQuery(queryBuilder, options, 'farmer');
 
-  // ✅ Define helper function to format date & time
-  // function formatDateTime(dateString?: string) {
-  //   if (!dateString) return { createdDate: null, createdTime: null };
+  const formatAddr = (addr: any) => addr
+    ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+        .filter(Boolean).join(' ')
+    : '';
 
-  //   const date = new Date(dateString);
-  //   const day = String(date.getDate()).padStart(2, '0');
-  //   const month = String(date.getMonth() + 1).padStart(2, '0');
-  //   const year = date.getFullYear();
-
-  //   const hours = date.getHours();
-  //   const minutes = String(date.getMinutes()).padStart(2, '0');
-  //   const ampm = hours >= 12 ? 'PM' : 'AM';
-  //   const hour12 = hours % 12 || 12;
-  //   const formattedTime = `${String(hour12).padStart(2, '0')}:${minutes} ${ampm}`;
-  //   const formattedDate = `${day}-${month}-${year}`;
-
-  //   return { createdDate: formattedDate, createdTime: formattedTime };
-  // }
-
-  // ✅ Format each farmer
-  const formattedData = farmers.data.map((farmer: any) => {
-    const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-
-    return {
-      //...farmer,
-      id: farmer.id,
-      createdBy: farmer.createdBy
-        ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
-        : null,
-      createdDate,
-      createdTime,
-      status: farmer.status,
-      farmerCode: farmer.farmerCode.toUpperCase(),
-      farmerfName: farmer.farmerfName,
-      farmermName: farmer.farmermName,
-      farmerlName: farmer.farmerlName,
-      primaryMobileNo: farmer.primaryMobileNo,
-      secondaryMobileNo: farmer.secondaryMobileNo,
-      email: farmer.email,
-      gender:farmer.gender,
-      dob: farmer.dob,
-      // residensialAddress: farmer.residensialAddress.address1+" "+farmer.residensialAddress.address2+" "+farmer.residensialAddress.location+" "+farmer.residensialAddress.city+" "+farmer.residensialAddress.state+" "+farmer.residensialAddress.pincode,
-      // farmAddress: farmer.farmAddress.address1+" "+farmer.farmAddress.address2+" "+farmer.farmAddress.location+" "+farmer.farmAddress.city+" "+farmer.farmAddress.state+" "+farmer.farmAddress.pincode,
-      residensialAddress: [
-      farmer.residensialAddress?.address1,
-      farmer.residensialAddress?.address2,
-      farmer.residensialAddress?.location,
-      farmer.residensialAddress?.city,
-        farmer.residensialAddress?.state,
-        farmer.residensialAddress?.pincode
-      ].filter(Boolean).join(' '),
-
-      farmAddress: [
-        farmer.farmAddress?.address1,
-        farmer.farmAddress?.address2,
-        farmer.farmAddress?.location,
-        farmer.farmAddress?.city,
-        farmer.farmAddress?.state,
-        farmer.farmAddress?.pincode
-      ].filter(Boolean).join(' '),
-      totalLandArea: farmer.totalLandArea,
-      cultivationArea: farmer.cultivationArea,
-      landHoldingStatus: farmer.landHoldingStatus,
-      landStatus: farmer.landStatus,
-      idProofNo: farmer.idProofNo,
-      //sevenTwelveNo: farmer.sevenTwelveNo,
-    };
-  });
-
-  // ✅ Return final structured response
   const response = {
-    data: formattedData,
+    data: farmers.data.map((farmer: any) => {
+      const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+      return {
+        id: farmer.id,
+        status: farmer.status,
+        farmerCode: farmer.farmerCode?.toUpperCase() ?? '',
+        farmerfName: farmer.farmerfName,
+        farmermName: farmer.farmermName,
+        farmerlName: farmer.farmerlName,
+        primaryMobileNo: farmer.primaryMobileNo,
+        secondaryMobileNo: farmer.secondaryMobileNo,
+        email: farmer.email,
+        gender: farmer.gender,
+        dob: farmer.dob,
+        totalLandArea: farmer.totalLandArea,
+        cultivationArea: farmer.cultivationArea,
+        landHoldingStatus: farmer.landHoldingStatus,
+        landStatus: farmer.landStatus,
+        idProofNo: farmer.idProofNo,
+        residensialAddress: formatAddr(farmer.residensialAddress),
+        farmAddress: formatAddr(farmer.farmAddress),
+        createdBy: farmer.createdBy
+          ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
+          : null,
+        createdDate,
+        createdTime,
+      };
+    }),
     meta: farmers.meta,
   };
+
   await this.cacheService.set(key, response, CACHE_TTL);
   return response;
 }
@@ -421,172 +394,164 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
   }
 
   public async getfarmerbyidforview(id: string): Promise<any> {
-    console.log('inservice',id)
     const key = `${CACHE_PREFIX}:view:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
     const farmer = await this.farmerRepository
       .createQueryBuilder('farmer')
-      .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-      .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
-       .leftJoinAndSelect('farmer.createdBy', 'createdBy')
-      .leftJoinAndSelect('farmer.crops', 'crops')
-      .leftJoinAndSelect('crops.crop', 'crop')
+      .leftJoin('farmer.residensialAddress', 'residensialAddress')
+      .leftJoin('farmer.farmAddress', 'farmAddress')
+      .leftJoin('farmer.createdBy', 'createdBy')
+      .leftJoin('farmer.crops', 'crops')
+      .leftJoin('crops.crop', 'crop')
+      .select([
+        'farmer.id', 'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
+        'farmer.gender', 'farmer.dob', 'farmer.idProofNo', 'farmer.idProofCopy',
+        'farmer.howDoYouSell', 'farmer.landHoldingStatus', 'farmer.landStatus',
+        'farmer.totalLandArea', 'farmer.cultivationArea', 'farmer.sevenTwelveNo',
+        'farmer.sevenTwelveCopy', 'farmer.primaryMobileNo', 'farmer.secondaryMobileNo',
+        'farmer.email', 'farmer.farmerCode', 'farmer.createdAt',
+        'createdBy.firstName', 'createdBy.lastName',
+        'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
+        'residensialAddress.location', 'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+        'farmAddress.id', 'farmAddress.address1', 'farmAddress.address2',
+        'farmAddress.location', 'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+        'crops.id', 'crops.variety', 'crops.noOfPlants', 'crops.pruningDate',
+        'crops.expectedHarvestDate', 'crops.expectedQuantityInTonnes',
+        'crop.name',
+      ])
       .where('farmer.id = :id', { id })
       .getOne();
 
     if (!farmer) return null;
-const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+
+    const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+    const mapAddress = (addr: any) => addr?.id ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
+
     const result = {
       id: farmer.id,
-      farmerfName:farmer.farmerfName ||  null,
-      createdBy: farmer.createdBy
-        ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
-        : null,
-
-      farmermName:farmer.farmermName || null ,
-      farmerlName:farmer.farmerlName || null,
-      gender:farmer.gender,
+      farmerfName: farmer.farmerfName ?? null,
+      farmermName: farmer.farmermName ?? null,
+      farmerlName: farmer.farmerlName ?? null,
+      gender: farmer.gender,
       dob: farmer.dob,
-    idProofNo: farmer.idProofNo,
-    idProofCopy: farmer.idProofCopy,
-    howDoYouSell: farmer.howDoYouSell,
-    landHoldingStatus: farmer.landHoldingStatus,
-    landStatus: farmer.landStatus,
-    totalLandArea: farmer.totalLandArea,
-    cultivationArea: farmer.cultivationArea,
-    sevenTwelveNo: farmer.sevenTwelveNo,
-    sevenTwelveCopy: farmer.sevenTwelveCopy,
-    createdDate,
-    createdTime,
-
-      
+      idProofNo: farmer.idProofNo,
+      idProofCopy: farmer.idProofCopy,
+      howDoYouSell: farmer.howDoYouSell,
+      landHoldingStatus: farmer.landHoldingStatus,
+      landStatus: farmer.landStatus,
+      totalLandArea: farmer.totalLandArea,
+      cultivationArea: farmer.cultivationArea,
+      sevenTwelveNo: farmer.sevenTwelveNo,
+      sevenTwelveCopy: farmer.sevenTwelveCopy,
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
       farmerCode: farmer.farmerCode,
-      residensialAddress: farmer.residensialAddress.id
-        ? {
-            id: farmer.residensialAddress.id,
-            address1: farmer.residensialAddress.address1,
-            address2: farmer.residensialAddress.address2,
-            location: farmer.residensialAddress.location,
-            city: farmer.residensialAddress.city,
-            state: farmer.residensialAddress.state,
-            pincode: farmer.residensialAddress.pincode,
-          }
+      createdBy: farmer.createdBy
+        ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
         : null,
-      farmAddress: farmer.farmAddress.id
-        ? {
-            id: farmer.farmAddress.id,
-            address1: farmer.farmAddress.address1,
-            address2: farmer.farmAddress.address2,
-            location: farmer.farmAddress.location,
-            city: farmer.farmAddress.city,
-            state: farmer.farmAddress.state,
-            pincode: farmer.farmAddress.pincode,
-          }
-        : null,
-    
-
-    crops: farmer.crops?.map((crop: Crop) => ({
-      id: crop.id,
-      crop: crop.crop?.name || null,
-      variety: crop.variety,
-      noOfPlants: crop.noOfPlants,
-      pruningDate: crop.pruningDate,
-      expectedHarvestDate: crop.expectedHarvestDate,
-      expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
-
-    })),
+      createdDate,
+      createdTime,
+      residensialAddress: mapAddress(farmer.residensialAddress),
+      farmAddress: mapAddress(farmer.farmAddress),
+      crops: farmer.crops?.map((crop: Crop) => ({
+        id: crop.id,
+        crop: crop.crop?.name ?? null,
+        variety: crop.variety,
+        noOfPlants: crop.noOfPlants,
+        pruningDate: crop.pruningDate,
+        expectedHarvestDate: crop.expectedHarvestDate,
+        expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
+      })) ?? [],
     };
+
     await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
     return result;
   }
 
   public async getfarmerbyidforupdate(id: string): Promise<any> {
-    console.log('inservice',id)
     const key = `${CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
     const farmer = await this.farmerRepository
       .createQueryBuilder('farmer')
-      .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-      .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
-      .leftJoinAndSelect('farmer.crops', 'crops')
-       .leftJoinAndSelect('farmer.createdBy', 'createdBy')
-      .leftJoinAndSelect('crops.crop', 'crop')
+      .leftJoin('farmer.residensialAddress', 'residensialAddress')
+      .leftJoin('farmer.farmAddress', 'farmAddress')
+      .leftJoin('farmer.crops', 'crops')
+      .leftJoin('farmer.createdBy', 'createdBy')
+      .leftJoin('crops.crop', 'crop')
+      .select([
+        'farmer.id', 'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
+        'farmer.gender', 'farmer.dob', 'farmer.idProofNo', 'farmer.idProofCopy',
+        'farmer.howDoYouSell', 'farmer.landHoldingStatus', 'farmer.landStatus',
+        'farmer.totalLandArea', 'farmer.cultivationArea', 'farmer.sevenTwelveNo',
+        'farmer.sevenTwelveCopy', 'farmer.primaryMobileNo', 'farmer.secondaryMobileNo',
+        'farmer.email', 'farmer.farmerCode', 'farmer.farmerPhoto', 'farmer.farmPhoto',
+        'farmer.createdAt',
+        'createdBy.id',
+        'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
+        'residensialAddress.location', 'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+        'farmAddress.id', 'farmAddress.address1', 'farmAddress.address2',
+        'farmAddress.location', 'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+        'crops.id', 'crops.variety', 'crops.noOfPlants', 'crops.pruningDate',
+        'crops.expectedHarvestDate', 'crops.expectedQuantityInTonnes',
+        'crop.id',
+      ])
       .where('farmer.id = :id', { id })
       .getOne();
 
     if (!farmer) return null;
-  const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+
+    const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+    const mapAddress = (addr: any) => addr?.id ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
+
     const updateResult = {
       id: farmer.id,
-      farmerfName:farmer.farmerfName ||  null,
-      farmermName:farmer.farmermName || null ,
-      farmerlName:farmer.farmerlName || null,
-      gender:farmer.gender,
-      dob: farmer.dob, 
-    idProofNo: farmer.idProofNo,
-    idProofCopy: farmer.idProofCopy,
-    howDoYouSell: farmer.howDoYouSell,
-    landHoldingStatus: farmer.landHoldingStatus,
-    landStatus: farmer.landStatus,
-    totalLandArea: farmer.totalLandArea,
-    cultivationArea: farmer.cultivationArea,
-    sevenTwelveNo: farmer.sevenTwelveNo,
-    sevenTwelveCopy: farmer.sevenTwelveCopy,
- createdDate,
-    createdTime,
-          createdBy: farmer.createdBy
-        ? farmer.createdBy.id
-        : null,
-
-      //fullName: farmer.farmerfName + ' ' + farmer.farmermName + ' ' + farmer.farmerlName,
+      farmerfName: farmer.farmerfName ?? null,
+      farmermName: farmer.farmermName ?? null,
+      farmerlName: farmer.farmerlName ?? null,
+      gender: farmer.gender,
+      dob: farmer.dob,
+      idProofNo: farmer.idProofNo,
+      idProofCopy: farmer.idProofCopy,
+      howDoYouSell: farmer.howDoYouSell,
+      landHoldingStatus: farmer.landHoldingStatus,
+      landStatus: farmer.landStatus,
+      totalLandArea: farmer.totalLandArea,
+      cultivationArea: farmer.cultivationArea,
+      sevenTwelveNo: farmer.sevenTwelveNo,
+      sevenTwelveCopy: farmer.sevenTwelveCopy,
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
       farmerCode: farmer.farmerCode,
-     farmerPhoto: farmer.farmerPhoto,
-     farmPhoto:farmer.farmPhoto,
-      residensialAddress: farmer.residensialAddress.id
-        ? {
-            id: farmer.residensialAddress?.id,
-            address1: farmer.residensialAddress.address1,
-            address2: farmer.residensialAddress.address2,
-            location: farmer.residensialAddress.location,
-            city: farmer.residensialAddress.city,
-            state: farmer.residensialAddress.state,
-            pincode: farmer.residensialAddress.pincode,
-          }
-        : null,
-      farmAddress: farmer.farmAddress.id
-        ? {
-            id: farmer.farmAddress?.id,
-            address1: farmer.farmAddress.address1,
-            address2: farmer.farmAddress.address2,
-            location: farmer.farmAddress.location,
-            city: farmer.farmAddress.city,
-            state: farmer.farmAddress.state,
-            pincode: farmer.farmAddress.pincode,
-          }
-        : null,
-    
-
-    crops: farmer.crops?.map((crop: Crop) => ({
-      id: crop.id,
-      crop: crop.crop?.id || null,
-      variety: crop.variety,
-      noOfPlants: crop.noOfPlants,
-      pruningDate: crop.pruningDate,
-      expectedHarvestDate: crop.expectedHarvestDate,
-      expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
-
-    })),
+      farmerPhoto: farmer.farmerPhoto,
+      farmPhoto: farmer.farmPhoto,
+      createdBy: farmer.createdBy?.id ?? null,
+      createdDate,
+      createdTime,
+      residensialAddress: mapAddress(farmer.residensialAddress),
+      farmAddress: mapAddress(farmer.farmAddress),
+      crops: farmer.crops?.map((crop: Crop) => ({
+        id: crop.id,
+        crop: crop.crop?.id ?? null,
+        variety: crop.variety,
+        noOfPlants: crop.noOfPlants,
+        pruningDate: crop.pruningDate,
+        expectedHarvestDate: crop.expectedHarvestDate,
+        expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
+      })) ?? [],
     };
+
     await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
     return updateResult;
   }

@@ -208,14 +208,20 @@ export class ProductService {
 
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.classification', 'classification')
-      .leftJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.subcategory', 'subcategory')
-      .leftJoinAndSelect('product.uom', 'uom')
-      .leftJoinAndSelect('product.qualityParameters', 'qualityParameters')
+      .leftJoin('product.classification', 'classification')
+      .leftJoin('product.category', 'category')
+      .leftJoin('product.subcategory', 'subcategory')
+      .leftJoin('product.uom', 'uom')
+      .select([
+        'product.id', 'product.name', 'product.packingType', 'product.productCode',
+        'product.shelfLife', 'product.storageTemp',
+        'category.id', 'category.name',
+        'classification.id', 'classification.name',
+        'uom.id', 'uom.unit',
+        'subcategory.id', 'subcategory.name',
+      ])
       .orderBy('product.createdAt', 'DESC');
 
-    //return await buildQuery(queryBuilder, options, 'product');
     const data1 = await buildQuery(queryBuilder, options, 'product');
     const result = {
       data: data1.data.map((pro: any) => ({
@@ -225,10 +231,10 @@ export class ProductService {
         productCode: pro.productCode,
         shelfLife: pro.shelfLife || '',
         storageTemp: pro.storageTemp,
-        category: { id: pro.category.id, name: pro.category.name },
+        category: { id: pro.category?.id, name: pro.category?.name },
         classification: { id: pro.classification?.id, name: pro.classification?.name },
-        uom: { id: pro.uom.id, unit: pro.uom.unit },
-        subcategory: { id: pro.subcategory.id, name: pro.subcategory.name },
+        uom: { id: pro.uom?.id, unit: pro.uom?.unit },
+        subcategory: { id: pro.subcategory?.id, name: pro.subcategory?.name },
       })),
       meta: data1.meta,
     };
@@ -273,41 +279,24 @@ export class ProductService {
     try {
       const product = await this.productRepository
         .createQueryBuilder('product')
-        .leftJoinAndSelect('product.classification', 'classification')
-        .leftJoinAndSelect('product.variant', 'variants')
-        .leftJoinAndSelect('product.category', 'category')
-        .leftJoinAndSelect('product.subcategory', 'subcategory')
-        .leftJoinAndSelect('product.uom', 'uom')
-        .leftJoinAndSelect('product.qualityParameters', 'qualityParameters')
+        .leftJoin('product.classification', 'classification')
+        .leftJoin('product.variant', 'variants')
+        .leftJoin('product.category', 'category')
+        .leftJoin('product.subcategory', 'subcategory')
+        .leftJoin('product.uom', 'uom')
+        .leftJoin('product.qualityParameters', 'qualityParameters')
         .select([
-          'product.id',
-          'product.name',
-          'product.image',
-          'product.description',
-          'product.prefix',
-          'product.packingType',
-          'product.shelfLife',
-          'product.storageTemp',
-          'classification.id',
-          'category.id',
-          'subcategory.id',
-          'uom.id',
-          'qualityParameters',
-          //'variants.varientName',
-          'variants.id',
-          'variants.count',
-          'variants.size',
-          'variants.variety',
-          'variants.origin',
-          'variants.brand',
-          'variants.thresholdStock',
+          'product.id', 'product.name', 'product.image', 'product.description',
+          'product.prefix', 'product.packingType', 'product.shelfLife', 'product.storageTemp',
+          'classification.id', 'category.id', 'subcategory.id', 'uom.id',
+          'qualityParameters.id', 'qualityParameters.name', 'qualityParameters.type',
+          'variants.id', 'variants.variantCode', 'variants.count', 'variants.size',
+          'variants.variety', 'variants.origin', 'variants.brand', 'variants.thresholdStock',
         ])
         .where('product.id = :id', { id })
         .getOne();
 
-      if (!product) {
-        throw new Error('Product not found');
-      }
+      if (!product) throw new Error('Product not found');
 
       const response = {
         id: product.id,
@@ -318,22 +307,21 @@ export class ProductService {
         packingType: product.packingType,
         shelfLife: product.shelfLife,
         storageTemp: product.storageTemp,
-        classification: product.classification?.id || null,
-        category: product.category?.id || null,
-        subcategory: product.subcategory?.id || null,
-        uom: product.uom?.id || null,
+        classification: product.classification?.id ?? null,
+        category: product.category?.id ?? null,
+        subcategory: product.subcategory?.id ?? null,
+        uom: product.uom?.id ?? null,
         qualityParameters: product.qualityParameters,
-        variant:
-          product.variant?.map((v) => ({
-            id: v.id,
-            variantCode: v.variantCode,
-            count: v.count,
-            size: v.size,
-            variety: v.variety,
-            origin: v.origin,
-            brand: v.brand,
-            thresholdStock: v.thresholdStock,
-          })) || [],
+        variant: product.variant?.map((v) => ({
+          id: v.id,
+          variantCode: v.variantCode,
+          count: v.count,
+          size: v.size,
+          variety: v.variety,
+          origin: v.origin,
+          brand: v.brand,
+          thresholdStock: v.thresholdStock,
+        })) ?? [],
       };
 
       await this.cacheService.set(key, response, CACHE_TTL_DETAIL);

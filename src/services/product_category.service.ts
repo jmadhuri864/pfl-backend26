@@ -55,7 +55,7 @@ export class ProductCategoryService {
       ])
       .orderBy("productCategory.createdAt", "DESC");
 
-    const result = await buildQuery(queryBuilder, queryOptions, "productClassification");
+    const result = await buildQuery(queryBuilder, queryOptions, "productCategory");
 
     const formatted = {
       data: result.data.map((pro) => ({

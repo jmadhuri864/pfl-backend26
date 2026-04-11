@@ -148,7 +148,14 @@ export class BranchessService {
 
     const qb = this.branchesRepository
       .createQueryBuilder('branch')
-      .leftJoinAndSelect('branch.address', 'address')
+      .leftJoin('branch.address', 'address')
+      .select([
+        'branch.id', 'branch.type', 'branch.name',
+        'branch.cFirstName', 'branch.cMiddleName', 'branch.cLastName',
+        'branch.contactNumber', 'branch.totalCapacity', 'branch.currentCapacity', 'branch.balanceCapacity',
+        'address.id', 'address.address1', 'address.address2',
+        'address.city', 'address.location', 'address.pincode', 'address.state',
+      ])
       .where('branch.type = :branchType', { branchType })
       .orderBy('branch.createdAt', 'DESC');
 
