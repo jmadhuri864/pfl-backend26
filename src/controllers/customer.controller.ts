@@ -534,15 +534,15 @@ async approveCustomer(
 
   @httpPut(
     '/:id',
-    handleMulterFields([
+  handleMulterFields([
       { name: 'customerImage', maxCount: 1 },
-      { name: 'cancelledChequeCopy', maxCount: 1 },
-      { name: 'bankStatementCopy', maxCount: 1 },
-      { name: 'panCopy', maxCount: 1 },
-      { name: 'aadharCopy', maxCount: 1 },
+      { name: 'bankDetails[cancelledChequeCopy]', maxCount: 1 },
+      { name: 'bankDetails[bankStatementCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[panCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[aadharCopy]', maxCount: 1 },
       { name: 'billBookCopy', maxCount: 1 },
-      { name: 'incorpoCertificateCopy', maxCount: 1 },
-      { name: 'regiCertificateCopy', maxCount: 1 },
+      { name: 'statutoryDetails[incorpoCertificateCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[regiCertificateCopy]', maxCount: 1 },
       { name: 'billingFormatCopy', maxCount: 1 },
       { name: 'billingAddressProofCopy', maxCount: 1 },
       { name: 'deliveryAddressProofCopy', maxCount: 1 },

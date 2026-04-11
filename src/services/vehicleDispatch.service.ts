@@ -10,8 +10,10 @@ import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { ILike, SelectQueryBuilder } from 'typeorm';
+import { ILike, In, SelectQueryBuilder } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 @injectable()
 export class VehicleDispatchService {
@@ -27,8 +29,28 @@ export class VehicleDispatchService {
     @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'vehicleDispatch';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 private async generateSerialNo(): Promise<string> {
     const now = new Date();
     const yyyy = now.getFullYear().toString();
@@ -76,148 +98,135 @@ const serialNo = await this.generateSerialNo();
           
                 await this.documentbService.startApprovalFlow(document.id);
     
+    await this.invalidateCache();
     return savedVehicalDispatch;
   }
 //TODO:Get All Recycle Bin Vehical Dispatch..By Vaishali
-    public async getAllRecycleBinVehicalDispatch(queryOptions: PaginationOptions, userId: string): Promise<
-     any
-    > {
-      const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
-        userId,
-        DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
-      );
+  public async getAllRecycleBinVehicalDispatch(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
+      userId,
+      DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
+    );
     const { search } = queryOptions;
-      console.log('Fetched documents:', data);
-    
-      const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
-    
-      if (typedDocuments.length > 0) {
-        console.log("doc.relatedData", typedDocuments[0].relatedData);
-      } else {
-        console.log("No documents found for user.");
-      }
-    
-      for (const doc of activeDocuments) {
-        if (!doc.document_type_id) {
-          console.log('Missing document_type_id for doc', doc.id);
-          continue;
-        }
-    
-        try {
-          doc.relatedData = await this.vehicleDispatchRepository.findOne({
-            where: { id: doc.document_type_id, isDeleted: true },
-            relations: [
-          'companyName',
-          'clientAddress',
-          'deliveryChallanNo',
-          ]
-          });
-        } catch (e) {
-          console.log("in catch block", e);
-          doc.relatedData = null;
-        }
-      }
-    
-      let relatedDataOnly = activeDocuments.map((doc) => {
-        const rd = doc.relatedData || {};
+
+    const typedDocuments = data as DocumentWithRelatedData[];
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+
+    // ---- Batch fetch instead of N+1 ----
+    const dispatchIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
+
+    const dispatches = dispatchIds.length
+      ? await this.vehicleDispatchRepository
+          .createQueryBuilder('vd')
+          .leftJoinAndSelect('vd.companyName', 'companyName')
+          .leftJoinAndSelect('vd.clientAddress', 'clientAddress')
+          .leftJoinAndSelect('vd.deliveryChallanNo', 'deliveryChallanNo')
+          .where('vd.id IN (:...ids)', { ids: dispatchIds })
+          .andWhere('vd.isDeleted = true')
+          .getMany()
+      : [];
+
+    const dispatchMap = new Map(dispatches.map(d => [d.id, d]));
+
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && dispatchMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = dispatchMap.get(doc.document_type_id!)!;
         return {
           documentId: doc.id,
           overAllStatus: doc.status,
           createdBy: `${doc.lastActionBy.firstName || null}  ${doc.lastActionBy.lastName || null}`,
           createdDate: formatDateTime(doc.createdAt).createdDate,
           createdTime: formatDateTime(doc.createdAt).createdTime,
-  
-          // From VehicleDispatch entity
-      id: rd.id || null,
-      date: rd.date || null,
-      vehicleType: rd.vehicleType || null,
-      vehicleNo: rd.vehicleNo || null,
-      driverName: rd.driverName || null,
-      driverMobNo: rd.driverMobNo || null,
-      paymentDiscussed: rd.paymentDiscussed || null,
-      outTime: rd.outTime || null,
-      reachingTime: rd.reachingTime || null,
-      clientName: rd.clientName || null,
-      receivingPerson: rd.receivingPerson || null,
-      supervisorName: rd.supervisorName || null,
-      accDeptVerification: rd.accDeptVerification || null,
-      transportationBillAmt: rd.transportationBillAmt || null,
-      advancePaid: rd.advancePaid || null,
-      remarksPFL: rd.remarksPFL || null,
-      feedbackbyTransporterOwner: rd.feedbackbyTransporterOwner || null,
-      netInwardQty: rd.netInwardQty || null,
-      clientGRNNo: rd.clientGRNNo || null,
-      paymentTerms: rd.paymentTerms || null,
-      rejection: rd.rejection || null,
-      shrinkageDump: rd.shrinkageDump || null,
-
-      // Related entity fields
-      companyName: rd.companyName?.name || null,
-      clientAddress: rd.clientAddress || null,
-      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
-
+          id: rd.id || null,
+          date: rd.date || null,
+          vehicleType: rd.vehicleType || null,
+          vehicleNo: rd.vehicleNo || null,
+          driverName: rd.driverName || null,
+          driverMobNo: rd.driverMobNo || null,
+          paymentDiscussed: rd.paymentDiscussed || null,
+          outTime: rd.outTime || null,
+          reachingTime: rd.reachingTime || null,
+          clientName: rd.clientName || null,
+          receivingPerson: rd.receivingPerson || null,
+          supervisorName: rd.supervisorName || null,
+          accDeptVerification: rd.accDeptVerification || null,
+          transportationBillAmt: rd.transportationBillAmt || null,
+          advancePaid: rd.advancePaid || null,
+          remarksPFL: rd.remarksPFL || null,
+          feedbackbyTransporterOwner: rd.feedbackbyTransporterOwner || null,
+          netInwardQty: rd.netInwardQty || null,
+          clientGRNNo: rd.clientGRNNo || null,
+          paymentTerms: rd.paymentTerms || null,
+          rejection: rd.rejection || null,
+          shrinkageDump: rd.shrinkageDump || null,
+          companyName: rd.companyName?.name || null,
+          clientAddress: rd.clientAddress || null,
+          deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
         };
       });
-     // 🔍 Deep Search
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
+
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
     }
-    return String(obj);
-  };
 
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
-  }
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
-   // 🔄 Sorting
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-      return {
-        data: relatedDataOnly,
-        meta: {
-          total: relatedDataOnly.length,
-          page: queryOptions.page || 1,
-          pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
-        }
-      };
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
     }
+
+    const result = {
+      data: relatedDataOnly,
+      meta: {
+        total: relatedDataOnly.length,
+        page: queryOptions.page || 1,
+        pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
+      },
+    };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
+  }
   async findAll(queryOptions: PaginationOptions): Promise<any> {
-  let query = this.vehicleDispatchRepository
+    const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    let query = this.vehicleDispatchRepository
     .createQueryBuilder('dispatch')
     .leftJoinAndSelect('dispatch.clientAddress', 'clientAddress')
     .leftJoinAndSelect('dispatch.deliveryChallanNo', 'deliveryChallanNo')
     .leftJoinAndSelect('dispatch.companyName', 'companyName')
     .orderBy('dispatch.createdAt', 'DESC');
 
-  console.log(query.getQueryAndParameters()); // Debug SQL Query
-
   const result = await buildQuery(query, queryOptions, 'dispatch');
-console.log(result); // Debug result
   const formattedResult = result.data.map((item) => {
     return {
       id: item.id,
@@ -238,7 +247,7 @@ console.log(result); // Debug result
         city: item.clientAddress.city,
         state: item.clientAddress.state,
         pincode: item.clientAddress.pincode,
-      }:null,
+      } : null,
       receivingPerson: item.receivingPerson,
       supervisorName: item.supervisorName,
       accDeptVerification: item.accDeptVerification,
@@ -255,14 +264,18 @@ console.log(result); // Debug result
     };
   });
 
-  return{ data:formattedResult,
-    meta:result.meta
-  }
+  const finalResult = { data: formattedResult, meta: result.meta };
+  await this.cacheService.set(cacheKey, finalResult, this.CACHE_TTL);
+  return finalResult;
 }
 
   
 
   async findById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const vdr = await this.vehicleDispatchRepository
       .createQueryBuilder('dispatch')
       .leftJoinAndSelect('dispatch.clientAddress', 'clientAddress')
@@ -273,7 +286,7 @@ console.log(result); // Debug result
 
     if (!vdr) return null;
 
-    return {
+    const result = {
       id: vdr.id,
       vehicleDispatchNo: vdr.vehicleDispatchNo || null,
       companyName: vdr.companyName?.id || null,
@@ -311,6 +324,8 @@ console.log(result); // Debug result
       rejection: vdr.rejection || null,
       shrinkageDump: vdr.shrinkageDump || null,
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async update(
@@ -329,16 +344,15 @@ console.log(result); // Debug result
 
     const updatedDispatch = await this.vehicleDispatchRepository.save(dispatch);
 
-    // Step 4: Log the changes using the audit log service
     await this.auditLogService.logChange(
-      'VehicleDispatch', // Entity name
-      id, // Entity ID
-      originalDispatch, // Original data (before the update)
-      updatedDispatch, // Updated data (after the update)
-      updatedBy, // User who made the update
+      'VehicleDispatch',
+      id,
+      originalDispatch,
+      updatedDispatch,
+      updatedBy,
     );
 
-    // Return the updated vehicle dispatch
+    await this.invalidateCache(id);
     return updatedDispatch;
   }
 
@@ -370,141 +384,124 @@ console.log(result); // Debug result
     // Step 5: Save the updated vehicle dispatch with the scheduled deletion date
     await this.vehicleDispatchRepository.save(dispatch);
 
-    // Step 6: Return true to indicate the deletion was scheduled
-    console.log(
-      `Vehicle Dispatch with ID ${id} marked for deletion in 6 months.`,
-    );
+    await this.invalidateCache(id);
     return true;
   }
 //Todo:Get All Vehical Dispatch..By Vaishali
-     public async getAllvehicalDispatch(queryOptions: PaginationOptions, userId: string): Promise<
-     any
-    > {
-      const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
-        userId,
-        DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
-      );
-    const { search } = queryOptions;
-      console.log('Fetched documents:', data);
-    
-      const typedDocuments = data as DocumentWithRelatedData[];
-      //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      if (typedDocuments.length > 0) {
-        console.log("doc.relatedData", typedDocuments[0].relatedData);
-      } else {
-        console.log("No documents found for user.");
-      }
-    
-      for (const doc of activeDocuments) {
-        if (!doc.document_type_id) {
-          console.log('Missing document_type_id for doc', doc.id);
-          continue;
-        }
-    
-        try {
-          doc.relatedData = await this.vehicleDispatchRepository.findOne({
-            where: { id: doc.document_type_id, isDeleted: false },
-            relations: [
-          'companyName',
-          'clientAddress',
-          'deliveryChallanNo',
-          ]
-          });
-        } catch (e) {
-          console.log("in catch block", e);
-          doc.relatedData = null;
-        }
-      }
-    
-      let relatedDataOnly = activeDocuments.map((doc) => {
-        const rd = doc.relatedData || {};
-        return {
-          documentId: doc.id,
-          overAllStatus: doc.status,
-          createdBy: `${doc.lastActionBy.firstName || null}  ${doc.lastActionBy.lastName || null}`,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
-  
-          // From VehicleDispatch entity
-      id: rd.id || null,
-      date: rd.date || null,
-      vehicleType: rd.vehicleType || null,
-      vehicleNo: rd.vehicleNo || null,
-      driverName: rd.driverName || null,
-      driverMobNo: rd.driverMobNo || null,
-      paymentDiscussed: rd.paymentDiscussed || null,
-      outTime: rd.outTime || null,
-      reachingTime: rd.reachingTime || null,
-      clientName: rd.clientName || null,
-      receivingPerson: rd.receivingPerson || null,
-      supervisorName: rd.supervisorName || null,
-      accDeptVerification: rd.accDeptVerification || null,
-      transportationBillAmt: rd.transportationBillAmt || null,
-      advancePaid: rd.advancePaid || null,
-      remarksPFL: rd.remarksPFL || null,
-      feedbackbyTransporterOwner: rd.feedbackbyTransporterOwner || null,
-      netInwardQty: rd.netInwardQty || null,
-      clientGRNNo: rd.clientGRNNo || null,
-      paymentTerms: rd.paymentTerms || null,
-      rejection: rd.rejection || null,
-      shrinkageDump: rd.shrinkageDump || null,
+  public async getAllvehicalDispatch(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-      // Related entity fields
-      companyName: rd.companyName?.name || null,
-      clientAddress: rd.clientAddress || null,
-      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
-
-        };
-      });
-     // 🔍 Deep Search
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
+      userId,
+      DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
     );
-  }
+    const { search } = queryOptions;
 
-   // 🔄 Sorting
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    const typedDocuments = data as DocumentWithRelatedData[];
+    const activeDocuments = typedDocuments
+      .filter(doc => doc.isDeleted === false)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    // ---- Batch fetch: one query instead of N+1 ----
+    const dispatchIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
+    const dispatches = dispatchIds.length
+      ? await this.vehicleDispatchRepository
+          .createQueryBuilder('vd')
+          .leftJoinAndSelect('vd.companyName', 'companyName')
+          .leftJoinAndSelect('vd.clientAddress', 'clientAddress')
+          .leftJoinAndSelect('vd.deliveryChallanNo', 'deliveryChallanNo')
+          .where('vd.id IN (:...ids)', { ids: dispatchIds })
+          .andWhere('vd.isDeleted = false')
+          .getMany()
+      : [];
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
+    const dispatchMap = new Map(dispatches.map(d => [d.id, d]));
 
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
+    let relatedDataOnly = activeDocuments.map((doc) => {
+      const rd: any = doc.document_type_id ? (dispatchMap.get(doc.document_type_id) || {}) : {};
       return {
-        data: relatedDataOnly,
-        meta: {
-          total: relatedDataOnly.length,
-          page: queryOptions.page || 1,
-          pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
-        }
+        documentId: doc.id,
+        overAllStatus: doc.status,
+        createdBy: `${doc.lastActionBy.firstName || null}  ${doc.lastActionBy.lastName || null}`,
+        createdDate: formatDateTime(doc.createdAt).createdDate,
+        createdTime: formatDateTime(doc.createdAt).createdTime,
+        id: rd.id || null,
+        date: rd.date || null,
+        vehicleType: rd.vehicleType || null,
+        vehicleNo: rd.vehicleNo || null,
+        driverName: rd.driverName || null,
+        driverMobNo: rd.driverMobNo || null,
+        paymentDiscussed: rd.paymentDiscussed || null,
+        outTime: rd.outTime || null,
+        reachingTime: rd.reachingTime || null,
+        clientName: rd.clientName || null,
+        receivingPerson: rd.receivingPerson || null,
+        supervisorName: rd.supervisorName || null,
+        accDeptVerification: rd.accDeptVerification || null,
+        transportationBillAmt: rd.transportationBillAmt || null,
+        advancePaid: rd.advancePaid || null,
+        remarksPFL: rd.remarksPFL || null,
+        feedbackbyTransporterOwner: rd.feedbackbyTransporterOwner || null,
+        netInwardQty: rd.netInwardQty || null,
+        clientGRNNo: rd.clientGRNNo || null,
+        paymentTerms: rd.paymentTerms || null,
+        rejection: rd.rejection || null,
+        shrinkageDump: rd.shrinkageDump || null,
+        companyName: rd.companyName?.name || null,
+        clientAddress: rd.clientAddress || null,
+        deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
       };
+    });
+
+    // 🔍 Deep Search
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
     }
+
+    // 🔄 Sorting
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
+
+    const result = {
+      data: relatedDataOnly,
+      meta: {
+        total: relatedDataOnly.length,
+        page: queryOptions.page || 1,
+        pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
+      },
+    };
+
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
+  }
 
 
   
@@ -638,6 +635,10 @@ console.log(result); // Debug result
 
     //TODO:Get Vehical Dispatch By Id For View..By Vaishali
 public async getVehicalDispatchByIdForView(docid: string, userId:string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid,userId)
     if(!document)
     {
@@ -679,7 +680,7 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
       // }
       const rawDate = vehicalDispatch.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
-      return {
+      const result = {
     documentId: document.documentId,
     overAllStatus: document.status,
     createdBy: document.createdBy?.firstName + ' ' + document.createdBy?.lastName || null,
@@ -715,6 +716,8 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
       clientAddress: vehicalDispatch.clientAddress?.address1||' '+vehicalDispatch.clientAddress?.address2||' '+vehicalDispatch.clientAddress?.location||' '+vehicalDispatch.clientAddress?.city||' '+vehicalDispatch.clientAddress?.state||' '+vehicalDispatch.clientAddress?.pincode||' ',
       deliveryChallanNo: vehicalDispatch.deliveryChallanNo?.challanNo || null,
   };
+  await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  return result;
   }
 }
 //TODO:Filterd VehicalDispatch By Vaishali...20/08/2025
@@ -818,6 +821,7 @@ public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: st
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    await this.invalidateCache();
     return { success, failed, message};
 
   }

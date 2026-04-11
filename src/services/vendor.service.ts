@@ -26,12 +26,14 @@ import { User } from "../entities/user.entity";
 import { In } from "typeorm";
 import { ProductRepository } from "../repositories/product.repository";
 import { UserRepository } from "../repositories/user.repository";
+import { PackingMaterialRepository } from "../repositories/packingMaterial.repository";
 import { Role } from "../entities/user.entity";
 import { Status } from "../utils/status.enum";
 import { formatDateTime } from "../utils/dateUtils";
 import { PackingMaterial } from "../entities/packingMaterial.entity";
 import { formatAddress } from "../utils/addressFormate.utils";
 import { CacheService } from "./cache.service";
+import { createHash } from "crypto";
 
 const CACHE_PREFIX = "vendor";
 const CACHE_TTL = 180;
@@ -47,6 +49,8 @@ export class VendorService {
     @inject(TYPES.VendorCategoryRepository)
     private readonly vendorCategoryRepository: VendorCategoryRepository,
     @inject(TYPES.UserRepository) private userRepository: UserRepository,
+    @inject(TYPES.PackingMaterialRepository)
+    private readonly packingMaterialRepository: PackingMaterialRepository,
     @inject(TYPES.VendorSubcategoryRepository)
     private readonly vendorSubcategoryRepository: VendorSubcategoryRepository,
 
@@ -71,12 +75,16 @@ export class VendorService {
   private async invalidateVendorCache(id?: string): Promise<void> {
     const tasks: Promise<any>[] = [
       this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:dropdown:*`),
     ];
     if (id) {
       tasks.push(
         this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
         this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
         this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:withid:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:filter:id:${id}`),
       );
     }
     await Promise.all(tasks);
@@ -106,6 +114,21 @@ async createVendor(vendorDto: any): Promise<any> {
       if(mainProduct) {
         vendorDto.mainProduct = mainProduct;
       }
+    }
+
+    // Handle listOfPackingMaterial if provided
+    if (vendorDto.listOfPackingMaterial && Array.isArray(vendorDto.listOfPackingMaterial)) {
+      const pmIds = vendorDto.listOfPackingMaterial.map((p: any) => p.id || p);
+      vendorDto.listOfPackingMaterial = await this.packingMaterialRepository.findBy({ id: In(pmIds) });
+    }
+
+    // Handle mainPackingMaterial if provided
+    if (vendorDto.mainPackingMaterial && typeof vendorDto.mainPackingMaterial === 'object' && vendorDto.mainPackingMaterial.id) {
+      const mainPM = await this.packingMaterialRepository.findOneBy({ id: vendorDto.mainPackingMaterial.id });
+      if (mainPM) vendorDto.mainPackingMaterial = mainPM;
+    } else if (typeof vendorDto.mainPackingMaterial === 'string' && vendorDto.mainPackingMaterial) {
+      const mainPM = await this.packingMaterialRepository.findOneBy({ id: vendorDto.mainPackingMaterial });
+      if (mainPM) vendorDto.mainPackingMaterial = mainPM;
     }
     //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
 
@@ -224,7 +247,7 @@ async getVendorByIdforview(id: string): Promise<any> {
     inFandVBusinessSince: vendor.inFandVBusinessSince,
 
     // 🔹 Product relations
-    mainProduct: vendor.mainProduct.name || null,
+    mainProduct: vendor.mainProduct?.name || null,
      
     
 
@@ -919,22 +942,29 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
    * Get available vendor categories for reference when uploading vendor data
    */
   async getAvailableVendorCategories(): Promise<{ id: string; name: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:categories`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const categories = await this.vendorCategoryRepository
       .createQueryBuilder('category')
       .select(['category.id', 'category.name'])
       .orderBy('category.name', 'ASC')
       .getMany();
     
-    return categories.map(category => ({
-      id: category.id,
-      name: category.name
-    }));
+    const result = categories.map(category => ({ id: category.id, name: category.name }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   /**
    * Get available vendor subcategories for reference when uploading vendor data
    */
   async getAvailableVendorSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:subcategories:${categoryId || 'all'}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.vendorSubcategoryRepository
       .createQueryBuilder('subcategory')
       .leftJoinAndSelect('subcategory.category', 'category')
@@ -947,44 +977,51 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
     }
     
     const subcategories = await queryBuilder.getMany();
-    
-    return subcategories.map(subcategory => ({
+    const result = subcategories.map(subcategory => ({
       id: subcategory.id,
       name: subcategory.name,
       categoryName: subcategory.category?.name || 'Unknown'
     }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   /**
    * Get available products for reference when uploading vendor data
    */
   async getAvailableProducts(): Promise<{ id: string; name: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:products`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const products = await this.productRepository
       .createQueryBuilder('product')
       .select(['product.id', 'product.name'])
       .orderBy('product.name', 'ASC')
       .getMany();
     
-    return products.map(product => ({
-      id: product.id,
-      name: product.name
-    }));
+    const result = products.map(product => ({ id: product.id, name: product.name }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   /**
    * Get available users for reference when uploading vendor data
    */
   async getAvailableUsers(): Promise<{ id: string; name: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:users`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const users = await this.userRepository
       .createQueryBuilder('user')
       .select(['user.id', 'user.firstName', 'user.lastName'])
       .orderBy('user.firstName', 'ASC')
       .getMany();
     
-    return users.map(user => ({
-      id: user.id,
-      name: `${user.firstName} ${user.lastName}`
-    }));
+    const result = users.map(user => ({ id: user.id, name: `${user.firstName} ${user.lastName}` }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
 
@@ -1024,21 +1061,19 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 // }
 
 public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
-  const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+  const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+  const key = `${CACHE_PREFIX}:list:${hash}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
 
   const queryBuilder = this.vendorRepository
     .createQueryBuilder('vendor')
-    .leftJoinAndSelect('vendor.createdBy', 'createdBy') // ✅ include who created
+    .leftJoinAndSelect('vendor.createdBy', 'createdBy') 
     .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
     .leftJoinAndSelect('vendor.vendorSaleInfo', 'vendorSaleInfo')
-    //.leftJoinAndSelect('vendor.vendorBankDetails', 'vendorBankDetails')
-   // .leftJoinAndSelect('vendor.ref1Address', 'ref1Address')
-    //.leftJoinAndSelect('vendor.ref2Address', 'ref2Address')
     .leftJoinAndSelect('vendor.mainProduct','product')
     .leftJoinAndSelect('vendor.listOfAllProducts','listOfAllProducts')
-    // .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
+    .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
      .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
     .leftJoinAndSelect('vendor.category', 'category')
@@ -1065,6 +1100,11 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
                         .map((product:Product)=>product?.name)
                         .join(','):'',
+          mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName||null,
+            listOfPackingMaterial:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
+             .map((product:PackingMaterial)=>product?.packagingMaterialName)
+                        .join(','):'',
+
       mainProduct:vendor.mainProduct?.name || '', 
       dispatchCenter:vendor.dispatchCenter,
       warehouseLocations:vendor.warehouseLocations,
@@ -1080,7 +1120,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       paymentMode:vendor.paymentMode,
       proposedPaymentTerms:vendor.proposedPaymentTerms,
       creditTerms:vendor.creditTerms,
-      mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName || '',
+
       
       
     };
@@ -1094,6 +1134,10 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
   
   public async getAllVendor(subcategoryId?: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:dropdown:${subcategoryId || 'all'}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.vendorRepository
       .createQueryBuilder("vendor")
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1130,7 +1174,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     const vendors = await queryBuilder.getMany();
 
     // Map the results to the desired format
-    return vendors.map((vendor) => ({
+    const result = vendors.map((vendor) => ({
       id: vendor.id,
       companyName: vendor.companyName,
       vendorCode: vendor.vendorCode,
@@ -1154,8 +1198,14 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
           }
         : null,
     }));
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
   public async getvendorwithid(id?: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:withid:${id || 'all'}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.vendorRepository
       .createQueryBuilder("vendor")
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1182,20 +1232,14 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
         "subcategory.id",
       ]);
 
-    // Add the filter condition if id is provided
     if (id) {
       queryBuilder.where("vendor.id = :id", { id });
     }
 
-    // Fetch the data from the database
     const vendor = await queryBuilder.getOne();
+    if (!vendor) return null;
 
-    if (!vendor) {
-      return null; // Handle case where no vendor is found
-    }
-
-    // Map the result to the desired format
-    return {
+    const result = {
       id: vendor.id,
       companyName: vendor.companyName,
       officeContactNo: vendor.officeContactNo,
@@ -1220,6 +1264,8 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       category: vendor.category?.id || null,
       subcategory: vendor.subcategory?.id || null,
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   async getVendorByVendorCode(vendorCode: string): Promise<Vendor | null> {
@@ -1340,6 +1386,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     vendorData: Partial<Vendor>,
     updateBy: string
   ): Promise<Vendor | null> {
+    console.log(vendorData)
     const vendor = await this.vendorRepository
       .createQueryBuilder("vendor")
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1349,6 +1396,8 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
       .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
       .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
+      .leftJoinAndSelect("vendor.mainPackingMaterial", "mainPackingMaterial")
+      .leftJoinAndSelect("vendor.listOfPackingMaterial", "listOfPackingMaterial")
       .leftJoinAndSelect("vendor.subcategory", "subcategory")
       .leftJoinAndSelect("vendor.category", "category")
       .where("vendor.id = :id", { id })
@@ -1395,25 +1444,68 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     }
 
     // ---- Main Product ----
-    if (vendorData.mainProduct?.id) {
-      const foundProduct = await this.productRepository.findOneBy({
-        id: vendorData.mainProduct.id,
-      });
-      if (foundProduct) {
-        vendor.mainProduct = foundProduct;
+    if (vendorData.mainProduct) {
+      const mainProductId = (vendorData.mainProduct as any)?.id || vendorData.mainProduct;
+      if (mainProductId && typeof mainProductId === 'string') {
+        const foundProduct = await this.productRepository.findOneBy({ id: mainProductId });
+        if (foundProduct) vendor.mainProduct = foundProduct;
       }
     }
 
     // ---- List of All Products ----
     if (vendorData.listOfAllProducts?.length) {
-      const productIds = vendorData.listOfAllProducts.map((p: any) => p.id);
+      const productIds = vendorData.listOfAllProducts.map((p: any) => p?.id || p).filter(Boolean);
       vendor.listOfAllProducts = await this.productRepository.findBy({
         id: In(productIds),
       });
     }
 
+    // ---- Main Packing Material ----
+    if ((vendorData as any).mainPackingMaterial) {
+      const pmId = (vendorData as any).mainPackingMaterial?.id || (vendorData as any).mainPackingMaterial;
+      if (pmId && typeof pmId === 'string') {
+        const foundPM = await this.packingMaterialRepository.findOneBy({ id: pmId });
+        if (foundPM) vendor.mainPackingMaterial = foundPM;
+      }
+    }
+
+    // ---- List of Packing Materials ----
+    if ((vendorData as any).listOfPackingMaterial?.length) {
+      const pmIds = (vendorData as any).listOfPackingMaterial.map((p: any) => p?.id || p).filter(Boolean);
+      vendor.listOfPackingMaterial = await this.packingMaterialRepository.findBy({ id: In(pmIds) });
+    }
+
+    // ---- Category / Subcategory ----
+    if ((vendorData as any).category) {
+      const catId = (vendorData as any).category?.id || (vendorData as any).category;
+      if (catId && typeof catId === 'string') {
+        vendor.category = { id: catId } as any;
+      }
+    }
+    if ((vendorData as any).subcategory) {
+      const subId = (vendorData as any).subcategory?.id || (vendorData as any).subcategory;
+      if (subId && typeof subId === 'string') {
+        vendor.subcategory = { id: subId } as any;
+      }
+    }
+
     // ---- Simple fields ----
-    Object.assign(vendor, vendorData);
+    // Exclude nested relation fields that were already handled above
+    const {
+      officeAddress,
+      ref1Address,
+      ref2Address,
+      vendorSaleInfo,
+      vendorBankDetails,
+      mainProduct,
+      listOfAllProducts,
+      mainPackingMaterial,
+      listOfPackingMaterial,
+      subcategory,
+      category,
+      ...simpleFields
+    } = vendorData as any;
+    Object.assign(vendor, simpleFields);
 
     // Save everything
     const saved = await this.vendorRepository.save(vendor);
@@ -1498,7 +1590,12 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
 
   async getAllVendorsbyfilter(queryOptions: PaginationOptions): Promise<any> {
-  const queryBuilder = this.vendorRepository
+    const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+    const key = `${CACHE_PREFIX}:filter:${hash}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const queryBuilder = this.vendorRepository
     .createQueryBuilder("vendor")
     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
     .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1542,14 +1639,20 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     subcategory: vendor.subcategory?.name || null,
   }));
 
-  return {
+  const finalResult = {
     data: transformed,
-    meta: result.meta, // includes total, page, totalPages
+    meta: result.meta,
   };
+  await this.cacheService.set(key, finalResult, CACHE_TTL);
+  return finalResult;
 }
 
 
   async getVendorByIdWithFilter(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:filter:id:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const qb = this.vendorRepository
@@ -1585,13 +1688,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     }
 
     const vendor = await qb.getOne();
+    if (!vendor) return null;
 
-    // If vendor is null, return null
-    if (!vendor) {
-        return null;
-    }
-
-    return {
+    const result = {
       id: vendor.id,
       companyName: vendor.companyName,
       vendorCode: vendor.vendorCode,
@@ -1606,7 +1705,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       category: vendor.category?.name || null,
       subcategory: vendor.subcategory?.name || null,
     };
-}
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
+  }
 
 
 

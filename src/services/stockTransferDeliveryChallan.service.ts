@@ -19,8 +19,9 @@ import { InventoryStockRepository } from '../repositories/inventoryStock.reposit
 import { DitemRepository } from '../repositories/dItem.repository';
 import { custom } from 'zod';
 import { DocumentbRepository } from '../repositories/documentb.repository';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import { CustomerDeliveryChallanService } from './customerDeliveryChallan.service';
+import { CacheService } from './cache.service';
 
 
 @injectable()
@@ -51,9 +52,27 @@ export class StockTransferDeliveryChallanService {
         @inject(TYPES.ProductRepository)
         private readonly productRepository: ProductRepository,
         @inject(TYPES.DataSource)
-        private readonly dataSource: DataSource
-            
+        private readonly dataSource: DataSource,
+        @inject(TYPES.CacheService)
+        private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'stockTransferChallan';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
  async create(data: any, requestedBy: any): Promise<any> {
   const queryRunner = this.dataSource.createQueryRunner();
@@ -175,6 +194,7 @@ export class StockTransferDeliveryChallanService {
     // Start approval flow after commit so challan is visible to other DB connections
     await this.documentbService.startApprovalFlow(document.id);
 
+    await this.invalidateCache();
     return savedChallan;
   } catch (error) {
     // Rollback transaction - undo all changes
@@ -188,8 +208,12 @@ export class StockTransferDeliveryChallanService {
 }
 
   async getById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     try {
-      return await this.challanRepository.findOne({
+      const result = await this.challanRepository.findOne({
         where: { id },
         relations: [
           'deliveryChallanProducts',
@@ -204,14 +228,18 @@ export class StockTransferDeliveryChallanService {
           'toLocation',
         ],
       });
+      if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+      return result;
     } catch (err) {
-      logger.error(`Error fetching stock transfer challan by ID: ${id}`, {
-        error: err,
-      });
+      logger.error(`Error fetching stock transfer challan by ID: ${id}`, { error: err });
       return null;
     }
   }
   async getByIdChallanforUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     try {
       const challan = await this.challanRepository
         .createQueryBuilder('challan')
@@ -289,6 +317,7 @@ export class StockTransferDeliveryChallanService {
           }),
         ),
       };
+      await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
       return formattedChallan;
     } catch (err) {
       logger.error(
@@ -333,14 +362,16 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
     }
   }
   const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  await this.invalidateCache();
   return { success, failed, message };
 }
   async getByIdChallanforView(docId: string): Promise<any> {
-    try {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
+    try {
        const document = await this.docDoubleApproverService.getDocumentById(docId);
-   //   console.log("***********************");
-      
       const id = document.documentTypeId;
 
       if(id) {
@@ -426,6 +457,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
         approvalSummary: document.approvalSummary,
         documentId: document.id,
       };
+      await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
       return formattedChallan;
       }
     } catch (err) {
@@ -438,176 +470,103 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
   }
 
   async getAll(queryOptions: PaginationOptions, userId: any): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-     const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
-          userId,
-          DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER,
-          queryOptions
-        )
-    
-      //  console.log("Data : ", data);
-        
+    const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+      userId,
+      DocumentTypeEnum.DC_TYPE_STOCK_TRANSFER,
+      queryOptions,
+    );
 
-        const typedDocuments = data as DocumentWithRelatedData[];
-        const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        for(const doc of activeDocuments) {
-          if(!doc.document_type_id) continue;
-          console.log("id:", doc.document_type_id);
-          
-          try {
-            doc.relatedData = await this.challanRepository.findOne({
-              where: { id: doc.document_type_id },
-              relations: [
-                'companyName',
-                'fromLocation',
-                'toLocation',
-              ]
-            })
-            console.log("data:", doc.relatedData);
-            
-          } catch (error) {
-            doc.relatedData = null;
-          }
-        }
-        
-        //console.log("Typerd documents: ", typedDocuments);
-        
+    const typedDocuments = data as DocumentWithRelatedData[];
+    const activeDocuments = typedDocuments
+      .filter(doc => doc.isDeleted === false)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        const relatedDataOnly = activeDocuments
-                .filter((doc) => doc.relatedData)
-                .map((doc) => ({
-                  documentId: doc.id,
-                  overAllStatus: doc.status,
-                  createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
-                  createdDate: formatDateTime(doc.createdAt).createdDate,
-                  createdTime: formatDateTime(doc.createdAt).createdTime,
-                  id: doc.relatedData.id,
-                  challanNo: doc.relatedData.challanNo,
-                  transitInsuranceNo: doc.relatedData.transitInsuranceNo || null,
-                  totalProductAmount: doc.relatedData.totalProductAmount,
-                  netProductWeight: doc.relatedData.netProductWeight,
-                  netPackagingMaterialWeight: doc.relatedData.netPackagingMaterialWeight,
-                  totalPackagingMaterialAmount: doc.relatedData.totalPackagingMaterialAmount,
-                  totalAmtInWords: doc.relatedData.totalAmtInWords,
-                  driverName: doc.relatedData.driverName,
-                  contactNo: doc.relatedData.contactNo,
-                  altContactNo: doc.relatedData.altContactNo || null,
-                  vehicleNo: doc.relatedData.vehicleNo,
-                  licenseNo: doc.relatedData.licenseNo,
-                  rmn: doc.relatedData.rmn || null,
-                  receiverName: doc.relatedData.receiverName,
-                  anyAttachment: doc.relatedData.anyAttachment || null,
-                  remark: doc.relatedData.remark || null,
-                  requestingDepartment: doc.relatedData.requestingDepartment || null,
-                  approvalStatus: doc.relatedData.approvalStatus || null,
-                  stockTransferType: (doc.relatedData as any).stockTransferType || null,
-                  companyName: doc.relatedData.companyName?.name || null,
-                  fromLocation: doc.relatedData.fromLocation?.name || null,
-                  toLocation: doc.relatedData.toLocation?.name || null,
-                }));
-          // 🔄 Sorting
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    // ---- Batch fetch: one query instead of N+1 ----
+    const challanIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    const challans = challanIds.length
+      ? await this.challanRepository
+          .createQueryBuilder('challan')
+          .leftJoinAndSelect('challan.companyName', 'companyName')
+          .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
+          .leftJoinAndSelect('challan.toLocation', 'toLocation')
+          .where('challan.id IN (:...ids)', { ids: challanIds })
+          .getMany()
+      : [];
 
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
+    const challanMap = new Map(challans.map(c => [c.id, c]));
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
+    const relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && challanMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = challanMap.get(doc.document_type_id!)!;
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
+          createdDate: formatDateTime(doc.createdAt).createdDate,
+          createdTime: formatDateTime(doc.createdAt).createdTime,
+          id: rd.id,
+          challanNo: rd.challanNo,
+          transitInsuranceNo: rd.transitInsuranceNo || null,
+          totalProductAmount: rd.totalProductAmount,
+          netProductWeight: rd.netProductWeight,
+          netPackagingMaterialWeight: rd.netPackagingMaterialWeight,
+          totalPackagingMaterialAmount: rd.totalPackagingMaterialAmount,
+          totalAmtInWords: rd.totalAmtInWords,
+          driverName: rd.driverName,
+          contactNo: rd.contactNo,
+          altContactNo: rd.altContactNo || null,
+          vehicleNo: rd.vehicleNo,
+          licenseNo: rd.licenseNo,
+          rmn: rd.rmn || null,
+          receiverName: rd.receiverName,
+          anyAttachment: rd.anyAttachment || null,
+          remark: rd.remark || null,
+          requestingDepartment: rd.requestingDepartment || null,
+          approvalStatus: rd.approvalStatus || null,
+          stockTransferType: rd.stockTransferType || null,
+          companyName: rd.companyName?.name || null,
+          fromLocation: rd.fromLocation?.name || null,
+          toLocation: rd.toLocation?.name || null,
+        };
+      });
 
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
+    // 🔄 Sorting
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
-                 return {
-            data: relatedDataOnly,
-            meta: {
-              total: meta.total,
-              page: meta.page,
-              totalPages: meta.pages,
-            }
-          };
-    
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
 
-    // const queryBuilder = this.challanRepository
-    //   .createQueryBuilder('challan')
-    //   .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-    //   .leftJoinAndSelect('products.productName', 'productName')
-    //   .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-    //   .leftJoinAndSelect(
-    //     'products.packagingMaterialUoM',
-    //     'packagingMaterialUoM',
-    //   )
-    //   .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-    //   .leftJoinAndSelect('challan.companyName', 'company')
-    //   .leftJoinAndSelect('challan.offices', 'office')
-    //   .leftJoinAndSelect('challan.grnNo', 'grn')
-    //   .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
-    //   .leftJoinAndSelect('challan.toLocation', 'toLocation');
+    const result = {
+      data: relatedDataOnly,
+      meta: {
+        total: meta.total,
+        page: meta.page,
+        totalPages: meta.pages,
+      },
+    };
 
-    // const result = await buildQuery(queryBuilder, queryOptions, 'challan');
-
-    // return {
-    //   data: result.data.map((challan) => {
-    //     const { createdDate, createdTime } = formatDateTime(challan.createdAt);
-    //     return {
-    //       id: challan.id,
-    //       challanNo: challan.challanNo,
-    //       transferType: challan.transferType,
-    //       companyName: challan.companyName?.name || null,
-    //       office: challan.offices?.name || null,
-    //       grnNo: challan.grnNo?.grnNo || null,
-    //       fromLocation: challan.fromLocation?.name || null,
-    //       toLocation: challan.toLocation?.name || null,
-    //       driverName: challan.driverName,
-    //       contactNo: challan.contactNo,
-    //       altContactNo: challan.altContactNo,
-    //       vehicleNo: challan.vehicleNo,
-    //       licenseNo: challan.licenseNo,
-    //       receiverName: challan.receiverName,
-    //       totalProductAmount: challan.totalProductAmount,
-    //       netProductWeight: challan.netProductWeight,
-    //       netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-    //       totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-    //       totalAmtInWords: challan.totalAmtInWords,
-    //       createdDate,
-    //       createdTime,
-    //       requestingDepartment: challan.requestingDepartment,
-    //       approvalStatus: challan.approvalStatus,
-    //       remark: challan.remark,
-    //       anyAttachment: challan.anyAttachment,
-    //       deliveryChallanProducts: challan.deliveryChallanProducts.map(
-    //         (product) => ({
-    //           id: product.id,
-    //           productName: product.productName?.name,
-    //           quantity: product.quantity,
-    //           unitPrice: product.unitPrice,
-    //           amount: product.amount,
-    //           saleUoM: product.saleUoM?.unit || null,
-    //           packingMaterial:
-    //             product.packagingMaterial?.packagingMaterialName || null,
-    //           packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-    //           packagingMaterialAmount: product.packagingMaterialAmount,
-    //           packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-    //           packagingMaterialQuantity: product.packagingMaterialQuantity,
-    //           packagingMaterialTotalWeight:
-    //             product.packagingMaterialTotalWeight,
-    //         }),
-    //       ),
-    //     };
-    //   }),
-    //   meta: result.meta,
-    // };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async update(id: string, data: any): Promise<any> {
@@ -616,7 +575,9 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
       if (!challan) return null;
 
       Object.assign(challan, data);
-      return await this.challanRepository.save(challan);
+      const saved = await this.challanRepository.save(challan);
+      await this.invalidateCache(id);
+      return saved;
     } catch (err) {
       logger.error(`Error updating stock transfer challan with ID: ${id}`, {
         error: err,
@@ -628,6 +589,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
   async delete(id: string): Promise<boolean> {
     try {
       const result = await this.challanRepository.delete(id);
+      if (result.affected !== 0) await this.invalidateCache(id);
       return result.affected !== 0;
     } catch (err) {
       logger.error(`Error deleting stock transfer challan with ID: ${id}`, {

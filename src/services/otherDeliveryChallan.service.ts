@@ -11,6 +11,8 @@ import { DeliveryChallanService } from './deliveryChallan.service';
 import { CustomerDeliveryChallanService } from './customerDeliveryChallan.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 @injectable()
@@ -28,9 +30,26 @@ export class OtherDeliveryChallanService {
                 private readonly deliveryChallanService: DeliveryChallanService,
                      @inject(TYPES.CustomerDeliveryChallanService)
     private readonly customerDeliveryChallanService:CustomerDeliveryChallanService,
-
-   
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'odc';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   async create(data: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -105,7 +124,8 @@ export class OtherDeliveryChallanService {
 
       // Start approval flow after commit so challan is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
-      
+      await this.invalidateCache();
+
       return savedChallan;
     } catch (error: any) {
       // Rollback transaction - undo all changes
@@ -123,8 +143,12 @@ export class OtherDeliveryChallanService {
   }
 
   async getById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     try {
-      return await this.challanRepository.findOne({
+      const result = await this.challanRepository.findOne({
         where: { id },
         relations: [
           'deliveryChallanProducts',
@@ -138,6 +162,8 @@ export class OtherDeliveryChallanService {
           'fromLocation',
         ],
       });
+      if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+      return result;
     } catch (err) {
       logger.error(`Error fetching other delivery challan by ID: ${id}`, {
         error: err,
@@ -147,6 +173,10 @@ export class OtherDeliveryChallanService {
   }
 
   async getByIdChallanforView(docId: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const document = await this.docDoubleApproverService.getDocumentById(docId);
     const id = document.documentTypeId;
 
@@ -246,9 +276,14 @@ export class OtherDeliveryChallanService {
       documentId: document.documentId,
     };
 
+    await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
     return formattedChallan;
   }
   async getByIdChallanforUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const challan = await this.challanRepository
       .createQueryBuilder('challan')
       .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
@@ -337,9 +372,15 @@ export class OtherDeliveryChallanService {
       ),
     };
 
+    await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
     return formattedChallan;
   }
   async getAll(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
       userId,
       DocumentTypeEnum.DC_TYPE_OTHER,
@@ -410,7 +451,7 @@ export class OtherDeliveryChallanService {
         anyAttachment: doc.relatedData.anyAttachment,
       }));
 
-    return {
+    const result = {
       data: relatedDataOnly,
       meta: {
         total: meta.total,
@@ -418,6 +459,8 @@ export class OtherDeliveryChallanService {
         pages: meta.pages,
       },
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async update(id: string, data: any): Promise<any> {
@@ -426,7 +469,9 @@ export class OtherDeliveryChallanService {
       if (!challan) return null;
 
       Object.assign(challan, data);
-      return await this.challanRepository.save(challan);
+      const saved = await this.challanRepository.save(challan);
+      await this.invalidateCache(id);
+      return saved;
     } catch (err) {
       logger.error(`Error updating other delivery challan with ID: ${id}`, {
         error: err,
@@ -438,6 +483,7 @@ export class OtherDeliveryChallanService {
   async delete(id: string): Promise<boolean> {
     try {
       const result = await this.challanRepository.delete(id);
+      if (result.affected !== 0) await this.invalidateCache(id);
       return result.affected !== 0;
     } catch (err) {
       logger.error(`Error deleting other delivery challan with ID: ${id}`, {

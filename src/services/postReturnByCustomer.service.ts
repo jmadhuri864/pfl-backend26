@@ -19,6 +19,8 @@ import { ProductRepository } from '../repositories/product.repository';
 import { CompanyRepository } from '../repositories/company.repository';
 import { BranchessRepository } from '../repositories/branches.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 export interface ReturnByCustomerReportFilter {
   startDate?: string;
   endDate?: string;
@@ -76,7 +78,27 @@ export class PostReturnByCustomerService {
     private readonly dataSource: DataSource,
      @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'rbc';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:numbers:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   /**
    * Creates a customer return record with optimized transaction handling
@@ -255,6 +277,7 @@ export class PostReturnByCustomerService {
 
       // Start approval flow after commit so RBC is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
+      await this.invalidateCache();
       return savedReturnEntity;
 
     } catch (error: any) {
@@ -345,120 +368,90 @@ export class PostReturnByCustomerService {
 
 
 
-  //TODO: Get all RBC
   async getAllPostReturnByCustomer(
     queryOptions: PaginationOptions,
     userId: any,
   ): Promise<any> {
-    const { data, meta } =
-      await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
-        userId,
-        DocumentTypeEnum.RETURN_BY_CUSTOMER,
-        queryOptions,
-      );
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-        const { search } = queryOptions;
-    //console.log("Fetched documents:", data);
+    const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+      userId,
+      DocumentTypeEnum.RETURN_BY_CUSTOMER,
+      queryOptions,
+    );
+
+    const { search } = queryOptions;
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const activeDocuments = typedDocuments
+      .filter(doc => doc.isDeleted === false)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    // for (const doc of typedDocuments) {
-    //   if (!doc.document_type_id) continue;
-    //   try {
-    //     doc.relatedData = await this.postReturnByCustomerRepository.findOne({
-    //       where: { id: doc.relatedData.id },
-    //     })
-    //     //console.log("Related data for document ID", doc.id, ":", doc.relatedData);
-    //   } catch (error) {
-    //     doc.relatedData = null;
-    //   }
-    // }
-    //console.log("Typed documents with related data:", typedDocuments);
+    // ---- Batch fetch instead of N+1 ----
+    const rbcIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-    for (const doc of activeDocuments) {
-      if (!doc.document_type_id) continue;
-      // console.log(doc.document_type_id)
-      //   const relatedId = typeof doc.relatedData === 'object' ? doc.relatedData?.id : doc.relatedData;
+    const records = rbcIds.length
+      ? await this.postReturnByCustomerRepository
+          .createQueryBuilder('rbc')
+          .leftJoinAndSelect('rbc.companyName', 'companyName')
+          .leftJoinAndSelect('rbc.deliveryChallanNo', 'deliveryChallanNo')
+          .leftJoinAndSelect('rbc.returnedProducts', 'returnedProducts')
+          .leftJoinAndSelect('returnedProducts.productName', 'productName')
+          .leftJoinAndSelect('returnedProducts.saleUoM', 'saleUoM')
+          .where('rbc.id IN (:...ids)', { ids: rbcIds })
+          .getMany()
+      : [];
 
-      //   if (!relatedId) {
-      //     doc.relatedData = null;
-      //     continue;
-      //   }
-
-      try {
-        doc.relatedData = await this.postReturnByCustomerRepository.findOne({
-          where: { id: doc.document_type_id },
-          relations: [
-            'companyName',
-            'returnedProducts',
-            'deliveryChallanNo',
-            'returnedProducts.productName',
-            'returnedProducts.saleUoM',
-          ], // Include if you need nested fields
-        });
-      } catch (error) {
-        console.error(
-          `Error fetching relatedData for document ${doc.id}:`,
-          error,
-        );
-        doc.relatedData = null;
-      }
-    }
+    const recordMap = new Map(records.map(r => [r.id, r]));
 
     let relatedDataOnly = activeDocuments
-      .filter((doc) => doc.relatedData)
-      .map((doc) => ({
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        ...doc.relatedData,
-        date: formatDateTime(doc.relatedData.date).createdDate,
-        companyName: doc.relatedData.companyName.name || null,
-        //location: doc.relatedData.location.name || null,
-        deliveryChallanNo: doc.relatedData.deliveryChallanNo?.challanNo || null,
-      }));
-    //console.log("filtered related data:", relatedDataOnly);
-     // 🔍 Deep search across nested values
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
+      .filter(doc => doc.document_type_id && recordMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = recordMap.get(doc.document_type_id!)!;
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
+          createdDate: formatDateTime(doc.createdAt).createdDate,
+          createdTime: formatDateTime(doc.createdAt).createdTime,
+          ...rd,
+          date: formatDateTime(rd.date).createdDate,
+          companyName: rd.companyName?.name || null,
+          deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+        };
+      });
 
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
-  }
-
-    return {
-      data: relatedDataOnly,
-      meta: {
-        total: meta.total,
-        page: meta.page,
-        pages: meta.pages,
-      },
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
     };
 
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
+    }
 
-
-
+    const result = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
+    };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async getByIdPostReturnByCustomerforView(docid: string): Promise<any> {
-    const document1 = await this.docDoubleApproverService.getDocumentById(
-      docid,
-    );
-    // if (!document1) {
-      //throw new Error(`Document with ID ${docid} not found`);
-    //}
-    console.log('document....', document1);
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const document1 = await this.docDoubleApproverService.getDocumentById(docid);
     const relatedId = document1.documentTypeId;
     console.log('relatedId:', relatedId);
     const id = relatedId;
@@ -483,7 +476,7 @@ export class PostReturnByCustomerService {
     const rawDate = result.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     const date = formatDateTime(result.date);
-    return {
+    const viewResult = {
       id: result.id,
 
       companyName: result.companyName?.name,
@@ -528,9 +521,15 @@ export class PostReturnByCustomerService {
         approvalSummary: document1.approvalSummary,
       })),
     };
+    await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
+    return viewResult;
   }
 
   async getByIdPostReturnByCustomerforupdate(docid: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     // docid can be either the document ID or the RBC record ID
     let document1 = await this.documentbRepository.findOne({
       where: { id: docid },
@@ -569,7 +568,7 @@ export class PostReturnByCustomerService {
     const rawDate = result.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     const date = formatDateTime(result.date);
-    return {
+    const updateResult = {
       id: result.id,
 
       companyName: result.companyName?.id,
@@ -613,9 +612,15 @@ export class PostReturnByCustomerService {
         approvalSummary: fullDocument.approvalSummary,
       })),
     };
+    await this.cacheService.set(cacheKey, updateResult, this.CACHE_TTL);
+    return updateResult;
   }
 
   async getByIdPostReturnByCustomer(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     // Resolve actual postReturn ID — the caller may pass either the postReturn ID
     // or the document ID (from the documentb table). Try direct lookup first,
     // then fall back to resolving via document_type_id.
@@ -654,7 +659,7 @@ export class PostReturnByCustomerService {
     const rawDate = result.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     const date = formatDateTime(result.date);
-    return {
+    const idResult = {
       id: result.id,
 
       companyName: result.companyName?.name,
@@ -691,14 +696,22 @@ export class PostReturnByCustomerService {
         unitPrice: returnedProduct.unitPrice,
       })),
     };
+    await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+    return idResult;
   }
   async getAllRBCNumbers(page?: number, limit?: number): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:numbers:${page ?? 'all'}:${limit ?? 'all'}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     if (!page || !limit) {
       const data = await this.postReturnByCustomerRepository.find({
         select: ['id', 'rbcNo'],
         order: { createdAt: 'DESC' },
       });
-      return { data, total: data.length, page: 1, totalPages: 1 };
+      const result = { data, total: data.length, page: 1, totalPages: 1 };
+      await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+      return result;
     }
 
     const [data, total] = await this.postReturnByCustomerRepository.findAndCount({
@@ -708,12 +721,14 @@ export class PostReturnByCustomerService {
       take: limit,
     });
 
-    return {
+    const result = {
       data,
       total,
       page,
       totalPages: Math.ceil(total / limit),
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
    //TODO:Delte Multiple

@@ -5,7 +5,7 @@ import { SecondSaleRepository } from "../repositories/secondSale.repository";
 import { SecondSale } from "../entities/secondSale.entity";
 import AppError from "../utils/appError";
 import { AuditLogService } from "./auditLog.service";
-import { DataSource, EntityManager, getManager, ILike, In } from "typeorm";
+import { DataSource, ILike, In } from "typeorm";
 import { SecondSaleProduct } from "../entities/secondSaleProduct.entity";
 
 import logger from "../utils/logger";
@@ -21,6 +21,7 @@ import { DocDoubleApproverService } from "./docDoubleApprover.service";
 import { ApprovalFlowService } from "./approvalFlow.service";
 import { ProductVarientRepository } from "../repositories/varients.repository";
 import { DocumentbRepository } from "../repositories/documentb.repository";
+import { CacheService } from "./cache.service";
 
 
 @injectable()
@@ -40,9 +41,27 @@ export class SecondSaleService {
     private readonly documentbService: DocumentbService,
     @inject(TYPES.DocDoubleApproverService) private readonly docDoubleApproverService: DocDoubleApproverService, // Assuming you have a service for double approval
     @inject(TYPES.ApprovalFlowService)
-    private approvalFlowService: ApprovalFlowService
-
+    private approvalFlowService: ApprovalFlowService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) { }
+
+  private readonly CACHE_PREFIX = 'secondSale';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   private async generateSerialNo(): Promise<string> {
     const now = new Date();
@@ -116,6 +135,7 @@ export class SecondSaleService {
       // Start approval flow after commit so second sale is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
 
+      await this.invalidateCache();
       return savedSecondSale;
     } catch (error: any) {
       // Rollback transaction - undo all changes
@@ -133,58 +153,55 @@ export class SecondSaleService {
 
   public async getAllSecondSales(queryOptions: PaginationOptions, userId: string): Promise<any> {
     try {
+      const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+      const cached = await this.cacheService.get<any>(cacheKey);
+      if (cached) return cached;
 
       const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
         userId,
         DocumentTypeEnum.SECOND_SALE,
-        queryOptions
+        queryOptions,
       );
       const { search } = queryOptions;
-      // console.log("Data: ", data);
 
       const typedDocuments = data as DocumentWithRelatedData[];
-      for (const doc of typedDocuments) {
-        if (!doc.document_type_id) continue;
-        try {
-          doc.relatedData = await this.secondSaleRepository.findOne({
-            where: { id: doc.document_type_id },
-            relations: [
-              "companyName",
-              "location"
-            ],
-          });
 
-        } catch {
-          doc.relatedData = null;
-        }
-      }
+      // ---- Batch fetch: one query instead of N+1 ----
+      const saleIds = typedDocuments
+        .map(doc => doc.document_type_id)
+        .filter(Boolean) as string[];
 
-      //     console.log("typedDocuments: ", typedDocuments);
+      const sales = saleIds.length
+        ? await this.secondSaleRepository
+            .createQueryBuilder('ss')
+            .leftJoinAndSelect('ss.companyName', 'companyName')
+            .leftJoinAndSelect('ss.location', 'location')
+            .where('ss.id IN (:...ids)', { ids: saleIds })
+            .getMany()
+        : [];
 
+      const saleMap = new Map(sales.map(s => [s.id, s]));
 
       let relatedDataOnly = typedDocuments
-        //   .filter((doc) => doc.relatedData)
-        .map((doc) => ({
-          documentId: doc.id,
-          overAllStatus: doc.status,
-          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
-          ...doc.relatedData,
+        .filter(doc => doc.document_type_id && saleMap.has(doc.document_type_id))
+        .map((doc) => {
+          const rd: any = saleMap.get(doc.document_type_id!)!;
+          return {
+            documentId: doc.id,
+            overAllStatus: doc.status,
+            createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
+            createdDate: formatDateTime(doc.createdAt).createdDate,
+            createdTime: formatDateTime(doc.createdAt).createdTime,
+            ...rd,
+            companyName: rd.companyName?.name || null,
+            location: rd.location?.name || null,
+          };
+        });
 
-          companyName: doc.relatedData.companyName.name || null,
-          location: doc.relatedData.location.name || null,
-        })
-        );
-      //console.log("Related data : ", relatedDataOnly);
-
-
-      // 🔍 Deep search logic
+      // 🔍 Deep search
       const objectToString = (obj: any): string => {
         if (obj == null) return '';
-        if (typeof obj === 'object') {
-          return Object.values(obj).map((v) => objectToString(v)).join(' ');
-        }
+        if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
         return String(obj);
       };
 
@@ -194,40 +211,36 @@ export class SecondSaleService {
           objectToString(item).toLowerCase().includes(term)
         );
       }
-      // 🔄 Sorting (same as other methods)
+
+      // 🔄 Sorting
       if (queryOptions.sort) {
         const [field, direction] = queryOptions.sort.split(':');
         const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
         const getNestedValue = (obj: any, path: string) =>
           path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
         relatedDataOnly.sort((a, b) => {
           const valA = getNestedValue(a, field);
           const valB = getNestedValue(b, field);
-
           if (valA == null && valB == null) return 0;
           if (valA == null) return -1 * sortOrder;
           if (valB == null) return 1 * sortOrder;
-
-          if (!isNaN(valA) && !isNaN(valB)) {
-            return (Number(valA) - Number(valB)) * sortOrder;
-          }
+          if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
           return String(valA).localeCompare(String(valB)) * sortOrder;
         });
       }
-      return {
+
+      const result = {
         data: relatedDataOnly,
         meta: {
           total: meta.total,
           page: meta.page,
-          pages: meta.pages
-        }
+          pages: meta.pages,
+        },
       };
 
-
-
-
+      await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+      return result;
     } catch (error) {
       console.error("Error fetching SecondSale:", error);
       throw error;
@@ -235,13 +248,14 @@ export class SecondSaleService {
   }
 
   public async getSecondSaleById(id: string): Promise<SecondSale | null> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<SecondSale>(cacheKey);
+    if (cached) return cached;
+
     try {
       const secondSale = await this.secondSaleRepository
         .createQueryBuilder("secondSale")
-        .leftJoinAndSelect(
-          "secondSale.secondSaleProducts",
-          "secondSaleProducts"
-        )
+        .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
         .leftJoinAndSelect("secondSale.companyName", "companyName")
         .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
         .leftJoinAndSelect("secondSale.location", "location")
@@ -280,7 +294,7 @@ export class SecondSaleService {
         ])
         .where("secondSale.id = :id", { id })
         .getOne();
-      console.log(secondSale)
+      if (secondSale) await this.cacheService.set(cacheKey, secondSale, this.CACHE_TTL);
       return secondSale || null;
     } catch (error) {
       console.error("Error fetching SecondSale by ID:", error);
@@ -289,24 +303,17 @@ export class SecondSaleService {
   }
 
   public async getSecondSaleByIdForView(docId: string): Promise<any> {
-
-    console.log("docid: ", docId);
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
     const document = await this.docDoubleApproverService.getDocumentById(docId);
-    //   console.log("***********************");
-
     const id = document.documentTypeId;
-
-    console.log("Document data:", id);
-
 
     if (id) {
       const secondSale = await this.secondSaleRepository
         .createQueryBuilder("secondSale")
-        .leftJoinAndSelect(
-          "secondSale.secondSaleProducts",
-          "secondSaleProducts"
-        )
+        .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
         .leftJoinAndSelect("secondSale.companyName", "companyName")
         .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
         .leftJoinAndSelect("secondSale.location", "location")
@@ -314,18 +321,16 @@ export class SecondSaleService {
         .leftJoinAndSelect("secondSaleProducts.productName", "product")
         .leftJoinAndSelect("secondSaleProducts.variant", "variant")
         .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
-         .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM","packagingMaterialUoM")
+        .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM", "packagingMaterialUoM")
         .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
         .where("secondSale.id = :id", { id })
         .getOne();
-      if (!secondSale) {
-        throw new AppError(404, "Second Sale not found");
-      }
+      if (!secondSale) throw new AppError(404, "Second Sale not found");
 
       const rawDate = secondSale.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
 
-      return {
+      const result = {
         id: secondSale?.id,
         companyName: secondSale?.companyName?.name || null,
         location: secondSale?.location?.name || null,
@@ -336,7 +341,7 @@ export class SecondSaleService {
         customerName: secondSale?.customerName || null,
         customerContactNo: secondSale?.customerContactNo || null,
         customerEmail: secondSale?.customerEmail || null,
-         customerAddress: secondSale?.customerAddress ? {
+        customerAddress: secondSale?.customerAddress ? {
           id: secondSale.customerAddress.id,
           address1: secondSale.customerAddress.address1,
           address2: secondSale.customerAddress.address2,
@@ -344,7 +349,6 @@ export class SecondSaleService {
           state: secondSale.customerAddress.state,
           location: secondSale.customerAddress.location,
           pincode: secondSale.customerAddress.pincode,
-          
         } : null,
         reasonForSale: secondSale?.reasonForSale || null,
         secondSaleNo: secondSale?.secondSaleNo || null,
@@ -360,15 +364,10 @@ export class SecondSaleService {
           packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
           packagingMaterialAmount: product.packagingMaterialAmount,
           productName: product.productName?.name || null,
-         // productId: product.productName?.id || null,
           variant: product.variant?.variantName || null,
-          //variantId: product.variant?.id || null,
           saleUoM: product.saleUoM?.unit || null,
-          //saleUoMId: product.saleUoM?.id || null,
           packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-          //packagingMaterialUoMId: product.packagingMaterialUoM?.id || null,
           packagingMaterial: product.packagingMaterial?.packagingMaterialName || null,
-         // packagingMaterialId: product.packagingMaterial?.id || null,
         })) || [],
         totalNetWeight: secondSale?.totalNetWeight || null,
         totalGrossWeight: secondSale?.totalGrossWeight || null,
@@ -382,17 +381,19 @@ export class SecondSaleService {
         createdBy: document.createdBy,
         approvalSummary: document.approvalSummary,
         documentId: document.id,
-
-
-      }
-
+      };
+      await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+      return result;
     }
-
   }
 
 
 
   public async getSecondSaleByIdForUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     try {
       const secondSale = await this.secondSaleRepository
         .createQueryBuilder("secondSale")
@@ -468,6 +469,7 @@ export class SecondSaleService {
         remarks: secondSale?.remarks || null,
       }
       console.log(secondSale)
+      await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
       return formatResponse || null;
     } catch (error) {
       console.error("Error fetching SecondSale by ID:", error);
@@ -496,17 +498,16 @@ export class SecondSaleService {
     Object.assign(secondSale, secondSaleData);
     const updatedSecondSale = await this.secondSaleRepository.save(secondSale);
 
-    // Log changes
-    const a = await this.auditLogService.logChange(
-      "SecondSale", // Entity name
-      id, // Entity ID
-      oldData, // Old data before the update
-      updatedSecondSale, // New data after the update
-      updatedBy // User who updated
+    await this.auditLogService.logChange(
+      "SecondSale",
+      id,
+      oldData,
+      updatedSecondSale,
+      updatedBy,
     );
-    //console.log(a)
 
-    return updatedSecondSale; // Return the updated entity
+    await this.invalidateCache(id);
+    return updatedSecondSale;
   }
 
   // Method to delete a Second Sale document (schedule deletion 6 months later)
@@ -532,14 +533,9 @@ export class SecondSaleService {
       `Second Sale with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
     );
 
-    // Step 4: Set the deletionScheduledAt field for the Second Sale
     secondSale.deletionScheduledAt = sixMonthsFromNow;
-
-    // Step 5: Save the updated Second Sale with the scheduled deletion date
     await this.secondSaleRepository.save(secondSale);
-
-    // Step 6: Return true to indicate the deletion was scheduled
-    console.log(`Second Sale with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -578,6 +574,7 @@ export class SecondSaleService {
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    await this.invalidateCache();
     return { success, failed, message };
 
   }

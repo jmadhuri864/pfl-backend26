@@ -16,6 +16,7 @@ import csvParser from 'csv-parser';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { ProductVarientsRepository } from '../repositories/productVarients.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
+import { createHash } from 'crypto';
 import {
   generateVariantCode,
   getVariantIdentifier,
@@ -71,11 +72,14 @@ export class ProductService {
     const tasks: Promise<any>[] = [
       this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
       this.cacheService.invalidatePattern(`${CACHE_PREFIX}:search:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:ref:*`),
     ];
     if (id) {
       tasks.push(
         this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
         this.cacheService.del(`${CACHE_PREFIX}:variants:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:partial:${id}`),
       );
     }
     await Promise.all(tasks);
@@ -341,6 +345,11 @@ export class ProductService {
   }
 
   async getAllByFilter(queryOptions: PaginationOptions): Promise<any> {
+    const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+    const key = `${CACHE_PREFIX}:filter:${hash}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     try {
       const queryBuilder = this.productRepository
         .createQueryBuilder('product')
@@ -356,7 +365,9 @@ export class ProductService {
           'product.productCode',
         ]);
 
-      return await buildQuery(queryBuilder, queryOptions, 'product');
+      const result = await buildQuery(queryBuilder, queryOptions, 'product');
+      await this.cacheService.set(key, result, CACHE_TTL);
+      return result;
     } catch (error) {
       console.error('Error fetching products:', error);
       throw new Error('Unable to fetch the products.');
@@ -364,19 +375,19 @@ export class ProductService {
   }
 
   async getVarientByProductId(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:variants:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const product = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.variant', 'variants')
       .where('product.id = :id', { id })
       .getOne();
 
-    if (!product) {
-      throw new Error('Product not found');
-    }
+    if (!product) throw new Error('Product not found');
 
-    
-    return {
-     
+    const result = {
       variants: product.variant?.map((v) => ({
         id: v.id,
         variantName: v.variantName,
@@ -386,54 +397,46 @@ export class ProductService {
         variety: v.variety,
         origin: v.origin,
         brand: v.brand,
-      
       })) || [],
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   async getPartialByID(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:partial:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     try {
       const product = await this.productRepository
         .createQueryBuilder('product')
-        .select(['product.id', 'product.name', 'product.description','product.productCode'])
+        .select(['product.id', 'product.name', 'product.description', 'product.productCode'])
         .where('product.id = :id', { id })
         .getOne();
 
-      if (!product) {
-        throw new Error('Product not found');
-      }
+      if (!product) throw new Error('Product not found');
+      await this.cacheService.set(key, product, CACHE_TTL_DETAIL);
       return product;
-      // Transforming the response to match the desired structure
-      // const response = {
-
-      //     id: product.id,
-      //     name: product.name,
-      //     image: product.image,
-      //     description: product.description,
-      //     productCode: product.productCode,
-      //     productOrigin: product.productOrigin,
-      //     count: product.count,
-      //     size: product.size,
-      //     variety: product.variety,
-      //     brand: product.brand
-
-      // };
-
-      // return response;
     } catch (error) {
       console.error('Error fetching product by ID:', error);
       throw new Error('Unable to fetch the product.');
     }
   }
   async getByproductNameFilter(search: string): Promise<any> {
+    // short TTL — search results change as products are added
+    const key = `${CACHE_PREFIX}:search:name:${search}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     try {
-      console.log(search);
       const product = await this.productRepository
         .createQueryBuilder('product')
         .select(['product.id', 'product.name', 'product.description'])
         .where('product.name ILIKE :search', { search: `%${search}%` })
         .getMany();
 
+      await this.cacheService.set(key, product, 60); // 60s TTL for search
       return product;
     } catch (error) {
       throw new Error(`Error fetching product: ${error}`);
@@ -653,7 +656,7 @@ export class ProductService {
    */
   private async deleteFileFromSpaces(fileUrl: string): Promise<void> {
     try {
-      // Extract the key from the full URL
+      // Extract the key from the fullget URL
       // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
       const urlParts = fileUrl.split('/');
       const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
@@ -677,23 +680,30 @@ export class ProductService {
    * Get available product categories for reference when uploading product data
    */
   async getAvailableProductCategories(): Promise<{ id: string; name: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:categories`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const categoryRepository = AppDataSource.getRepository(ProductCategory);
     const categories = await categoryRepository
       .createQueryBuilder('category')
       .select(['category.id', 'category.name'])
       .orderBy('category.name', 'ASC')
       .getMany();
-    
-    return categories.map(category => ({
-      id: category.id,
-      name: category.name
-    }));
+
+    const result = categories.map(category => ({ id: category.id, name: category.name }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   /**
    * Get available product subcategories for reference when uploading product data
    */
   async getAvailableProductSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:subcategories:${categoryId || 'all'}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const subcategoryRepository = AppDataSource.getRepository(ProductSubcategory);
     const queryBuilder = subcategoryRepository
       .createQueryBuilder('subcategory')
@@ -701,36 +711,39 @@ export class ProductService {
       .select(['subcategory.id', 'subcategory.name', 'category.name'])
       .orderBy('category.name', 'ASC')
       .addOrderBy('subcategory.name', 'ASC');
-    
+
     if (categoryId) {
       queryBuilder.where('category.id = :categoryId', { categoryId });
     }
-    
+
     const subcategories = await queryBuilder.getMany();
-    
-    return subcategories.map(subcategory => ({
+    const result = subcategories.map(subcategory => ({
       id: subcategory.id,
       name: subcategory.name,
-      categoryName: subcategory.category?.name || 'Unknown'
+      categoryName: subcategory.category?.name || 'Unknown',
     }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   /**
    * Get available UOMs for reference when uploading product data
    */
   async getAvailableUOMs(): Promise<{ id: string; unit: string; abbreviation: string }[]> {
+    const key = `${CACHE_PREFIX}:ref:uoms`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const uomRepository = AppDataSource.getRepository(UOM);
     const uoms = await uomRepository
       .createQueryBuilder('uom')
       .select(['uom.id', 'uom.unit', 'uom.abbreviation'])
       .orderBy('uom.unit', 'ASC')
       .getMany();
-    
-    return uoms.map(uom => ({
-      id: uom.id,
-      unit: uom.unit,
-      abbreviation: uom.abbreviation || ''
-    }));
+
+    const result = uoms.map(uom => ({ id: uom.id, unit: uom.unit, abbreviation: uom.abbreviation || '' }));
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   //   async update(id: string, productData: any, updatedBy: string): Promise<any> {
@@ -1199,13 +1212,15 @@ export class ProductService {
 
  
   async getVarientsByProductId(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:variants:full:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const product = await this.productRepository.findOne({
       where: { id },
       relations: ['variant'],
     });
-    if (!product) {
-      throw new Error('Product not found');
-    }
+    if (!product) throw new Error('Product not found');
 
     const formattedproduct = {
       id: product.id,
@@ -1222,7 +1237,7 @@ export class ProductService {
         thresholdStock: v.thresholdStock,
       })),
     };
-
+    await this.cacheService.set(key, formattedproduct, CACHE_TTL_DETAIL);
     return formattedproduct;
   }
   async softDeleteProducts(userIds: string[]) {

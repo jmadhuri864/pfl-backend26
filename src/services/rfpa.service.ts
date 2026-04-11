@@ -28,12 +28,8 @@ import { AuditLogService } from './auditLog.service';
 import { format } from 'date-fns';
 import { buildQueryFromArray, PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
-//import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
-//import { DocumentbService } from './documentb.service';
-//import { DocumentTypeEnum } from '../entities/documentdef.entity';
+import { createHash } from 'crypto';
 import { Documentb,/* DocumentStatus, DocumentTypeEnum */} from '../entities/docuemnt.entity';
-//import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
-//import { DocSingalApproverService } from './docSingalApprover.service';
 import { DocumentbService, DocumentWithRelatedData,/* DocumentWithRelatedData*/ } from './documentb.service';
 import { DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentStatus } from '../entities/docuemnt.entity';
@@ -44,6 +40,7 @@ import { DocumentbRepository } from '../repositories/documentb.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { RfpaPaymentInfoRepository } from '../repositories/rfpaPaymentInfo.repository';
 import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
+import { CacheService } from './cache.service';
 
 export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
@@ -95,8 +92,29 @@ export class RfpaService {
     @inject(TYPES.RfpaPaymentInfoRepository)
     private rfpaPaymentInfoRepository:RfpaPaymentInfoRepository,
     @inject(TYPES.ApprovalFlowRepository)
-    private approvalFlowRepository:ApprovalFlowRepository    
+    private approvalFlowRepository:ApprovalFlowRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'rfpa';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   // async findAllRfpas(): Promise<any[]> {
   //   const rfpas = await this.rfpaRepository.find({
@@ -290,6 +308,7 @@ console.log(rfpaData.createdBy)
     // Start approval flow after commit so RFPA is visible to other DB connections
     await this.documentbService.startApprovalFlow(document.id);
 
+    await this.invalidateCache();
     return savedRfpa;
   } catch (error: any) {
     // Rollback transaction - undo all changes
@@ -305,6 +324,11 @@ console.log(rfpaData.createdBy)
   async findAllRfpas(
     queryOptions: PaginationOptions,
   ): Promise<{ data: any[]; meta: any }> {
+    const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const page = queryOptions.page ?? 1;
     const limit = queryOptions.limit ?? 10;
 
@@ -397,7 +421,7 @@ console.log(rfpaData.createdBy)
       };
     });
 
-    return {
+    const result = {
       data: formattedResponses,
       meta: {
         total,
@@ -405,14 +429,19 @@ console.log(rfpaData.createdBy)
         pages: Math.ceil(total / limit),
       },
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async getRFQById(id: string) {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const rfpa = await this.rfpaRepository.findOne({
       where: { id },
       relations: [
         'companyName',
-        //'requestedBy',
         'selectedVendor',
         'selectedFarmer',
         'rfpaProducts',
@@ -424,21 +453,7 @@ console.log(rfpaData.createdBy)
       ],
     });
 
-    if (!rfpa) {
-      throw new Error(`RFQ with ID ${id} not found`);
-    }
-
-    let vendorOrFarmerData: any = null;
-
-    if (rfpa.source === 'vendor' && rfpa.selectedVendor) {
-      vendorOrFarmerData = await this.vendorService.getVendorByIdWithFilter(
-        rfpa.selectedVendor.id,
-      );
-    } else if (rfpa.source === 'farmer' && rfpa.selectedFarmer) {
-      vendorOrFarmerData = await this.farmerService.getFarmerDetails(
-        rfpa.selectedFarmer.id,
-      );
-    }
+    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
 
     const selectedParty =
       rfpa.source === 'vendor' && rfpa.selectedVendor
@@ -448,27 +463,24 @@ console.log(rfpaData.createdBy)
         : null;
     const rawDate = rfpa.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
-    return {
+
+    const result = {
       rfpaId: rfpa.rfpaId,
       companyName: rfpa.companyName
         ? { id: rfpa.companyName.id, companyName: rfpa.companyName.name }
         : null,
-      createdDate: createdDate,
-
-      createdTime: createdTime,
+      createdDate,
+      createdTime,
       requestingDepartment: rfpa.requestingDepartment,
-
       purchaseLocation: rfpa.purchaseLocation?.id || null,
       purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
       otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
       otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      // approvalStatus: rfpa.approvalStatus,
       deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
       remark: rfpa.remark,
       packingInstruction: rfpa.packingInstruction,
       specialReq: rfpa.specialReq,
       source: rfpa.source,
-      //requestedBy: rfpa.requestedBy ? { firstName: rfpa.requestedBy.firstName, lastName: rfpa.requestedBy.lastName } : null,
       selectedParty,
       paymentInfo: rfpa.paymentInfo
         ? {
@@ -481,50 +493,36 @@ console.log(rfpaData.createdBy)
             dueDate: rfpa.paymentInfo.dueDate,
           }
         : null,
-      rfpaProducts: await Promise.all(
-        rfpa.rfpaProducts.map(async (product) => {
-          const productEntity = product.productName
-            ? await this.productRepository.findOne({
-                where: { id: product.productName.id },
-              })
-            : null;
-          const uomEntity = product.uom
-            ? await this.uomRepository.findOne({
-                where: { id: product.uom.id },
-              })
-            : null;
-
-          return {
-            grade: product.grade,
-            //description: product.description,
-            quantity: product.quantity,
-            unitPrice: product.unitPrice,
-            productName: productEntity
-              ? {
-                  id: productEntity?.id,
-                  name: productEntity?.name,
-                }
-              : null,
-            uom: uomEntity
-              ? { id: uomEntity?.id, unit: uomEntity?.unit }
-              : null,
-            amount: product.amount,
-            purchaseDate: product.purchaseDate,
-            dispatchDate: product.dispatchDate,
-            deliveryDate: product.deliveryDate,
-            deliveryLocation: product.deliveryLocation,
-            expectedHarvestDate: product.expectedHarvestDate,
-          };
-        }),
-      ),
+      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+        grade: product.grade,
+        quantity: product.quantity,
+        unitPrice: product.unitPrice,
+        productName: product.productName
+          ? { id: product.productName.id, name: product.productName.name }
+          : null,
+        uom: product.uom
+          ? { id: product.uom.id, unit: product.uom.unit }
+          : null,
+        amount: product.amount,
+        purchaseDate: product.purchaseDate,
+        dispatchDate: product.dispatchDate,
+        deliveryDate: product.deliveryDate,
+        deliveryLocation: product.deliveryLocation,
+        expectedHarvestDate: product.expectedHarvestDate,
+      })),
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 async getRFQByIdForUpdate(id: string) {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const rfpa = await this.rfpaRepository.findOne({
       where: { id },
       relations: [
         'companyName',
-        //'requestedBy',
         'selectedVendor',
         'selectedFarmer',
         'rfpaProducts',
@@ -537,21 +535,7 @@ async getRFQByIdForUpdate(id: string) {
       ],
     });
 
-    if (!rfpa) {
-      throw new Error(`RFQ with ID ${id} not found`);
-    }
-
-    let vendorOrFarmerData: any = null;
-
-    if (rfpa.source === 'vendor' && rfpa.selectedVendor) {
-      vendorOrFarmerData = await this.vendorService.getVendorByIdWithFilter(
-        rfpa.selectedVendor.id,
-      );
-    } else if (rfpa.source === 'farmer' && rfpa.selectedFarmer) {
-      vendorOrFarmerData = await this.farmerService.getFarmerDetails(
-        rfpa.selectedFarmer.id,
-      );
-    }
+    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
 
     const selectedParty =
       rfpa.source === 'vendor' && rfpa.selectedVendor
@@ -561,27 +545,22 @@ async getRFQByIdForUpdate(id: string) {
         : null;
     const rawDate = rfpa.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
-    return {
+
+    const result = {
       rfpaId: rfpa.rfpaId,
       companyName: rfpa.companyName?.id,
-        // ? { id: rfpa.companyName.id, companyName: rfpa.companyName.name }
-        // : null,
-      createdDate: createdDate,
-
-      createdTime: createdTime,
+      createdDate,
+      createdTime,
       requestingDepartment: rfpa.requestingDepartment,
-
       purchaseLocation: rfpa.purchaseLocation?.id || null,
       purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
       otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
       otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      // approvalStatus: rfpa.approvalStatus,
       deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
       remark: rfpa.remark,
       packingInstruction: rfpa.packingInstruction,
-     specialReq: rfpa.specialReq,
+      specialReq: rfpa.specialReq,
       source: rfpa.source,
-      //requestedBy: rfpa.requestedBy ? { firstName: rfpa.requestedBy.firstName, lastName: rfpa.requestedBy.lastName } : null,
       selectedParty,
       paymentInfo: rfpa.paymentInfo
         ? {
@@ -594,58 +573,33 @@ async getRFQByIdForUpdate(id: string) {
             dueDate: rfpa.paymentInfo.dueDate,
           }
         : null,
-      rfpaProducts: await Promise.all(
-        rfpa.rfpaProducts.map(async (product) => {
-          const productEntity = product.productName
-            ? await this.productRepository.findOne({
-                where: { id: product.productName.id },
-              })
-            : null;
-          const uomEntity = product.uom
-            ? await this.uomRepository.findOne({
-                where: { id: product.uom.id },
-              })
-            : null;
-
-          return {
-            grade: product.grade,
-            //description: product.description,
-            quantity: product.quantity,
-            unitPrice: product.unitPrice,
-            productName: productEntity?.id||null,
-            variant : product.variant?.id||null,
-              // ? {
-              //     id: productEntity?.id,
-              //     name: productEntity?.name,
-              //   }
-              // : null,
-            uom: uomEntity?.id||null,
-              // ? { id: uomEntity?.id, unit: uomEntity?.unit }
-              // : null,
-            //   variety: product.variety,
-
-            // origin:product.origin,
-            // size:product.size,
-            // count:product.count,
-            
-            amount: product.amount,
-            purchaseDate: product.purchaseDate,
-            dispatchDate: product.dispatchDate,
-            deliveryDate: product.deliveryDate,
-            deliveryLocation: product.deliveryLocation,
-            expectedHarvestDate: product.expectedHarvestDate,
-          };
-        }),
-      ),
+      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+        grade: product.grade,
+        quantity: product.quantity,
+        unitPrice: product.unitPrice,
+        productName: product.productName?.id || null,
+        variant: product.variant?.id || null,
+        uom: product.uom?.id || null,
+        amount: product.amount,
+        purchaseDate: product.purchaseDate,
+        dispatchDate: product.dispatchDate,
+        deliveryDate: product.deliveryDate,
+        deliveryLocation: product.deliveryLocation,
+        expectedHarvestDate: product.expectedHarvestDate,
+      })),
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
   async getRFQByIdByView(id: string) {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const rfpa = await this.rfpaRepository.findOne({
       where: { id },
       relations: [
         'companyName',
-        //'requestedBy',
-
         'selectedVendor',
         'selectedFarmer',
         'rfpaProducts',
@@ -658,69 +612,41 @@ async getRFQByIdForUpdate(id: string) {
       ],
     });
 
-    if (!rfpa) {
-      throw new Error(`RFQ with ID ${id} not found`);
-    }
-
-    let vendorOrFarmerData: any = null;
-
-    if (rfpa.source === 'vendor' && rfpa.selectedVendor) {
-      vendorOrFarmerData = await this.vendorService.getVendorByIdWithFilter(
-        rfpa.selectedVendor.id,
-      );
-    } else if (rfpa.source === 'farmer' && rfpa.selectedFarmer) {
-      vendorOrFarmerData = await this.farmerService.getFarmerDetails(
-        rfpa.selectedFarmer.id,
-      );
-    }
-
-    // const selectedParty =
-    //   rfpa.source === 'vendor' && rfpa.selectedVendor
-    //     ? rfpa.selectedVendor.id
-    //     : rfpa.source === 'farmer' && rfpa.selectedFarmer
-    //     ? rfpa.selectedFarmer.id
-    //     : null;
+    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
 
     const selectedParty =
-  rfpa.source === 'vendor' && rfpa.selectedVendor
-    ? {
-        id: rfpa.selectedVendor.id,
-        vendorCode: rfpa.selectedVendor.vendorCode,
-        companyName: rfpa.selectedVendor.companyName,
-      }
-    : rfpa.source === 'farmer' && rfpa.selectedFarmer
-    ? {
-        id: rfpa.selectedFarmer.id,
-        farmerCode: rfpa.selectedFarmer.farmerCode,
-        name: rfpa.selectedFarmer.farmerfName+' '+rfpa.selectedFarmer.farmerlName,
-      }
-    : null;
+      rfpa.source === 'vendor' && rfpa.selectedVendor
+        ? {
+            id: rfpa.selectedVendor.id,
+            vendorCode: rfpa.selectedVendor.vendorCode,
+            companyName: rfpa.selectedVendor.companyName,
+          }
+        : rfpa.source === 'farmer' && rfpa.selectedFarmer
+        ? {
+            id: rfpa.selectedFarmer.id,
+            farmerCode: rfpa.selectedFarmer.farmerCode,
+            name: rfpa.selectedFarmer.farmerfName + ' ' + rfpa.selectedFarmer.farmerlName,
+          }
+        : null;
 
     const rawDate = rfpa.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
-    return {
+
+    const result = {
       rfpa: rfpa.rfpaId,
-      //rfpa:rfpa.rfpaNo,
       companyName: rfpa.companyName.name,
-      // ? { id: rfpa.companyName.id, companyName: rfpa.companyName.name }
-      // : null,
-      createdDate: createdDate,
-
-      createdTime: createdTime,
+      createdDate,
+      createdTime,
       requestingDepartment: rfpa.requestingDepartment,
-
       purchaseLocation: rfpa.purchaseLocation?.name || null,
       purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.name || null,
       otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
       otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      // approvalStatus: rfpa.approvalStatus,
-      deliveryReceivingPerson: rfpa.deliveryReceivingPerson||null,
-      remark: rfpa.remark||null,
-      packingInstruction: rfpa.packingInstruction||null,
-      
+      deliveryReceivingPerson: rfpa.deliveryReceivingPerson || null,
+      remark: rfpa.remark || null,
+      packingInstruction: rfpa.packingInstruction || null,
       specialReq: rfpa.specialReq,
       source: rfpa.source,
-      //requestedBy: rfpa.requestedBy ? { firstName: rfpa.requestedBy.firstName, lastName: rfpa.requestedBy.lastName } : null,
       selectedParty,
       paymentInfo: rfpa.paymentInfo
         ? {
@@ -733,48 +659,23 @@ async getRFQByIdForUpdate(id: string) {
             dueDate: rfpa.paymentInfo.dueDate,
           }
         : null,
-      rfpaProducts: await Promise.all(
-        rfpa.rfpaProducts.map(async (product) => {
-          const productEntity = product.productName
-            ? await this.productRepository.findOne({
-                where: { id: product.productName.id },
-              })
-            : null;
-          const uomEntity = product.uom
-            ? await this.uomRepository.findOne({
-                where: { id: product.uom.id },
-              })
-            : null;
-
-          return {
-            grade: product.grade,
-            //description: product.description,
-            quantity: product.quantity,
-            unitPrice: product.unitPrice,
-            productName: productEntity?.name || null,
-            variant : product.variant?.variantName||null,
-            // variety: product.variety,
-            // origin:product.origin,
-            //  size:product.size,
-            //  count:product.count,
-            // ? {
-            //     id: productEntity?.id,
-            //     name: productEntity?.name,
-            //   }
-            // : null,
-            uom: uomEntity?.unit||null,
-            // ? { id: uomEntity?.id, unit: uomEntity?.unit }
-            // : null,
-            amount: product.amount,
-            purchaseDate: product.purchaseDate,
-            dispatchDate: product.dispatchDate,
-            deliveryDate: product.deliveryDate,
-            deliveryLocation: product.deliveryLocation,
-            expectedHarvestDate: product.expectedHarvestDate,
-          };
-        }),
-      ),
+      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+        grade: product.grade,
+        quantity: product.quantity,
+        unitPrice: product.unitPrice,
+        productName: product.productName?.name || null,
+        variant: product.variant?.variantName || null,
+        uom: product.uom?.unit || null,
+        amount: product.amount,
+        purchaseDate: product.purchaseDate,
+        dispatchDate: product.dispatchDate,
+        deliveryDate: product.deliveryDate,
+        deliveryLocation: product.deliveryLocation,
+        expectedHarvestDate: product.expectedHarvestDate,
+      })),
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async generateRFPAId(): Promise<string> {
@@ -1036,6 +937,8 @@ async getRFQByIdForUpdate(id: string) {
         updatedBy,
       );
 
+      await this.invalidateCache(id);
+
       // Return the updated entity with relations
       return await manager.findOne(RFPA, {
         where: { id: updatedRfpa.id },
@@ -1131,172 +1034,152 @@ async getRFQByIdForUpdate(id: string) {
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const queryBuilder = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.RFPA,
     );
-  const { search } = queryOptions;
-    const paginatedResult = await  buildQueryFromArray(queryBuilder, queryOptions);
- 
-    console.log('Fetched documents:', queryBuilder);
- 
+    const { search } = queryOptions;
+    const paginatedResult = await buildQueryFromArray(queryBuilder, queryOptions);
+
     const typedDocuments = paginatedResult.data as DocumentWithRelatedData[];
-    // Exclude soft-deleted documents
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
 
-    if (activeDocuments.length > 0) {
-      //console.log("doc.relatedData", activeDocuments[0].relatedData);
-    } else {
-      //console.log("No documents found for user.");
-    }
- 
-    for (const doc of activeDocuments) {
-      if (!doc.document_type_id) continue;
- 
-      try {
-        doc.relatedData = await this.rfpaRepository.findOne({
-          where: { id: doc.document_type_id ,isDeleted: true},
-          relations: [ 'selectedVendor',
-          'selectedVendor.officeAddress',
-          'selectedFarmer',
-          'selectedFarmer.residensialAddress',
-          'selectedFarmer.farmAddress',
-          'paymentInfo',
-          'rfpaProducts',
-          'rfpaProducts.productName',
-          'rfpaProducts.uom',
-          'companyName',
-          'purchaseLocation',
-          'purchaseForSalesLocation',]
-        });
-      } catch (e) {
-        //console.log("in catch block", e);
-        doc.relatedData = null;
-      }
-    }
- 
-    let relatedDataOnly = activeDocuments.map((doc) => {
-      const rd = doc.relatedData || {};
-      return {
-       
-      id: doc.relatedData?.id || null,
-      documentId: doc.id,
-      overAllStatus: doc.status,
-      createdBy: doc.lastActionBy?.firstName || null,
-      createdDate: formatDateTime(doc.createdAt).createdDate,
-      createdTime: formatDateTime(doc.createdAt).createdTime,
+    // ---- Batch fetch instead of N+1 ----
+    const rfpaIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-      // RFPA core fields
-      rfpaId: rd.rfpaId || null,
-      remark: rd.remark || null,
-      source:rd.source || null,
-      specialRequest: rd.specialRequest || null,
-      requestingDepartment: rd.requestingDepartment || null,
-      otherPurchaseLoc: rd.otherPurchaseLoc || null,
-      otherPurchaseForSalesLoc: rd.otherPurchaseForSalesLoc || null,
- deliveryReceivingPerson:rd.deliveryReceivingPerson,
- packingInstruction:rd.packingInstruction,
-      // Vendor details
-      vendor: rd.selectedVendor ? {
-        selectedParty:rd.selectedParty || null,
-        companyName: rd.selectedVendor.companyName || null,
-        gstn: rd.selectedVendor.gstn || null,
-        panNo: rd.selectedVendor.panNo || null,
-        officeAddress: rd.selectedVendor.officeAddress || null,
-      } : null,
+    const rfpas = rfpaIds.length
+      ? await this.rfpaRepository
+          .createQueryBuilder('rfpa')
+          .leftJoinAndSelect('rfpa.selectedVendor', 'selectedVendor')
+          .leftJoinAndSelect('selectedVendor.officeAddress', 'officeAddress')
+          .leftJoinAndSelect('rfpa.selectedFarmer', 'selectedFarmer')
+          .leftJoinAndSelect('selectedFarmer.residensialAddress', 'residensialAddress')
+          .leftJoinAndSelect('selectedFarmer.farmAddress', 'farmAddress')
+          .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
+          .leftJoinAndSelect('rfpa.rfpaProducts', 'rfpaProducts')
+          .leftJoinAndSelect('rfpaProducts.productName', 'productName')
+          .leftJoinAndSelect('rfpaProducts.uom', 'uom')
+          .leftJoinAndSelect('rfpa.companyName', 'companyName')
+          .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
+          .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
+          .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
+          .andWhere('rfpa.isDeleted = true')
+          .getMany()
+      : [];
 
-      // Farmer details
-      farmer: rd.selectedFarmer ? {
-        selectedParty:rd.selectedParty || null,
-        fullName: `${rd.selectedFarmer.farmerfName ?? ''} ${rd.selectedFarmer.farmermName ?? ''} ${rd.selectedFarmer.farmerlName ?? ''}`.trim(),
-        primaryMobileNo: rd.selectedFarmer.primaryMobileNo || null,
-        landStatus: rd.selectedFarmer.landStatus || null,
-        totalLandArea: rd.selectedFarmer.totalLandArea || null,
-        residensialAddress: rd.selectedFarmer.residensialAddress || null,
-        farmAddress: rd.selectedFarmer.farmAddress || null,
-      } : null,
+    const rfpaMap = new Map(rfpas.map(r => [r.id, r]));
 
-      // Payment info
-      paymentInfo: rd.paymentInfo ? {
-        paymentMode: rd.paymentInfo.paymentMode || null,
-        paymentDate: rd.paymentInfo.paymentDate || null,
-        advancePaidAmt: rd.paymentInfo.advancePaidAmt || null,
-        paymentTerms: rd.paymentInfo.paymentTerms || null,
-        dueDate: rd.paymentInfo.dueDate || null,
-        creditPeriod: rd.paymentInfo.creditPeriod || null,
-        validityOfQuote: rd.paymentInfo.validityOfQuote || null,
-      } : null,
-
-      // Products
-      rfpaProducts: rd.rfpaProducts ? rd.rfpaProducts.map((p: any) => ({
-        productName: p.productName?.name || null,
-        variant:p.variant?.variantName || null,
-        grade: p.grade || null,
-        quantity: p.quantity || null,
-        uom: p.uom?.unit || null,
-        unitPrice: p.unitPrice || null,
-        amount: p.amount || null,
-        purchaseDate: p.purchaseDate || null,
-        expectedHarvestDate: p.expectedHarvestDate || null,
-        dispatchDate: p.dispatchDate || null,
-        deliveryDate: p.deliveryDate || null,
-        deliveryLocation: p.deliveryLocation || null,
-       
-      })) : [],
-
-      // Company & branches
-      companyName: rd.companyName?.name || null,
-      purchaseLocation: rd.purchaseLocation?.name || null,
-      purchaseForSalesLocation: rd.purchaseForSalesLocation?.name || null,
-      };
-    });
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && rfpaMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = rfpaMap.get(doc.document_type_id!)!;
+        return {
+          id: rd.id,
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: doc.lastActionBy?.firstName || null,
+          createdDate: formatDateTime(doc.createdAt).createdDate,
+          createdTime: formatDateTime(doc.createdAt).createdTime,
+          rfpaId: rd.rfpaId || null,
+          remark: rd.remark || null,
+          source: rd.source || null,
+          specialRequest: rd.specialRequest || null,
+          requestingDepartment: rd.requestingDepartment || null,
+          otherPurchaseLoc: rd.otherPurchaseLoc || null,
+          otherPurchaseForSalesLoc: rd.otherPurchaseForSalesLoc || null,
+          deliveryReceivingPerson: rd.deliveryReceivingPerson,
+          packingInstruction: rd.packingInstruction,
+          vendor: rd.selectedVendor ? {
+            selectedParty: rd.selectedParty || null,
+            companyName: rd.selectedVendor.companyName || null,
+            gstn: rd.selectedVendor.gstn || null,
+            panNo: rd.selectedVendor.panNo || null,
+            officeAddress: rd.selectedVendor.officeAddress || null,
+          } : null,
+          farmer: rd.selectedFarmer ? {
+            selectedParty: rd.selectedParty || null,
+            fullName: `${rd.selectedFarmer.farmerfName ?? ''} ${rd.selectedFarmer.farmermName ?? ''} ${rd.selectedFarmer.farmerlName ?? ''}`.trim(),
+            primaryMobileNo: rd.selectedFarmer.primaryMobileNo || null,
+            landStatus: rd.selectedFarmer.landStatus || null,
+            totalLandArea: rd.selectedFarmer.totalLandArea || null,
+            residensialAddress: rd.selectedFarmer.residensialAddress || null,
+            farmAddress: rd.selectedFarmer.farmAddress || null,
+          } : null,
+          paymentInfo: rd.paymentInfo ? {
+            paymentMode: rd.paymentInfo.paymentMode || null,
+            paymentDate: rd.paymentInfo.paymentDate || null,
+            advancePaidAmt: rd.paymentInfo.advancePaidAmt || null,
+            paymentTerms: rd.paymentInfo.paymentTerms || null,
+            dueDate: rd.paymentInfo.dueDate || null,
+            creditPeriod: rd.paymentInfo.creditPeriod || null,
+            validityOfQuote: rd.paymentInfo.validityOfQuote || null,
+          } : null,
+          rfpaProducts: rd.rfpaProducts ? rd.rfpaProducts.map((p: any) => ({
+            productName: p.productName?.name || null,
+            variant: p.variant?.variantName || null,
+            grade: p.grade || null,
+            quantity: p.quantity || null,
+            uom: p.uom?.unit || null,
+            unitPrice: p.unitPrice || null,
+            amount: p.amount || null,
+            purchaseDate: p.purchaseDate || null,
+            expectedHarvestDate: p.expectedHarvestDate || null,
+            dispatchDate: p.dispatchDate || null,
+            deliveryDate: p.deliveryDate || null,
+            deliveryLocation: p.deliveryLocation || null,
+          })) : [],
+          companyName: rd.companyName?.name || null,
+          purchaseLocation: rd.purchaseLocation?.name || null,
+          purchaseForSalesLocation: rd.purchaseForSalesLocation?.name || null,
+        };
+      });
 
     const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
     }
-    return String(obj);
-  };
 
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
-  }
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
-   // 🔄 Sorting (same as getAllVouchers)
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
- 
-    return {
+    const result = {
       data: relatedDataOnly,
       meta: {
         total: paginatedResult.meta.total,
         page: paginatedResult.meta.page,
         pages: paginatedResult.meta.pages,
-      }
+      },
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 // public async getAllRFPANumbers(
 //   filter: {
@@ -1739,12 +1622,8 @@ public async getAllRFPANumbers(
 
     
     rfpa.deletionScheduledAt = sixMonthsFromNow;
-
-    
     await this.rfpaRepository.save(rfpa);
-
-    
-    console.log(`RFPA with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -1905,172 +1784,113 @@ public async getAllRFPANumbers(
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const queryBuilder = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.RFPA,
     );
-  const { search } = queryOptions;
-    const paginatedResult = await  buildQueryFromArray(queryBuilder, queryOptions);
-  
-    console.log('Fetched documents:', queryBuilder);
-  
+    const { search } = queryOptions;
+    const paginatedResult = await buildQueryFromArray(queryBuilder, queryOptions);
+
     const typedDocuments = paginatedResult.data as DocumentWithRelatedData[];
-    // Exclude soft-deleted documents
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
 
-    if (activeDocuments.length > 0) {
-      //console.log("doc.relatedData", activeDocuments[0].relatedData);
-    } else {
-      //console.log("No documents found for user.");
-    }
-  
-    for (const doc of activeDocuments) {
-      if (!doc.document_type_id) continue;
-  
-      try {
-        doc.relatedData = await this.rfpaRepository.findOne({
-          where: { id: doc.document_type_id ,isDeleted: false},
-          relations: [ 'selectedVendor',
-          'selectedVendor.officeAddress',
-          'selectedFarmer',
-          'selectedFarmer.residensialAddress',
-          'selectedFarmer.farmAddress',
-          'paymentInfo',
-          'rfpaProducts',
-          'rfpaProducts.productName',
-          'rfpaProducts.uom',
-          'companyName',
-          'purchaseLocation',
-          'purchaseForSalesLocation',]
-        });
-      } catch (e) {
-        //console.log("in catch block", e);
-        doc.relatedData = null;
-      }
-    }
-  
-    let relatedDataOnly = activeDocuments.map((doc) => {
-      const rd = doc.relatedData || {};
-      return {
-        
-      id: doc.relatedData?.id || null,
-      documentId: doc.id,
-      overAllStatus: doc.status,
-      createdBy: doc.lastActionBy?.firstName || null,
-      createdDate: formatDateTime(doc.createdAt).createdDate,
-      createdTime: formatDateTime(doc.createdAt).createdTime,
+    // ---- Batch fetch: one query instead of N+1 ----
+    const rfpaIds = activeDocuments
+      .map(doc => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-      // RFPA core fields
-      rfpaId: rd.rfpaId || null,
-      remark: rd.remark || null,
-      source:rd.source || null,
-      //specialRequest: rd.specialRequest || null,
-      //requestingDepartment: rd.requestingDepartment || null,
-     // otherPurchaseLoc: rd.otherPurchaseLoc || null,
-      //otherPurchaseForSalesLoc: rd.otherPurchaseForSalesLoc || null,
- deliveryReceivingPerson:rd.deliveryReceivingPerson,
- packingInstruction:rd.packingInstruction,
-      // Vendor details
-      // vendor: rd.selectedVendor ? {
-      //   selectedParty:rd.selectedParty || null,
-      //   companyName: rd.selectedVendor.companyName || null,
-      //   gstn: rd.selectedVendor.gstn || null,
-      //   panNo: rd.selectedVendor.panNo || null,
-      //   officeAddress: rd.selectedVendor.officeAddress || null,
-      // } : null,
+    const rfpas = rfpaIds.length
+      ? await this.rfpaRepository
+          .createQueryBuilder('rfpa')
+          .leftJoinAndSelect('rfpa.companyName', 'companyName')
+          .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
+          .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
+          .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
+          .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
+          .andWhere('rfpa.isDeleted = false')
+          .getMany()
+      : [];
 
-      // Farmer details
-      // farmer: rd.selectedFarmer ? {
-      //   selectedParty:rd.selectedParty || null,
-      //   fullName: `${rd.selectedFarmer.farmerfName ?? ''} ${rd.selectedFarmer.farmermName ?? ''} ${rd.selectedFarmer.farmerlName ?? ''}`.trim(),
-      //   primaryMobileNo: rd.selectedFarmer.primaryMobileNo || null,
-      //   landStatus: rd.selectedFarmer.landStatus || null,
-      //   totalLandArea: rd.selectedFarmer.totalLandArea || null,
-      //   residensialAddress: rd.selectedFarmer.residensialAddress || null,
-      //   farmAddress: rd.selectedFarmer.farmAddress || null,
-      // } : null,
+    const rfpaMap = new Map(rfpas.map(r => [r.id, r]));
 
-      // Payment info
-      paymentInfo: rd.paymentInfo ? {
-        paymentMode: rd.paymentInfo.paymentMode || null,
-        paymentDate: rd.paymentInfo.paymentDate || null,
-        advancePaidAmt: rd.paymentInfo.advancePaidAmt || null,
-        paymentTerms: rd.paymentInfo.paymentTerms || null,
-        dueDate: rd.paymentInfo.dueDate || null,
-        creditPeriod: rd.paymentInfo.creditPeriod || null,
-        validityOfQuote: rd.paymentInfo.validityOfQuote || null,
-      } : null,
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && rfpaMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = rfpaMap.get(doc.document_type_id!)!;
+        return {
+          id: rd.id,
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: doc.lastActionBy?.firstName || null,
+          createdDate: formatDateTime(doc.createdAt).createdDate,
+          createdTime: formatDateTime(doc.createdAt).createdTime,
+          rfpaId: rd.rfpaId || null,
+          remark: rd.remark || null,
+          source: rd.source || null,
+          deliveryReceivingPerson: rd.deliveryReceivingPerson,
+          packingInstruction: rd.packingInstruction,
+          paymentInfo: rd.paymentInfo ? {
+            paymentMode: rd.paymentInfo.paymentMode || null,
+            paymentDate: rd.paymentInfo.paymentDate || null,
+            advancePaidAmt: rd.paymentInfo.advancePaidAmt || null,
+            paymentTerms: rd.paymentInfo.paymentTerms || null,
+            dueDate: rd.paymentInfo.dueDate || null,
+            creditPeriod: rd.paymentInfo.creditPeriod || null,
+            validityOfQuote: rd.paymentInfo.validityOfQuote || null,
+          } : null,
+          companyName: rd.companyName?.name || null,
+          purchaseLocation: rd.purchaseLocation?.name || null,
+          purchaseForSalesLocation: rd.purchaseForSalesLocation?.name || null,
+        };
+      });
 
-      // Products
-      // rfpaProducts: rd.rfpaProducts ? rd.rfpaProducts.map((p: any) => ({
-      //   productName: p.productName?.name || null,
-      //   variant:p.variant?.variantName || null,
-      //   grade: p.grade || null,
-      //   quantity: p.quantity || null,
-      //   uom: p.uom?.unit || null,
-      //   unitPrice: p.unitPrice || null,
-      //   amount: p.amount || null,
-      //   purchaseDate: p.purchaseDate || null,
-      //   expectedHarvestDate: p.expectedHarvestDate || null,
-      //   dispatchDate: p.dispatchDate || null,
-      //   deliveryDate: p.deliveryDate || null,
-      //   deliveryLocation: p.deliveryLocation || null,
-       
-      // })) : [],
-
-      // Company & branches
-      companyName: rd.companyName?.name || null,
-      purchaseLocation: rd.purchaseLocation?.name || null,
-      purchaseForSalesLocation: rd.purchaseForSalesLocation?.name || null,
-      };
-    });
-
+    // 🔍 Deep search
     const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term)
+      );
     }
-    return String(obj);
-  };
 
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
-  }
+    // 🔄 Sorting
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
-   // 🔄 Sorting (same as getAllVouchers)
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-  
-    return {
+    const result = {
       data: relatedDataOnly,
       meta: {
         total: paginatedResult.meta.total,
         page: paginatedResult.meta.page,
         pages: paginatedResult.meta.pages,
-      }
+      },
     };
+
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
 

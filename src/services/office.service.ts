@@ -7,6 +7,7 @@ import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { In } from "typeorm";
+import { CacheService } from "./cache.service";
 
 @injectable()
 export class OfficesService {
@@ -15,8 +16,29 @@ export class OfficesService {
     private readonly officesRepository: OfficesRepository,
     @inject(TYPES.AddressService)
     private readonly addressService: AddressService,
-    @inject(TYPES.AuditLogService)private readonly auditLogService: AuditLogService,
+    @inject(TYPES.AuditLogService) private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'office';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:type:*`),
+      this.cacheService.del(`${this.CACHE_PREFIX}:all`),
+      this.cacheService.del(`${this.CACHE_PREFIX}:filter`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:idtype:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
   async createOffice(officeData: any): Promise<any> {
     const { address, capacity, ...data } = officeData;
 
@@ -30,7 +52,9 @@ export class OfficesService {
       capacity,
     });
 
-    return this.officesRepository.save(office);
+    const saved = await this.officesRepository.save(office);
+    await this.invalidateCache();
+    return saved;
   }
 
   public async updateOffice(
@@ -88,20 +112,24 @@ export class OfficesService {
     Object.assign(office, officeData);
 
     // Step 5: Save the updated office
-    return this.officesRepository.save(office);
+    const saved = await this.officesRepository.save(office);
+    await this.invalidateCache(id);
+    return saved;
   }
-async softDeleteOffices(userIds: string[],officeType:OFFICE_TYPE) {
-
+async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
   const result = await this.officesRepository.softDelete({
-     id: In(userIds),
+    id: In(userIds),
     type: officeType,
-    
   });
-
+  await this.invalidateCache();
   return result;
 }
   async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<any> {
-    return this.officesRepository
+    const cacheKey = `${this.CACHE_PREFIX}:idtype:${id}:${officeType}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.officesRepository
       .createQueryBuilder('offices')
       .leftJoin('offices.address', 'address')
       .select([
@@ -124,35 +152,56 @@ async softDeleteOffices(userIds: string[],officeType:OFFICE_TYPE) {
       ])
       .where('offices.id = :id AND offices.type = :officeType', { id, officeType })
       .getOne();
+
+    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
-async getOfficeById(id: string): Promise<OfficesData | null> {
-    return this.officesRepository.findOne({
-      where: {
-        id,
-       
-      },
+  async getOfficeById(id: string): Promise<OfficesData | null> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.officesRepository.findOne({
+      where: { id },
       relations: ['address'],
     });
+    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
 
 
   async getOfficesByType(officeType: OFFICE_TYPE): Promise<OfficesData[]> {
-    console.log(`Fetching offices with type: ${officeType}`)
-    return this.officesRepository.find({
+    const cacheKey = `${this.CACHE_PREFIX}:type:${officeType}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    console.log(`Fetching offices with type: ${officeType}`);
+    const result = await this.officesRepository.find({
       where: { type: officeType },
-      relations: ['address'], // Include related address if needed
+      relations: ['address'],
     });
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
-    async getAllByFilterDataOffice(): Promise<Pick<OfficesData, 'id' | 'name' | 'type'>[]> {
-      
-      return this.officesRepository.find({
-        select: ['id', 'name', 'type'],  
-      });
-    }
+  async getAllByFilterDataOffice(): Promise<Pick<OfficesData, 'id' | 'name' | 'type'>[]> {
+    const cacheKey = `${this.CACHE_PREFIX}:filter`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.officesRepository.find({
+      select: ['id', 'name', 'type'],
+    });
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
+  }
     
   async getOfficesByType1(officeType: OFFICE_TYPE, queryOptions: PaginationOptions): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${officeType}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     let queryBuilder = this.officesRepository
       .createQueryBuilder('offices')
       .leftJoin('offices.address', 'address')
@@ -176,14 +225,19 @@ async getOfficeById(id: string): Promise<OfficesData | null> {
       .orderBy('offices.createdAt', 'DESC');
 
     const result = await buildQuery(queryBuilder, queryOptions, 'offices');
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
   async getAllOffice(): Promise<OfficesData[]> {
-   
-    return this.officesRepository.find({
-     
-      relations: ['address'], // Include related address if needed
+    const cacheKey = `${this.CACHE_PREFIX}:all`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.officesRepository.find({
+      relations: ['address'],
     });
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
   async deleteOffice(id: string, officeType: OFFICE_TYPE): Promise<boolean> {
     // Find the office by ID and type
@@ -211,6 +265,7 @@ async getOfficeById(id: string): Promise<OfficesData | null> {
     await this.officesRepository.save(office);
   
     console.log(`Office with ID ${id} and type ${officeType} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
   

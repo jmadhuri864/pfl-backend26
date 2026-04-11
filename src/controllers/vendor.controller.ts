@@ -294,19 +294,25 @@ console.log(req.body)
       
       const vendorData = req.body;
       vendorData.createdBy = res.locals.user.id;
-      vendorData.registeredDate=new Date();
-      
-      // Parse listOfAllProducts if it's a string
-      if (vendorData.listOfAllProducts && typeof vendorData.listOfAllProducts === 'string') {
-        try {
-          vendorData.listOfAllProducts = JSON.parse(vendorData.listOfAllProducts);
-        } catch (error) {
-          console.log('Error parsing listOfAllProducts:', error);
+      vendorData.registeredDate = new Date();
+
+      // Parse all JSON string fields (sent as strings in multipart/form-data)
+      const jsonFields = [
+        'officeAddress', 'ref1Address', 'ref2Address',
+        'vendorSaleInfo', 'vendorBankDetails',
+        'mainProduct', 'listOfAllProducts',
+        'mainPackingMaterial', 'listOfPackingMaterial',
+        'subcategory', 'category',
+      ];
+      for (const field of jsonFields) {
+        if (vendorData[field] && typeof vendorData[field] === 'string') {
+          try {
+            vendorData[field] = JSON.parse(vendorData[field]);
+          } catch {
+            // not JSON, leave as-is
+          }
         }
       }
-      
-      console.log("Parsed vendor data:", vendorData);
-      console.log("listOfAllProducts:", vendorData.listOfAllProducts);
      
 
       const files = req.files as {
@@ -420,10 +426,27 @@ console.log(req.body)
     try {
       const updateBy = res.locals.user.id;
 
-      // Transform address fields if they are strings (IDs)
       const vendorUpdateData: any = { ...req.body };
       console.log("vendordata",req.body);
       console.log("vendorUpdateData",vendorUpdateData);
+
+      // Parse JSON strings for nested objects (sent as strings in multipart/form-data)
+      const jsonFields = [
+        'officeAddress', 'ref1Address', 'ref2Address',
+        'vendorSaleInfo', 'vendorBankDetails',
+        'mainProduct', 'listOfAllProducts',
+        'mainPackingMaterial', 'listOfPackingMaterial',
+        'subcategory', 'category',
+      ];
+      for (const field of jsonFields) {
+        if (vendorUpdateData[field] && typeof vendorUpdateData[field] === 'string') {
+          try {
+            vendorUpdateData[field] = JSON.parse(vendorUpdateData[field]);
+          } catch {
+            // not JSON, leave as-is
+          }
+        }
+      }
       
       if(req.files){
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -431,7 +454,12 @@ console.log(req.body)
       vendorUpdateData.gstnCopy = files.gstnCopy ? (files.gstnCopy[0] as any).location : vendorUpdateData.gstnCopy;
       vendorUpdateData.panCardCopy = files.panCardCopy ? (files.panCardCopy[0] as any).location : vendorUpdateData.panCardCopy;
       vendorUpdateData.msmeCopy = files.msmeCopy ? (files.msmeCopy[0] as any).location : vendorUpdateData.msmeCopy;
-      vendorUpdateData.cancelledChequeCopy = files.cancelledChequeCopy ? (files.cancelledChequeCopy[0] as any).location : vendorUpdateData.cancelledChequeCopy;
+      if (files.cancelledChequeCopy) {
+        vendorUpdateData.vendorBankDetails = {
+          ...(vendorUpdateData.vendorBankDetails || {}),
+          cancelledChequeCopy: (files.cancelledChequeCopy[0] as any).location,
+        };
+      }
       }
       
       

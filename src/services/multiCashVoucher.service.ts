@@ -22,6 +22,8 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { LessThan, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 
@@ -44,11 +46,36 @@ export class MultiCashVoucherService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'mcv';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 public async getAllVouchers(
     queryOptions: PaginationOptions, userId: string
   ): Promise<{ data: any[]; meta: any }> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const { search } = queryOptions;
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
           userId,
@@ -138,7 +165,7 @@ public async getAllVouchers(
       return String(valA).localeCompare(String(valB)) * sortOrder;
     });
   }
-  return {
+  const result = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -146,6 +173,8 @@ public async getAllVouchers(
     pages: meta.pages
   }
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
     
   }
 //   public async getAllVouchers(
@@ -300,6 +329,10 @@ public async getAllVouchers(
   //}
 
   public async getVoucherById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.cashVoucherRepository
       .createQueryBuilder('voucher')
       .leftJoinAndSelect('voucher.particulars', 'particulars')
@@ -348,7 +381,7 @@ public async getAllVouchers(
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    return {
+    const idResult = {
       ...voucher,
       grnNo: { id: voucher.grnNo?.id, grnNo: voucher.grnNo?.grnNo },
       challanNo: {
@@ -362,9 +395,15 @@ public async getAllVouchers(
       createdTime: createdTime,
       createdDate: createdDate,
     };
+    await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+    return idResult;
   }
 
   public async getVoucherByIdForUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.cashVoucherRepository
       .createQueryBuilder('voucher')
       .leftJoinAndSelect('voucher.particulars', 'particulars')
@@ -413,7 +452,7 @@ public async getAllVouchers(
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    return {
+    const updateResult = {
       ...voucher,
       grnNo: voucher.grnNo?.id,
       challanNo: voucher.challanNo?.id || null,
@@ -423,11 +462,15 @@ public async getAllVouchers(
       createdTime: createdTime,
       createdDate: createdDate,
     };
+    await this.cacheService.set(cacheKey, updateResult, this.CACHE_TTL);
+    return updateResult;
   }
 
   public async getVoucherByIdForView(docid: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-    
     const document = await this.documentbService.getDocumentById(
       docid
     );
@@ -490,7 +533,7 @@ public async getAllVouchers(
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    return {
+    const viewResult = {
       ...voucher,
       grnNo: voucher.grnNo?.grnNo || null,
       challanNo: voucher.challanNo?.challanNo || null,
@@ -509,6 +552,8 @@ public async getAllVouchers(
         approvalSummary: document.approvalSummary,
         documentId: document.id,
     };
+    await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
+    return viewResult;
   }
 
   //TODO: Create Voucher (Correction By Shri)
@@ -602,6 +647,7 @@ public async getAllVouchers(
 
       // Start approval flow after commit so voucher is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
+      await this.invalidateCache();
 
       return voucher;
     } catch (error: any) {
@@ -617,6 +663,11 @@ public async getAllVouchers(
 public async getAllRecycleBinVouchers(
     queryOptions: PaginationOptions, userId: string
   ): Promise<{ data: any[]; meta: any }> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const { search } = queryOptions;
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
           userId,
@@ -696,7 +747,7 @@ public async getAllRecycleBinVouchers(
       return String(valA).localeCompare(String(valB)) * sortOrder;
     });
   }
-  return {
+  const recycleResult = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -704,6 +755,8 @@ public async getAllRecycleBinVouchers(
     pages: meta.pages
   }
     };
+    await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
+    return recycleResult;
     
   }
 
@@ -739,6 +792,7 @@ public async getAllRecycleBinVouchers(
       voucher,
       updatedBy,
     );
+    await this.invalidateCache(id);
     return voucher;
   }
 
@@ -763,6 +817,7 @@ public async getAllRecycleBinVouchers(
     await this.cashVoucherRepository.save(voucher);
 
     console.log(`Voucher with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -845,6 +900,7 @@ public async getAllRecycleBinVouchers(
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    await this.invalidateCache();
     return { success, failed, message};
 
   }

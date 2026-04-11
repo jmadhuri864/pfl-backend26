@@ -15,6 +15,8 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { DataSource } from 'typeorm';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 @injectable()
@@ -29,11 +31,35 @@ export class PMPVoucherService {
         @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
-    
+    private readonly dataSource: DataSource,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
 
+  private readonly CACHE_PREFIX = 'pmpv';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
+
   public async getAllVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
  const { search } = queryOptions;
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
                   userId,
@@ -114,7 +140,7 @@ export class PMPVoucherService {
       return String(valA).localeCompare(String(valB)) * sortOrder;
     });
   }
-          return {
+          const result = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -122,6 +148,8 @@ export class PMPVoucherService {
     pages: meta.pages
   }  
             };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
 //   public async getAllVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
@@ -281,6 +309,11 @@ export class PMPVoucherService {
 //     // };
 //   }
 public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
  const { search } = queryOptions;
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
                   userId,
@@ -361,7 +394,7 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
       return String(valA).localeCompare(String(valB)) * sortOrder;
     });
   }
-          return {
+          const recycleResult = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -369,9 +402,15 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     pages: meta.pages
   }  
             };
+    await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
+    return recycleResult;
   }
 
   public async getVoucherById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.pmpVoucherRepository
       .createQueryBuilder('pmpVoucher')
       .leftJoinAndSelect('pmpVoucher.materials', 'materials')
@@ -427,7 +466,7 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     if (voucher) {
-      return {
+      const idResult = {
         ...voucher,
 
         grnNo: voucher.grnNo
@@ -447,12 +486,17 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
         createdTime: createdTime,
         createdDate: createdDate,
       };
+      await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+      return idResult;
     }
 
     return voucher;
   }
 
   public async getVoucherByIdforView(docid: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
     log("docid is ", docid);
     const document = await this.documentbService.getDocumentById(docid);
@@ -530,12 +574,17 @@ requestedBy: (voucher.requestedBy?.firstName && voucher.requestedBy?.lastName)
     
  
 
+    await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
 
    
   }
 
   public async getVoucherByIdForUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.pmpVoucherRepository
       .createQueryBuilder('pmpVoucher')
       .leftJoinAndSelect('pmpVoucher.materials', 'materials')
@@ -604,8 +653,7 @@ if(!voucher)
 {
   return null;
 }
- 
-
+    await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
   }
 
@@ -646,6 +694,7 @@ if(!voucher)
 
       // Start approval flow after commit so voucher is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
+      await this.invalidateCache();
 
       return savePmpVoucher;
     } catch (error: any) {
@@ -696,6 +745,7 @@ if(!voucher)
       updatedBy,
     );
 
+    await this.invalidateCache(id);
     return savedVoucher;
   }
 
@@ -725,6 +775,7 @@ if(!voucher)
     await this.pmpVoucherRepository.save(voucher);
 
     console.log(`Voucher with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -792,6 +843,7 @@ if(!voucher)
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    await this.invalidateCache();
     return { success, failed, message};
 
   }

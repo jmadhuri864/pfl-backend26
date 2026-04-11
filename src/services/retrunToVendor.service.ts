@@ -14,6 +14,8 @@ import { toZonedTime } from "date-fns-tz";
 import { DocDoubleApproverService } from "./docDoubleApprover.service";
 import { PaginationOptions } from "../utils/pagination";
 import { formatDateTime } from "../utils/dateUtils";
+import { CacheService } from "./cache.service";
+import { createHash } from "crypto";
 
 @injectable()
 export class ReturnToVendorService {
@@ -25,10 +27,28 @@ export class ReturnToVendorService {
                     @inject(TYPES.InventoryStockRepository) private inventoryStockRepository: InventoryStockRepository,
                     @inject(TYPES.DocumentbService) private documentbService: DocumentbService,
                     @inject(TYPES.DataSource) private dataSource: DataSource,
-                    //@inject(TYPES.DocDoubleApproverService) private docDoubleApproverService: DocDoubleApproverService,
-                      @inject(TYPES.DocDoubleApproverService)
+                    @inject(TYPES.DocDoubleApproverService)
     private readonly docDoubleApproverService: DocDoubleApproverService,
-        ) {}   
+                    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
+        ) {}
+
+    private readonly CACHE_PREFIX = 'returnToVendor';
+    private readonly CACHE_TTL = 180;
+
+    private async invalidateCache(id?: string): Promise<void> {
+        const tasks: Promise<any>[] = [
+            this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+        ];
+        if (id) {
+            tasks.push(
+                this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+                this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+                this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+            );
+        }
+        await Promise.all(tasks);
+    }   
 
     private async generateSerialNo(): Promise<string> {
       const now = new Date();
@@ -120,7 +140,7 @@ export class ReturnToVendorService {
 
           // 🔟 Log creation
           UserLogger.logRfpaCreated(savedreturn.id, requestedBy, clientIp);
-
+          await this.invalidateCache();
           return savedreturn;
 
       } catch (error: any) {
@@ -240,6 +260,11 @@ export class ReturnToVendorService {
     }
 
     public async getAll(queryOptions: PaginationOptions, userId: any): Promise<any> {
+        const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+        const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+        const cached = await this.cacheService.get<any>(cacheKey);
+        if (cached) return cached;
+
         const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
             userId,
             DocumentTypeEnum.RETURN_TO_VENDOR,
@@ -248,43 +273,52 @@ export class ReturnToVendorService {
 
         const { search } = queryOptions;
         const typedDocuments = data as DocumentWithRelatedData[];
-        const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const activeDocuments = typedDocuments
+            .filter(doc => doc.isDeleted === false)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        for (const doc of activeDocuments) {
-            if (!doc.document_type_id) continue;
-            try {
-                doc.relatedData = await this.postReturnToVendorRepository.findOne({
-                    where: { id: doc.document_type_id },
-                    relations: ['grnNo', 'companyName', 'location', 'selectedVendor', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
-                });
-            } catch (error) {
-                console.error(`Error fetching relatedData for document ${doc.id}:`, error);
-                doc.relatedData = null;
-            }
-        }
+        // ---- Batch fetch instead of N+1 ----
+        const rtvIds = activeDocuments
+            .map(doc => doc.document_type_id)
+            .filter(Boolean) as string[];
+
+        const records = rtvIds.length
+            ? await this.postReturnToVendorRepository
+                .createQueryBuilder('rtv')
+                .leftJoinAndSelect('rtv.grnNo', 'grnNo')
+                .leftJoinAndSelect('rtv.companyName', 'companyName')
+                .leftJoinAndSelect('rtv.location', 'location')
+                .leftJoinAndSelect('rtv.selectedVendor', 'selectedVendor')
+                .where('rtv.id IN (:...ids)', { ids: rtvIds })
+                .getMany()
+            : [];
+
+        const recordMap = new Map(records.map(r => [r.id, r]));
 
         let relatedDataOnly = activeDocuments
-            .filter((doc) => doc.relatedData)
-            .map((doc) => ({
-                id: doc.relatedData.id,
-                documentId: doc.id,
-                overAllStatus: doc.status,
-                createdBy: doc.lastActionBy ? `${doc.lastActionBy.firstName} ${doc.lastActionBy.lastName}` : null,
-                createdDate: formatDateTime(doc.createdAt).createdDate,
-                createdTime: formatDateTime(doc.createdAt).createdTime,
-                grnNo: doc.relatedData.grnNo?.grnNo ?? null,
-                rtvNo: doc.relatedData.rtvNo ?? null,
-                companyName: doc.relatedData.companyName?.name ?? null,
-                location: doc.relatedData.location?.name ?? null,
-                selectedVendor: doc.relatedData.selectedVendor?.companyName ?? null,
-                returnedGrossWeight: doc.relatedData.returnedGrossWeight,
-                returnedNetWeight: doc.relatedData.returnedNetWeight,
-                totalAmt: doc.relatedData.totalAmt,
-                returnDate: doc.relatedData.returnDate ?? null,
-                amtWords: doc.relatedData.amtWords ?? null,
-                remark: doc.relatedData.remark ?? null,
-            }));
+            .filter(doc => doc.document_type_id && recordMap.has(doc.document_type_id))
+            .map((doc) => {
+                const rd: any = recordMap.get(doc.document_type_id!)!;
+                return {
+                    id: rd.id,
+                    documentId: doc.id,
+                    overAllStatus: doc.status,
+                    createdBy: doc.lastActionBy ? `${doc.lastActionBy.firstName} ${doc.lastActionBy.lastName}` : null,
+                    createdDate: formatDateTime(doc.createdAt).createdDate,
+                    createdTime: formatDateTime(doc.createdAt).createdTime,
+                    grnNo: rd.grnNo?.grnNo ?? null,
+                    rtvNo: rd.rtvNo ?? null,
+                    companyName: rd.companyName?.name ?? null,
+                    location: rd.location?.name ?? null,
+                    selectedVendor: rd.selectedVendor?.companyName ?? null,
+                    returnedGrossWeight: rd.returnedGrossWeight,
+                    returnedNetWeight: rd.returnedNetWeight,
+                    totalAmt: rd.totalAmt,
+                    returnDate: rd.returnDate ?? null,
+                    amtWords: rd.amtWords ?? null,
+                    remark: rd.remark ?? null,
+                };
+            });
 
         const objectToString = (obj: any): string => {
             if (obj == null) return '';
@@ -299,31 +333,31 @@ export class ReturnToVendorService {
             );
         }
 
-        return {
+        const result = {
             data: relatedDataOnly,
             meta: { total: meta.total, page: meta.page, pages: meta.pages },
         };
+        await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+        return result;
     }
 
     public async getById(id: string): Promise<any> {
-
+        const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+        const cached = await this.cacheService.get<any>(cacheKey);
+        if (cached) return cached;
 
         try {
-            if (!id) {
-                throw new Error('Return to vendor ID is required');
-            }
+            if (!id) throw new Error('Return to vendor ID is required');
 
             const returnRecord = await this.postReturnToVendorRepository.findOne({
                 where: { id },
                 relations: ['companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
-                select:{'companyName': { id: true, name: true }, 'location': { id: true, name: true }, 'selectedVendor': { id: true, companyName: true }, 'createdBy': { id: true, firstName: true,lastName: true }, 'rtvProducts': { id: true, quantity: true, unitPrice: true, netWeight: true, grossWeight: true, productName: { id: true, name: true }, variant: { id: true, variantName: true,variantCode: true }, uom:{id:true,unit:true} } },
-
+                select: { 'companyName': { id: true, name: true }, 'location': { id: true, name: true }, 'selectedVendor': { id: true, companyName: true }, 'createdBy': { id: true, firstName: true, lastName: true }, 'rtvProducts': { id: true, quantity: true, unitPrice: true, netWeight: true, grossWeight: true, productName: { id: true, name: true }, variant: { id: true, variantName: true, variantCode: true }, uom: { id: true, unit: true } } },
             });
 
-            if (!returnRecord) {
-                throw new Error(`Return to vendor record with ID ${id} not found`);
-            }
+            if (!returnRecord) throw new Error(`Return to vendor record with ID ${id} not found`);
 
+            await this.cacheService.set(cacheKey, returnRecord, this.CACHE_TTL);
             return returnRecord;
         } catch (error) {
             console.error('Error fetching return to vendor by ID:', error);
@@ -334,51 +368,49 @@ export class ReturnToVendorService {
 
 
      public async getByIdForUpdate(id: string): Promise<any> {
+        const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+        const cached = await this.cacheService.get<any>(cacheKey);
+        if (cached) return cached;
+
         try {
-            if (!id) {
-                throw new Error('Return to vendor ID is required');
-            }
+            if (!id) throw new Error('Return to vendor ID is required');
 
             const returnRecord = await this.postReturnToVendorRepository.findOne({
                 where: { id },
-                relations: ['grnNo','companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
-                
-
+                relations: ['grnNo', 'companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom'],
             });
 
-            if (!returnRecord) {
-                throw new Error(`Return to vendor record with ID ${id} not found`);
-            }
- // Map to return only specific fields
-            return {
-                id: returnRecord.id,
-                grnNo:returnRecord.grnNo?.id||null,
-                companyName: returnRecord.companyName.id || null,
-                location: returnRecord.location.id || null ,
-                selectedVendor: returnRecord.selectedVendor.id || null,
-                createdBy: returnRecord.createdBy?.id||null,
-                returnedGrossWeight:returnRecord.returnedGrossWeight,
-                totalAmt:returnRecord.totalAmt,
-                returnedNetWeight: returnRecord.returnedNetWeight,
-                returnDate:returnRecord.returnDate||null,
-                amtWords:returnRecord.amtWords || null,
-                remark:returnRecord.remark || null,
+            if (!returnRecord) throw new Error(`Return to vendor record with ID ${id} not found`);
 
+            const result = {
+                id: returnRecord.id,
+                grnNo: returnRecord.grnNo?.id || null,
+                companyName: returnRecord.companyName.id || null,
+                location: returnRecord.location.id || null,
+                selectedVendor: returnRecord.selectedVendor.id || null,
+                createdBy: returnRecord.createdBy?.id || null,
+                returnedGrossWeight: returnRecord.returnedGrossWeight,
+                totalAmt: returnRecord.totalAmt,
+                returnedNetWeight: returnRecord.returnedNetWeight,
+                returnDate: returnRecord.returnDate || null,
+                amtWords: returnRecord.amtWords || null,
+                remark: returnRecord.remark || null,
                 rtvProducts: returnRecord.rtvProducts?.map(product => ({
                     id: product.id,
                     quantity: product.quantity,
-                    amount:product.amount,
-                    packingMaterialWeight:product.packingMaterialWeight,
-                     reason:product.reason,
+                    amount: product.amount,
+                    packingMaterialWeight: product.packingMaterialWeight,
+                    reason: product.reason,
                     unitPrice: product.unitPrice,
                     netWeight: product.netWeight,
                     grossWeight: product.grossWeight,
-                    productName: product.productName.id|| null,
+                    productName: product.productName.id || null,
                     variant: product.variant.id || null,
-                    uom: product.uom.id || null
-                })) || []
+                    uom: product.uom.id || null,
+                })) || [],
             };
-            
+            await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+            return result;
         } catch (error) {
             console.error('Error fetching return to vendor by ID:', error);
             throw error;
@@ -386,11 +418,13 @@ export class ReturnToVendorService {
     }
 
      public async getByIdForView(docid: string): Promise<any> {
+        const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+        const cached = await this.cacheService.get<any>(cacheKey);
+        if (cached) return cached;
+
         try {
             const document1 = await this.docDoubleApproverService.getDocumentById(docid);
-            if (!document1) {
-                throw new Error(`Document with ID ${docid} not found`);
-            }
+            if (!document1) throw new Error(`Document with ID ${docid} not found`);
 
             const id = document1.documentTypeId;
             const returnRecord = await this.postReturnToVendorRepository.findOne({
@@ -398,13 +432,11 @@ export class ReturnToVendorService {
                 relations: ['companyName', 'location', 'selectedVendor', 'createdBy', 'rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'rtvProducts.uom', 'grnNo'],
             });
 
-            if (!returnRecord) {
-                throw new Error(`Return to vendor record with ID ${id} not found`);
-            }
+            if (!returnRecord) throw new Error(`Return to vendor record with ID ${id} not found`);
 
             const { createdDate, createdTime } = formatDateTime(document1.createdAt);
 
-            return {
+            const result = {
                 id: returnRecord.id,
                 documentId: document1.id,
                 overAllStatus: document1.status,
@@ -437,6 +469,8 @@ export class ReturnToVendorService {
                     reason: product.reason,
                 })) ?? [],
             };
+            await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+            return result;
         } catch (error) {
             console.error('Error fetching return to vendor by ID:', error);
             throw error;
@@ -483,12 +517,7 @@ export class ReturnToVendorService {
             Object.assign(existingRecord, updateData);
 
             const updatedRecord = await this.postReturnToVendorRepository.save(existingRecord);
-
-            console.log('Return to vendor updated successfully:', {
-                id: updatedRecord.id,
-                original: original,
-                updated: updatedRecord
-            });
+            await this.invalidateCache(id);
             return updatedRecord;
         } catch (error) {
             console.error('Error updating return to vendor:', error);
@@ -650,16 +679,12 @@ export class ReturnToVendorService {
         }
 
         await this.postReturnToVendorRepository.softDelete(id);
-        record.isDeleted = true; // mark as deleted for inventory processing
-        record.deletedAtNew = new Date(); // set deletion timestamp
-        await this.postReturnToVendorRepository.save(record); // persist the isDeleted flag
+        record.isDeleted = true;
+        record.deletedAtNew = new Date();
+        await this.postReturnToVendorRepository.save(record);
+        await this.invalidateCache(id);
 
-        console.log("RTV soft deleted:", id);
-
-        return {
-            message: "Return to vendor soft deleted successfully",
-            id,
-        };
+        return { message: "Return to vendor soft deleted successfully", id };
     } catch (error) {
         console.error("Error soft deleting RTV:", error);
         throw error;
