@@ -369,29 +369,106 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
 
     const data = await this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoinAndSelect('customer.customerCategory', 'customerCategory')
-      .leftJoinAndSelect('customer.customerTypes', 'customerTypes')
-      .leftJoinAndSelect('customer.createdBy', 'createdBy')
-      .leftJoinAndSelect('customer.bankDetails', 'bankDetails')
-      .leftJoinAndSelect('bankDetails.bankAddress', 'bankAddress')
-      .leftJoinAndSelect('customer.customerAddress', 'customerAddress')
-      .leftJoinAndSelect('customer.statutoryDetails', 'statutoryDetails')
-      .leftJoinAndSelect('customer.billingDetails', 'billingDetails')
-      .leftJoinAndSelect('billingDetails.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('customer.deliveryDetails', 'deliveryDetails')
-      .leftJoinAndSelect('deliveryDetails.deliveryAddress', 'deliveryAddress')
-      .leftJoinAndSelect('customer.paymentTerms', 'paymentTerms')
-      .leftJoinAndSelect('customer.officeUseOnly', 'officeUseOnly')
-      .leftJoinAndSelect('customer.keyMobileNumbers', 'keyMobileNumbers')
-      .leftJoinAndSelect('keyMobileNumbers.ref1Address', 'ref1Address')
-      .leftJoinAndSelect('keyMobileNumbers.ref2Address', 'ref2Address')
-      .leftJoinAndSelect('customer.productSpecification', 'productSpecification')
+      .leftJoin('customer.customerCategory', 'customerCategory')
+      .leftJoin('customer.customerTypes', 'customerTypes')
+      .leftJoin('customer.createdBy', 'createdBy')
+      .leftJoin('customer.bankDetails', 'bankDetails')
+      .leftJoin('bankDetails.bankAddress', 'bankAddress')
+      .leftJoin('customer.customerAddress', 'customerAddress')
+      .leftJoin('customer.statutoryDetails', 'statutoryDetails')
+      .leftJoin('customer.billingDetails', 'billingDetails')
+      .leftJoin('billingDetails.billingAddress', 'billingAddress')
+      .leftJoin('customer.deliveryDetails', 'deliveryDetails')
+      .leftJoin('deliveryDetails.deliveryAddress', 'deliveryAddress')
+      .leftJoin('customer.paymentTerms', 'paymentTerms')
+      .leftJoin('customer.officeUseOnly', 'officeUseOnly')
+      .leftJoin('customer.keyMobileNumbers', 'keyMobileNumbers')
+      .leftJoin('keyMobileNumbers.ref1Address', 'ref1Address')
+      .leftJoin('keyMobileNumbers.ref2Address', 'ref2Address')
+      .leftJoin('customer.productSpecification', 'productSpecification')
+      .select([
+        'customer.id', 'customer.organisationName', 'customer.customerImage',
+        'customer.organisationType', 'customer.otherType', 'customer.customerCode',
+        'customer.emailPrimary', 'customer.emailSecondary',
+        'customer.primaryContactNo', 'customer.secondaryContactNo', 'customer.createdAt',
+        'customerCategory.name', 'customerTypes.name',
+        'createdBy.firstName', 'createdBy.lastName',
+        'bankDetails.id', 'bankDetails.bankAccHolderFName', 'bankDetails.bankAccHolderMName',
+        'bankDetails.bankAccHolderLName', 'bankDetails.ifscCode', 'bankDetails.bankBranch',
+        'bankDetails.bankAccNo', 'bankDetails.accType', 'bankDetails.ifCancelledCheque',
+        'bankDetails.notCancelledChequeReason', 'bankDetails.cancelledChequeCopy',
+        'bankDetails.otherAccType', 'bankDetails.bankStatementCopy', 'bankDetails.bankName',
+        'bankAddress.id', 'bankAddress.address1', 'bankAddress.address2', 'bankAddress.location',
+        'bankAddress.city', 'bankAddress.state', 'bankAddress.pincode',
+        'customerAddress.id', 'customerAddress.address1', 'customerAddress.address2',
+        'customerAddress.location', 'customerAddress.city', 'customerAddress.state', 'customerAddress.pincode',
+        'statutoryDetails.id', 'statutoryDetails.gstn', 'statutoryDetails.panNo',
+        'statutoryDetails.aadharNo', 'statutoryDetails.panCopy', 'statutoryDetails.aadharCopy',
+        'statutoryDetails.billBookCopy', 'statutoryDetails.certificationsDetails',
+        'statutoryDetails.otherCertifications', 'statutoryDetails.corpRegiDetails',
+        'statutoryDetails.otherCorpRegiDetails', 'statutoryDetails.incorpoCertificateCopy',
+        'statutoryDetails.cinNo', 'statutoryDetails.regiCertificateCopy',
+        'billingDetails.id', 'billingDetails.billingName', 'billingDetails.contactPersonFName',
+        'billingDetails.contactPersonMName', 'billingDetails.contactPersonLName',
+        'billingDetails.commonlyKnownAs', 'billingDetails.primaryContactNo',
+        'billingDetails.secondaryContactNo', 'billingDetails.billingFormatCopy',
+        'billingDetails.billingAddressProofCopy', 'billingDetails.emailPrimary', 'billingDetails.emailSecondary',
+        'billingAddress.id', 'billingAddress.address1', 'billingAddress.address2',
+        'billingAddress.location', 'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+        'deliveryDetails.id', 'deliveryDetails.deliveryAddressProofCopy', 'deliveryDetails.deliveryTime',
+        'deliveryDetails.receivingPersonFName', 'deliveryDetails.receivingPersonMName',
+        'deliveryDetails.receivingPersonLName', 'deliveryDetails.primaryContactNo',
+        'deliveryDetails.secondaryContactNo', 'deliveryDetails.emailPrimary', 'deliveryDetails.emailSecondary',
+        'deliveryAddress.id', 'deliveryAddress.address1', 'deliveryAddress.address2',
+        'deliveryAddress.location', 'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+        'paymentTerms.id', 'paymentTerms.paymentMode', 'paymentTerms.otherPaymentMode',
+        'paymentTerms.otherPaymentMade', 'paymentTerms.paymentMade', 'paymentTerms.marginDeposit',
+        'paymentTerms.rtv', 'paymentTerms.agreementExecuted', 'paymentTerms.lc', 'paymentTerms.bg',
+        'paymentTerms.securityDepoCheqNo', 'paymentTerms.securityDepoAmt',
+        'paymentTerms.IELinAmt', 'paymentTerms.IELRecommendedBy', 'paymentTerms.IELRecommendedDate',
+        'paymentTerms.RELinAmt', 'paymentTerms.RELRecommendedBy', 'paymentTerms.RELRecommendedDate',
+        'paymentTerms.reason', 'paymentTerms.docEvidenceCopy',
+        'officeUseOnly.id', 'officeUseOnly.proposerBDName', 'officeUseOnly.pflCoordinator',
+        'officeUseOnly.recommendedBy', 'officeUseOnly.dispatchLocationPfl', 'officeUseOnly.approvedBy',
+        'officeUseOnly.relationshipManager', 'officeUseOnly.avgBillingMonthly', 'officeUseOnly.volumeMonthly',
+        'officeUseOnly.customerVerification', 'officeUseOnly.verificationAgency', 'officeUseOnly.validityPeriod',
+        'officeUseOnly.dueDiligenceDone', 'officeUseOnly.creditWorthinessDue',
+        'officeUseOnly.keyAccountPersonAssigned', 'officeUseOnly.sinceWhen',
+        'officeUseOnly.ledgerCreatedDate', 'officeUseOnly.ledgerCreatedBy',
+        'officeUseOnly.ledgerVerifiedApprovedBy', 'officeUseOnly.createdBy', 'officeUseOnly.additionalNotes',
+        'keyMobileNumbers.id', 'keyMobileNumbers.accDeptFName', 'keyMobileNumbers.accDeptMName',
+        'keyMobileNumbers.accDeptLName', 'keyMobileNumbers.accDeptMobileNo',
+        'keyMobileNumbers.ownerFName', 'keyMobileNumbers.ownerMName', 'keyMobileNumbers.ownerLName',
+        'keyMobileNumbers.ownerMobileNo', 'keyMobileNumbers.mandiLicenceNo', 'keyMobileNumbers.mandiLicenceCopy',
+        'keyMobileNumbers.regiNo', 'keyMobileNumbers.regiCopy', 'keyMobileNumbers.electricityBill',
+        'keyMobileNumbers.electricityBillCopy', 'keyMobileNumbers.notElectricityBillReason',
+        'keyMobileNumbers.consumerNo', 'keyMobileNumbers.customerBlacklisted',
+        'keyMobileNumbers.ifBlacklistedReason', 'keyMobileNumbers.blackListedBy',
+        'keyMobileNumbers.visitingCard', 'keyMobileNumbers.visitingCardCopy',
+        'keyMobileNumbers.visitingContactNo', 'keyMobileNumbers.notVisitingCardReason',
+        'keyMobileNumbers.ref1FName', 'keyMobileNumbers.ref1MName', 'keyMobileNumbers.ref1LName',
+        'keyMobileNumbers.ref1ContactNo', 'keyMobileNumbers.ref1Email',
+        'keyMobileNumbers.ref2FName', 'keyMobileNumbers.ref2MName', 'keyMobileNumbers.ref2LName',
+        'keyMobileNumbers.ref2ContactNo', 'keyMobileNumbers.ref2Email',
+        'ref1Address.id', 'ref1Address.address1', 'ref1Address.address2', 'ref1Address.location',
+        'ref1Address.city', 'ref1Address.state', 'ref1Address.pincode',
+        'ref2Address.id', 'ref2Address.address1', 'ref2Address.address2', 'ref2Address.location',
+        'ref2Address.city', 'ref2Address.state', 'ref2Address.pincode',
+        'productSpecification.id', 'productSpecification.articleName', 'productSpecification.specifications',
+        'productSpecification.packingMaterialSpec', 'productSpecification.parameters',
+        'productSpecification.rejectionCriteria', 'productSpecification.comment',
+      ])
       .where('customer.id = :id', { id })
       .getOne();
 
-    if (!data) {
-      throw new AppError(404, 'Customer not found');
-    }
+    if (!data) throw new AppError(404, 'Customer not found');
+
+    const { createdDate, createdTime } = formatDateTime(data.createdAt);
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
+
     const formatteddata = {
       id: data.id,
       organisationName: data.organisationName,
@@ -663,7 +740,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     return formatteddata;
   }
 
-  async findCustomerByIdforupdate(id: string): Promise<any> {
+   async findCustomerByIdforupdate(id: string): Promise<any> {
     const key = `${CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -962,6 +1039,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     await this.cacheService.set(key, formatteddata, CACHE_TTL_DETAIL);
     return formatteddata;
   }
+ 
 
   // Method to get a customer by ID
   // async findCustomerfilterById(id: string): Promise<Customer|null> {

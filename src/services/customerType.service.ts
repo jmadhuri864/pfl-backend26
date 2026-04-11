@@ -52,7 +52,7 @@ export class CustomerTypeService {
       .select(['customerType.id', 'customerType.name'])
       .orderBy('customerType.createdAt', 'DESC');
 
-    const result = await buildQuery(queryBuilder, queryOptions, 'productClassification');
+    const result = await buildQuery(queryBuilder, queryOptions, 'customerType');
 
     const formatted = {
       ...result,

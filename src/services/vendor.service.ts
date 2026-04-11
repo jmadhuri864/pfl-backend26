@@ -203,22 +203,60 @@ async getVendorByIdforview(id: string): Promise<any> {
   if (cached) return cached;
 
   const vendor = await this.vendorRepository
-    .createQueryBuilder("vendor")
-    .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
-    .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
-    .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
-    .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
-    .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
-    .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
-    .leftJoinAndSelect("vendor.subcategory", "subcategory")
-    .leftJoinAndSelect("vendor.category", "category")
-    .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
-    .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
-    .leftJoinAndSelect("vendor.mainPackingMaterial", "mainPackingMaterial")
-    .leftJoinAndSelect("vendor.listOfPackingMaterial", "listOfPackingMaterial")
-    .leftJoinAndSelect("vendor.createdBy", "createdBy")
-    .where("vendor.id = :id", { id })
+    .createQueryBuilder('vendor')
+    .leftJoin('vendor.officeAddress', 'officeAddress')
+    .leftJoin('vendor.vendorSaleInfo', 'vendorSaleInfo')
+    .leftJoin('vendor.vendorBankDetails', 'vendorBankDetails')
+    .leftJoin('vendorBankDetails.branchAddress', 'branchAddress')
+    .leftJoin('vendor.ref1Address', 'ref1Address')
+    .leftJoin('vendor.ref2Address', 'ref2Address')
+    .leftJoin('vendor.subcategory', 'subcategory')
+    .leftJoin('vendor.category', 'category')
+    .leftJoin('vendor.mainProduct', 'mainProduct')
+    .leftJoin('vendor.listOfAllProducts', 'listOfAllProducts')
+    .leftJoin('vendor.mainPackingMaterial', 'mainPackingMaterial')
+    .leftJoin('vendor.listOfPackingMaterial', 'listOfPackingMaterial')
+    .leftJoin('vendor.createdBy', 'createdBy')
+    .select([
+      'vendor.id', 'vendor.vendorCode', 'vendor.companyName', 'vendor.classification',
+      'vendor.status', 'vendor.vendorGrade', 'vendor.paymentMode', 'vendor.creditTerms',
+      'vendor.proposedPaymentTerms', 'vendor.otherProductOrService', 'vendor.dateOfIncorporation',
+      'vendor.inFandVBusinessSince', 'vendor.dispatchCenter', 'vendor.warehouseLocations',
+      'vendor.packingCenterLocation', 'vendor.tradeLicenseNumber', 'vendor.anyDetailsTeamAndInfra',
+      'vendor.officeContactNo', 'vendor.officeEmail', 'vendor.website',
+      'vendor.gstn', 'vendor.gstnCopy', 'vendor.ifGstnCopy',
+      'vendor.panNo', 'vendor.panCardCopy', 'vendor.ifPanCardCopy',
+      'vendor.msmeNo', 'vendor.msmeCopy', 'vendor.ifMsmeCopy',
+      'vendor.ref1FName', 'vendor.ref1MName', 'vendor.ref1LName',
+      'vendor.ref1PrimaryCNumb', 'vendor.ref1AltrCNumb', 'vendor.ref1Email',
+      'vendor.ref2FName', 'vendor.ref2MName', 'vendor.ref2LName',
+      'vendor.ref2PrimaryCNumb', 'vendor.ref2AltrCNumb', 'vendor.ref2Email',
+      'vendor.createdAt',
+      'officeAddress.address1', 'officeAddress.address2', 'officeAddress.location',
+      'officeAddress.city', 'officeAddress.state', 'officeAddress.pincode',
+      'vendorSaleInfo.contactFName', 'vendorSaleInfo.contactMName', 'vendorSaleInfo.contactLName',
+      'vendorSaleInfo.directContactNumber', 'vendorSaleInfo.mobileNumber', 'vendorSaleInfo.email',
+      'vendorBankDetails.beneficiaryFName', 'vendorBankDetails.beneficiaryMName', 'vendorBankDetails.beneficiaryLName',
+      'vendorBankDetails.bankName', 'vendorBankDetails.typeOfAcc', 'vendorBankDetails.ifscCode',
+      'vendorBankDetails.swiftNo', 'vendorBankDetails.invoiceCurrency',
+      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque',
+      'branchAddress.address1', 'branchAddress.address2', 'branchAddress.location',
+      'branchAddress.city', 'branchAddress.state', 'branchAddress.pincode',
+      'ref1Address.address1', 'ref1Address.address2', 'ref1Address.location',
+      'ref1Address.city', 'ref1Address.state', 'ref1Address.pincode',
+      'ref2Address.address1', 'ref2Address.address2', 'ref2Address.location',
+      'ref2Address.city', 'ref2Address.state', 'ref2Address.pincode',
+      'subcategory.name', 'category.name',
+      'mainProduct.name', 'listOfAllProducts.name',
+      'mainPackingMaterial.packagingMaterialName', 'listOfPackingMaterial.packagingMaterialName',
+      'createdBy.firstName', 'createdBy.lastName',
+    ])
+    .where('vendor.id = :id', { id })
     .getOne();
+
+  if (!vendor) throw new AppError(404, 'Vendor not found');
+
+ 
 
   if (!vendor) {
     throw new AppError(404, "Vendor not found");
@@ -383,32 +421,72 @@ async getVendorByIdforview(id: string): Promise<any> {
   await this.cacheService.set(key, formattedResult, CACHE_TTL_DETAIL);
   return formattedResult;
 }
+
+
 async getVendorByIdforupdate(id: string): Promise<any> {
   const key = `${CACHE_PREFIX}:update:${id}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
 
   const vendor = await this.vendorRepository
-    .createQueryBuilder("vendor")
-    .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
-    .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
-    .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
-    .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
-    .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
-    .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
-    .leftJoinAndSelect("vendor.subcategory", "subcategory")
-    .leftJoinAndSelect("vendor.category", "category")
-    .leftJoinAndSelect("vendor.mainProduct", "mainProduct")
-    .leftJoinAndSelect("vendor.listOfAllProducts", "listOfAllProducts")
-    .leftJoinAndSelect("vendor.mainPackingMaterial", "mainPackingMaterial")
-    .leftJoinAndSelect("vendor.listOfPackingMaterial", "listOfPackingMaterial")
-    .leftJoinAndSelect("vendor.createdBy", "createdBy")
-    .where("vendor.id = :id", { id })
+    .createQueryBuilder('vendor')
+    .leftJoin('vendor.officeAddress', 'officeAddress')
+    .leftJoin('vendor.vendorSaleInfo', 'vendorSaleInfo')
+    .leftJoin('vendor.vendorBankDetails', 'vendorBankDetails')
+    .leftJoin('vendorBankDetails.branchAddress', 'branchAddress')
+    .leftJoin('vendor.ref1Address', 'ref1Address')
+    .leftJoin('vendor.ref2Address', 'ref2Address')
+    .leftJoin('vendor.subcategory', 'subcategory')
+    .leftJoin('vendor.category', 'category')
+    .leftJoin('vendor.mainProduct', 'mainProduct')
+    .leftJoin('vendor.listOfAllProducts', 'listOfAllProducts')
+    .leftJoin('vendor.mainPackingMaterial', 'mainPackingMaterial')
+    .leftJoin('vendor.listOfPackingMaterial', 'listOfPackingMaterial')
+    .leftJoin('vendor.createdBy', 'createdBy')
+    .select([
+      'vendor.id', 'vendor.vendorCode', 'vendor.companyName', 'vendor.classification',
+      'vendor.status', 'vendor.vendorGrade', 'vendor.paymentMode', 'vendor.creditTerms',
+      'vendor.proposedPaymentTerms', 'vendor.otherProductOrService', 'vendor.dateOfIncorporation',
+      'vendor.inFandVBusinessSince', 'vendor.dispatchCenter', 'vendor.warehouseLocations',
+      'vendor.packingCenterLocation', 'vendor.tradeLicenseNumber', 'vendor.anyDetailsTeamAndInfra',
+      'vendor.officeContactNo', 'vendor.officeEmail', 'vendor.website',
+      'vendor.gstn', 'vendor.gstnCopy', 'vendor.ifGstnCopy',
+      'vendor.panNo', 'vendor.panCardCopy', 'vendor.ifPanCardCopy',
+      'vendor.msmeNo', 'vendor.msmeCopy', 'vendor.ifMsmeCopy',
+      'vendor.ref1FName', 'vendor.ref1MName', 'vendor.ref1LName',
+      'vendor.ref1PrimaryCNumb', 'vendor.ref1AltrCNumb', 'vendor.ref1Email',
+      'vendor.ref2FName', 'vendor.ref2MName', 'vendor.ref2LName',
+      'vendor.ref2PrimaryCNumb', 'vendor.ref2AltrCNumb', 'vendor.ref2Email',
+      'vendor.createdAt',
+      'officeAddress.address1', 'officeAddress.address2', 'officeAddress.location',
+      'officeAddress.city', 'officeAddress.state', 'officeAddress.pincode',
+      'vendorSaleInfo.contactFName', 'vendorSaleInfo.contactMName', 'vendorSaleInfo.contactLName',
+      'vendorSaleInfo.directContactNumber', 'vendorSaleInfo.mobileNumber', 'vendorSaleInfo.email',
+      'vendorBankDetails.beneficiaryFName', 'vendorBankDetails.beneficiaryMName', 'vendorBankDetails.beneficiaryLName',
+      'vendorBankDetails.bankName', 'vendorBankDetails.typeOfAcc', 'vendorBankDetails.ifscCode',
+      'vendorBankDetails.swiftNo', 'vendorBankDetails.invoiceCurrency',
+      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque',
+      'branchAddress.address1', 'branchAddress.address2', 'branchAddress.location',
+      'branchAddress.city', 'branchAddress.state', 'branchAddress.pincode',
+      'ref1Address.address1', 'ref1Address.address2', 'ref1Address.location',
+      'ref1Address.city', 'ref1Address.state', 'ref1Address.pincode',
+      'ref2Address.address1', 'ref2Address.address2', 'ref2Address.location',
+      'ref2Address.city', 'ref2Address.state', 'ref2Address.pincode',
+      'subcategory.id', 'category.id',
+      'mainProduct.id', 'listOfAllProducts.id',
+      'mainPackingMaterial.id', 'listOfPackingMaterial.id',
+      'createdBy.id',
+    ])
+    .where('vendor.id = :id', { id })
     .getOne();
 
-  if (!vendor) {
-    throw new AppError(404, "Vendor not found");
-  }
+  if (!vendor) throw new AppError(404, 'Vendor not found');
+
+  const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
+  const mapAddress = (addr: any) => addr ? {
+    address1: addr.address1, address2: addr.address2, location: addr.location,
+    city: addr.city, state: addr.state, pincode: addr.pincode,
+  } : null;
 
   const formattedResult = {
     id: vendor.id,
@@ -416,152 +494,61 @@ async getVendorByIdforupdate(id: string): Promise<any> {
     companyName: vendor.companyName,
     classification: vendor.classification,
     status: vendor.status,
-
-    category: vendor.category?.id|| null,
-    subcategory: vendor.subcategory?.id || null,
-
+    category: vendor.category?.id ?? null,
+    subcategory: vendor.subcategory?.id ?? null,
     vendorGrade: vendor.vendorGrade,
     paymentMode: vendor.paymentMode,
     creditTerms: vendor.creditTerms,
     proposedPaymentTerms: vendor.proposedPaymentTerms,
     otherProductOrService: vendor.otherProductOrService,
-
-    // 🔹 Date formatting
     dateOfIncorporation: vendor.dateOfIncorporation,
-      // ? format(new Date(vendor.dateOfIncorporation), "dd-MM-yyyy")
-      // : null,
     inFandVBusinessSince: vendor.inFandVBusinessSince,
-
-    // 🔹 Product relations
-    mainProduct: vendor.mainProduct?.id || null,
-     
-    listOfAllProducts: vendor.listOfAllProducts?.map(p => p.id) || [],
-
-    // 🔹 Packing material relations
-    mainPackingMaterial: vendor.mainPackingMaterial?.id || null,
-    listOfPackingMaterial: vendor.listOfPackingMaterial?.map(p => p.id) || [],
-    
-   
-
+    mainProduct: vendor.mainProduct?.id ?? null,
+    listOfAllProducts: vendor.listOfAllProducts?.map(p => p.id) ?? [],
+    mainPackingMaterial: vendor.mainPackingMaterial?.id ?? null,
+    listOfPackingMaterial: vendor.listOfPackingMaterial?.map(p => p.id) ?? [],
     dispatchCenter: vendor.dispatchCenter,
     warehouseLocations: vendor.warehouseLocations,
     packingCenterLocation: vendor.packingCenterLocation,
     tradeLicenseNumber: vendor.tradeLicenseNumber,
     anyDetailsTeamAndInfra: vendor.anyDetailsTeamAndInfra,
-
-    // --- Office Details ---
-    officeAddress: vendor.officeAddress
-      ? {
-          address1: vendor.officeAddress.address1,
-          address2: vendor.officeAddress.address2,
-          location: vendor.officeAddress.location,
-          city: vendor.officeAddress.city,
-          state: vendor.officeAddress.state,
-          pincode: vendor.officeAddress.pincode,
-        }
-      : null,
+    officeAddress: mapAddress(vendor.officeAddress),
     officeContactNo: vendor.officeContactNo,
     officeEmail: vendor.officeEmail,
     website: vendor.website,
-
-    // --- Tax and Regulatory Details ---
-    gstn: vendor.gstn,
-    gstnCopy: vendor.gstnCopy,
-    ifGstnCopy: vendor.ifGstnCopy,
-    panNo: vendor.panNo,
-    panCardCopy: vendor.panCardCopy,
-    ifPanCardCopy: vendor.ifPanCardCopy,
-    msmeNo: vendor.msmeNo,
-    msmeCopy: vendor.msmeCopy,
-    ifMsmeCopy: vendor.ifMsmeCopy,
-
-    // --- Contact Person (Vendor Sale Info) ---
-    vendorSaleInfo: vendor.vendorSaleInfo
-      ? {
-          contactFName: vendor.vendorSaleInfo.contactFName,
-          contactMName: vendor.vendorSaleInfo.contactMName,
-          contactLName: vendor.vendorSaleInfo.contactLName,
-          directContactNumber: vendor.vendorSaleInfo.directContactNumber,
-          mobileNumber: vendor.vendorSaleInfo.mobileNumber,
-          email: vendor.vendorSaleInfo.email,
-        }
-      : null,
-
-    // --- Bank Details ---
-    vendorBankDetails: vendor.vendorBankDetails
-      ? {
-          beneficiaryFName: vendor.vendorBankDetails.beneficiaryFName,
-          beneficiaryMName: vendor.vendorBankDetails.beneficiaryMName,
-          beneficiaryLName: vendor.vendorBankDetails.beneficiaryLName,
-          bankName: vendor.vendorBankDetails.bankName,
-          typeOfAcc: vendor.vendorBankDetails.typeOfAcc,
-          ifscCode: vendor.vendorBankDetails.ifscCode,
-          swiftNo: vendor.vendorBankDetails.swiftNo,
-          invoiceCurrency: vendor.vendorBankDetails.invoiceCurrency,
-          cancelledChequeCopy: vendor.vendorBankDetails.cancelledChequeCopy,
-          ifCancelledCheque: vendor.vendorBankDetails.ifCancelledCheque,
-          branchAddress: vendor.vendorBankDetails.branchAddress
-            ? {
-                address1: vendor.vendorBankDetails.branchAddress.address1,
-                address2: vendor.vendorBankDetails.branchAddress.address2,
-                location: vendor.vendorBankDetails.branchAddress.location,
-                city: vendor.vendorBankDetails.branchAddress.city,
-                state: vendor.vendorBankDetails.branchAddress.state,
-                pincode: vendor.vendorBankDetails.branchAddress.pincode,
-              }
-            : null,
-        }
-      : null,
-
-    // --- Reference 1 ---
-    
-      ref1FName: vendor.ref1FName,
-      ref1MName: vendor.ref1MName,
-      ref1LName: vendor.ref1LName,
-     ref1PrimaryCNumb: vendor.ref1PrimaryCNumb,
-      ref1AltrCNumb :vendor.ref1AltrCNumb,
-      ref1Email: vendor.ref1Email,
-      ref1Address: vendor.ref1Address
-        ? {
-            address1: vendor.ref1Address.address1,
-            address2: vendor.ref1Address.address2,
-            location: vendor.ref1Address.location,
-            city: vendor.ref1Address.city,
-            state: vendor.ref1Address.state,
-            pincode: vendor.ref1Address.pincode,
-          }
-        : null,
-  
-
-    // --- Reference 2 ---
-    
-      ref2FName: vendor.ref2FName,
-      ref2MName: vendor.ref2MName,
-      ref2LName: vendor.ref2LName,
-      ref2PrimaryCNumb: vendor.ref2PrimaryCNumb,
-      ref2AltrCNumb: vendor.ref2AltrCNumb,
-      ref2Email: vendor.ref2Email,
-      ref2Address: vendor.ref2Address
-        ? {
-            address1: vendor.ref2Address.address1,
-            address2: vendor.ref2Address.address2,
-            location: vendor.ref2Address.location,
-            city: vendor.ref2Address.city,
-            state: vendor.ref2Address.state,
-            pincode: vendor.ref2Address.pincode,
-          }
-        : null,
-  
-
-    createdBy: vendor.createdBy?.id,
-    createdTime:formatDateTime(vendor.createdAt).createdTime,
-    createdDate: formatDateTime(vendor.createdAt).createdDate,
-      // ? {
-      //     id: vendor.createdBy.id,
-      //     username: vendor.createdBy.username,
-      //     email: vendor.createdBy.email,
-      //   }
-      // : null,
+    gstn: vendor.gstn, gstnCopy: vendor.gstnCopy, ifGstnCopy: vendor.ifGstnCopy,
+    panNo: vendor.panNo, panCardCopy: vendor.panCardCopy, ifPanCardCopy: vendor.ifPanCardCopy,
+    msmeNo: vendor.msmeNo, msmeCopy: vendor.msmeCopy, ifMsmeCopy: vendor.ifMsmeCopy,
+    vendorSaleInfo: vendor.vendorSaleInfo ? {
+      contactFName: vendor.vendorSaleInfo.contactFName,
+      contactMName: vendor.vendorSaleInfo.contactMName,
+      contactLName: vendor.vendorSaleInfo.contactLName,
+      directContactNumber: vendor.vendorSaleInfo.directContactNumber,
+      mobileNumber: vendor.vendorSaleInfo.mobileNumber,
+      email: vendor.vendorSaleInfo.email,
+    } : null,
+    vendorBankDetails: vendor.vendorBankDetails ? {
+      beneficiaryFName: vendor.vendorBankDetails.beneficiaryFName,
+      beneficiaryMName: vendor.vendorBankDetails.beneficiaryMName,
+      beneficiaryLName: vendor.vendorBankDetails.beneficiaryLName,
+      bankName: vendor.vendorBankDetails.bankName,
+      typeOfAcc: vendor.vendorBankDetails.typeOfAcc,
+      ifscCode: vendor.vendorBankDetails.ifscCode,
+      swiftNo: vendor.vendorBankDetails.swiftNo,
+      invoiceCurrency: vendor.vendorBankDetails.invoiceCurrency,
+      cancelledChequeCopy: vendor.vendorBankDetails.cancelledChequeCopy,
+      ifCancelledCheque: vendor.vendorBankDetails.ifCancelledCheque,
+      branchAddress: mapAddress(vendor.vendorBankDetails.branchAddress),
+    } : null,
+    ref1FName: vendor.ref1FName, ref1MName: vendor.ref1MName, ref1LName: vendor.ref1LName,
+    ref1PrimaryCNumb: vendor.ref1PrimaryCNumb, ref1AltrCNumb: vendor.ref1AltrCNumb,
+    ref1Email: vendor.ref1Email, ref1Address: mapAddress(vendor.ref1Address),
+    ref2FName: vendor.ref2FName, ref2MName: vendor.ref2MName, ref2LName: vendor.ref2LName,
+    ref2PrimaryCNumb: vendor.ref2PrimaryCNumb, ref2AltrCNumb: vendor.ref2AltrCNumb,
+    ref2Email: vendor.ref2Email, ref2Address: mapAddress(vendor.ref2Address),
+    createdBy: vendor.createdBy?.id ?? null,
+    createdDate,
+    createdTime,
   };
 
   await this.cacheService.set(key, formattedResult, CACHE_TTL_DETAIL);
@@ -1068,61 +1055,64 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
   const queryBuilder = this.vendorRepository
     .createQueryBuilder('vendor')
-    .leftJoinAndSelect('vendor.createdBy', 'createdBy') 
-    .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
-    .leftJoinAndSelect('vendor.vendorSaleInfo', 'vendorSaleInfo')
-    .leftJoinAndSelect('vendor.mainProduct','product')
-    .leftJoinAndSelect('vendor.listOfAllProducts','listOfAllProducts')
-    .leftJoinAndSelect('vendor.mainPackingMaterial','mainPackingMaterial')
-     .leftJoinAndSelect('vendor.listOfPackingMaterial','listOfPackingMaterial')
-    .leftJoinAndSelect('vendor.subcategory', 'subcategory')
-    .leftJoinAndSelect('vendor.category', 'category')
-    //.leftJoinAndSelect('vendor.classification,'classification')
+    .leftJoin('vendor.createdBy', 'createdBy')
+    .leftJoin('vendor.officeAddress', 'officeAddress')
+    .leftJoin('vendor.mainProduct', 'mainProduct')
+    .leftJoin('vendor.listOfAllProducts', 'listOfAllProducts')
+    .leftJoin('vendor.mainPackingMaterial', 'mainPackingMaterial')
+    .leftJoin('vendor.listOfPackingMaterial', 'listOfPackingMaterial')
+    .leftJoin('vendor.subcategory', 'subcategory')
+    .leftJoin('vendor.category', 'category')
+    .select([
+      'vendor.id', 'vendor.status', 'vendor.vendorCode', 'vendor.companyName',
+      'vendor.officeContactNo', 'vendor.officeEmail', 'vendor.gstn', 'vendor.panNo',
+      'vendor.msmeNo', 'vendor.tradeLicenseNumber', 'vendor.paymentMode',
+      'vendor.proposedPaymentTerms', 'vendor.creditTerms', 'vendor.dispatchCenter',
+      'vendor.warehouseLocations', 'vendor.packingCenterLocation', 'vendor.classification',
+      'vendor.createdAt',
+      'createdBy.firstName', 'createdBy.lastName',
+      'officeAddress.location', 'officeAddress.city', 'officeAddress.state', 'officeAddress.pincode',
+      'mainProduct.name',
+      'listOfAllProducts.name',
+      'mainPackingMaterial.packagingMaterialName',
+      'listOfPackingMaterial.packagingMaterialName',
+      'subcategory.name',
+      'category.name',
+    ])
     .orderBy('vendor.createdAt', 'DESC');
 
   const vendors = await buildQuery(queryBuilder, queryOptions, 'vendor');
 
-  
   const formattedData = vendors.data.map((vendor) => {
     const { createdDate, createdTime } = formatDateTime(vendor.createdAt);
-
     return {
-      
+      id: vendor.id,
+      status: vendor.status,
+      vendorCode: vendor.vendorCode?.toUpperCase() ?? '',
+      companyName: vendor.companyName,
+      category: vendor.category?.name ?? '',
+      subcategory: vendor.subcategory?.name ?? '',
+      officeAddress: vendor.officeAddress ? formatAddress(vendor.officeAddress) : '',
+      officeContactNo: vendor.officeContactNo,
+      officeEmail: vendor.officeEmail,
+      gstn: vendor.gstn?.toUpperCase() ?? '',
+      panNo: vendor.panNo?.toUpperCase() ?? '',
+      msmeNo: vendor.msmeNo?.toUpperCase() ?? '',
+      tradeLicenseNumber: vendor.tradeLicenseNumber?.toUpperCase() ?? '',
+      paymentMode: vendor.paymentMode,
+      proposedPaymentTerms: vendor.proposedPaymentTerms,
+      creditTerms: vendor.creditTerms,
+      dispatchCenter: vendor.dispatchCenter,
+      warehouseLocations: vendor.warehouseLocations,
+      packingCenterLocation: vendor.packingCenterLocation,
+      classification: vendor.classification,
+      mainProduct: vendor.mainProduct?.name ?? '',
+      listOfAllProducts: vendor.listOfAllProducts?.map((p: Product) => p.name).join(',') ?? '',
+      mainPackingMaterial: vendor.mainPackingMaterial?.packagingMaterialName ?? null,
+      listOfPackingMaterial: vendor.listOfPackingMaterial?.map((p: PackingMaterial) => p.packagingMaterialName).join(',') ?? '',
       createdBy: `${vendor.createdBy?.firstName ?? ''} ${vendor.createdBy?.lastName ?? ''}`.trim(),
-      id:vendor.id,
-      status:vendor.status,
-      vendorCode:`${vendor.vendorCode}`.toUpperCase(),
-      companyName:vendor.companyName,
-      category:vendor.category.name,
-      subcategory:vendor.subcategory.name,
-      officeAddress:vendor.officeAddress? formatAddress(vendor.officeAddress) : '',
-      officeContactNo:vendor.officeContactNo,
-      listOfAllProducts:vendor.listOfAllProducts? vendor.listOfAllProducts
-                        .map((product:Product)=>product?.name)
-                        .join(','):'',
-          mainPackingMaterial:vendor.mainPackingMaterial?.packagingMaterialName||null,
-            listOfPackingMaterial:vendor.listOfPackingMaterial? vendor.listOfPackingMaterial
-             .map((product:PackingMaterial)=>product?.packagingMaterialName)
-                        .join(','):'',
-
-      mainProduct:vendor.mainProduct?.name || '', 
-      dispatchCenter:vendor.dispatchCenter,
-      warehouseLocations:vendor.warehouseLocations,
-      packingCenterLocation:vendor.packingCenterLocation,
       createdDate,
       createdTime,
-      classification:vendor.classification,
-      officeEmail:vendor.officeEmail,
-      gstn:`${vendor.gstn}`.toUpperCase()||'',
-       panNo:`${vendor.panNo}`.toUpperCase() ||'',
-       msmeNo:`${vendor.msmeNo}`.toUpperCase()||'',
-       tradeLicenseNumber:`${vendor.tradeLicenseNumber}`.toUpperCase(),
-      paymentMode:vendor.paymentMode,
-      proposedPaymentTerms:vendor.proposedPaymentTerms,
-      creditTerms:vendor.creditTerms,
-
-      
-      
     };
   });
 
