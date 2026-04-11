@@ -233,7 +233,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
       if (!doc.document_type_id) continue;
       try {
         doc.relatedData = await this.eodRepository.findOne({
-          where: { id: doc.document_type_id, isDeleted: false },
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
           relations: ['eodProducts', 'companyName', 'location', 'eodProducts.sku', 'eodProducts.uom'],
         });
 
@@ -656,15 +656,11 @@ public async deleteMultipleEodStock(ids: string[]): Promise<{ success: string[];
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
-      const deleteAqr = await this.eodRepository.delete(eodstock.id);
-      if (!deleteAqr) {
-        throw new Error(`Failed to delete eodstock with ID ${id}`);
-      }
+      await this.eodRepository.softDelete(eodstock.id);
+      await this.eodRepository.update(eodstock.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });

@@ -403,6 +403,8 @@ export class PostReturnByCustomerService {
           .leftJoinAndSelect('returnedProducts.productName', 'productName')
           .leftJoinAndSelect('returnedProducts.saleUoM', 'saleUoM')
           .where('rbc.id IN (:...ids)', { ids: rbcIds })
+          .andWhere('rbc.isDeleted = false')
+          .andWhere('rbc.deletedAt IS NULL')
           .getMany()
       : [];
 
@@ -752,15 +754,13 @@ public async deleteMultipleRBC(ids: string[]): Promise<{ success: string[]; fail
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteAqr = await this.postReturnByCustomerRepository.delete(rbc.id);
-      if (!deleteAqr) {
-        throw new Error(`Failed to delete RBC with ID ${id}`);
-      }
+      await this.postReturnByCustomerRepository.softDelete(rbc.id);
+      await this.postReturnByCustomerRepository.update(rbc.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });

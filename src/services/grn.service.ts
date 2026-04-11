@@ -42,6 +42,8 @@ import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 interface SourceMetrics {
@@ -78,6 +80,8 @@ export class GrnService {
     private readonly documentbRepository: DocumentbRepository,
     @inject(TYPES.ApprovalFlowRepository)
     private readonly approvalFlowRepository:ApprovalFlowRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
 
     @inject(TYPES.NotificationService)
     private readonly notificationService: NotificationService,
@@ -107,6 +111,27 @@ export class GrnService {
   // private readonly docApproveRepo: DocumentApproveRepository,
 
   { }
+
+  private readonly CACHE_PREFIX = 'grn';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:numbers:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:details:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
+
 
   // public async createGrn(grnData: any): Promise<any> {
   //   grnData.createdAt = new Date();
@@ -181,6 +206,11 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const { search } = queryOptions;
     const {data,meta}= await this.documentbService.getAllDocumentByUserId(
       userId,
@@ -325,7 +355,7 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
     });
   }
 
-    return {
+    const recycleResult = {
   data: relatedDataOnly,
   meta: {
     total: paginatedData.meta.total,
@@ -333,6 +363,8 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
     pages: paginatedData.meta.pages
   }
 };
+    await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
+    return recycleResult;
   }
   public async createGrn(grnData: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -405,6 +437,7 @@ const paginatedData = await buildQueryFromArray(data,queryOptions)
         // Start approval flow after commit so GRN is visible to other DB connections
         await this.documentbService.startApprovalFlow(document.id);
 
+        await this.invalidateCache();
         return savedGrn;
       } catch (error: any) {
         // Rollback transaction - undo all changes
@@ -421,6 +454,11 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     data: any[];
     meta: { total: number; page: number; pages: number };
   }> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
         const { search } = queryOptions;
     // Get ALL documents without pagination first
     const {data: allDocuments}= await this.documentbService.getAllDocumentByUserId(
@@ -439,7 +477,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       if (!doc.document_type_id) continue;
       try {
         doc.relatedData = await this.grnRepository.findOne({
-          where: { id: doc.document_type_id, isDeleted: false },
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
           relations: ['companyName', 'grnProducts', 'grnProducts.productName', 'grnProducts.uom', 'selectedFarmer', 'selectedVendor', 'dealSlipId', 'purchaseForSalesLocation', 'purchaseLocation', 'paymentInfo'],
         });
 
@@ -562,7 +600,6 @@ paymentInfo: {
     });
   }
 
-        // Apply pagination
   const total = relatedDataOnly.length;
   const page = queryOptions.page || 1;
   const limit = queryOptions.limit || 10;
@@ -570,7 +607,7 @@ paymentInfo: {
   const skip = (page - 1) * limit;
   const paginatedResult = relatedDataOnly.slice(skip, skip + limit);
 
-  return {
+  const allResult = {
     data: paginatedResult,
     meta: {
       total,
@@ -578,6 +615,8 @@ paymentInfo: {
       pages
     }
   };
+  await this.cacheService.set(cacheKey, allResult, this.CACHE_TTL);
+  return allResult;
 
 
   }
@@ -910,6 +949,10 @@ paymentInfo: {
 // }
 
   public async getGrnById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const grn = await this.grnRepository.findOne({
       where: { id },
       relations: [
@@ -942,7 +985,7 @@ paymentInfo: {
     const rawDate = grn.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
-    return {
+    const result = {
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy,
@@ -1028,9 +1071,15 @@ paymentInfo: {
         expectedHarvestDate: product.expectedHarvestDate,
       })),
     };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   public async getGrnByIdForView(docid: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const document = await this.documentbService.getDocumentById(docid)
     const id = document.documentTypeId;
     console.log('id in getGrnByIdForView', id);
@@ -1087,7 +1136,7 @@ paymentInfo: {
       const rawDate = grn.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
       console.log(grn.timeIn);
-      return {
+      const viewResult = {
         id: grn.id,
         companyName: grn.companyName?.name ?? null,
         purchaseInstructionsBy: grn.purchaseInstructionsBy?.firstName || null + ' ' + grn.purchaseInstructionsBy?.lastName || null,
@@ -1180,11 +1229,16 @@ paymentInfo: {
         approvalSummary: document.approvalSummary,
         documentId: document.id,
       };
+      await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
+      return viewResult;
     }
   }
 
 
   public async getGrnByIdForupdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
     //    const document = await this.documentbService.getDocumentById(id)
     // const id1 = document.documentTypeId;
     // console.log('id in getGrnByIdForView', id1);
@@ -1229,7 +1283,7 @@ paymentInfo: {
     const rawDate = grn.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
-    return {
+    const updateResult = {
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy?.id || null,
@@ -1315,6 +1369,8 @@ paymentInfo: {
         expectedHarvestDate: product.expectedHarvestDate,
       })),
     };
+    await this.cacheService.set(cacheKey, updateResult, this.CACHE_TTL);
+    return updateResult;
   }
 
   // Update a GRN
@@ -1352,6 +1408,7 @@ paymentInfo: {
     updatedBy,
   );
 
+  await this.invalidateCache(id);
   return updatedGrn;
 }
 
@@ -1381,6 +1438,7 @@ paymentInfo: {
     await this.grnRepository.save(grn);
 
     console.log(`GRN with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
   // async getReportingChain(employee: User): Promise<Set<string>> {
@@ -1494,14 +1552,21 @@ paymentInfo: {
   // }
 
   public async getGrnDetails(grnId: string): Promise<GRN | null> {
-    return this.grnRepository
+    const cacheKey = `${this.CACHE_PREFIX}:details:${grnId}`;
+    const cached = await this.cacheService.get<GRN | null>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.grnRepository
       .createQueryBuilder('grn')
-      .leftJoinAndSelect('grn.selectedVendor', 'selectedVendor') // Ensure this is correct
+      .leftJoinAndSelect('grn.selectedVendor', 'selectedVendor')
       .leftJoinAndSelect('grn.grnProducts', 'grnProducts')
       .leftJoinAndSelect('grn.purchaseForWhich', 'purchaseForWhich')
       .leftJoinAndSelect('grn.purchaseLocation', 'purchaseLocation')
       .where('grn.id = :grnId', { grnId })
       .getOne();
+
+    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   // public async approveGrn(
@@ -1676,6 +1741,11 @@ paymentInfo: {
   },
   loginUserId: string
 ): Promise<any> {
+
+  const hash = createHash('md5').update(`${loginUserId}:${JSON.stringify(filter)}`).digest('hex');
+  const cacheKey = `${this.CACHE_PREFIX}:numbers:${hash}`;
+  const cached = await this.cacheService.get<any>(cacheKey);
+  if (cached) return cached;
 
   const page = filter.page || 1;
   const limit = filter.limit || 10;
@@ -1860,7 +1930,7 @@ paymentInfo: {
 
   const paginatedResults = searchedResults.slice(start, start + limit);
 
-  return {
+  const numbersResult = {
     data: paginatedResults,
     pagination: {
       total: searchedResults.length,
@@ -1869,6 +1939,8 @@ paymentInfo: {
       totalPages: Math.ceil(searchedResults.length / limit)
     }
   };
+  await this.cacheService.set(cacheKey, numbersResult, this.CACHE_TTL);
+  return numbersResult;
 }
 
   // async escalateToNextLevel(
@@ -2004,18 +2076,13 @@ paymentInfo: {
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
+      await this.grnRepository.softDelete(grn.id);
+      await this.grnRepository.update(grn.id, { isDeleted: true } as any);
 
-      const deleteGrn = await this.grnRepository.delete(grn.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete GRN with ID ${id}`);
-      }
-
+      await this.invalidateCache(id);
     }
 
     return { message: 'GRN records marked for deletion successfully' };

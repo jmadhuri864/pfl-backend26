@@ -105,6 +105,7 @@ export class RfpaService {
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:rfpanumbers:*`),
     ];
     if (id) {
       tasks.push(
@@ -348,6 +349,7 @@ console.log(rfpaData.createdBy)
         'purchaseForSalesLocation',
         'purchaseLocation',
       ],
+      where: { isDeleted: false },
       order: {
         createdAt: 'DESC',
       },
@@ -1395,6 +1397,10 @@ public async getAllRFPANumbers(
   },
   loginUserId: string
 ): Promise<any> {
+  const hash = createHash('md5').update(JSON.stringify({ filter, loginUserId })).digest('hex');
+  const cacheKey = `${this.CACHE_PREFIX}:rfpanumbers:${hash}`;
+  const cached = await this.cacheService.get<any>(cacheKey);
+  if (cached) return cached;
 
   const rfpaWhere: any = {};
 
@@ -1407,7 +1413,7 @@ public async getAllRFPANumbers(
   // Fetch RFPA
   const rfpas = await this.rfpaRepository.find({
     select: ["id", "rfpaId", "isDealSlipCreated"],
-    where: rfpaWhere,
+    where: { ...rfpaWhere, isDeleted: false },
     relations: ["createdBy"],
     order: { createdAt: "DESC" }
   });
@@ -1583,16 +1589,15 @@ public async getAllRFPANumbers(
 
   const paginatedResults = searchedResults.slice(startIndex, endIndex);
 
-  return {
-  
-  data: paginatedResults,
-  pagination: {
+  const result = {
+    data: paginatedResults,
     total: searchedResults.length,
     page,
     limit,
-    totalPages: Math.ceil(searchedResults.length / limit)
-  }
-};
+    totalPages: Math.ceil(searchedResults.length / limit),
+  };
+  await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  return result;
 }
 
   
@@ -1812,6 +1817,7 @@ public async getAllRFPANumbers(
           .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
           .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
           .andWhere('rfpa.isDeleted = false')
+          .andWhere('rfpa.deletedAt IS NULL')
           .getMany()
       : [];
 
@@ -2141,8 +2147,13 @@ const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA 
     const queryBuilder: SelectQueryBuilder<RFPA> =
       this.rfpaRepository.createQueryBuilder("rfpa");
   
-    // ✅ Select all fields from Aqr
+    // ✅ Select all fields from Rfpa
     queryBuilder.select("rfpa");
+
+    // ✅ Exclude soft-deleted records
+    queryBuilder
+      .where("rfpa.isDeleted = false")
+      .andWhere("rfpa.deletedAt IS NULL");
   
     // ✅ Join relations but select only specific fields
     queryBuilder
@@ -2217,34 +2228,24 @@ const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA 
   async deleteMultipleRFPA(ids: string[]) {
 
     for (const id of ids) {
-      const rfpa = await this.rfpaRepository.findOne({
-        where: { id },
-      });
+      const rfpa = await this.rfpaRepository.findOne({ where: { id } });
+      if (!rfpa) throw new Error(`RFPA with ID ${id} not found`);
 
-      if (!rfpa) {
-        throw new Error(`RFPA with ID ${id} not found`);
-      }
-
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: rfpa.id }
+        where: { document_type_id: rfpa.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete RFPA
+      await this.rfpaRepository.softDelete(rfpa.id);
+      await this.rfpaRepository.update(rfpa.id, { isDeleted: true } as any);
 
-
-      const deleteRfpa = await this.rfpaRepository.delete(rfpa.id);
-
-      if (!deleteRfpa) {
-        throw new Error(`Failed to delete RFPA with ID ${id}`);
-      }
-
+      // Invalidate cache for this specific RFPA
+      await this.invalidateCache(id);
     }
 
     return { message: 'RFPA records marked for deletion successfully' };

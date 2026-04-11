@@ -3,6 +3,7 @@ import {
   httpGet,
   httpPatch,
   httpPost,
+  httpDelete,
   next,
   request,
   requestParam,
@@ -245,6 +246,33 @@ export class PackingMaterialController {
     } catch (err) {
       logger.error('Error fetching packing materials', { error: err });
       ControllerLogger.logError('Packing Material partial list retrieval', err, req, res);
+      next(err);
+    }
+  }
+
+  @httpDelete('/delete/multiple')
+  public async deleteMultiplePackingMaterials(
+    @request() req: Request<{}, {}, { ids: string[] }>,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return next(new AppError(400, 'An array of packing material IDs is required'));
+      }
+
+      const result = await this.packingMaterialService.deleteMultiplePackingMaterials(ids);
+
+      ControllerLogger.logSuccess('Packing Material multiple deletion', `${ids.length} records`, req, res);
+      res.status(200).json({
+        status: 'success',
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
+      });
+    } catch (err) {
+      ControllerLogger.logError('Packing Material multiple deletion', err, req, res);
       next(err);
     }
   }

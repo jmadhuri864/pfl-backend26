@@ -30,6 +30,7 @@ import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliv
 import { PostReturnByCustomerRepository } from '../repositories/postReturnByCustomer.repository';
 import { ReturnToVendorRepository } from '../repositories/returnToVendor.repository';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { getReadableDocumentType } from '../utils/documentTypeLabel';
 import { ParsedQs } from 'qs';
 import { Brackets } from 'typeorm';
 import e from 'express';
@@ -104,32 +105,7 @@ export class DocumentbService {
     return userName;
   }
 
-  // Convert document type to readable format
-  private getReadableDocumentType(type: string): string {
-    const typeMap: { [key: string]: string } = {
-      'grn': 'GRN',
-      'rfpa': 'RFPA',
-      'deal-slip': 'Deal Slip',
-      'aqr': 'AQR',
-      'second-sale': 'Second Sale',
-      'vehicle-dispatch-register': 'Vehicle Dispatch',
-      'dump-register': 'Dump Register',
-      'inward-register': 'Inward Register',
-      'dc-type-other': 'Delivery Challan',
-      'dc-type-stock-transfer': 'Stock Transfer Challan',
-      'dc-type-customer': 'Customer Delivery Challan',
-      'return-by-customer': 'Return by Customer',
-      'return-to-vendor': 'Return to Vendor',
-      'multi-cash-voucher': 'Cash Voucher',
-      'labor-payment-voucher': 'Labor Payment Voucher',
-      'transport-payment-voucher': 'Transport Payment Voucher',
-      'packaging-material-voucher': 'Packaging Material Voucher',
-      'final-invoice': 'Final Invoice',
-      'eod-report': 'EOD Report',
-     
-    };
-    return typeMap[type.toLowerCase()] || type;
-  }
+  // Convert document type to readable format — moved to src/utils/documentTypeLabel.ts
 
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
     return [
@@ -537,7 +513,7 @@ console.log("Document for starting approval flow: ", document?.type);
     const now = new Date();
     const userName = await this.getCachedUser(userId);
     const docNo = await this.resolveDocumentTypeNo(document);
-    const readableType = this.getReadableDocumentType(document.type);
+    const readableType = getReadableDocumentType(document.type);
     const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
 
     // Ensure approvalInfo exists

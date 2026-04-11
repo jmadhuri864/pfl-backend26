@@ -417,6 +417,7 @@ const serialNo = await this.generateSerialNo();
           .leftJoinAndSelect('vd.deliveryChallanNo', 'deliveryChallanNo')
           .where('vd.id IN (:...ids)', { ids: dispatchIds })
           .andWhere('vd.isDeleted = false')
+          .andWhere('vd.deletedAt IS NULL')
           .getMany()
       : [];
 
@@ -807,17 +808,11 @@ public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: st
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
-
-      const deleteGrn = await this.vehicleDispatchRepository.delete(vehicalDispatch.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete Vehicle Dispatch with ID ${id}`);
-      }
+      await this.vehicleDispatchRepository.softDelete(vehicalDispatch.id);
+      await this.vehicleDispatchRepository.update(vehicalDispatch.id, { isDeleted: true } as any);
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;

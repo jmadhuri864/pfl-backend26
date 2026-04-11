@@ -5,6 +5,7 @@ import { Labor } from "../entities/labor.entity";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
 
 @injectable()
 export class LaborService {
@@ -12,72 +13,84 @@ export class LaborService {
     @inject(TYPES.LaborRepository)
     private readonly laborRepository: LaborRepository,
     @inject(TYPES.AuditLogService)
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'labor';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`));
+    }
+    await Promise.all(tasks);
+  }
+
   async createLabor(laborData: Partial<Labor>): Promise<Labor> {
     const labor = this.laborRepository.create(laborData);
-    return this.laborRepository.save(labor);
+    const saved = await this.laborRepository.save(labor);
+    await this.invalidateCache();
+    return saved;
   }
 
   async getLaborById(id: string): Promise<Labor | null> {
-    return this.laborRepository.findOne({
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.laborRepository.findOne({
       where: { id },
-      relations: ["bankDetails", "familyDetails", "workExperience",'presentAddress','permanentAddress'],
+      relations: ["bankDetails", "familyDetails", "workExperience", "presentAddress", "permanentAddress"],
     });
-  }
-
-  async getAllLabors(queryOptions:PaginationOptions): Promise<any> {
-
-    let query= await this.laborRepository.createQueryBuilder("labor")
-    .leftJoinAndSelect("labor.bankDetails", "bankDetails")
-    .leftJoinAndSelect("labor.familyDetails", "familyDetails")
-    .leftJoinAndSelect("labor.workExperience", "workExperience")
-    .leftJoinAndSelect("labor.presentAddress","presentAddress")
-    .leftJoinAndSelect('labor.permanentAddress',"permanentAddress")
-    .orderBy("labor.createdAt", "DESC")
-    const result = await buildQuery(query, queryOptions,"labor"); 
+    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
 
-  async updateLabor(
-    id: string,
-    laborData: any,
-    updatedBy: string
-  ): Promise<any> {
-    // Fetch the existing labor record
-    // Fetch the existing labor record with relations
-    console.log(laborData)
-  const labor = await this.laborRepository.findOne({
-    where: { id },
-    relations: ["workExperience", "familyDetails", "bankDetails", "permanentAddress", "presentAddress"]
-  });
+  async getAllLabors(queryOptions: PaginationOptions): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const query = this.laborRepository.createQueryBuilder("labor")
+      .leftJoinAndSelect("labor.bankDetails", "bankDetails")
+      .leftJoinAndSelect("labor.familyDetails", "familyDetails")
+      .leftJoinAndSelect("labor.workExperience", "workExperience")
+      .leftJoinAndSelect("labor.presentAddress", "presentAddress")
+      .leftJoinAndSelect("labor.permanentAddress", "permanentAddress")
+      .orderBy("labor.createdAt", "DESC");
+
+    const result = await buildQuery(query, queryOptions, "labor");
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
+  }
+
+  async updateLabor(id: string, laborData: any, updatedBy: string): Promise<any> {
+    console.log(laborData);
+    const labor = await this.laborRepository.findOne({
+      where: { id },
+      relations: ["workExperience", "familyDetails", "bankDetails", "permanentAddress", "presentAddress"],
+    });
 
     if (!labor) {
-      return null; // Return null if no record is found
+      return null;
     }
 
-    // Save the original data for audit logging
     const oldData = { ...labor };
-
-    // Apply the updates to the existing labor record
     Object.assign(labor, laborData);
 
-    // Save the updated labor record
     const updatedLabor = await this.laborRepository.save(labor);
-console.log("after" ,updatedLabor)
-    // Log the changes
-    await this.auditLogService.logChange(
-      "Labor", // Entity name
-      id, // Entity ID
-      oldData, // Original data
-      updatedLabor, // Updated data
-      updatedBy // User who performed the update
-    );
+    console.log("after", updatedLabor);
 
+    await this.auditLogService.logChange("Labor", id, oldData, updatedLabor, updatedBy);
+    await this.invalidateCache(id);
     return updatedLabor;
   }
 
-  // Delete a Labor with scheduled deletion (6 months)
   async deleteLabor(id: string): Promise<boolean> {
     const labor = await this.laborRepository.findOne({ where: { id } });
 
@@ -85,24 +98,18 @@ console.log("after" ,updatedLabor)
       throw new AppError(404, `Labor with ID ${id} not found`);
     }
 
-    // Calculate the date 6 months ahead
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Log the scheduled deletion
-    console.log(
-      `Labor with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
-    );
+    console.log(`Labor with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
 
-    // Set the deletionScheduledAt field for the labor
     labor.deletionScheduledAt = sixMonthsFromNow;
-
-    // Save the updated labor with the scheduled deletion date
     await this.laborRepository.save(labor);
 
     console.log(`Labor with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 }

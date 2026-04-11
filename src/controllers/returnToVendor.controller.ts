@@ -228,20 +228,6 @@ export class ReturnToVendorController {
     try {
       const { id } = req.params;
       const result = await this.returnToVendorService.softDeleteReturn(id);
-
-      // 🔔 Send notification for return to vendor deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Return to vendor with ID ${id} deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Return to vendor delete notification error:', notifError);
-      // }
-
       return res.status(200).json({
         success: true,
         message: result.message,
@@ -250,6 +236,33 @@ export class ReturnToVendorController {
     } catch (error) {
       console.log(error)
       ControllerLogger.logError('Return to vendor delete', error, req, res);
+      next(error);
+    }
+  }
+
+  @httpDelete("/delete/multiple")
+  public async deleteMultipleReturnToVendor(
+    @request() req: Request<{}, {}, { ids: string[] }>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return next(new Error('An array of return to vendor IDs is required'));
+      }
+
+      const result = await this.returnToVendorService.deleteMultipleReturnToVendor(ids);
+
+      ControllerLogger.logSuccess('Return to vendor multiple deletion', `${ids.length} records`, req, res);
+      return res.status(200).json({
+        status: 'success',
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
+      });
+    } catch (error) {
+      ControllerLogger.logError('Return to vendor multiple deletion', error, req, res);
       next(error);
     }
   }

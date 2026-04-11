@@ -614,88 +614,15 @@ export class OtherDeliveryChallanController {
         return next(new AppError(400, 'An array of Other Delivery Challan IDs is required'));
       }
 
-      const deletedBy = res.locals.user.id;
+      const result = await this.otherDeliveryChallanService.deleteMultipleOtherDeliveryChallans(ids);
 
-      // Get Other Delivery Challan details before deletion for notifications
-      const challans = await Promise.all(
-        ids.map(id => this.otherDeliveryChallanService.getById(id).catch(() => null))
-      );
-
-      // Delete each challan individually
-      const results = await Promise.all(
-        ids.map(id => this.otherDeliveryChallanService.delete(id))
-      );
-      
-      const successCount = results.filter(result => result).length;
-
-      // 🔔 Send SSE notification to deleter
-      // try {
-      //   await this.notificationService.createNoti(
-      //     `${ids.length} Other Delivery Challans deleted successfully`,
-      //     deletedBy
-      //   );
-
-      //   // 🔔 Notify relevant users about bulk deletion
-      //   const notifiedUsers = new Set<string>();
-
-      //   for (const challan of challans) {
-      //     if (!challan?.data) continue;
-
-      //     const challanId = challan.data.id || 'Unknown';
-
-      //     // Notify creator
-      //     if (challan.data.createdBy?.id && challan.data.createdBy.id !== deletedBy && !notifiedUsers.has(challan.data.createdBy.id)) {
-      //       await this.notificationService.createNoti(
-      //         `Multiple Other Delivery Challans including ${challanId} have been deleted`,
-      //         challan.data.createdBy.id
-      //       );
-      //       notifiedUsers.add(challan.data.createdBy.id);
-      //     }
-
-      //     // Notify approvers
-      //     const document = await this.documentbService.getDocumentByTypeId(challan.data.id);
-      //     if (document && document.approvalFlow) {
-      //       const flow = document.approvalFlow;
-
-      //       if (flow.verifiers && flow.verifiers.length > 0) {
-      //         flow.verifiers.forEach((verifier: any) => {
-      //           if (verifier.id && verifier.id !== deletedBy) notifiedUsers.add(verifier.id);
-      //         });
-      //       }
-
-      //       if (flow.approvers) {
-      //         const levels = [
-      //           flow.approvers.firstApprover,
-      //           flow.approvers.secondApprover,
-      //           flow.approvers.thirdApprover
-      //         ];
-
-      //         levels.forEach((level: any) => {
-      //           if (level && level.users && level.users.length > 0) {
-      //             level.users.forEach((user: any) => {
-      //               if (user.id && user.id !== deletedBy) notifiedUsers.add(user.id);
-      //             });
-      //           }
-      //         });
-      //       }
-      //     }
-      //   }
-
-      //   // Send bulk notification to all affected users
-      //   for (const userId of notifiedUsers) {
-      //     await this.notificationService.createNoti(
-      //       `${ids.length} Other Delivery Challans have been deleted`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.error('Notification error:', notifError);
-      // }
-
-      ControllerLogger.logSuccess(`${ids.length} Other Delivery Challans deleted`, ids.join(', '), req, res);
+      ControllerLogger.logSuccess(`${ids.length} Other Delivery Challans soft deleted`, ids.join(', '), req, res);
 
       res.status(200).json({
-        message: `${successCount} of ${ids.length} Other Delivery Challans deleted successfully`,
+        status: 'success',
+        message: result.message,
+        success: result.success,
+        failed: result.failed,
       });
     } catch (error) {
       ControllerLogger.logError('Multiple Other Delivery Challans deletion', error, req, res);

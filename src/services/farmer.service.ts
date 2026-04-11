@@ -157,6 +157,10 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
 
   public async getAllFarmerCodes(): Promise<string[]> {
+    const key = `${CACHE_PREFIX}:codes:all`;
+    const cached = await this.cacheService.get<string[]>(key);
+    if (cached) return cached;
+
     const farmers = await this.farmerRepository.find({
       select: ['farmerCode'], 
       order: {
@@ -164,10 +168,15 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       },
     });
 
-    
-    return farmers.map((farmer) => farmer.farmerCode);
+    const result = farmers.map((farmer) => farmer.farmerCode);
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
  public async getFarmersWithFilters(queryOptions: PaginationOptions) {
+    const key = `${CACHE_PREFIX}:filtered:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
@@ -263,15 +272,23 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       crops: farmer.crops || [],
     }));
 
-    return {
+    const response = {
       data: formattedData,
       total: meta.total,
       currentPage: meta.page,
       totalPages: meta.pages,
-    };}
-   public async getAllFarmer(
+    };
+    await this.cacheService.set(key, response, CACHE_TTL);
+    return response;
+  }
+
+  public async getAllFarmer(
     queryOptions: PaginationOptions,
   ): Promise<{ data1: any[]; meta: any }> {
+    const key = `${CACHE_PREFIX}:all:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const queryBuilder = this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
@@ -318,10 +335,16 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
         : null,
     }));
 
-    return { data1, meta };
+    const result = { data1, meta };
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
 
   public async getPartialFarmersById(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:partial:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const farmer = await this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
@@ -361,7 +384,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     if (!farmer) return null;
 
-    return {
+    const result = {
       id: farmer.farmer_id,
       fullName: farmer.fullName,
       primaryMobileNo: farmer.farmer_primaryMobileNo,
@@ -391,6 +414,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
           }
         : null,
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   public async getfarmerbyidforview(id: string): Promise<any> {
@@ -557,6 +582,10 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
   }
 
  public async getAllFarmerWithFilter(filter: string): Promise<any[]> {
+    const key = `${CACHE_PREFIX}:withFilter:${filter}`;
+    const cached = await this.cacheService.get<any[]>(key);
+    if (cached) return cached;
+
     const query = this.farmerRepository
       .createQueryBuilder('farmer')
       .leftJoin('farmer.residensialAddress', 'residensialAddress')
@@ -606,7 +635,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     const farmers = await query.getRawMany();
 
-    return farmers.map((farmer) => ({
+    const result = farmers.map((farmer) => ({
       id: farmer.farmer_id,
       fullName: farmer.fullName,
       primaryMobileNo: farmer.farmer_primaryMobileNo,
@@ -636,6 +665,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
           }
         : null, // Return null if farm address is missing
     }));
+    await this.cacheService.set(key, result, CACHE_TTL);
+    return result;
   }
   async approveFarmer(farmerId: string, approverId: string,status:Status) {
     console.log('Approver ID:', approverId);
@@ -677,6 +708,10 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     return farmer;
   }
   async getFarmerByIdForUpdate(id: string) {
+    const key = `${CACHE_PREFIX}:idForUpdate:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const farmer = await this.farmerRepository
       .createQueryBuilder("farmer")
       .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
@@ -687,7 +722,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     if (!farmer) throw new Error("Farmer not found");
 
-    return {
+    const result = {
       id: farmer.id,
       farmerfName: farmer.farmerfName,
       farmerlName: farmer.farmerlName,
@@ -697,6 +732,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       farmAddress: farmer.farmAddress?.id || null,
       crop: farmer.crops,
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   public async createFarmer(farmerData: any): Promise<any> {
@@ -1176,6 +1213,7 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     }
 
     await this.deleteFileFromSpaces(fileUrl);
+    await this.invalidateFarmerCache();
 
     console.log('🎉 Upload completed');
   } catch (error) {
@@ -1245,6 +1283,10 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
   }
 
   async getFarmerDetails(farmerId: string): Promise<Farmer | null> {
+    const key = `${CACHE_PREFIX}:details:${farmerId}`;
+    const cached = await this.cacheService.get<Farmer>(key);
+    if (cached) return cached;
+
     const farmer = await this.farmerRepository
       .createQueryBuilder("farmer")
       .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
@@ -1257,12 +1299,13 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
         "farmer.farmermName",
         "farmer.primaryMobileNo",
         "farmer.email",
-        "residensialAddress", // You can specify specific fields from the address if needed
-        "farmAddress",        // Same for farmAddress
+        "residensialAddress",
+        "farmAddress",
       ])
       .where("farmer.id = :farmerId", { farmerId })
       .getOne();
 
+    if (farmer) await this.cacheService.set(key, farmer, CACHE_TTL_DETAIL);
     return farmer;
   }
   async softDeleteFarmers(farmerIds: string[]) {

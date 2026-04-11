@@ -92,7 +92,7 @@ public async getAllVouchers(
       
             try {
                 doc.relatedData = await this.cashVoucherRepository.findOne({
-                  where: { id: doc.document_type_id , isDeleted: false},
+                  where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
                   relations: ['particulars', 'grnNo', 'challanNo', 'companyName'],
                 });
               
@@ -867,43 +867,41 @@ public async getAllRecycleBinVouchers(
   }
   public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];  
-  for (const id of ids) {
-      const multiCashVoucher = await this.cashVoucherRepository.findOne({
-        where: { id },
-      });
+  const failed: { id: string; reason: string }[] = [];
 
+  for (const id of ids) {
+    try {
+      const multiCashVoucher = await this.cashVoucherRepository.findOne({ where: { id } });
       if (!multiCashVoucher) {
         failed.push({ id, reason: 'multiCashVoucher not found' });
         continue;
       }
 
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: multiCashVoucher.id }
+        where: { document_type_id: multiCashVoucher.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete voucher
+      await this.cashVoucherRepository.softDelete(multiCashVoucher.id);
+      await this.cashVoucherRepository.update(multiCashVoucher.id, { isDeleted: true } as any);
 
+      // Invalidate cache for this specific voucher
+      await this.invalidateCache(id);
 
-      const deleteGrn = await this.cashVoucherRepository.delete(multiCashVoucher.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete multiCashVoucher with ID ${id}`);
-      }
-
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
     }
-    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-    await this.invalidateCache();
-    return { success, failed, message};
-
   }
+
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 
 
 }

@@ -165,9 +165,10 @@ export class SecondSaleService {
       const { search } = queryOptions;
 
       const typedDocuments = data as DocumentWithRelatedData[];
+      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
 
       // ---- Batch fetch: one query instead of N+1 ----
-      const saleIds = typedDocuments
+      const saleIds = activeDocuments
         .map(doc => doc.document_type_id)
         .filter(Boolean) as string[];
 
@@ -177,12 +178,14 @@ export class SecondSaleService {
             .leftJoinAndSelect('ss.companyName', 'companyName')
             .leftJoinAndSelect('ss.location', 'location')
             .where('ss.id IN (:...ids)', { ids: saleIds })
+            .andWhere('ss.isDeleted = false')
+            .andWhere('ss.deletedAt IS NULL')
             .getMany()
         : [];
 
       const saleMap = new Map(sales.map(s => [s.id, s]));
 
-      let relatedDataOnly = typedDocuments
+      let relatedDataOnly = activeDocuments
         .filter(doc => doc.document_type_id && saleMap.has(doc.document_type_id))
         .map((doc) => {
           const rd: any = saleMap.get(doc.document_type_id!)!;
@@ -560,17 +563,11 @@ export class SecondSaleService {
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
-
-      const deleteGrn = await this.secondSaleRepository.delete(secondSale.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete Second Sale with ID ${id}`);
-      }
+      await this.secondSaleRepository.softDelete(secondSale.id);
+      await this.secondSaleRepository.update(secondSale.id, { isDeleted: true } as any);
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;

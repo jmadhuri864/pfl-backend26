@@ -13,6 +13,7 @@ import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import { DocumentbRepository } from '../repositories/documentb.repository';
 
 
 @injectable()
@@ -32,6 +33,8 @@ export class OtherDeliveryChallanService {
     private readonly customerDeliveryChallanService:CustomerDeliveryChallanService,
     @inject(TYPES.CacheService)
     private readonly cacheService: CacheService,
+    @inject(TYPES.DocumentbRepository)
+    private readonly documentbRepository: DocumentbRepository,
   ) {}
 
   private readonly CACHE_PREFIX = 'odc';
@@ -394,8 +397,8 @@ export class OtherDeliveryChallanService {
       if (!doc.document_type_id) continue;
       try {
         doc.relatedData = await this.challanRepository.findOne({
-          where: { id: doc.document_type_id },
-          relations: ['companyName', 'offices', 'grnNo', 'fromLocation',"customerAddress"],
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
+          relations: ['companyName', 'offices', 'grnNo', 'fromLocation', "customerAddress"],
         });
       } catch {
         doc.relatedData = null;
@@ -482,7 +485,8 @@ export class OtherDeliveryChallanService {
 
   async delete(id: string): Promise<boolean> {
     try {
-      const result = await this.challanRepository.delete(id);
+      const result = await this.challanRepository.softDelete(id);
+      await this.challanRepository.update(id, { isDeleted: true } as any);
       if (result.affected !== 0) await this.invalidateCache(id);
       return result.affected !== 0;
     } catch (err) {
@@ -491,5 +495,41 @@ export class OtherDeliveryChallanService {
       });
       return false;
     }
+  }
+
+  public async deleteMultipleOtherDeliveryChallans(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+    const success: string[] = [];
+    const failed: { id: string; reason: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const challan = await this.challanRepository.findOne({ where: { id } });
+        if (!challan) {
+          failed.push({ id, reason: 'Other Delivery Challan not found' });
+          continue;
+        }
+
+        // Soft delete related document
+        const relatedDocument = await this.documentbRepository.findOne({
+          where: { document_type_id: challan.id },
+        });
+        if (relatedDocument) {
+          await this.documentbRepository.softDelete(relatedDocument.id);
+          await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
+        }
+
+        // Soft delete challan
+        await this.challanRepository.softDelete(challan.id);
+        await this.challanRepository.update(challan.id, { isDeleted: true } as any);
+
+        await this.invalidateCache(id);
+        success.push(id);
+      } catch (error: any) {
+        failed.push({ id, reason: error.message || 'Unknown error' });
+      }
+    }
+
+    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    return { success, failed, message };
   }
 }

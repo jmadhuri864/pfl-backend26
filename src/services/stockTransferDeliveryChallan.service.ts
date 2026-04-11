@@ -343,19 +343,14 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
         where: { document_type_id: dcForStockTransfer.id }
       });
 
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
-
-      const deleteDCForStockTransfer = await this.challanRepository.delete(dcForStockTransfer.id);
-      if (!deleteDCForStockTransfer) {
-        throw new Error(`Failed to delete DC for Stock Transfer with ID ${id}`);
-      }
+      await this.challanRepository.softDelete(dcForStockTransfer.id);
+      await this.challanRepository.update(dcForStockTransfer.id, { isDeleted: true } as any);
+      await this.invalidateCache(id);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
@@ -497,6 +492,8 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
           .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
           .leftJoinAndSelect('challan.toLocation', 'toLocation')
           .where('challan.id IN (:...ids)', { ids: challanIds })
+          .andWhere('challan.isDeleted = false')
+          .andWhere('challan.deletedAt IS NULL')
           .getMany()
       : [];
 

@@ -14,6 +14,8 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { LessThan, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 @injectable()
@@ -28,8 +30,28 @@ export class LabourPaymentVoucherService {
     @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'lpv';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   async createLPVoucher(data: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -68,6 +90,7 @@ export class LabourPaymentVoucherService {
             });
 
       await this.documentbService.startApprovalFlow(document.id);
+      await this.invalidateCache();
             
       return saveLPVoucher;
     } catch (error: any) {
@@ -230,6 +253,10 @@ export class LabourPaymentVoucherService {
   //}
 
   public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
               userId,
@@ -248,7 +275,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
           
                 try {
                     doc.relatedData = await this.lpVoucherRepository.findOne({
-                      where: { id: doc.document_type_id, isDeleted: false },
+                      where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
                       relations: ['companyName', 'grnNo'],
                     });
                 } catch {
@@ -310,7 +337,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
     });
   }
     
-      return {
+      const listResult = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -318,9 +345,15 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
     pages: meta.pages
   } 
         };
+    await this.cacheService.set(cacheKey, listResult, this.CACHE_TTL);
+    return listResult;
 }
 
   public async getLPVoucherById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.lpVoucherRepository
       .createQueryBuilder('lpVoucher')
       .leftJoinAndSelect('lpVoucher.grnNo', 'grn')
@@ -367,7 +400,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     if (voucher && voucher.grnNo) {
-      return {
+      const idResult = {
         ...voucher,
         grnNo: {
           id: voucher.grnNo?.id || null,
@@ -380,12 +413,17 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
         createdTime: createdTime,
         createdDate: createdDate,
       };
+      await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+      return idResult;
     }
 
     return voucher;
   }
 
   public async getLPVoucherByIdForView(docid: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
     const document = await this.documentbService.getDocumentById(docid);
     const id = document.documentTypeId;
@@ -439,10 +477,15 @@ remark:voucher.remark || null,
         documentId: document.id,
     };
 
+    await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
   }
 
-public async getLPRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  public async getLPRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
               userId,
@@ -523,7 +566,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
     });
   }
     
-      return {
+      const recycleResult = {
   data: relatedDataOnly,
   meta: {
     total: meta.total,
@@ -531,9 +574,15 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
     pages: meta.pages
   } 
         };
+    await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
+    return recycleResult;
 }
 
    public async getLPVoucherByIdForUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const voucher = await this.lpVoucherRepository
       .createQueryBuilder('lpVoucher')
       .leftJoinAndSelect('lpVoucher.grnNo', 'grn')
@@ -578,6 +627,7 @@ remark : voucher.remark || null,
       createdDate: createdDate,
     };
 
+    await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
   }
 
@@ -609,13 +659,13 @@ remark : voucher.remark || null,
 
     await this.auditLogService.logChange(
       'LPVoucher',
-      voucher.id, // Entity ID
-      originalVoucher, // Original state
-      updatedVoucher, // Updated state
-      updatedBy, // Updated by (you may replace this with the actual user making the update)
+      voucher.id,
+      originalVoucher,
+      updatedVoucher,
+      updatedBy,
     );
 
-    // Return the updated voucher
+    await this.invalidateCache(id);
     return updatedVoucher;
   }
 
@@ -645,6 +695,7 @@ remark : voucher.remark || null,
     await this.lpVoucherRepository.save(lpVoucher);
 
     console.log(`LP Voucher with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
 
@@ -678,41 +729,40 @@ remark : voucher.remark || null,
   }
   public async deleteMultipleLPVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];  
-  for (const id of ids) {
-      const lpVoucher = await this.lpVoucherRepository.findOne({
-        where: { id },
-      });
+  const failed: { id: string; reason: string }[] = [];
 
+  for (const id of ids) {
+    try {
+      const lpVoucher = await this.lpVoucherRepository.findOne({ where: { id } });
       if (!lpVoucher) {
-        failed.push({ id, reason: 'Inward Register not found' });
+        failed.push({ id, reason: 'LP Voucher not found' });
         continue;
       }
 
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: lpVoucher.id }
+        where: { document_type_id: lpVoucher.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete LP Voucher
+      await this.lpVoucherRepository.softDelete(lpVoucher.id);
+      await this.lpVoucherRepository.update(lpVoucher.id, { isDeleted: true } as any);
 
+      // Invalidate cache for this specific voucher
+      await this.invalidateCache(id);
 
-      const deleteGrn = await this.lpVoucherRepository.delete(lpVoucher.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete Inward Register with ID ${id}`);
-      }
-
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
     }
-    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-    return { success, failed, message};
-
   }
+
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 
 }

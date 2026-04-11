@@ -4,6 +4,11 @@ import { DumpRegisterRepository } from "../repositories/dumpRegister.repository"
 import { TYPES } from "../types";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = 'dump';
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 import logger from "../utils/logger";
 import { DataSource, EntityManager, ILike, In, IsNull } from "typeorm";
 import { DumpProductRepository } from "../repositories/dumpProduct.repository";
@@ -40,8 +45,30 @@ export class DumpRegisterService{
     @inject(TYPES.DocumentbRepository)
     private documentbRepository: DocumentbRepository,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
     ) {}
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+  private async invalidateDumpCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:recycle:*`),
+      this.cacheService.del(`${CACHE_PREFIX}:count`),
+      this.cacheService.del(`${CACHE_PREFIX}:totalQty`),
+      this.cacheService.del(`${CACHE_PREFIX}:totalCost`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
+
   private async generateSerialNo(): Promise<string> {
     const now = new Date();
     const yyyy = now.getFullYear().toString();
@@ -215,6 +242,7 @@ const serialNo = await this.generateSerialNo();
 
         // Start approval flow after commit so dump register is visible to other DB connections
         await this.documentService.startApprovalFlow(document.id);
+        await this.invalidateDumpCache();
 
         return savedDumpRegister;
       } catch (error) {
@@ -233,6 +261,9 @@ const serialNo = await this.generateSerialNo();
     }
 
   async getAllRecycleBinDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
         userId,
@@ -320,7 +351,7 @@ const serialNo = await this.generateSerialNo();
     });
   }
       
-             return {
+      const recycleResponse = {
         data: relatedDataOnly,
         meta: {
           total: meta.total,
@@ -328,10 +359,16 @@ const serialNo = await this.generateSerialNo();
           pages: meta.pages
         }
       };
+      await this.cacheService.set(key, recycleResponse, CACHE_TTL);
+      return recycleResponse;
     }
   
   //TODO: Document for view
       async getDumpRegisterById(id: string): Promise<any> {
+        const key = `${CACHE_PREFIX}:id:${id}`;
+        const cached = await this.cacheService.get<any>(key);
+        if (cached) return cached;
+
         const dumpRegister = await this.dumpRegisterRepository.findOne({
           where: { id },
           relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.uom","companyName","location"],
@@ -344,7 +381,7 @@ const serialNo = await this.generateSerialNo();
         const rawDate = dumpRegister.createdAt;
         const { createdDate, createdTime } = formatDateTime(rawDate);
       
-        return {
+        const result = {
           id: dumpRegister.id,
           companyName: dumpRegister.companyName?.id,
           createdDate: createdDate, 
@@ -383,9 +420,15 @@ const serialNo = await this.generateSerialNo();
            
           })),
         };
+        await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+        return result;
       }
 
        async getDumpRegisterByIdforUpdate(id: string): Promise<any> {
+        const key = `${CACHE_PREFIX}:update:${id}`;
+        const cached = await this.cacheService.get<any>(key);
+        if (cached) return cached;
+
         const dumpRegister = await this.dumpRegisterRepository.findOne({
           where: { id },
           relations: ["location", "grn", "deliveryChallanNo", "rbcNo", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.variant", "dumpProducts.uom", "companyName"],
@@ -398,10 +441,7 @@ const serialNo = await this.generateSerialNo();
         const rawDate = dumpRegister.createdAt;
         const { createdDate, createdTime } = formatDateTime(rawDate);
       
-        return {
-          id: dumpRegister.id,
-          dumpNo: dumpRegister.dumpNo || null,
-          companyName: dumpRegister.companyName?.id,
+        const updateResult = {
           createdDate: createdDate, 
           createdTime: createdTime, 
           dumpType: dumpRegister.dumpType || null,
@@ -426,10 +466,15 @@ const serialNo = await this.generateSerialNo();
             unitPrice: dumpProduct.unitPrice,
           })),
         };
+        await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
+        return updateResult;
       }
 
       //TODO: Get DumpRegister for View
        async getDumpRegisterByIdforView(docId: string): Promise<any> {
+        const key = `${CACHE_PREFIX}:view:${docId}`;
+        const cached = await this.cacheService.get<any>(key);
+        if (cached) return cached;
 
         const document = await this.docDoubleApproverService.getDocumentById(docId);
         const id = document.documentTypeId;
@@ -447,7 +492,7 @@ const serialNo = await this.generateSerialNo();
         const rawDate = dumpRegister.createdAt;
         const { createdDate, createdTime } = formatDateTime(rawDate);
       
-        return {
+        const viewResult = {
           id: dumpRegister.id,
           dumpNo: dumpRegister.dumpNo || null,
           grn: dumpRegister.grn?.grnNo || null,
@@ -481,6 +526,8 @@ const serialNo = await this.generateSerialNo();
           approvalSummary: document.approvalSummary,
           documentId: document.documentId,
         };
+        await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
+        return viewResult;
       }
       }
 //     async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
@@ -625,6 +672,9 @@ const serialNo = await this.generateSerialNo();
 //     //     }
 // }
 async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
         userId,
@@ -653,7 +703,7 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
             if (!doc.document_type_id) continue;
             try {
               doc.relatedData = await this.dumpRegisterRepository.findOne({
-                where: { id: doc.document_type_id, isDeleted:false },
+                where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
                 relations: ['companyName', 'location', 'grn', 'deliveryChallanNo', 'rbcNo', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
               });
       
@@ -725,7 +775,7 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
     });
   }
       
-             return {
+      const listResponse = {
         data: relatedDataOnly,
         meta: {
           total: meta.total,
@@ -733,6 +783,8 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
           pages: meta.pages
         }
       };
+      await this.cacheService.set(key, listResponse, CACHE_TTL);
+      return listResponse;
     }
     
 public async updateDumpRegister(
@@ -787,6 +839,7 @@ public async updateDumpRegister(
     updatedBy              
   );
 
+  await this.invalidateDumpCache(id);
   return updatedDumpRegister;
 }
 
@@ -816,21 +869,31 @@ async deleteDumpRegister(id: string): Promise<boolean> {
 
   
   await this.dumpRegisterRepository.save(dumpRegister);
+  await this.invalidateDumpCache(id);
 
   console.log(`Dump Register with ID ${id} marked for deletion in 6 months.`);
   return true;
 }
 
 async dumpcount():Promise<number>{
+  const key = `${CACHE_PREFIX}:count`;
+  const cached = await this.cacheService.get<number>(key);
+  if (cached !== null && cached !== undefined) return cached;
   const count = await this.dumpRegisterRepository.count();
+  await this.cacheService.set(key, count, CACHE_TTL);
   return count; 
 }
 
 async totaldumpquantity():Promise<number>{
+  const key = `${CACHE_PREFIX}:totalQty`;
+  const cached = await this.cacheService.get<number>(key);
+  if (cached !== null && cached !== undefined) return cached;
   const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
   .select("SUM(dumpRegister.totalQty)", "total")
   .getRawOne();
-  return total.total;
+  const result = total.total;
+  await this.cacheService.set(key, result, CACHE_TTL);
+  return result;
 }
 // async totaldumpcost():Promise<number>{
 //   const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
@@ -840,44 +903,58 @@ async totaldumpquantity():Promise<number>{
 // }
 
 async totaldumpcost(): Promise<number> {
+  const key = `${CACHE_PREFIX}:totalCost`;
+  const cached = await this.cacheService.get<number>(key);
+  if (cached !== null && cached !== undefined) return cached;
   const total = await this.dumpRegisterRepository
     .createQueryBuilder("dumpRegister")
-    .leftJoin("dumpRegister.dumpProducts", "dumpProduct") // Join DumpProduct
-    .select("SUM(dumpProduct.amount)", "total") // Sum dumpCost from DumpProduct
+    .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
+    .select("SUM(dumpProduct.amount)", "total")
     .getRawOne();
-
-  return total.total ? Number(total.total) :0; // Ensure it returns a number
+  const result = total.total ? Number(total.total) : 0;
+  await this.cacheService.set(key, result, CACHE_TTL);
+  return result;
 }
 
 
 async totalqunatityandtotaldumpcostfromstartdatetoenddate(startdate: Date, enddate: Date): Promise<any> {
+  const key = `${CACHE_PREFIX}:dateRange:${startdate}:${enddate}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
   const total = await this.dumpRegisterRepository
     .createQueryBuilder("dumpRegister")
-    .leftJoin("dumpRegister.dumpProducts", "dumpProduct") // Join DumpProduct
-    .select("SUM(dumpRegister.totalQty)", "totalQuantity") // Sum totalQty from DumpRegister
-    .addSelect("SUM(dumpProduct.amount)", "totalCost") // Sum dumpCost from DumpProduct
+    .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
+    .select("SUM(dumpRegister.totalQty)", "totalQuantity")
+    .addSelect("SUM(dumpProduct.amount)", "totalCost")
     .where("dumpRegister.date BETWEEN :startdate AND :enddate", { startdate: startdate, enddate: enddate })
     .getRawOne();
-
   console.log(total);
+  await this.cacheService.set(key, total, CACHE_TTL);
   return total;
 }
 async getDumpRegisterlocation(location: string): Promise<any> { 
+  const key = `${CACHE_PREFIX}:location:${location}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
   const total = await this.dumpRegisterRepository
   .createQueryBuilder("dumpRegister")
   .leftJoin("dumpRegister.location", "location")
   .where("location.id = :location", { location: location })
   .getMany();
+  await this.cacheService.set(key, total, CACHE_TTL);
   return total; 
 }
 
 async getDumpRegisterByCompanyName(companyName: string): Promise<any> {
+  const key = `${CACHE_PREFIX}:company:${companyName}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
   const total = await this.dumpRegisterRepository
     .createQueryBuilder("dumpRegister")
     .leftJoin("dumpRegister.companyName", "companyName")
     .where("companyName.id = :companyName", { companyName: companyName })
     .getMany();
-
+  await this.cacheService.set(key, total, CACHE_TTL);
   return total; 
 }
 
@@ -886,6 +963,9 @@ public async getDumpDataForDates(
   startDate?: string,
   endDate?: string
 ): Promise<any[]> {
+  const key = `${CACHE_PREFIX}:datesData:${filterType}:${startDate}:${endDate}`;
+  const cached = await this.cacheService.get<any[]>(key);
+  if (cached) return cached;
   let query = this.dumpProductRepository
     .createQueryBuilder("dumpProducts")
     .select("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')", "date")
@@ -935,13 +1015,15 @@ public async getDumpDataForDates(
       break; 
   }
 
-  const result = await query.getRawMany();
+  const rawResult = await query.getRawMany();
 
-  return result.map((row) => ({
+  const mappedResult = rawResult.map((row) => ({
     date: row.date,
     quantity: Number(row.totalQuantity),
     amount: Number(row.totalCost),
   }));
+  await this.cacheService.set(key, mappedResult, CACHE_TTL);
+  return mappedResult;
 }
 public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
   const success: string[] = [];
@@ -963,15 +1045,13 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteAqr = await this.dumpRegisterRepository.delete(dumpRegister.id);
-      if (!deleteAqr) {
-        throw new Error(`Failed to delete Dump Register with ID ${id}`);
-      }
+      await this.dumpRegisterRepository.softDelete(dumpRegister.id);
+      await this.dumpRegisterRepository.update(dumpRegister.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
@@ -979,7 +1059,8 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
   }
   // const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
   // return { success, failed, message };
-     return { message: 'Dump records marked for deletion successfully' };
+  await this.invalidateDumpCache();
+  return { message: 'Dump records marked for deletion successfully' };
 }
 
 }

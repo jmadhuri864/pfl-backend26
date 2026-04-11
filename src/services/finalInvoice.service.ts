@@ -15,6 +15,8 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { toWords } from 'number-to-words';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 @injectable()
 export class FinalInvoiceService {
@@ -32,9 +34,28 @@ export class FinalInvoiceService {
     private docDoubleApproverService: DocDoubleApproverService,
      @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {
     this.invoiceRepository = this.dataSource.getRepository(Invoice);
     this.invoiceProductRepository = this.dataSource.getRepository(InvoiceProduct);
+  }
+
+  private readonly CACHE_PREFIX = 'finv';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:pdf:${id}`),
+      );
+    }
+    await Promise.all(tasks);
   }
 
   async create(deliveryChallanId: string, additionalData: any, requestedBy: any): Promise<any> {
@@ -196,6 +217,7 @@ export class FinalInvoiceService {
       // Start approval flow after commit so invoice is visible to other DB connections
       await this.documentService.startApprovalFlow(document.id);
 
+      await this.invalidateCache();
       // Fetch the complete invoice with relations
       const completeInvoice = await this.invoiceRepository.findOne({
         where: { id: savedInvoice.id },
@@ -258,6 +280,10 @@ export class FinalInvoiceService {
   }
 
   public async getByIdForUpdate(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const invoice = await this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.invoiceProducts', 'products')
@@ -343,10 +369,15 @@ export class FinalInvoiceService {
       })) || [],
     };
 
+    await this.cacheService.set(cacheKey, { data: formattedInvoice }, this.CACHE_TTL);
     return { data: formattedInvoice };
   }
 
   public async getByIdForView(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const document = await this.docDoubleApproverService.getDocumentById(id);
     console.log(document);
 
@@ -508,7 +539,7 @@ export class FinalInvoiceService {
       if (!doc.document_type_id) continue;
       try {
         doc.relatedData = await this.invoiceRepository.findOne({
-          where: { id: doc.document_type_id },
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
           relations: [
             'invoiceProducts',
             'companyName',
@@ -821,15 +852,11 @@ console.log(items)
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
-      const deleteAqr = await this.invoiceRepository.delete(finalInvoice.id);
-      if (!deleteAqr) {
-        throw new Error(`Failed to delete FinalInvoice with ID ${id}`);
-      }
+      await this.invoiceRepository.softDelete(finalInvoice.id);
+      await this.invoiceRepository.update(finalInvoice.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });

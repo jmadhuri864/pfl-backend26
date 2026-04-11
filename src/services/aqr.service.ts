@@ -416,6 +416,7 @@ export class AqrService {
       .leftJoin("aqr.verifiedBy", "verifiedBy").addSelect(["verifiedBy.firstName", "verifiedBy.lastName"])
       .where("aqr.id IN (:...ids)", { ids: aqrIds })
       .andWhere("aqr.isDeleted = false")
+      .andWhere("aqr.deletedAt IS NULL")
       .getMany();
 
     const aqrMap = new Map(aqrs.map((a) => [a.id, a]));
@@ -803,10 +804,13 @@ export class AqrService {
         if (!aqr) { failed.push({ id, reason: "AQR not found" }); continue; }
 
         const relatedDocument = await this.documentbRepository.findOne({ where: { document_type_id: aqr.id } });
-        if (!relatedDocument) throw new Error("Something went wrong");
+        if (relatedDocument) {
+          await this.documentbRepository.softDelete(relatedDocument.id);
+          await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
+        }
 
-        await this.documentbRepository.delete(relatedDocument.id);
-        await this.aqrRepo.delete(aqr.id);
+        await this.aqrRepo.softDelete(aqr.id);
+        await this.aqrRepo.update(aqr.id, { isDeleted: true } as any);
         success.push(id);
       } catch (error: any) {
         failed.push({ id, reason: error.message || "Unknown error" });
@@ -820,19 +824,26 @@ export class AqrService {
   // ─── Legacy (kept for compatibility) ─────────────────────────────────────
 
   public async getAllAqr(queryOptions: PaginationOptions): Promise<any> {
+    const key = this.cacheKey("all", JSON.stringify(queryOptions));
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const qb = this.aqrRepo
       .createQueryBuilder("aqr")
       .leftJoinAndSelect("aqr.product", "product")
       .leftJoinAndSelect("aqr.parameters", "parameters")
+       .andWhere("aqr.isDeleted = false")
       .orderBy("aqr.createdAt", "DESC");
 
     const result = await buildQuery(qb, queryOptions, "aqr");
-    return {
+    const response = {
       data: result.data.map((aqr) => {
         const { createdDate, createdTime } = formatDateTime(aqr.createdAt);
         return { ...aqr, createdDate, createdTime, arrivalDate: formatDateTime(aqr.arrivalDate || "") };
       }),
       meta: result.meta,
     };
+    await this.cacheService.set(key, response, CACHE_TTL);
+    return response;
   }
 }

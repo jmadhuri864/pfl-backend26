@@ -189,4 +189,28 @@ export class PackingMaterialService {
     await this.invalidateCache(id);
     return updated;
   }
+
+  async deleteMultiplePackingMaterials(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+    const success: string[] = [];
+    const failed: { id: string; reason: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        const material = await this.packingMaterialRepository.findOne({ where: { id } });
+        if (!material) {
+          failed.push({ id, reason: 'Packing material not found' });
+          continue;
+        }
+
+        await this.packingMaterialRepository.softDelete(id);
+        await this.invalidateCache(id);
+        success.push(id);
+      } catch (error: any) {
+        failed.push({ id, reason: error.message || 'Unknown error' });
+      }
+    }
+
+    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+    return { success, failed, message };
+  }
 }

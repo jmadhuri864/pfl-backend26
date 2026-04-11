@@ -13,6 +13,7 @@ import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { PaginationOptions } from "../utils/pagination";
 import { Brackets } from "typeorm";
 import { DocumentbService } from "./documentb.service";
+import { getReadableDocumentType } from "../utils/documentTypeLabel";
 
 @injectable()
 export class DocDoubleApproverService {
@@ -27,33 +28,7 @@ export class DocDoubleApproverService {
   ) {
   }
 
-  // Convert document type to readable format
-  private getReadableDocumentType(type: string): string {
-    const typeMap: { [key: string]: string } = {
-      'grn': 'GRN',
-      'rfpa': 'RFPA',
-      'deal-slip': 'Deal Slip',
-      'aqr': 'AQR',
-      'second-sale': 'Second Sale',
-      'vehicle-dispatch-register': 'Vehicle Dispatch',
-      'dump-register': 'Dump Register',
-      'inward-register': 'Inward Register',
-      'dc-type-other': 'Delivery Challan',
-      'dc-type-stock-transfer': 'Stock Transfer Challan',
-      'dc-type-customer': 'Customer Delivery Challan',
-      'return-by-customer': 'Return by Customer',
-      'return-to-vendor': 'Return to Vendor',
-      'multi-cash-voucher': 'Cash Voucher',
-      'labor-payment-voucher': 'Labor Payment Voucher',
-      'transport-payment-voucher': 'Transport Payment Voucher',
-      'packaging-material-voucher': 'Packaging Material Voucher',
-      'final-invoice': 'Final Invoice',
-      'eod-report': 'EOD Report',
-      'proforma-invoice': 'Proforma Invoice',
-    };
-    return typeMap[type.toLowerCase()] || type;
-  }
-
+  // Convert document type to readable format — moved to src/utils/documentTypeLabel.ts
 
   async approveDocumentStepForDoubleLevel(
   documentId: string,
@@ -130,7 +105,7 @@ export class DocDoubleApproverService {
     await this.documentbRepository.save(document);
 
     const docNo = await this.documentBService.resolveDocumentTypeNo(document);
-    const readableType = this.getReadableDocumentType(document.type);
+    const readableType = getReadableDocumentType(document.type);
     const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
     const rejectedLevel = isFirstApprover ? 'Approver Level 1' : 'Approver Level 2';
     const rejectedLevelUsers = isFirstApprover ? firstBlock?.users ?? [] : secondBlock?.users ?? [];
@@ -180,7 +155,7 @@ export class DocDoubleApproverService {
     await this.documentApprovalFlowRepository.save(info);
 
     const docNo2 = await this.documentBService.resolveDocumentTypeNo(document);
-    const readableType2 = this.getReadableDocumentType(document.type);
+    const readableType2 = getReadableDocumentType(document.type);
     const docLabel2 = docNo2 ? `${readableType2} #${docNo2}` : readableType2;
     const approvedLevel = isFirstApprover ? 'Approver Level 1' : 'Approver Level 2';
     const approvedLevelUsers = isFirstApprover ? firstBlock?.users ?? [] : secondBlock?.users ?? [];

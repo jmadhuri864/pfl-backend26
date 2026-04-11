@@ -10,6 +10,8 @@ import { ApprovalStageInfoRepository } from "../repositories/approvalStageInfoRe
 import { NotificationService } from "./notification.service";
 import { buildQueryFromArray } from "../utils/pagination";
 import { DocumentbService } from "./documentb.service";
+import { CacheService } from "./cache.service";
+import { getReadableDocumentType } from "../utils/documentTypeLabel";
 
 
 @injectable()
@@ -25,35 +27,12 @@ export class DocSingalApproverService {
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
     @inject(TYPES.DocumentbService)
-    private documentBService: DocumentbService
+    private documentBService: DocumentbService,
+    @inject(TYPES.CacheService)
+    private cacheService: CacheService,
   ){}
 
-  // Convert document type to readable format
-  private getReadableDocumentType(type: string): string {
-    const typeMap: { [key: string]: string } = {
-      'grn': 'GRN',
-      'rfpa': 'RFPA',
-      'deal-slip': 'Deal Slip',
-      'aqr': 'AQR',
-      'second-sale': 'Second Sale',
-      'vehicle-dispatch-register': 'Vehicle Dispatch',
-      'dump-register': 'Dump Register',
-      'inward-register': 'Inward Register',
-      'dc-type-other': 'Delivery Challan',
-      'dc-type-stock-transfer': 'Stock Transfer Challan',
-      'dc-type-customer': 'Customer Delivery Challan',
-      'return-by-customer': 'Return by Customer',
-      'return-to-vendor': 'Return to Vendor',
-      'multi-cash-voucher': 'Cash Voucher',
-      'labor-payment-voucher': 'Labor Payment Voucher',
-      'transport-payment-voucher': 'Transport Payment Voucher',
-      'packaging-material-voucher': 'Packaging Material Voucher',
-      'final-invoice': 'Final Invoice',
-      'eod-report': 'EOD Report',
-     
-    };
-    return typeMap[type.toLowerCase()] || type;
-  }
+  // Convert document type to readable format — moved to src/utils/documentTypeLabel.ts
   
   private isSingleApprovalBasedDocument(type: DocumentTypeEnum): boolean {
     return [
@@ -66,8 +45,18 @@ export class DocSingalApproverService {
     ].includes(type);
   }
 
-    //Todo:New By Vaishali
+  //Todo:New By Vaishali
   //TODO: Approve Document
+  private async invalidateRelatedCache(type: DocumentTypeEnum): Promise<void> {
+    const prefixMap: Partial<Record<DocumentTypeEnum, string[]>> = {
+      [DocumentTypeEnum.RFPA]: ['rfpa:list:*', 'rfpa:all:*', 'rfpa:rfpanumbers:*', 'rfpa:recycle:*'],
+      [DocumentTypeEnum.DEAL_SLIP]: ['dealslip:list:*', 'dealslip:all:*'],
+      [DocumentTypeEnum.AQR]: ['aqr:list:*', 'aqr:all:*'],
+    };
+    const patterns = prefixMap[type] ?? [];
+    await Promise.all(patterns.map(p => this.cacheService.invalidatePattern(p)));
+  }
+
   async approveDocumentStepForSingleLevel(
     documentId: string,
     userId: string,
@@ -151,7 +140,7 @@ export class DocSingalApproverService {
         await this.documentApprovalFlowRepository.save(approvalInfo);
 
           const docNo = await this.documentBService.resolveDocumentTypeNo(document);
-          const readableType = this.getReadableDocumentType(document.type);
+          const readableType = getReadableDocumentType(document.type);
           const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
 
           if (action === 'reject') {
@@ -159,6 +148,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+          await this.invalidateRelatedCache(document.type);
 
           // 🔔 Actor
           await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
@@ -182,6 +172,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
+          await this.invalidateRelatedCache(document.type);
 
           // 🔔 Actor
           await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
@@ -297,7 +288,7 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
       documentTypeId: document.document_type_id,
       status: document.status,
       overAllStatus: document.status,
-      createdBy: document.lastActionBy?.firstName+" "+document.lastActionBy?.lastName ?? null,
+      createdBy: document.lastActionBy ? `${document.lastActionBy.firstName} ${document.lastActionBy.lastName}` : null,
       approvalSummary: approvalInfoSummary,
       // documentType: document.type,
       //type: document.type,

@@ -388,6 +388,7 @@ public async getAllTPVouchers(
           .leftJoinAndSelect('tpv.companyName', 'companyName')
           .where('tpv.id IN (:...ids)', { ids: voucherIds })
           .andWhere('tpv.isDeleted = false')
+          .andWhere('tpv.deletedAt IS NULL')
           .getMany()
       : [];
 
@@ -762,41 +763,39 @@ public async getAllTPVouchers(
   }
   public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];  
-  for (const id of ids) {
-      const tpVoucher = await this.tpVoucherRepository.findOne({
-        where: { id },
-      });
+  const failed: { id: string; reason: string }[] = [];
 
+  for (const id of ids) {
+    try {
+      const tpVoucher = await this.tpVoucherRepository.findOne({ where: { id } });
       if (!tpVoucher) {
         failed.push({ id, reason: 'Transport Payment Voucher not found' });
         continue;
       }
 
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: tpVoucher.id }
+        where: { document_type_id: tpVoucher.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete TP Voucher
+      await this.tpVoucherRepository.softDelete(tpVoucher.id);
+      await this.tpVoucherRepository.update(tpVoucher.id, { isDeleted: true } as any);
 
+      // Invalidate cache for this specific voucher
+      await this.invalidateCache(id);
 
-      const deleteGrn = await this.tpVoucherRepository.delete(tpVoucher.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete Transport Payment Voucher with ID ${id}`);
-      }
-
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
     }
-    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-    await this.invalidateCache();
-    return { success, failed, message};
-
   }
+
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 }

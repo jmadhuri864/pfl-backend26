@@ -24,6 +24,11 @@ import { ProductVarientService } from './productVarient.service';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { format } from 'date-fns';
+import { CacheService } from './cache.service';
+
+const CACHE_PREFIX = 'cdc';
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 
 @injectable()
 export class CustomerDeliveryChallanService {
@@ -56,7 +61,25 @@ export class CustomerDeliveryChallanService {
     private readonly deliveryChallanProductRepository: DitemRepository,
      @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) { }
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+  private async invalidateCDCCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:net:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:returnStatus:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
 
   public async generateVoucherNo(type: string = 'C'): Promise<string> {
@@ -300,6 +323,7 @@ export class CustomerDeliveryChallanService {
 
       // Start approval flow after commit so challan is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
+      await this.invalidateCDCCache();
 
       return actualChallan;
 
@@ -323,6 +347,10 @@ export class CustomerDeliveryChallanService {
   public async getByIdCustomerDeliveryChallanforUpdate(
     id: string,
   ): Promise<any> {
+    const key = `${CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const challan = await this.challanRepository
       .createQueryBuilder('challan')
       .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
@@ -439,12 +467,18 @@ export class CustomerDeliveryChallanService {
       ),
     };
 
-    return { data: formattedChallan };
+    const result = { data: formattedChallan };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
   public async getByIdCustomerDeliveryChallanForView(
     docId: string,
   ): Promise<any> {
+    const key = `${CACHE_PREFIX}:view:${docId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const document = await this.docDoubleApproverService.getDocumentById(docId);
     const id = document.documentTypeId;
 
@@ -584,7 +618,9 @@ export class CustomerDeliveryChallanService {
         documentId: document.id,
       };
 
-      return { data: formattedChallan };
+      const viewResult = { data: formattedChallan };
+      await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
+      return viewResult;
     }
   }
 
@@ -592,6 +628,10 @@ export class CustomerDeliveryChallanService {
     queryOptions: PaginationOptions,
     userId: string,
   ): Promise<any> {
+    const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const { data, meta } =
       await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
         userId,
@@ -611,7 +651,7 @@ export class CustomerDeliveryChallanService {
       try {
         console.log('ID:', doc.document_type_id);
         doc.relatedData = await this.challanRepository.findOne({
-          where: { id: doc.document_type_id },
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
           relations: [
             'customerName',
             'fromLocation',
@@ -699,7 +739,7 @@ export class CustomerDeliveryChallanService {
       }));
     console.log('Related Data : ', relatedDataOnly);
 
-    return {
+    const listResponse = {
       data: relatedDataOnly,
       meta: {
         total: meta.total,
@@ -707,6 +747,8 @@ export class CustomerDeliveryChallanService {
         pages: meta.pages,
       },
     };
+    await this.cacheService.set(key, listResponse, CACHE_TTL);
+    return listResponse;
 
     // const queryBuilder = this.challanRepository
     //   .createQueryBuilder('challan')
@@ -823,7 +865,9 @@ export class CustomerDeliveryChallanService {
       if (!challan) return null;
 
       const updated = Object.assign(challan, data);
-      return await this.challanRepository.save(updated);
+      const saved = await this.challanRepository.save(updated);
+      await this.invalidateCDCCache(id);
+      return saved;
     } catch (err) {
       logger.error(`Error updating delivery challan with ID: ${id}`, {
         error: err,
@@ -836,6 +880,7 @@ export class CustomerDeliveryChallanService {
     try {
       console.log(id);
       const result = await this.challanRepository.delete(id);
+      await this.invalidateCDCCache(id);
       return result.affected !== 0;
     } catch (err) {
       logger.error(`Error deleting delivery challan with ID: ${id}`, {
@@ -864,21 +909,20 @@ export class CustomerDeliveryChallanService {
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteAqr = await this.challanRepository.delete(customerDC.id);
-      if (!deleteAqr) {
-        throw new Error(`Failed to delete customerDC with ID ${id}`);
-      }
+      await this.challanRepository.softDelete(customerDC.id);
+      await this.challanRepository.update(customerDC.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
   }
   const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  await this.invalidateCDCCache();
   return { success, failed, message };
 }
 
@@ -962,6 +1006,7 @@ export class CustomerDeliveryChallanService {
 
       // Save updated challan
       await this.challanRepository.save(challan);
+      await this.invalidateCDCCache(deliveryChallanId);
 
       console.log(`Delivery challan ${challan.challanNo} updated with return data`);
     } catch (error) {
@@ -975,6 +1020,10 @@ export class CustomerDeliveryChallanService {
    * Useful for invoice generation
    */
   async getDeliveryChallanWithNetAmounts(deliveryChallanId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:net:${deliveryChallanId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     // First update with latest return data
     await this.updateDeliveryChallanProductsWithReturns(deliveryChallanId);
 
@@ -1029,15 +1078,16 @@ export class CustomerDeliveryChallanService {
 
 
 
-    return {
+    const netResult = {
       ...challan,
       deliveryChallanProducts: productsWithNetAmounts,
       summary: {
         totalOriginalAmount,
-
         hasReturns: challan.isReturned,
       },
     };
+    await this.cacheService.set(key, netResult, CACHE_TTL_DETAIL);
+    return netResult;
   }
 
   /**
@@ -1045,6 +1095,10 @@ export class CustomerDeliveryChallanService {
    * Returns the status and details
    */
   async checkReturnByCustomerStatus(deliveryChallanId: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:returnStatus:${deliveryChallanId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const challan = await this.challanRepository.findOne({
       where: { id: deliveryChallanId },
       relations: ['returns'],
@@ -1054,7 +1108,7 @@ export class CustomerDeliveryChallanService {
       throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
     }
 
-    return {
+    const result = {
       deliveryChallanId: challan.id,
       challanNo: challan.challanNo,
       isReturnByCustomerCreated: (challan as any).isReturnByCustomerCreated || false,
@@ -1062,5 +1116,7 @@ export class CustomerDeliveryChallanService {
       returnsCount: challan.returns?.length || 0,
       canCreateReturn: !(challan as any).isReturnByCustomerCreated,
     };
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 }

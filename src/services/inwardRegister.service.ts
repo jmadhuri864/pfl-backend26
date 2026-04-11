@@ -23,6 +23,8 @@ import { ApprovalFlowService } from './approvalFlow.service';
 import { InwardProductRepository } from '../repositories/inwardProduct.repository';
 import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { CacheService } from './cache.service';
+import { createHash } from 'crypto';
 
 
 function normalizeDateFormat(date: string | null | undefined): string | null | undefined {
@@ -56,8 +58,30 @@ export class InwardRegisterService {
         @inject(TYPES .DocumentbRepository) private documentbRepository: DocumentbRepository,
         @inject(TYPES.DataSource)
         private readonly dataSource: DataSource,
-     
+        @inject(TYPES.CacheService)
+        private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'iwr';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:filter:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:get:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
  
 
@@ -198,6 +222,7 @@ const serialNo = await this.generateSerialNo();
 
     // Start approval flow after commit so inward register is visible to other DB connections
     await this.documentbService.startApprovalFlow(document.id);
+    await this.invalidateCache();
 
     return savedInward;
 
@@ -214,6 +239,11 @@ const serialNo = await this.generateSerialNo();
 
 
 public async getAllRecycleBinInwardRegisters(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.INWARD_REGISTER,
@@ -343,7 +373,7 @@ incomingGrossQty: rd.incomingGrossQty,
     });
   }
 
-    return {
+    const recycleResult = {
       data: relatedDataOnly,
       meta: {
         total: relatedDataOnly.length,
@@ -351,6 +381,8 @@ incomingGrossQty: rd.incomingGrossQty,
         pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
       }
     };
+    await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
+    return recycleResult;
   } 
 
 async filterInwardRegisters(
@@ -358,6 +390,10 @@ async filterInwardRegisters(
   limit: number,
   filters: Record<string, any>
 ) {
+  const cacheKey = `${this.CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
+  const cached = await this.cacheService.get<any>(cacheKey);
+  if (cached) return cached;
+
   const queryBuilder: SelectQueryBuilder<InwardRegister> =
     this.inwardRegisterRepo.createQueryBuilder("inwardRegister");
 
@@ -422,13 +458,15 @@ async filterInwardRegisters(
 
   const [data, total] = await queryBuilder.getManyAndCount();
 
-  return {
+  const filterResult = {
     data,
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
   };
+  await this.cacheService.set(cacheKey, filterResult, this.CACHE_TTL);
+  return filterResult;
 }
 
       // Save Inward Product line
@@ -478,6 +516,10 @@ async filterInwardRegisters(
   // await queryRunner.manager.save(inwardProduct);
 
   async getInwardRegisters(queryOptions: PaginationOptions): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const queryBuilder = this.inwardRegisterRepo
       .createQueryBuilder('inwardRegister')
       .leftJoinAndSelect('inwardRegister.grnNo', 'grnNo')
@@ -547,13 +589,19 @@ async filterInwardRegisters(
       };
     });
 
-    return {
+    const listResult = {
       data: transformedInwardRegisters,
       meta: result.meta,
     };
+    await this.cacheService.set(cacheKey, listResult, this.CACHE_TTL);
+    return listResult;
   }
 
   async getInwardRegisterById(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     console.log('in service', id);
 
     // Fetch the inward register with relations
@@ -693,9 +741,14 @@ async filterInwardRegisters(
       })),
     };
 
+    await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
     return transformedInwardRegister;
   }
-async getInwardidforupdate(id: string,userId:string): Promise<any> {
+async getInwardidforupdate(id: string, userId: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     console.log('in service', id);
 
     // Fetch the inward register with relations
@@ -792,10 +845,15 @@ weight:product.weight,
       })),
     };
 
+    await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
     return transformedInwardRegister;
   }
 
   async getInwardidforget(id: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:get:${id}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     console.log('in service', id);
 
     // Fetch the inward register with relations
@@ -948,6 +1006,7 @@ weight:product.weight,
       })),
     };
 
+    await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
     return transformedInwardRegister;
   }
  
@@ -980,6 +1039,7 @@ weight:product.weight,
       updatedBy,
     );
 
+    await this.invalidateCache(id);
     return updatedInwardRegister;
   }
 
@@ -1061,9 +1121,9 @@ weight:product.weight,
 
     inwardRegister.deletionScheduledAt = sixMonthsFromNow;
     console.log('in delete service', inwardRegister.deletionScheduledAt);
-    // Save the record with the updated deletionScheduledAt field
     await this.inwardRegisterRepo.save(inwardRegister);
     console.log(`InwardRegister with ID ${id} marked for deletion.`);
+    await this.invalidateCache(id);
   }
 
   public async getScheduledForDeletionRecords(): Promise<InwardRegister[]> {
@@ -1210,6 +1270,11 @@ weight:product.weight,
 //     };
 //   }
 public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.INWARD_REGISTER,
@@ -1238,7 +1303,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
         console.log('---------------------');
         
         doc.relatedData = await this.inwardRegisterRepo.findOne({
-          where: { id: doc.document_type_id ,isDeleted:false},
+          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
          relations: ['grnNo', 'deliveryChallanNo', 'rbcNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
         });
         console.log('Related data fetched for document:', doc.id, doc.relatedData);
@@ -1326,7 +1391,7 @@ date:rd.date,
     });
   }
 
-    return {
+    const allResult = {
       data: relatedDataOnly,
       meta: {
         total: relatedDataOnly.length,
@@ -1334,12 +1399,18 @@ date:rd.date,
         pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
       }
     };
+    await this.cacheService.set(cacheKey, allResult, this.CACHE_TTL);
+    return allResult;
   }
 
 
   //TODO:Get Inward Register By Id For View..By Vaishali
-public async getInwardregisterByIdForView(docid: string, userId:string): Promise<any> {
-    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid,userId)
+public async getInwardregisterByIdForView(docid: string, userId: string): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid, userId)
     if(!document)
     {
       return null;
@@ -1515,17 +1586,11 @@ public async deleteMultipleInwardRegister(ids: string[]): Promise<{ success: str
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      await this.documentbRepository.softDelete(relatedDocument.id);
+      await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
 
-
-      const deleteGrn = await this.inwardRegisterRepo.delete(inwardRegister.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete Inward Register with ID ${id}`);
-      }
+      await this.inwardRegisterRepo.softDelete(inwardRegister.id);
+      await this.inwardRegisterRepo.update(inwardRegister.id, { isDeleted: true } as any);
 
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;

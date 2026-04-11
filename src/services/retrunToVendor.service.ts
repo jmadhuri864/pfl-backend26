@@ -290,6 +290,8 @@ export class ReturnToVendorService {
                 .leftJoinAndSelect('rtv.location', 'location')
                 .leftJoinAndSelect('rtv.selectedVendor', 'selectedVendor')
                 .where('rtv.id IN (:...ids)', { ids: rtvIds })
+                .andWhere('rtv.isDeleted = false')
+                .andWhere('rtv.deletedAt IS NULL')
                 .getMany()
             : [];
 
@@ -690,4 +692,38 @@ export class ReturnToVendorService {
         throw error;
     }
 }
+
+    public async deleteMultipleReturnToVendor(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+        const success: string[] = [];
+        const failed: { id: string; reason: string }[] = [];
+
+        for (const id of ids) {
+            try {
+                const record = await this.postReturnToVendorRepository.findOne({
+                    where: { id },
+                    withDeleted: true,
+                });
+                if (!record) {
+                    failed.push({ id, reason: 'Return to vendor record not found' });
+                    continue;
+                }
+                if (record.isDeleted) {
+                    failed.push({ id, reason: 'Record already deleted' });
+                    continue;
+                }
+
+                await this.postReturnToVendorRepository.softDelete(id);
+                record.isDeleted = true;
+                record.deletedAtNew = new Date();
+                await this.postReturnToVendorRepository.save(record);
+                await this.invalidateCache(id);
+                success.push(id);
+            } catch (error: any) {
+                failed.push({ id, reason: error.message || 'Unknown error' });
+            }
+        }
+
+        const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+        return { success, failed, message };
+    }
 }

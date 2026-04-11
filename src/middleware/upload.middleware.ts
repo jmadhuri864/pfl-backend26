@@ -32,7 +32,7 @@ export const upload = multer({
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (_req, file, cb) => {
       const timestamp = Date.now();
-      const fileName = `${timestamp}-${file.originalname}`;
+      const fileName = `${file.originalname}`;
       cb(null, `documents/${fileName}`);
     },
   }),

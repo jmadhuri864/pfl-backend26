@@ -66,25 +66,33 @@ export class SalesTargetService {
 
             // Loop through customers
             for (const customerPlan of plan) {
+                const customerId = customerPlan.customerId ?? customerPlan.customer;
+                console.log(`Processing customer: ${customerId}, products: ${customerPlan.salesTarget?.length}`);
                 const customer = await this.customerRepository.findOne({
-                    where: { id: customerPlan.customerId }
+                    where: { id: customerId }
                 });
 
-                if (!customer) throw new Error("Customer not found");
+                if (!customer) throw new Error(`Customer not found: ${customerId}`);
 
                 // Loop through products per customer
                 for (const productPlan of customerPlan.salesTarget) {
+                    const productId = productPlan.productId ?? productPlan.product;
                     const product = await this.productRepository.findOne({
-                        where: { id: productPlan.productId }
+                        where: { id: productId }
                     });
 
-                    if (!product) throw new Error("Product not found");
+                    if (!product) throw new Error(`Product not found: ${productId}`);
+
+                    // Calculate total from weekly targets
+                    const calculatedTotal = productPlan.weeklyTargets.reduce(
+                        (sum: number, w: any) => sum + Number(w.amount || 0), 0
+                    );
 
                     const salesPlanItem = this.salesTargetProduct.create({
                         target: monthlyPlan,
                         customer,
                         product,
-                        totalProductSale: productPlan.weeklyTargetsTotAmt
+                        totalProductSale: calculatedTotal
                     });
 
                     await this.salesTargetProduct.save(salesPlanItem);
@@ -99,16 +107,16 @@ export class SalesTargetService {
 
                         const weeklySale = this.weeklySalesRepo.create({
                             productTarget: salesPlanItem,
-                            weekNo: week.weekNo,
+                            weekNo: Number(week.weekNo),
                             weekStartDate: normalizedWeekStartDate,
                             weekEndDate: normalizedWeekEndDate,
-                            saleAmount: week.amount
+                            saleAmount: Number(week.amount || 0)
                         });
 
                         await this.weeklySalesRepo.save(weeklySale);
                     }
 
-                    monthlyTotal += productPlan.weeklyTargetsTotAmt;
+                    monthlyTotal += calculatedTotal;
                 }
             }
 
@@ -338,9 +346,9 @@ export class SalesTargetService {
                     });
                 }
 
-                // Convert month number to month name
-                const monthName = target.month !== null && target.month >= 0 && target.month <= 11
-                    ? monthNames[target.month]
+                // Convert month number to month name (month is 1-indexed: Jan=1, Dec=12)
+                const monthName = target.month !== null && target.month >= 1 && target.month <= 12
+                    ? monthNames[target.month - 1]
                     : null;
 
                 const monthYear = monthName && target.year 

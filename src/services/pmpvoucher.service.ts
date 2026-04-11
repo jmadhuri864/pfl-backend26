@@ -78,7 +78,7 @@ export class PMPVoucherService {
               
                     try {
                         doc.relatedData = await this.pmpVoucherRepository.findOne({
-                          where: { id: doc.document_type_id, isDeleted: false },
+                          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
                           relations: ['companyName', 'grnNo','materials', 'materials.itemUom', 'address', 'requestedBy'],
                         });
                       
@@ -810,43 +810,41 @@ if(!voucher)
 
   public async deleteMultiplePMPVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];  
-  for (const id of ids) {
-      const pmpVoucher = await this.pmpVoucherRepository.findOne({
-        where: { id },
-      });
+  const failed: { id: string; reason: string }[] = [];
 
+  for (const id of ids) {
+    try {
+      const pmpVoucher = await this.pmpVoucherRepository.findOne({ where: { id } });
       if (!pmpVoucher) {
         failed.push({ id, reason: 'pmpVoucher not found' });
         continue;
       }
 
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: pmpVoucher.id }
+        where: { document_type_id: pmpVoucher.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete voucher
+      await this.pmpVoucherRepository.softDelete(pmpVoucher.id);
+      await this.pmpVoucherRepository.update(pmpVoucher.id, { isDeleted: true } as any);
 
+      // Invalidate cache for this specific voucher
+      await this.invalidateCache(id);
 
-      const deleteGrn = await this.pmpVoucherRepository.delete(pmpVoucher.id);
-
-      if (!deleteGrn) {
-        throw new Error(`Failed to delete pmpVoucher with ID ${id}`);
-      }
-
+      success.push(id);
+    } catch (error: any) {
+      failed.push({ id, reason: error.message || 'Unknown error' });
     }
-    const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-    await this.invalidateCache();
-    return { success, failed, message};
-
   }
+
+  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  return { success, failed, message };
+}
 
 
 }

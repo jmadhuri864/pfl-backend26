@@ -6,16 +6,35 @@ import AppError from "../utils/appError";
 import { LaborRegister } from "../entities/labourregister.entity";
 import { AuditLogService } from "./auditLog.service";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
+import { CacheService } from "./cache.service";
 
 
 @injectable()
 export class LaborRegisterService {
   constructor(
-    @inject(TYPES.LaborRegisterRepository) // Assuming you have set up a repository binding for the Labor entity
+    @inject(TYPES.LaborRegisterRepository)
     private laborRepository: LaborRegisterRepository,
     @inject(TYPES.AuditLogService)
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
   ) {}
+
+  private readonly CACHE_PREFIX = 'labour';
+  private readonly CACHE_TTL = 180;
+
+  private async invalidateCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:search:*`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
   /**
    * Create a new labor record.
@@ -36,7 +55,9 @@ export class LaborRegisterService {
     }
 
     const labor = this.laborRepository.create(data);
-    return await this.laborRepository.save(labor);
+    const saved = await this.laborRepository.save(labor);
+    await this.invalidateCache();
+    return saved;
   }
 
   /**
@@ -47,9 +68,15 @@ export class LaborRegisterService {
    * @returns Found labor record or null
    */
   async findLaborByNameAndContact(laborName: string, contactNo: string): Promise<LaborRegister | null> {
-    return await this.laborRepository.findOne({
-      where: { laborName, contactNo},
+    const cacheKey = `${this.CACHE_PREFIX}:search:${laborName}:${contactNo}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.laborRepository.findOne({
+      where: { laborName, contactNo },
     });
+    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   /**
@@ -81,13 +108,14 @@ export class LaborRegisterService {
   
     // Log the changes using AuditLogService
     await this.auditLogService.logChange(
-      'LaborRegister',   // Entity name
-      id,                // Entity ID
-      oldData,           // Original data
-      updatedLabor,      // Updated data
-      updatedBy          // User performing the update
+      'LaborRegister',
+      id,
+      oldData,
+      updatedLabor,
+      updatedBy
     );
-  
+
+    await this.invalidateCache(id);
     return updatedLabor;
   }
   
@@ -121,6 +149,7 @@ export class LaborRegisterService {
     await this.laborRepository.save(labor);
   
     console.log(`Laborer with ID ${id} marked for deletion in 6 months.`);
+    await this.invalidateCache(id);
     return true;
   }
   
@@ -129,10 +158,15 @@ export class LaborRegisterService {
    * Get all laborers.
    * @returns List of all labor records
    */
-  async getAllLaborers(queryOptions:PaginationOptions): Promise<any> {
+  async getAllLaborers(queryOptions: PaginationOptions): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     let query = await this.laborRepository.createQueryBuilder("labor");
-    const result = await buildQuery(query, queryOptions,"labor");
-   return result; 
+    const result = await buildQuery(query, queryOptions, "labor");
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
  /**
@@ -141,15 +175,20 @@ export class LaborRegisterService {
  * @returns Found labor record or null
  */
 async getLaborById(id: string): Promise<LaborRegister | null> {
+  const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  const cached = await this.cacheService.get<any>(cacheKey);
+  if (cached) return cached;
+
   const labor = await this.laborRepository.findOne({
     where: { id },
-    relations: ['attendances'], // Correct relation name
+    relations: ['attendances'],
   });
 
   if (!labor) {
     throw new AppError(404, `Laborer with ID ${id} not found.`);
   }
 
+  await this.cacheService.set(cacheKey, labor, this.CACHE_TTL);
   return labor;
 }
 
@@ -178,6 +217,7 @@ public async deleteMultipleLabourRegister(ids: string[]): Promise<{ success: str
     }
   }
   const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
+  await this.invalidateCache();
   return { success, failed, message };
 }
 

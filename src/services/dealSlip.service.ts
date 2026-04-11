@@ -20,6 +20,11 @@ import { DocSingalApproverService } from "./DocSingalApproverService.service";
 import { ApprovalFlowService } from "./approvalFlow.service";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { ApprovalFlowRepository } from "../repositories/approvalFlow.repository";
+import { CacheService } from "./cache.service";
+
+const CACHE_PREFIX = 'dealslip';
+const CACHE_TTL = 180;
+const CACHE_TTL_DETAIL = 300;
 
 
 @injectable()
@@ -47,9 +52,30 @@ export class DealSlipService {
     @inject(TYPES.DocumentbRepository)
     private readonly documentbRepository: DocumentbRepository,
     @inject(TYPES.DataSource)
-    private readonly dataSource: DataSource
-
+    private readonly dataSource: DataSource,
+    @inject(TYPES.CacheService)
+    private readonly cacheService: CacheService,
       ) {}
+
+  // ─── Cache Helpers ────────────────────────────────────────────────────────
+  private async invalidateDealSlipCache(id?: string): Promise<void> {
+    const tasks: Promise<any>[] = [
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:all:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:nos:*`),
+      this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
+    ];
+    if (id) {
+      tasks.push(
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:docview:${id}`),
+      );
+    }
+    await Promise.all(tasks);
+  }
 
     //   async findAllDealSlip(queryOptions:PaginationOptions): Promise<any[]> {
     //     console.log(queryOptions)
@@ -97,7 +123,9 @@ export class DealSlipService {
 
   async findAllDealSlip(queryOptions: PaginationOptions): Promise<{ data: any[]; total: number; page: number; totalPages: number }> {
       console.log(queryOptions);
-  
+      const key = `${CACHE_PREFIX}:all:${JSON.stringify(queryOptions)}`;
+      const cached = await this.cacheService.get<any>(key);
+      if (cached) return cached;
      
       const page = queryOptions.page ?? 1; 
       const limit = queryOptions.limit ?? 10;
@@ -109,7 +137,8 @@ export class DealSlipService {
           .leftJoinAndSelect("rfpa.selectedFarmer", "selectedFarmer")
           .leftJoinAndSelect("selectedFarmer.residensialAddress", "residensialAddress")
           .leftJoinAndSelect("selectedVendor.officeAddress", "officeAddress")
-          // .leftJoinAndSelect("dealSlip.requestedBy", "requestedBy")
+          .where("dealSlip.isDeleted = false")
+          .andWhere("dealSlip.deletedAt IS NULL")
           .orderBy("dealSlip.createdAt", "DESC");
   
       
@@ -155,17 +184,23 @@ export class DealSlipService {
         };
       });
   
-      return {
+      const response = {
           data: formattedDealSlips,
           total,
           page,
           totalPages
       };
+      await this.cacheService.set(key, response, CACHE_TTL);
+      return response;
   }
-  
+
   
 
    async findDealSlipByIdforView(id: string): Promise<any> {
+      const key = `${CACHE_PREFIX}:view:${id}`;
+      const cached = await this.cacheService.get<any>(key);
+      if (cached) return cached;
+
       const dealSlip = await this.dealSlipRepository.findOne({
           where: { id },
           relations: [
@@ -201,12 +236,16 @@ export class DealSlipService {
           dealSlipNo: dealSlip.dealSlipNo,
           rfpa:rfpa.rfpaId
       }
-  
+      await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
       return response;
   }
 
 
   async findDealSlipByIdforUpdate(id: string): Promise<any> {
+      const key = `${CACHE_PREFIX}:update:${id}`;
+      const cached = await this.cacheService.get<any>(key);
+      if (cached) return cached;
+
       const dealSlip = await this.dealSlipRepository.findOne({
           where: { id },
           relations: [
@@ -242,11 +281,15 @@ export class DealSlipService {
           dealSlipNo: dealSlip.dealSlipNo,
           rfpa:rfpa.id
       }
-  
+      await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
       return response;
   }
     
     async findDealSlipById(id: string): Promise<any> {
+      const key = `${CACHE_PREFIX}:id:${id}`;
+      const cached = await this.cacheService.get<any>(key);
+      if (cached) return cached;
+
       const dealSlip = await this.dealSlipRepository.findOne({
           where: { id },
           relations: [
@@ -347,7 +390,7 @@ export class DealSlipService {
       //         email:rfpa.selectedFarmer.email,
       //     };
       // }
-  
+      await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
       return response;
   }
   
@@ -421,6 +464,7 @@ export class DealSlipService {
 
           // Start approval flow after commit so Deal Slip is visible to other DB connections
           await this.documentbService.startApprovalFlow(document.id);
+          await this.invalidateDealSlipCache();
 
                           return savedDealSlip;
         } catch (error: any) {
@@ -482,7 +526,7 @@ public async approveDealSlip(dealSlipId: string, userId: string, data: { approva
 
   
   await this.dealSlipRepository.save(dealSlip);
-
+  await this.invalidateDealSlipCache(dealSlipId);
 
   const user = await this.userService.findUserById(userId);
 
@@ -528,6 +572,7 @@ public async approveDealSlip(dealSlipId: string, userId: string, data: { approva
     updatedBy
   );
 
+  await this.invalidateDealSlipCache(id);
   return existingDealSlip;
 }
 // public async getAllDealSlipsNo(): Promise<{ id: string; dealSlipNo: string; approvalStatus: string }[]> {
@@ -557,6 +602,9 @@ public async getAllDealSlipsNo(
   },
   loginUserId: string
 ): Promise<any> {
+  const key = `${CACHE_PREFIX}:nos:${loginUserId}:${JSON.stringify(filter)}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
 
   const where: any = {};
 
@@ -570,7 +618,7 @@ public async getAllDealSlipsNo(
 
   const dealSlips = await this.dealSlipRepository.find({
     select: ["id", "dealSlipNo", "isGrnCreated"],
-    where: where,
+    where: { ...where, isDeleted: false },
     relations: ["createdBy"],
     order: { createdAt: "DESC" }
   });
@@ -731,7 +779,7 @@ public async getAllDealSlipsNo(
 
   const paginatedResults = searchedResults.slice(startIndex, endIndex);
 
-  return {
+  const nosResponse = {
     data: paginatedResults,
     pagination: {
     total: searchedResults.length,
@@ -740,6 +788,8 @@ public async getAllDealSlipsNo(
     totalPages: Math.ceil(searchedResults.length / limit)
     }
   };
+  await this.cacheService.set(key, nosResponse, CACHE_TTL);
+  return nosResponse;
 }
 
 
@@ -771,9 +821,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
 
   // Save the updated Deal Slip with the scheduled deletion date
   await this.dealSlipRepository.save(dealSlip);
-
-
-  
+  await this.invalidateDealSlipCache(dealSlipId);
 
   console.log(`Deal Slip with ID ${dealSlipId} marked for deletion in 6 months.`);
   return true;
@@ -894,6 +942,10 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
   data: any[];
   meta: { total: number; page: number; pages: number };
 }> {
+  const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+  const cached = await this.cacheService.get<any>(key);
+  if (cached) return cached;
+
   const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
     userId,
     DocumentTypeEnum.DEAL_SLIP,
@@ -918,7 +970,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
 
     try {
       doc.relatedData = await this.dealSlipRepository.findOne({
-        where: { id: doc.document_type_id , isDeleted: false },
+        where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
         relations: ['rfpa']
       });
     } catch (e) {
@@ -990,7 +1042,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
     });
   }
 console.log(relatedDataOnly.length)
-  return {
+  const listResponse = {
     data: relatedDataOnly,
     meta: {
       total: data1.meta.total,
@@ -998,12 +1050,18 @@ console.log(relatedDataOnly.length)
       pages: data1.meta.pages,
     }
   };
+  await this.cacheService.set(key, listResponse, CACHE_TTL);
+  return listResponse;
 }
 
 public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: string): Promise<{
   data: any[];
   meta: { total: number; page: number; pages: number };
 }> {
+  const recycleKey = `${CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
+  const recycleCached = await this.cacheService.get<any>(recycleKey);
+  if (recycleCached) return recycleCached;
+
   const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
     userId,
     DocumentTypeEnum.DEAL_SLIP,
@@ -1099,7 +1157,7 @@ public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: str
     });
   }
 console.log(relatedDataOnly.length)
-  return {
+  const recycleResponse = {
     data: relatedDataOnly,
     meta: {
       total: data1.meta.total,
@@ -1107,9 +1165,15 @@ console.log(relatedDataOnly.length)
       pages: data1.meta.pages,
     }
   };
+  await this.cacheService.set(recycleKey, recycleResponse, CACHE_TTL);
+  return recycleResponse;
 }
 //TODO:Get Deal Slip By Id For View..By Vaishali
 public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> {
+    const key = `${CACHE_PREFIX}:docview:${docid}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
     const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid,userId)
     if(!document)
     {
@@ -1168,7 +1232,7 @@ public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> 
       // }
       const rawDate = dealSlip.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
-      return {
+      const viewResult = {
     documentId: document.documentId,
     overAllStatus: document.status,
     createdBy:document.createdBy,
@@ -1192,6 +1256,8 @@ public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> 
     //Omkar
     rfpa: dealSlip.rfpa ? dealSlip.rfpa.rfpaId : null,   // include RFPA relation id if needed
   };
+  await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
+  return viewResult;
   }
 
     
@@ -1202,11 +1268,20 @@ public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> 
   limit: number,
   filters: Record<string, any>
 ) {
+  const filterKey = `${CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
+  const filterCached = await this.cacheService.get<any>(filterKey);
+  if (filterCached) return filterCached;
+
   const queryBuilder: SelectQueryBuilder<DealSlip> =
     this.dealSlipRepository.createQueryBuilder("dealSlip");
 
-  // ✅ Select all fields from Aqr
+  // ✅ Select all fields from DealSlip
   queryBuilder.select("dealSlip");
+
+  // ✅ Exclude soft-deleted records
+  queryBuilder
+    .where("dealSlip.isDeleted = false")
+    .andWhere("dealSlip.deletedAt IS NULL");
 
   // ✅ Join relations but select only specific fields
   queryBuilder
@@ -1238,53 +1313,52 @@ public async getDealSlipByIdForView(docid: string, userId:string): Promise<any> 
 
   const [data, total] = await queryBuilder.getManyAndCount();
 
-  return {
+  const filterResult = {
     data,
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
   };
+  await this.cacheService.set(filterKey, filterResult, CACHE_TTL);
+  return filterResult;
 }
 
-public async deleteMultipleDealSlips(ids: string[]): Promise< any> {
+public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
+
   for (const id of ids) {
     try {
-      const aqr = await this.dealSlipRepository.findOne({
-        where: { id },
-      });
-      if (!aqr) {
+      const dealSlip = await this.dealSlipRepository.findOne({ where: { id } });
+      if (!dealSlip) {
         failed.push({ id, reason: 'Deal Slip not found' });
         continue;
       }
+
+      // Soft delete related document
       const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: aqr.id }
+        where: { document_type_id: dealSlip.id },
       });
-
-      if (!relatedDocument) {
-        throw new Error(`Something went wrong`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
-      }
+      // Soft delete DealSlip
+      await this.dealSlipRepository.softDelete(dealSlip.id);
+      await this.dealSlipRepository.update(dealSlip.id, { isDeleted: true } as any);
 
-      const deleteDealSlip = await this.dealSlipRepository.delete(aqr.id);
-      if (!deleteDealSlip) {
-        throw new Error(`Failed to delete DealSlip with ID ${id}`);
-      }
+      // Invalidate cache for this specific deal slip
+      await this.invalidateDealSlipCache(id);
+
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
   }
-  // const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-  // return { success, failed, message };
-     return { message: 'dealSlip records marked for deletion successfully' };
 
+  return { message: 'dealSlip records marked for deletion successfully' };
 }
  
 }

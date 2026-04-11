@@ -73,14 +73,14 @@ export class DeliveryDetailsCustService {
 
   async getAll(): Promise<DeliveryDetails[]> {
     try {
-      return this.deliveryDetailsRepository.find({ relations: ['deliveryAddress', 'customer'] 
-        ,
+      return this.deliveryDetailsRepository.find({
+        where: { isDeleted: false, deletedAt: null as any },
+        relations: ['deliveryAddress', 'customer'],
         order: {
-          createdAt: 'DESC', // Assuming createdAt is a timestamp field 
+          createdAt: 'DESC',
         },
       });
     } catch (error) {
-      // Handle or log the error as appropriate
       throw new AppError(500, `Error retrieving delivery details`);
     }
   }
@@ -116,15 +116,13 @@ export class DeliveryDetailsCustService {
         throw new Error(`Something went wrong`);
       }
 
-      const deleteDocument = await this.documentbRepository.delete(relatedDocument.id);
-      if (!deleteDocument) {
-        throw new Error(`Failed to delete related document with ID ${relatedDocument.id}`);
+      if (relatedDocument) {
+        await this.documentbRepository.softDelete(relatedDocument.id);
+        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
       }
 
-      const deleteDCForCustomer = await this.deliveryDetailsRepository.delete(dcForCustomer.id);
-      if (!deleteDCForCustomer) {
-        throw new Error(`Failed to delete Delivery Challan For Customer with ID ${id}`);
-      }
+      await this.deliveryDetailsRepository.softDelete(dcForCustomer.id);
+      await this.deliveryDetailsRepository.update(dcForCustomer.id, { isDeleted: true } as any);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });

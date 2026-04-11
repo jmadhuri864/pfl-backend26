@@ -24,6 +24,8 @@ import {
 import { NotificationService } from '../services/notification.service';
 import { PaginationOptions } from '../utils/pagination';
 import { upload } from '../middleware/upload.middleware';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { s3 } from '../middleware/spaces.config';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { Status } from '../utils/status.enum';
 import { ControllerLogger } from '../utils/controllerLogger';
@@ -436,22 +438,33 @@ console.log(files)
       const farmerData = req.body;
 
       if (req.files) {
-        const files = req.files as {
-          [fieldname: string]: any[];
+        const files = req.files as { [fieldname: string]: any[] };
+
+        // Helper: delete old image from Spaces if a new one is being uploaded
+        const replaceImage = async (fieldName: string, oldUrl: string | null) => {
+          if (!files[fieldName]) return; // no new file → skip
+          // Delete old file from Spaces
+          if (oldUrl) {
+            try {
+              const key = new URL(oldUrl).pathname.replace(/^\//, '');
+              await s3.send(new DeleteObjectCommand({
+                Bucket: process.env.DO_SPACES_BUCKET!,
+                Key: key,
+              }));
+            } catch (e) {
+              console.warn(`Could not delete old ${fieldName} from Spaces:`, e);
+            }
+          }
+          farmerData[fieldName] = files[fieldName][0].location;
         };
 
-        // DigitalOcean Spaces URLs are automatically provided by multer-s3 in .location property
-       farmerData.farmPhoto = files.farmPhoto
-          ? files.farmPhoto[0].location
-          : null;
-        farmerData.farmerPhoto = files.farmerPhoto
-          ? files.farmerPhoto[0].location
-          : null;
-        if(files.idProofCopy)
-        farmerData.idProofCopy = files.idProofCopy[0].location
-          if(files.sevenTwelveCopy)
-        farmerData.sevenTwelveCopy = files.sevenTwelveCopy[0].location
-          
+        // Fetch existing farmer to get current image URLs
+        const existing = await this.farmerService.getFarmerById(id);
+
+        await replaceImage('farmPhoto',      existing?.farmPhoto      ?? null);
+        await replaceImage('farmerPhoto',    existing?.farmerPhoto    ?? null);
+        await replaceImage('idProofCopy',    existing?.idProofCopy    ?? null);
+        await replaceImage('sevenTwelveCopy',existing?.sevenTwelveCopy ?? null);
       }
       const requestedBy = res.locals.user.id;
       const updatedBy = res.locals.updatedBy.id;
