@@ -165,7 +165,7 @@ export class SecondSaleService {
       const { search } = queryOptions;
 
       const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+      const activeDocuments = typedDocuments;
 
       // ---- Batch fetch: one query instead of N+1 ----
       const saleIds = activeDocuments

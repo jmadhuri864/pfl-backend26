@@ -391,7 +391,6 @@ export class AqrService {
 
     const documents = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(userId, DocumentTypeEnum.AQR) as DocumentWithRelatedData[];
     const activeDocs = documents
-      .filter((doc) => doc.isDeleted === false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     if (activeDocs.length === 0) {
@@ -510,8 +509,8 @@ export class AqrService {
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
-    const documents = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(userId, DocumentTypeEnum.AQR) as DocumentWithRelatedData[];
-    const deletedDocs = documents.filter((doc) => doc.isDeleted === true);
+    const documents = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(userId, DocumentTypeEnum.AQR, true) as DocumentWithRelatedData[];
+    const deletedDocs = documents;
 
     if (deletedDocs.length === 0) {
       return { data: [], meta: { total: 0, page: queryOptions.page || 1, pages: 0 } };

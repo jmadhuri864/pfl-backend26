@@ -129,10 +129,12 @@ export class TPVoucherService {
       userId,
       DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
       queryOptions,
+      false,
+      true // includeDeleted for recycle bin
     );
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+    const activeDocuments = typedDocuments;
 
     // ---- Batch fetch instead of N+1 ----
     const voucherIds = activeDocuments
@@ -374,7 +376,7 @@ public async getAllTPVouchers(
     );
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+    const activeDocuments = typedDocuments;
 
     // ---- Batch fetch: one query instead of N+1 ----
     const voucherIds = activeDocuments

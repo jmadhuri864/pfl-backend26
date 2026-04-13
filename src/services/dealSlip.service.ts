@@ -958,7 +958,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
 
   const typedDocuments = data1.data as DocumentWithRelatedData[];
   // Exclude soft-deleted documents
-  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+  const activeDocuments = typedDocuments;
   if (activeDocuments.length > 0) {
     console.log("doc.relatedData", activeDocuments[0].relatedData);
   } else {
@@ -1065,6 +1065,7 @@ public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: str
   const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
     userId,
     DocumentTypeEnum.DEAL_SLIP,
+    true, // includeDeleted for recycle bin
   );
     const data1 = await buildQueryFromArray(data, queryOptions);
  const { search } = queryOptions;
@@ -1074,7 +1075,7 @@ public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: str
 
   const typedDocuments = data1.data as DocumentWithRelatedData[];
   // Exclude soft-deleted documents
-  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+  const activeDocuments = typedDocuments;
   if (activeDocuments.length > 0) {
     console.log("doc.relatedData", activeDocuments[0].relatedData);
   } else {
@@ -1349,14 +1350,28 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
       await this.dealSlipRepository.softDelete(dealSlip.id);
       await this.dealSlipRepository.update(dealSlip.id, { isDeleted: true } as any);
 
-      // Invalidate cache for this specific deal slip
-      await this.invalidateDealSlipCache(id);
+      // Bust per-id caches only
+      await Promise.all([
+        this.cacheService.del(`${CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${CACHE_PREFIX}:docview:${id}`),
+      ]);
 
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
   }
+
+  // Bust list/all caches once after all deletes
+  await Promise.all([
+    this.cacheService.invalidatePattern(`${CACHE_PREFIX}:list:*`),
+    this.cacheService.invalidatePattern(`${CACHE_PREFIX}:recycle:*`),
+    this.cacheService.invalidatePattern(`${CACHE_PREFIX}:all:*`),
+    this.cacheService.invalidatePattern(`${CACHE_PREFIX}:nos:*`),
+    this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
+  ]);
 
   return { message: 'dealSlip records marked for deletion successfully' };
 }

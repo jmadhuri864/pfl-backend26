@@ -47,14 +47,18 @@ export class DocSingalApproverService {
 
   //Todo:New By Vaishali
   //TODO: Approve Document
-  private async invalidateRelatedCache(type: DocumentTypeEnum): Promise<void> {
+  private async invalidateRelatedCache(type: DocumentTypeEnum, documentId?: string): Promise<void> {
     const prefixMap: Partial<Record<DocumentTypeEnum, string[]>> = {
       [DocumentTypeEnum.RFPA]: ['rfpa:list:*', 'rfpa:all:*', 'rfpa:rfpanumbers:*', 'rfpa:recycle:*'],
       [DocumentTypeEnum.DEAL_SLIP]: ['dealslip:list:*', 'dealslip:all:*'],
       [DocumentTypeEnum.AQR]: ['aqr:list:*', 'aqr:all:*'],
     };
     const patterns = prefixMap[type] ?? [];
-    await Promise.all(patterns.map(p => this.cacheService.invalidatePattern(p)));
+    const tasks: Promise<any>[] = patterns.map(p => this.cacheService.invalidatePattern(p));
+    if (documentId) {
+      tasks.push(this.cacheService.invalidatePattern(`singledoc:view:${documentId}:*`));
+    }
+    await Promise.all(tasks);
   }
 
   async approveDocumentStepForSingleLevel(
@@ -148,10 +152,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type);
-
-          // 🔔 Actor
-          await this.notificationService.createNoti(`You rejected ${docLabel} at Approver Level 1`, userId);
+          await this.invalidateRelatedCache(document.type, documentId);
           // 🔔 Creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
@@ -172,7 +173,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type);
+          await this.invalidateRelatedCache(document.type, documentId);
 
           // 🔔 Actor
           await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
@@ -207,6 +208,7 @@ export class DocSingalApproverService {
     public async getAllSingleApprovalDocumentsByUserId(
       userId: string,
       documentType: string,
+      includeDeleted: boolean = false,
     ): Promise<any> {
       if (!Object.values(DocumentTypeEnum).includes(documentType as DocumentTypeEnum)) {
         throw new Error(`Invalid document type: ${documentType}`);
@@ -221,6 +223,8 @@ export class DocSingalApproverService {
         .leftJoinAndSelect('document.lastActionBy', 'lastActionBy')
         .where('document.type = :documentType', { documentType })
         .andWhere('document.document_type_id IS NOT NULL')
+        .andWhere('document.isDeleted = :isDeleted', { isDeleted: includeDeleted })
+        .andWhere(includeDeleted ? 'document.deletedAt IS NOT NULL' : 'document.deletedAt IS NULL')
         .andWhere(
           new Brackets((qb) => {
             qb.where('firstApproverUser.id = :userId', { userId })
@@ -230,7 +234,6 @@ export class DocSingalApproverService {
     
       const [data, total] = await queryBuilder.getManyAndCount();
       console.log('Fetched single-level documents:', data ,total);
-     // return buildQueryFromArray(data, queryOptions);
       return data;
     }
     
@@ -239,6 +242,10 @@ export class DocSingalApproverService {
 //TODO: Only creator or first-level approvers can see single-approval document
 //TODO:get Single Approval Document ById
 async getSingleApprovalDocumentById(documentId: string, userId: string): Promise<any> {
+  const cacheKey = `singledoc:view:${documentId}:${userId}`;
+  const cached = await this.cacheService.get<any>(cacheKey);
+  if (cached) return cached;
+
   try {
     const document = await this.documentbRepository.findOne({
       where: { id: documentId },
@@ -283,7 +290,7 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
         }
       : null;
 
-    return {
+    const result = {
       documentId: document.id,
       documentTypeId: document.document_type_id,
       status: document.status,
@@ -295,6 +302,8 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
        createdAt: document.createdAt,
        
     };
+    await this.cacheService.set(cacheKey, result, 30); // 30s TTL — status changes quickly
+    return result;
   } catch (error) {
     throw new Error(`Error fetching single-approval document: ${error}`);
   }

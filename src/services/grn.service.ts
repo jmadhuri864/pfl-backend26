@@ -215,7 +215,9 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
     const {data,meta}= await this.documentbService.getAllDocumentByUserId(
       userId,
       DocumentTypeEnum.GRN,
-      queryOptions
+      queryOptions,
+      false,
+      true // includeDeleted for recycle bin
     );
 const paginatedData = await buildQueryFromArray(data,queryOptions)
   //   console.log('data in grn service', data);

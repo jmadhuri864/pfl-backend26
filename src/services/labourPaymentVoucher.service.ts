@@ -268,7 +268,7 @@ export class LabourPaymentVoucherService {
            // console.log('data in grn service', documentData);
             
               const typedDocuments = data as DocumentWithRelatedData[];
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+const activeDocuments = typedDocuments;
 
             for (const doc of activeDocuments) {
                 if (!doc.document_type_id) continue;
@@ -490,7 +490,9 @@ remark:voucher.remark || null,
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
               userId,
               DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
-              queryOptions
+              queryOptions,
+              false,
+              true  // includeDeleted for recycle bin
             );
              const { search } = queryOptions;
           

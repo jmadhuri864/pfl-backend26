@@ -86,7 +86,7 @@ public async getAllVouchers(
        // console.log('data in grn service', documentData);
         
           const typedDocuments = data as DocumentWithRelatedData[];
-          const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+          const activeDocuments = typedDocuments;
         for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;
       
@@ -673,12 +673,14 @@ public async getAllRecycleBinVouchers(
           userId,
           DocumentTypeEnum.MULTI_CASH_VOUCHER,
           queryOptions,
+          false,
+          true // includeDeleted for recycle bin
         );
       
        // console.log('data in grn service', documentData);
         
           const typedDocuments = data as DocumentWithRelatedData[];
-          const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+          const activeDocuments = typedDocuments;
         for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;
       

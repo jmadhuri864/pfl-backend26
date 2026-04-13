@@ -31,6 +31,7 @@ import { PostReturnByCustomerRepository } from '../repositories/postReturnByCust
 import { ReturnToVendorRepository } from '../repositories/returnToVendor.repository';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { getReadableDocumentType } from '../utils/documentTypeLabel';
+import { CacheService } from './cache.service';
 import { ParsedQs } from 'qs';
 import { Brackets } from 'typeorm';
 import e from 'express';
@@ -84,6 +85,8 @@ export class DocumentbService {
     private rbcRepository: PostReturnByCustomerRepository,
     @inject(TYPES.ReturnToVendorRepository)
     private rtvRepository: ReturnToVendorRepository,
+    @inject(TYPES.CacheService)
+    private cacheService: CacheService,
   ) { }
 
   // User cache for current request to avoid duplicate lookups
@@ -202,6 +205,10 @@ export class DocumentbService {
   //TODO: To Get document's approval flow by using document id (for example to get created grn's approval flow pass created grn id )
   async getDocumentById(id: string): Promise<any> {
     try {
+      const cacheKey = `doc:byid:${id}`;
+      const cached = await this.cacheService.get<any>(cacheKey);
+      if (cached) return cached;
+
       //TODO: By Shri
       const document = await this.documentbRepository.findOne({
         where: { id },
@@ -287,7 +294,7 @@ export class DocumentbService {
         : null;
 console.log("Approval Info Summary: ", approvalInfoSummary);
       // Construct response
-      return {
+      const result = {
         documentId: document.id,
         // documentType: document.type,
         documentTypeId: document.document_type_id,
@@ -299,6 +306,8 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
         // ...documentDataByForm, // full GRN info (or null)
         approvalSummary: approvalInfoSummary, // name + status summary
       };
+      await this.cacheService.set(cacheKey, result, 30); // 30s TTL — status changes
+      return result;
     } catch (error) {
       throw new Error(`Error fetching document: ${error}`);
     }
@@ -515,6 +524,10 @@ console.log("Document for starting approval flow: ", document?.type);
     const docNo = await this.resolveDocumentTypeNo(document);
     const readableType = getReadableDocumentType(document.type);
     const docLabel = docNo ? `${readableType} #${docNo}` : readableType;
+
+    const bustDocCache = () => this.cacheService.del(`doc:byid:${documentId}`);
+
+    try {
 
     // Ensure approvalInfo exists
     if (!document.approvalInfo) {
@@ -1158,6 +1171,9 @@ function isWithinRange(min: number | string | null, max: number | string | null,
 
 
     throw new Error('User is not authorized to act on this document at this stage');
+    } finally {
+      await bustDocCache();
+    }
   }
 
   
@@ -1611,7 +1627,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
   }
 
   //TODO: Get Document with Data
-  public async getAllDocumentByUserId(userId: string, documentType: string, queryOptions: PaginationOptions, skipPagination: boolean = false): Promise<any> {
+  public async getAllDocumentByUserId(userId: string, documentType: string, queryOptions: PaginationOptions, skipPagination: boolean = false, includeDeleted: boolean = false): Promise<any> {
 
     //console.log("documentType", documentType);
 
@@ -1666,7 +1682,9 @@ function isWithinRange(min: number | string | null, max: number | string | null,
         }),
       )
       .andWhere('document.document_type_id IS NOT NULL')
-      .andWhere('document.type = :documentType', { documentType });
+      .andWhere('document.type = :documentType', { documentType })
+      .andWhere('document.isDeleted = :isDeleted', { isDeleted: includeDeleted })
+      .andWhere(includeDeleted ? 'document.deletedAt IS NOT NULL' : 'document.deletedAt IS NULL');
 
     const sort = queryOptions?.sort || 'document.createdAt:DESC';
     const [sortField, sortOrderRaw] = sort.split(':');

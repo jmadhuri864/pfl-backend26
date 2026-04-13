@@ -227,7 +227,7 @@ async getAllEodStocks(queryOptions: PaginationOptions, userId: string): Promise<
     //   'eodstockreport',
     // );
 const typedDocuments = data as DocumentWithRelatedData[];
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+const activeDocuments = typedDocuments;
 
     for (const doc of activeDocuments) {
       if (!doc.document_type_id) continue;
@@ -313,7 +313,8 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
    const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
       userId,
       DocumentTypeEnum.EOD_REPORT,
-      queryOptions
+      queryOptions,
+      true // includeDeleted for recycle bin
     );
 
      const { search } = queryOptions;
@@ -331,7 +332,7 @@ const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
     //   'eodstockreport',
     // );
 const typedDocuments = data as DocumentWithRelatedData[];
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+const activeDocuments = typedDocuments;
 
     for (const doc of activeDocuments) {
       if (!doc.document_type_id) continue;

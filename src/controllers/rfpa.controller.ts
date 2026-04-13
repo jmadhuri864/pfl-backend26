@@ -513,7 +513,7 @@ export class RfpaController {
         { ...req.query, isDealSlipCreated },
         userId,
       );
-      if (!rfpas || !rfpas.data || rfpas.data.length === 0) {
+      if (!rfpas || !rfpas.data) {
         logger.warn('No RFPA numbers found');
         ControllerLogger.logError(
           'RFPA numbers retrieval',
@@ -527,7 +527,6 @@ export class RfpaController {
       ControllerLogger.logList('RFPA Numbers', req, res);
       res.status(200).json({
         status: 'success',
-
         data: rfpas.data,
         allRecords: rfpas.total,
         totalPages: rfpas.totalPages,

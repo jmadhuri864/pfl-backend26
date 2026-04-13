@@ -228,7 +228,7 @@ export class DocDoubleApproverService {
 
 
   //TODO: Get Document with Data
-  public async getAllDocumentByUserIdForDoubleApprover(userId: string, documentType: string, queryOptions: PaginationOptions): Promise<any> {
+  public async getAllDocumentByUserIdForDoubleApprover(userId: string, documentType: string, queryOptions: PaginationOptions, includeDeleted: boolean = false): Promise<any> {
 
   //  console.log("documentType", documentType);
 
@@ -273,7 +273,9 @@ export class DocDoubleApproverService {
         }),
       )
       .andWhere('document.document_type_id IS NOT NULL')
-      .andWhere('document.type = :documentType', { documentType });
+      .andWhere('document.type = :documentType', { documentType })
+      .andWhere('document.isDeleted = :isDeleted', { isDeleted: includeDeleted })
+      .andWhere(includeDeleted ? 'document.deletedAt IS NOT NULL' : 'document.deletedAt IS NULL');
 
      //console.log("from queryBuilder: ",queryBuilder);
       

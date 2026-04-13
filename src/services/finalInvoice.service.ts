@@ -532,8 +532,8 @@ export class FinalInvoiceService {
     );
 
     const { search } = queryOptions;
-    const typedDocuments = data as any[];
-    const activeDocuments = typedDocuments.filter(doc => !doc.isDeleted);
+    const typedDocuments = data as DocumentWithRelatedData[];
+    const activeDocuments = typedDocuments;
     
     for (const doc of activeDocuments) {
       if (!doc.document_type_id) continue;

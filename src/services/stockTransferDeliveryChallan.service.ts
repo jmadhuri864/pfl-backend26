@@ -477,7 +477,6 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
 
     const typedDocuments = data as DocumentWithRelatedData[];
     const activeDocuments = typedDocuments
-      .filter(doc => doc.isDeleted === false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // ---- Batch fetch: one query instead of N+1 ----

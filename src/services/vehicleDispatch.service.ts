@@ -110,11 +110,12 @@ const serialNo = await this.generateSerialNo();
     const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
+      true, // includeDeleted for recycle bin
     );
     const { search } = queryOptions;
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+    const activeDocuments = typedDocuments;
 
     // ---- Batch fetch instead of N+1 ----
     const dispatchIds = activeDocuments
@@ -401,7 +402,6 @@ const serialNo = await this.generateSerialNo();
 
     const typedDocuments = data as DocumentWithRelatedData[];
     const activeDocuments = typedDocuments
-      .filter(doc => doc.isDeleted === false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // ---- Batch fetch: one query instead of N+1 ----

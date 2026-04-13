@@ -247,13 +247,14 @@ public async getAllRecycleBinInwardRegisters(queryOptions: PaginationOptions, us
     const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.INWARD_REGISTER,
+      true, // includeDeleted for recycle bin
     );
     const { search } = queryOptions;
   //  console.log('Fetched documents:', data);
   
     const typedDocuments = data as DocumentWithRelatedData[];
     // Exclude soft-deleted documents
-  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+  const activeDocuments = typedDocuments;
   
     // if (typedDocuments.length > 0) {
     //   console.log("doc.relatedData", typedDocuments[0].relatedData);
@@ -1285,7 +1286,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
     const typedDocuments = data as DocumentWithRelatedData[];
     // Exclude soft-deleted documents
   //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+  const activeDocuments = typedDocuments
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
     // if (typedDocuments.length > 0) {

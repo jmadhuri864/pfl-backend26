@@ -1043,12 +1043,13 @@ async getRFQByIdForUpdate(id: string) {
     const queryBuilder = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
       userId,
       DocumentTypeEnum.RFPA,
+      true, // includeDeleted for recycle bin
     );
     const { search } = queryOptions;
     const paginatedResult = await buildQueryFromArray(queryBuilder, queryOptions);
 
     const typedDocuments = paginatedResult.data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+    const activeDocuments = typedDocuments;
 
     // ---- Batch fetch instead of N+1 ----
     const rfpaIds = activeDocuments
@@ -1801,7 +1802,7 @@ public async getAllRFPANumbers(
     const paginatedResult = await buildQueryFromArray(queryBuilder, queryOptions);
 
     const typedDocuments = paginatedResult.data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+    const activeDocuments = typedDocuments;
 
     // ---- Batch fetch: one query instead of N+1 ----
     const rfpaIds = activeDocuments
@@ -2244,9 +2245,21 @@ const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA 
       await this.rfpaRepository.softDelete(rfpa.id);
       await this.rfpaRepository.update(rfpa.id, { isDeleted: true } as any);
 
-      // Invalidate cache for this specific RFPA
-      await this.invalidateCache(id);
+      // Bust per-id caches
+      await Promise.all([
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+      ]);
     }
+
+    // Bust list/all caches once after all deletes
+    await Promise.all([
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:all:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:rfpanumbers:*`),
+    ]);
 
     return { message: 'RFPA records marked for deletion successfully' };
 

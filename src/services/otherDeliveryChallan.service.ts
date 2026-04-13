@@ -391,7 +391,7 @@ export class OtherDeliveryChallanService {
     );
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+    const activeDocuments = typedDocuments
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     for (const doc of activeDocuments) {
       if (!doc.document_type_id) continue;

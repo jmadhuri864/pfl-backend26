@@ -70,7 +70,7 @@ export class PMPVoucherService {
                // console.log('data in grn service', documentData);
                 
                   const typedDocuments = data as DocumentWithRelatedData[];
-                  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
+                  const activeDocuments = typedDocuments;
 
 
                 for (const doc of activeDocuments) {
@@ -318,13 +318,15 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
                   userId,
                   DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
-                  queryOptions
+                  queryOptions,
+                  false,
+                  true // includeDeleted for recycle bin
                 );
               
                // console.log('data in grn service', documentData);
                 
                   const typedDocuments = data as DocumentWithRelatedData[];
-                  const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+                  const activeDocuments = typedDocuments;
 
 
                 for (const doc of activeDocuments) {

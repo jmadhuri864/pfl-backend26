@@ -268,13 +268,14 @@ const serialNo = await this.generateSerialNo();
       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
         userId,
         DocumentTypeEnum.DUMP_REGISTER,
-        queryOptions
+        queryOptions,
+        true // includeDeleted for recycle bin
       );
  const { search } = queryOptions;
      
       
       const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
+      const activeDocuments = typedDocuments;
           for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;
             try {
@@ -696,8 +697,7 @@ async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promi
       //   const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'dump_register');
       
       const typedDocuments = data as DocumentWithRelatedData[];
-      //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-      const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false)
+      const activeDocuments = typedDocuments
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());  
       for (const doc of activeDocuments) {
             if (!doc.document_type_id) continue;

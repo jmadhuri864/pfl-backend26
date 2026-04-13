@@ -386,7 +386,6 @@ export class PostReturnByCustomerService {
     const { search } = queryOptions;
     const typedDocuments = data as DocumentWithRelatedData[];
     const activeDocuments = typedDocuments
-      .filter(doc => doc.isDeleted === false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // ---- Batch fetch instead of N+1 ----
