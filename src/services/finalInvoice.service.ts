@@ -379,108 +379,98 @@ export class FinalInvoiceService {
     if (cached) return cached;
 
     const document = await this.docDoubleApproverService.getDocumentById(id);
-    console.log(document);
-
     const invoiceId = document.documentTypeId;
-    console.log(invoiceId)
+    if (!invoiceId) throw new AppError(400, `Invoice with document ID ${id} not found`);
 
-    if (!invoiceId) {
-      throw new AppError(400, `Invoice with document ID ${id} not found`);
-    }
+    const invoice = await this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoin('invoice.invoiceProducts', 'products')
+      .leftJoin('products.productName', 'productName')
+      .leftJoin('products.variant', 'variant')
+      .leftJoin('products.saleUoM', 'saleUoM')
+      .leftJoin('invoice.companyName', 'company')
+      .leftJoin('company.bankDetails', 'bankDetails')
+      .leftJoin('invoice.deliveryChallan', 'deliveryChallan')
+      .leftJoin('invoice.customerName', 'customer')
+      .leftJoin('customer.statutoryDetails', 'statutory')
+      .leftJoin('invoice.fromLocation', 'fromLocation')
+      .leftJoin('invoice.billingAddress', 'billingAddress')
+      .leftJoin('invoice.deliveryAddress', 'deliveryAddress')
+      .leftJoin('invoice.createdBy', 'createdBy')
+      .select([
+        'invoice.id', 'invoice.invoiceNo', 'invoice.invoiceDate', 'invoice.vehicleNo',
+        'invoice.poNumber', 'invoice.placeOfSupply', 'invoice.totalProductAmount',
+        'invoice.netProductWeight', 'invoice.totalAmount', 'invoice.totalAmtInWords',
+        'invoice.cgst', 'invoice.sgst', 'invoice.igst', 'invoice.taxAmount',
+        'invoice.discount', 'invoice.freight', 'invoice.otherCharges', 'invoice.createdAt',
+        'company.id', 'company.name', 'company.officeAddress', 'company.gstNo', 'company.fassaiNo',
+        'bankDetails.bankName', 'bankDetails.accountNo', 'bankDetails.branch', 'bankDetails.ifscCode',
+        'deliveryChallan.challanNo',
+        'customer.id', 'customer.organisationName', 'customer.customerCode',
+        'customer.primaryContactNo', 'customer.secondaryContactNo',
+        'statutory.gstn', 'statutory.panNo',
+        'fromLocation.name',
+        'billingAddress.id', 'billingAddress.address1', 'billingAddress.address2',
+        'billingAddress.location', 'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+        'deliveryAddress.id', 'deliveryAddress.address1', 'deliveryAddress.address2',
+        'deliveryAddress.location', 'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+        'createdBy.firstName', 'createdBy.lastName',
+        'products.id', 'products.quantity', 'products.acceptedQty', 'products.rejectedQty',
+        'products.returnedQty', 'products.amount', 'products.unitPrice',
+        'products.grossWeight', 'products.netWeight', 'products.hsnCode', 'products.description',
+        'productName.name', 'variant.variantName', 'saleUoM.unit',
+      ])
+      .where('invoice.id = :id', { id: invoiceId })
+      .getOne();
 
-    const invoice = await this.invoiceRepository.findOne({
-      where: { id: invoiceId },
-      relations: [
-        'invoiceProducts',
-        'invoiceProducts.productName',
-        'invoiceProducts.variant',
-        'invoiceProducts.saleUoM',
-        'companyName',
-        'companyName.bankDetails',
-        'deliveryChallan',
-        'customerName',
-        'customerName.statutoryDetails',
-        'fromLocation',
-        'billingAddress',
-        'deliveryAddress',
-        'createdBy',
-      ],
-    });
-
-    if (!invoice) {
-      throw new AppError(400, `Invoice with ID ${invoiceId} not found`);
-    }
+    if (!invoice) throw new AppError(400, `Invoice with ID ${invoiceId} not found`);
 
     const { createdDate, createdTime } = formatDateTime(invoice.createdAt);
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
 
-    // Get customer contact number
-    const customerContactNo = invoice.customerName?.primaryContactNo || invoice.customerName?.secondaryContactNo || null;
+    const companyBankDetails = invoice.companyName?.bankDetails?.[0] ?? null;
 
-    // Get GSTN and PAN from statutory details
-    const gstn = invoice.customerName?.statutoryDetails?.gstn || null;
-    const panNo = invoice.customerName?.statutoryDetails?.panNo || null;
-
-    // Get company bank details
-    const companyBankDetails = invoice.companyName?.bankDetails && invoice.companyName.bankDetails.length > 0 
-      ? invoice.companyName.bankDetails[0] 
-      : null;
-
-    return {
+    const result = {
       id: invoice.id,
+      documentId: document.id,
+      overAllStatus: document.overAllStatus,
+      approvalSummary: document.approvalSummary,
       invoiceNo: invoice.invoiceNo,
       invoiceDate: invoice.invoiceDate,
+      createdDate,
+      createdTime,
+      createdBy: invoice.createdBy
+        ? `${invoice.createdBy.firstName} ${invoice.createdBy.lastName}`
+        : null,
       companyName: {
-        id: invoice.companyName?.id || null,
-        name: invoice.companyName?.name || null,
-        officeAddress: invoice.companyName?.officeAddress || null,
-        gstNo: invoice.companyName?.gstNo || null,
-        fassaiNo: invoice.companyName?.fassaiNo || null,
-        bankDetails: companyBankDetails
-          ? {
-              bankName: companyBankDetails.bankName || null,
-              accountNo: companyBankDetails.accountNo || null,
-              branch: companyBankDetails.branch || null,
-              ifscCode: companyBankDetails.ifscCode || null,
-            }
-          : null,
+        id: invoice.companyName?.id ?? null,
+        name: invoice.companyName?.name ?? null,
+        officeAddress: invoice.companyName?.officeAddress ?? null,
+        gstNo: invoice.companyName?.gstNo ?? null,
+        fassaiNo: invoice.companyName?.fassaiNo ?? null,
+        bankDetails: companyBankDetails ? {
+          bankName: companyBankDetails.bankName ?? null,
+          accountNo: companyBankDetails.accountNo ?? null,
+          branch: companyBankDetails.branch ?? null,
+          ifscCode: companyBankDetails.ifscCode ?? null,
+        } : null,
       },
-      customer:{
-        id:invoice.customerName?.id|| null,
-         customerName: invoice.customerName?.organisationName || null,
-      customerCode: invoice.customerName?.customerCode || null,
-      contactNo: customerContactNo|| null,
-      gstn: gstn|| null,
-      panNo: panNo|| null,
-
+      customer: {
+        id: invoice.customerName?.id ?? null,
+        customerName: invoice.customerName?.organisationName ?? null,
+        customerCode: invoice.customerName?.customerCode ?? null,
+        contactNo: invoice.customerName?.primaryContactNo ?? invoice.customerName?.secondaryContactNo ?? null,
+        gstn: invoice.customerName?.statutoryDetails?.gstn ?? null,
+        panNo: invoice.customerName?.statutoryDetails?.panNo ?? null,
       },
-      createdDate: createdDate,
-      createdTime: createdTime,
-      deliveryChallan: invoice.deliveryChallan?.challanNo || null,
-     
+      deliveryChallan: invoice.deliveryChallan?.challanNo ?? null,
       poNumber: invoice.poNumber,
-      fromLocation: invoice.fromLocation?.name || null,
-      billingAddress: invoice.billingAddress
-        ? {
-            id: invoice.billingAddress.id,
-            address1: invoice.billingAddress.address1,
-            address2: invoice.billingAddress.address2,
-            location: invoice.billingAddress.location,
-            city: invoice.billingAddress.city,
-            state: invoice.billingAddress.state,
-            pincode: invoice.billingAddress.pincode,
-          }
-        : null,
-      deliveryAddress: invoice.deliveryAddress
-        ? {
-            id: invoice.deliveryAddress.id,
-            address1: invoice.deliveryAddress.address1,
-            address2: invoice.deliveryAddress.address2,
-            location: invoice.deliveryAddress.location,
-            city: invoice.deliveryAddress.city,
-            state: invoice.deliveryAddress.state,
-            pincode: invoice.deliveryAddress.pincode,
-          }
-        : null,
+      fromLocation: invoice.fromLocation?.name ?? null,
+      billingAddress: mapAddress(invoice.billingAddress),
+      deliveryAddress: mapAddress(invoice.deliveryAddress),
       vehicleNo: invoice.vehicleNo,
       placeOfSupply: invoice.placeOfSupply,
       totalProductAmount: invoice.totalProductAmount,
@@ -494,31 +484,28 @@ export class FinalInvoiceService {
       discount: invoice.discount,
       freight: invoice.freight,
       otherCharges: invoice.otherCharges,
-      createdBy: invoice.createdBy
-        ? `${invoice.createdBy.firstName} ${invoice.createdBy.lastName}`
-        : null,
-      invoiceProducts: invoice.invoiceProducts?.map((product) => ({
-        id: product.id,
-        productName: product.productName?.name || null,
-        variant: product.variant?.variantName || null,
-        quantity: product.quantity,
-        acceptedQty: product.acceptedQty != null
-          ? product.acceptedQty
-          : (product.quantity || 0) - (product.returnedQty || 0) - (product.rejectedQty || 0),
-        rejectedQty: product.rejectedQty,
-        returnedQty: product.returnedQty,
-        saleUoM: product.saleUoM?.unit || null,
-        amount: product.amount,
-        unitPrice: product.unitPrice,
-        grossWeight: product.grossWeight,
-        netWeight: product.netWeight,
-        hsnCode: product.hsnCode,
-        description: product.description,
-      })) || [],
-      overAllStatus: document.overAllStatus,
-      approvalSummary: document.approvalSummary,
-      documentId: document.id,
+      invoiceProducts: (invoice.invoiceProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        quantity: p.quantity,
+        acceptedQty: p.acceptedQty != null
+          ? p.acceptedQty
+          : (p.quantity || 0) - (p.returnedQty || 0) - (p.rejectedQty || 0),
+        rejectedQty: p.rejectedQty,
+        returnedQty: p.returnedQty,
+        saleUoM: p.saleUoM?.unit ?? null,
+        amount: p.amount,
+        unitPrice: p.unitPrice,
+        grossWeight: p.grossWeight,
+        netWeight: p.netWeight,
+        hsnCode: p.hsnCode,
+        description: p.description,
+      })),
     };
+
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   public async getAll(
@@ -528,120 +515,114 @@ export class FinalInvoiceService {
     const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
       userId,
       DocumentTypeEnum.FINAL_INVOICE,
-      queryOptions
+      queryOptions,
     );
 
     const { search } = queryOptions;
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments;
-    
-    for (const doc of activeDocuments) {
-      if (!doc.document_type_id) continue;
-      try {
-        doc.relatedData = await this.invoiceRepository.findOne({
-          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-          relations: [
-            'invoiceProducts',
-            'companyName',
-            'deliveryChallan',
-            'customerName',
-            'fromLocation',
-            'billingAddress',
-            'deliveryAddress',
-            'createdBy',
-          ],
-        });
-      } catch {
-        doc.relatedData = null;
-      }
+
+    // batch fetch — no N+1
+    const invoiceIds = typedDocuments
+      .map((doc) => doc.document_type_id)
+      .filter(Boolean) as string[];
+
+    let invoiceMap = new Map<string, any>();
+    if (invoiceIds.length > 0) {
+      const invoices = await this.invoiceRepository
+        .createQueryBuilder('invoice')
+        .leftJoin('invoice.companyName', 'company')
+        .leftJoin('invoice.deliveryChallan', 'deliveryChallan')
+        .leftJoin('invoice.customerName', 'customerName')
+        .leftJoin('invoice.fromLocation', 'fromLocation')
+        .leftJoin('invoice.billingAddress', 'billingAddress')
+        .leftJoin('invoice.deliveryAddress', 'deliveryAddress')
+        .select([
+          'invoice.id', 'invoice.invoiceNo', 'invoice.invoiceDate', 'invoice.vehicleNo',
+          'invoice.poNumber', 'invoice.totalProductAmount', 'invoice.netProductWeight',
+          'invoice.totalAmount',
+          'company.name', 'deliveryChallan.challanNo',
+          'customerName.organisationName', 'fromLocation.name',
+          'billingAddress.address1', 'billingAddress.address2', 'billingAddress.location',
+          'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+          'deliveryAddress.address1', 'deliveryAddress.address2', 'deliveryAddress.location',
+          'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+        ])
+        .where('invoice.id IN (:...ids)', { ids: invoiceIds })
+        .andWhere('invoice.isDeleted = false')
+        .andWhere('invoice.deletedAt IS NULL')
+        .getMany();
+
+      invoiceMap = new Map(invoices.map((i) => [i.id, i]));
     }
 
-    let relatedDataOnly = activeDocuments
-      .filter((doc) => doc.relatedData)
-      .map((doc) => ({
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        
-        id: doc.relatedData.id,
-        invoiceNo: doc.relatedData.invoiceNo,
-        invoiceDate: doc.relatedData.invoiceDate,
-         vehicleNo:doc.relatedData.vehicleNo||null,
-        companyName: doc.relatedData.companyName?.name || null,
-        deliveryChallan: doc.relatedData.deliveryChallan?.challanNo || null,
-        customerName: doc.relatedData.customerName?.organisationName || null,
-        poNumber: doc.relatedData.poNumber,
-        fromLocation: doc.relatedData.fromLocation?.name || null,
-        totalProductAmount: doc.relatedData.totalProductAmount,
-        netProductWeight: doc.relatedData.netProductWeight,
-        totalAmount: doc.relatedData.totalAmount,
-      deliveryAddress:
-(doc.relatedData.deliveryAddress?.adress1 || "") +
-(doc.relatedData.deliveryAddress?.adress2 || "") + " " +
-(doc.relatedData.deliveryAddress?.location || "") + " " +
-(doc.relatedData.deliveryAddress?.city || "") + " " +
-(doc.relatedData.deliveryAddress?.state || "") + " " +
-(doc.relatedData.deliveryAddress?.pincode || "") || null,
+    const formatAddr = (addr: any) => addr
+      ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+          .filter(Boolean).join(' ')
+      : null;
 
-billingAddress:
-(doc.relatedData.billingAddress?.adress1 || "") +
-(doc.relatedData.billingAddress?.adress2 || "") + " " +
-(doc.relatedData.billingAddress?.location || "") + " " +
-(doc.relatedData.billingAddress?.city || "") + " " +
-(doc.relatedData.billingAddress?.state || "") + " " +
-(doc.relatedData.billingAddress?.pincode || "") || null,
-       
-      }));
+    let relatedDataOnly = typedDocuments
+      .filter((doc) => doc.document_type_id && invoiceMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = invoiceMap.get(doc.document_type_id!);
+        if (!rd) return null;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id,
+          invoiceNo: rd.invoiceNo,
+          invoiceDate: rd.invoiceDate,
+          vehicleNo: rd.vehicleNo ?? null,
+          companyName: rd.companyName?.name ?? null,
+          deliveryChallan: rd.deliveryChallan?.challanNo ?? null,
+          customerName: rd.customerName?.organisationName ?? null,
+          poNumber: rd.poNumber,
+          fromLocation: rd.fromLocation?.name ?? null,
+          totalProductAmount: rd.totalProductAmount,
+          netProductWeight: rd.netProductWeight,
+          totalAmount: rd.totalAmount,
+          billingAddress: formatAddr(rd.billingAddress),
+          deliveryAddress: formatAddr(rd.deliveryAddress),
+        };
+      })
+      .filter(Boolean);
 
-    // 🔍 Deep search helper
     const objectToString = (obj: any): string => {
       if (obj == null) return '';
-      if (typeof obj === 'object') {
-        return Object.values(obj).map((v) => objectToString(v)).join(' ');
-      }
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
       return String(obj);
     };
 
-    // 🔍 Apply search filter
     if (search && search.trim()) {
       const term = search.toLowerCase();
       relatedDataOnly = relatedDataOnly.filter((item) =>
-        objectToString(item).toLowerCase().includes(term)
+        objectToString(item).toLowerCase().includes(term),
       );
     }
 
-    // 🔄 Sorting
     if (queryOptions.sort) {
       const [field, direction] = queryOptions.sort.split(':');
       const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
       const getNestedValue = (obj: any, path: string) =>
         path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
       relatedDataOnly.sort((a, b) => {
         const valA = getNestedValue(a, field);
         const valB = getNestedValue(b, field);
-
         if (valA == null && valB == null) return 0;
         if (valA == null) return -1 * sortOrder;
         if (valB == null) return 1 * sortOrder;
-
-        if (!isNaN(valA) && !isNaN(valB)) {
-          return (Number(valA) - Number(valB)) * sortOrder;
-        }
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
         return String(valA).localeCompare(String(valB)) * sortOrder;
       });
     }
 
     return {
       data: relatedDataOnly,
-      meta: {
-        total: meta.total,
-        page: meta.page,
-        pages: meta.pages,
-      },
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
   }
 

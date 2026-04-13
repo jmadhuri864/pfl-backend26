@@ -182,106 +182,108 @@ export class OtherDeliveryChallanService {
 
     const document = await this.docDoubleApproverService.getDocumentById(docId);
     const id = document.documentTypeId;
-
     if (!id) return null;
 
     const challan = await this.challanRepository
       .createQueryBuilder('challan')
-      .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-      .leftJoinAndSelect('products.productName', 'productName')
-      .leftJoinAndSelect('products.variant', 'variant')
-      .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-      .leftJoinAndSelect('products.packagingMaterialUoM', 'packagingMaterialUoM')
-      .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('challan.companyName', 'company')
-      .leftJoinAndSelect('challan.customerAddress', 'customerAddress')
-      .leftJoinAndSelect('challan.offices', 'office')
-      .leftJoinAndSelect('challan.grnNo', 'grn')
-      .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
+      .leftJoin('challan.deliveryChallanProducts', 'products')
+      .leftJoin('products.productName', 'productName')
+      .leftJoin('products.variant', 'variant')
+      .leftJoin('products.packagingMaterial', 'packagingMaterial')
+      .leftJoin('products.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('products.saleUoM', 'saleUoM')
+      .leftJoin('challan.companyName', 'company')
+      .leftJoin('challan.customerAddress', 'customerAddress')
+      .leftJoin('challan.offices', 'office')
+      .leftJoin('challan.grnNo', 'grn')
+      .leftJoin('challan.fromLocation', 'fromLocation')
+      .select([
+        'challan.id', 'challan.challanNo', 'challan.transitInsuranceNo', 'challan.rmn',
+        'challan.driverName', 'challan.contactNo', 'challan.altContactNo',
+        'challan.vehicleNo', 'challan.licenseNo', 'challan.receiverName',
+        'challan.totalProductAmount', 'challan.netProductWeight',
+        'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+        'challan.totalAmtInWords', 'challan.remark', 'challan.anyAttachment', 'challan.createdAt',
+        'challan.customer', 'challan.customerContactNo', 'challan.customerEmail',
+        'company.name', 'office.name', 'grn.grnNo', 'fromLocation.name',
+        'customerAddress.address1', 'customerAddress.address2', 'customerAddress.location',
+        'customerAddress.city', 'customerAddress.state', 'customerAddress.pincode',
+        'products.id', 'products.quantity', 'products.unitPrice', 'products.amount',
+        'products.netWeight', 'products.grossWeight', 'products.packingMaterialWeight',
+        'products.packagingMaterialAmount', 'products.packagingMaterialUnitPrice',
+        'products.packagingMaterialQuantity', 'products.packagingMaterialTotalWeight',
+        'productName.name', 'variant.variantName',
+        'saleUoM.unit', 'packagingMaterial.packagingMaterialName', 'packagingMaterialUoM.unit',
+      ])
       .where('challan.id = :id', { id })
       .getOne();
 
-    if (!challan) {
-      return null;
-    }
+    if (!challan) return null;
 
     const { createdDate, createdTime } = formatDateTime(challan.createdAt);
+    const addr = (challan as any).customerAddress;
 
     const formattedChallan = {
       id: challan.id,
+      documentId: document.documentId,
       challanNo: challan.challanNo,
-
-      companyName: challan.companyName?.name || null,
-      office: challan.offices?.name || null,
-      grnNo: challan.grnNo?.grnNo || null,
-      fromLocation: challan.fromLocation?.name||null,
-       
-      driverName: challan.driverName,
-      contactNo: challan.contactNo,
-      altContactNo: challan.altContactNo,
-      vehicleNo: challan.vehicleNo,
-      licenseNo: challan.licenseNo,
-      receiverName: challan.receiverName,
-      rmn: challan.rmn,
-      transitInsuranceNo: challan.transitInsuranceNo || null,
-      totalProductAmount: challan.totalProductAmount,
-      netProductWeight: challan.netProductWeight,
-      netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-    
-      totalAmtInWords: challan.totalAmtInWords,
+      companyName: challan.companyName?.name ?? null,
+      office: challan.offices?.name ?? null,
+      grnNo: challan.grnNo?.grnNo ?? null,
+      fromLocation: challan.fromLocation?.name ?? null,
+      driverName: challan.driverName ?? null,
+      contactNo: challan.contactNo ?? null,
+      altContactNo: challan.altContactNo ?? null,
+      vehicleNo: challan.vehicleNo ?? null,
+      licenseNo: challan.licenseNo ?? null,
+      receiverName: challan.receiverName ?? null,
+      rmn: challan.rmn ?? null,
+      transitInsuranceNo: challan.transitInsuranceNo ?? null,
+      totalProductAmount: challan.totalProductAmount ?? null,
+      netProductWeight: challan.netProductWeight ?? null,
+      netPackagingMaterialWeight: challan.netPackagingMaterialWeight ?? null,
+      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount ?? null,
+      totalAmtInWords: challan.totalAmtInWords ?? null,
+      remark: challan.remark ?? null,
+      anyAttachment: challan.anyAttachment ?? null,
       createdDate,
       createdTime,
-      //requestingDepartment: challan.requestingDepartment,
-      // approvalStatus: challan.approvalStatus,
-      customer: (challan as any).customer || null,
-      customerContactNo: (challan as any).customerContactNo || null,
-      customerEmail: (challan as any).customerEmail || null,
-      //customerAddress:challan.customerAddress.address1||" "+ challan.customerAddress.address2||" "+challan.customerAddress.location||""+challan.customerAddress.city||""+challan.customerAddress.state||""+challan.customerAddress.pincode,
-      customerAddress: (challan as any).customerAddress
-  ? [
-      (challan as any).customerAddress.address1,
-      (challan as any).customerAddress.address2,
-      (challan as any).customerAddress.location,
-      (challan as any).customerAddress.city,
-      (challan as any).customerAddress.state,
-      (challan as any).customerAddress.pincode
-    ]
-      .filter(Boolean)
-      .join(' ')   // space instead of comma
-  : null,
-      remark: challan.remark,
-      anyAttachment: challan.anyAttachment,
-      deliveryChallanProducts: challan.deliveryChallanProducts.map(
-        (product) => ({
-          id: product.id,
-          productName: product.productName?.name,
-          variant:product.variant?.variantName,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-          saleUoM: product.saleUoM?.unit || null,
-          packagingMaterial:
-            product.packagingMaterial?.packagingMaterialName || null,
-             netWeight:product.netWeight,
-             grossWeight:product.grossWeight,
-          packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-          packagingMaterialAmount: product.packagingMaterialAmount,
-          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-          packagingMaterialQuantity: product.packagingMaterialQuantity,
-          packingMaterialWeight:product.packingMaterialWeight,
-          packagingMaterialTotalWeight: product.packagingMaterialTotalWeight,
-        }),
-      ),
+      customer: (challan as any).customer ?? null,
+      customerContactNo: (challan as any).customerContactNo ?? null,
+      customerEmail: (challan as any).customerEmail ?? null,
+      customerAddress: addr
+        ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+            .filter(Boolean).join(' ')
+        : null,
       overAllStatus: document.overAllStatus,
       createdBy: document.createdBy,
       approvalSummary: document.approvalSummary,
-      documentId: document.documentId,
+      deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        netWeight: p.netWeight,
+        grossWeight: p.grossWeight,
+        packingMaterialWeight: p.packingMaterialWeight ?? null,
+        saleUoM: p.saleUoM?.unit ?? null,
+        packagingMaterial: p.packagingMaterial?.packagingMaterialName ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.unit ?? null,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+      })),
     };
 
     await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
     return formattedChallan;
   }
+
+  
+
   async getByIdChallanforUpdate(id: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -289,95 +291,103 @@ export class OtherDeliveryChallanService {
 
     const challan = await this.challanRepository
       .createQueryBuilder('challan')
-      .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-      .leftJoinAndSelect('products.productName', 'productName')
-      .leftJoinAndSelect('products.variant', 'variant')
-      .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-      .leftJoinAndSelect(
-        'products.packagingMaterialUoM',
-        'packagingMaterialUoM',
-      )
-      .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('challan.companyName', 'company')
-      .leftJoinAndSelect('challan.customerAddress', 'customerAddress')
-      .leftJoinAndSelect('challan.offices', 'office')
-      .leftJoinAndSelect('challan.grnNo', 'grn')
-      .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
+      .leftJoin('challan.deliveryChallanProducts', 'products')
+      .leftJoin('products.productName', 'productName')
+      .leftJoin('products.variant', 'variant')
+      .leftJoin('products.packagingMaterial', 'packagingMaterial')
+      .leftJoin('products.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('products.saleUoM', 'saleUoM')
+      .leftJoin('challan.companyName', 'company')
+      .leftJoin('challan.customerAddress', 'customerAddress')
+      .leftJoin('challan.offices', 'office')
+      .leftJoin('challan.grnNo', 'grn')
+      .leftJoin('challan.fromLocation', 'fromLocation')
+      .select([
+        'challan.id', 'challan.challanNo', 'challan.transitInsuranceNo', 'challan.rmn',
+        'challan.driverName', 'challan.contactNo', 'challan.altContactNo',
+        'challan.vehicleNo', 'challan.licenseNo', 'challan.receiverName',
+        'challan.totalProductAmount', 'challan.netProductWeight',
+        'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+        'challan.totalAmtInWords', 'challan.requestingDepartment', 'challan.approvalStatus',
+        'challan.remark', 'challan.anyAttachment', 'challan.createdAt',
+        'challan.customer', 'challan.customerContactNo', 'challan.customerEmail',
+        'company.id', 'office.id', 'grn.id', 'fromLocation.id',
+        'customerAddress.id', 'customerAddress.address1', 'customerAddress.address2',
+        'customerAddress.location', 'customerAddress.city', 'customerAddress.state', 'customerAddress.pincode',
+        'products.id', 'products.quantity', 'products.unitPrice', 'products.amount',
+        'products.netWeight', 'products.grossWeight', 'products.packingMaterialWeight',
+        'products.packagingMaterialAmount', 'products.packagingMaterialUnitPrice',
+        'products.packagingMaterialQuantity', 'products.packagingMaterialTotalWeight',
+        'productName.id', 'variant.id',
+        'saleUoM.id', 'packagingMaterial.id', 'packagingMaterialUoM.id',
+      ])
       .where('challan.id = :id', { id })
       .getOne();
 
-    if (!challan) {
-      return null;
-    }
+    if (!challan) return null;
 
     const { createdDate, createdTime } = formatDateTime(challan.createdAt);
+    const addr = (challan as any).customerAddress;
 
     const formattedChallan = {
       id: challan.id,
       challanNo: challan.challanNo,
-
-      companyName: challan.companyName?.id || null,
-      office: challan.offices?.id || null,
-      grnNo: challan.grnNo?.id || null,
-      fromLocation: challan.fromLocation?.id || null,
-      rmn: challan.rmn,
-      driverName: challan.driverName,
-      contactNo: challan.contactNo,
-      altContactNo: challan.altContactNo,
-      vehicleNo: challan.vehicleNo,
-      licenseNo: challan.licenseNo,
-      receiverName: challan.receiverName,
-      transitInsuranceNo: challan.transitInsuranceNo || null,
-      totalProductAmount: challan.totalProductAmount,
-      netProductWeight: challan.netProductWeight,
-      netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-      totalAmtInWords: challan.totalAmtInWords,
+      companyName: challan.companyName?.id ?? null,
+      office: challan.offices?.id ?? null,
+      grnNo: challan.grnNo?.id ?? null,
+      fromLocation: challan.fromLocation?.id ?? null,
+      rmn: challan.rmn ?? null,
+      driverName: challan.driverName ?? null,
+      contactNo: challan.contactNo ?? null,
+      altContactNo: challan.altContactNo ?? null,
+      vehicleNo: challan.vehicleNo ?? null,
+      licenseNo: challan.licenseNo ?? null,
+      receiverName: challan.receiverName ?? null,
+      transitInsuranceNo: challan.transitInsuranceNo ?? null,
+      totalProductAmount: challan.totalProductAmount ?? null,
+      netProductWeight: challan.netProductWeight ?? null,
+      netPackagingMaterialWeight: challan.netPackagingMaterialWeight ?? null,
+      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount ?? null,
+      totalAmtInWords: challan.totalAmtInWords ?? null,
+      requestingDepartment: challan.requestingDepartment ?? null,
+      approvalStatus: challan.approvalStatus ?? null,
+      remark: challan.remark ?? null,
+      anyAttachment: challan.anyAttachment ?? null,
       createdDate,
       createdTime,
-      requestingDepartment: challan.requestingDepartment,
-      approvalStatus: challan.approvalStatus,
-      customer: (challan as any).customer || null,
-      customerContactNo: (challan as any).customerContactNo || null,
-      customerEmail: (challan as any).customerEmail || null,
-      customerAddress: (challan as any).customerAddress
-        ? {
-            id: (challan as any).customerAddress.id,
-            address1: (challan as any).customerAddress.address1,
-            address2: (challan as any).customerAddress.address2,
-            location: (challan as any).customerAddress.location,
-            city: (challan as any).customerAddress.city,
-            state: (challan as any).customerAddress.state,
-            pincode: (challan as any).customerAddress.pincode,
-          }
-        : null,
-      remark: challan.remark,
-      anyAttachment: challan.anyAttachment,
-      deliveryChallanProducts: challan.deliveryChallanProducts.map(
-        (product) => ({
-          id: product.id,
-          productName: product.productName?.id,
-           variant: product.variant?.id || null,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-          saleUoM: product.saleUoM?.id || null,
-          netWeight:product.netWeight,
-             grossWeight:product.grossWeight,
-          packagingMaterial: product.packagingMaterial?.id || null,
-          packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
-          packagingMaterialAmount: product.packagingMaterialAmount,
-          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-          packagingMaterialQuantity: product.packagingMaterialQuantity,
-           packingMaterialWeight:product.packingMaterialWeight,
-          packagingMaterialTotalWeight: product.packagingMaterialTotalWeight,
-        }),
-      ),
+      customer: (challan as any).customer ?? null,
+      customerContactNo: (challan as any).customerContactNo ?? null,
+      customerEmail: (challan as any).customerEmail ?? null,
+      customerAddress: addr ? {
+        id: addr.id, address1: addr.address1, address2: addr.address2,
+        location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+      } : null,
+      deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        netWeight: p.netWeight,
+        grossWeight: p.grossWeight,
+        packingMaterialWeight: p.packingMaterialWeight ?? null,
+        saleUoM: p.saleUoM?.id ?? null,
+        packagingMaterial: p.packagingMaterial?.id ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.id ?? null,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+      })),
     };
 
     await this.cacheService.set(cacheKey, formattedChallan, this.CACHE_TTL);
     return formattedChallan;
   }
+
+
+  
   async getAll(queryOptions: PaginationOptions, userId: string): Promise<any> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
@@ -391,76 +401,92 @@ export class OtherDeliveryChallanService {
     );
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    for (const doc of activeDocuments) {
-      if (!doc.document_type_id) continue;
-      try {
-        doc.relatedData = await this.challanRepository.findOne({
-          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-          relations: ['companyName', 'offices', 'grnNo', 'fromLocation', "customerAddress"],
-        });
-      } catch {
-        doc.relatedData = null;
-      }
+
+    const challanIds = typedDocuments
+      .map((doc) => doc.document_type_id)
+      .filter(Boolean) as string[];
+
+    let challanMap = new Map<string, any>();
+    if (challanIds.length > 0) {
+      const challans = await this.challanRepository
+        .createQueryBuilder('challan')
+        .leftJoin('challan.companyName', 'company')
+        .leftJoin('challan.offices', 'office')
+        .leftJoin('challan.grnNo', 'grn')
+        .leftJoin('challan.fromLocation', 'fromLocation')
+        .leftJoin('challan.customerAddress', 'customerAddress')
+        .select([
+          'challan.id', 'challan.challanNo', 'challan.transitInsuranceNo', 'challan.rmn',
+          'challan.driverName', 'challan.contactNo', 'challan.altContactNo',
+          'challan.vehicleNo', 'challan.licenseNo', 'challan.receiverName',
+          'challan.totalProductAmount', 'challan.netProductWeight',
+          'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+          'challan.totalAmtInWords', 'challan.requestingDepartment', 'challan.approvalStatus',
+          'challan.remark', 'challan.anyAttachment',
+          'challan.customer', 'challan.customerContactNo', 'challan.customerEmail',
+          'company.name', 'office.name', 'grn.grnNo', 'fromLocation.name',
+          'customerAddress.address1', 'customerAddress.address2', 'customerAddress.location',
+          'customerAddress.city', 'customerAddress.state', 'customerAddress.pincode',
+        ])
+        .where('challan.id IN (:...ids)', { ids: challanIds })
+        .andWhere('challan.isDeleted = false')
+        .andWhere('challan.deletedAt IS NULL')
+        .getMany();
+
+      challanMap = new Map(challans.map((c) => [c.id, c]));
     }
 
-    const relatedDataOnly = activeDocuments
-      .filter((doc) => doc.relatedData)
-      .map((doc) => ({
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        id: doc.relatedData.id,
-        challanNo: doc.relatedData.challanNo,
-        companyName: doc.relatedData.companyName?.name || null,
-        office: doc.relatedData.offices?.name || null,
-        grnNo: doc.relatedData.grnNo?.grnNo || null,
-        fromLocation: doc.relatedData.fromLocation?.name||null,
-          
-        customer: (doc.relatedData as any).customer || null,
-        customerContactNo: (doc.relatedData as any).customerContactNo || null,
-        customerEmail: (doc.relatedData as any).customerEmail || null,
-        rmn: doc.relatedData.rmn,
-        customerAddress: (doc.relatedData as any).customerAddress
-  ? [
-      (doc.relatedData as any).customerAddress.address1,
-      (doc.relatedData as any).customerAddress.address2,
-      (doc.relatedData as any).customerAddress.location,
-      (doc.relatedData as any).customerAddress.city,
-      (doc.relatedData as any).customerAddress.state,
-      (doc.relatedData as any).customerAddress.pincode
-    ]
-      .filter(Boolean)
-      .join(' ')   // space instead of comma
-  : null,
-        driverName: doc.relatedData.driverName,
-        contactNo: doc.relatedData.contactNo,
-        altContactNo: doc.relatedData.altContactNo,
-        vehicleNo: doc.relatedData.vehicleNo,
-        licenseNo: doc.relatedData.licenseNo,
-        receiverName: doc.relatedData.receiverName,
-        transitInsuranceNo: doc.relatedData.transitInsuranceNo || null,
-        totalProductAmount: doc.relatedData.totalProductAmount,
-        netProductWeight: doc.relatedData.netProductWeight,
-        netPackagingMaterialWeight: doc.relatedData.netPackagingMaterialWeight,
-        totalPackagingMaterialAmount: doc.relatedData.totalPackagingMaterialAmount,
-        totalAmtInWords: doc.relatedData.totalAmtInWords,
-        requestingDepartment: doc.relatedData.requestingDepartment,
-        approvalStatus: doc.relatedData.approvalStatus,
-        remark: doc.relatedData.remark,
-        anyAttachment: doc.relatedData.anyAttachment,
-      }));
+    const relatedDataOnly = typedDocuments
+      .filter((doc) => doc.document_type_id && challanMap.has(doc.document_type_id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((doc) => {
+        const rd = challanMap.get(doc.document_type_id!);
+        if (!rd) return null;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        const addr = (rd as any).customerAddress;
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id,
+          challanNo: rd.challanNo,
+          companyName: rd.companyName?.name ?? null,
+          office: rd.offices?.name ?? null,
+          grnNo: rd.grnNo?.grnNo ?? null,
+          fromLocation: rd.fromLocation?.name ?? null,
+          customer: (rd as any).customer ?? null,
+          customerContactNo: (rd as any).customerContactNo ?? null,
+          customerEmail: (rd as any).customerEmail ?? null,
+          rmn: rd.rmn ?? null,
+          customerAddress: addr
+            ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+                .filter(Boolean).join(' ')
+            : null,
+          driverName: rd.driverName ?? null,
+          contactNo: rd.contactNo ?? null,
+          altContactNo: rd.altContactNo ?? null,
+          vehicleNo: rd.vehicleNo ?? null,
+          licenseNo: rd.licenseNo ?? null,
+          receiverName: rd.receiverName ?? null,
+          transitInsuranceNo: rd.transitInsuranceNo ?? null,
+          totalProductAmount: rd.totalProductAmount ?? null,
+          netProductWeight: rd.netProductWeight ?? null,
+          netPackagingMaterialWeight: rd.netPackagingMaterialWeight ?? null,
+          totalPackagingMaterialAmount: rd.totalPackagingMaterialAmount ?? null,
+          totalAmtInWords: rd.totalAmtInWords ?? null,
+          requestingDepartment: rd.requestingDepartment ?? null,
+          approvalStatus: rd.approvalStatus ?? null,
+          remark: rd.remark ?? null,
+          anyAttachment: rd.anyAttachment ?? null,
+        };
+      })
+      .filter(Boolean);
 
     const result = {
       data: relatedDataOnly,
-      meta: {
-        total: meta.total,
-        page: meta.page,
-        pages: meta.pages,
-      },
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;

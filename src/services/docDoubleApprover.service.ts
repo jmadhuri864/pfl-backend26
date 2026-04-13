@@ -229,46 +229,28 @@ export class DocDoubleApproverService {
 
   //TODO: Get Document with Data
   public async getAllDocumentByUserIdForDoubleApprover(userId: string, documentType: string, queryOptions: PaginationOptions, includeDeleted: boolean = false): Promise<any> {
-
-  //  console.log("documentType", documentType);
-
     if (!Object.values(DocumentTypeEnum).includes(documentType as DocumentTypeEnum)) {
       throw new Error(`Invalid document type: ${documentType}`);
     }
 
-
     const queryBuilder = this.documentbRepository
       .createQueryBuilder('document')
-      .leftJoinAndSelect('document.approvalFlow', 'approvalFlow')
-      .leftJoinAndSelect('approvalFlow.verifiers', 'verifier')
-      .leftJoinAndSelect('approvalFlow.approvers', 'approvalLevel')
-      .leftJoinAndSelect('approvalLevel.firstApprover', 'firstApproverBlock')
-      .leftJoinAndSelect('firstApproverBlock.users', 'firstApproverUser')
-      .leftJoinAndSelect('approvalLevel.secondApprover', 'secondApproverBlock')
-      .leftJoinAndSelect('secondApproverBlock.users', 'secondApproverUser')
-      .leftJoinAndSelect('approvalLevel.thirdApprover', 'thirdApproverBlock')
-      .leftJoinAndSelect('thirdApproverBlock.users', 'thirdApproverUser')
-      .leftJoinAndSelect('approvalLevel.fourthApprover', 'fourthApproverBlock')
-      .leftJoinAndSelect('fourthApproverBlock.users', 'fourthApproverUser')
-      .leftJoinAndSelect('approvalLevel.fifthApprover', 'fifthApproverBlock')
-      .leftJoinAndSelect('fifthApproverBlock.users', 'fifthApproverUser')
-      .leftJoinAndSelect('approvalLevel.sixthApprover', 'sixthApproverBlock')
-      .leftJoinAndSelect('sixthApproverBlock.users', 'sixthApproverUser')
-      .leftJoinAndSelect('approvalFlow.finalizers', 'finalizerBlock')
-      .leftJoinAndSelect('finalizerBlock.firstFinalizers', 'firstFinalizerUser')
-      .leftJoinAndSelect('finalizerBlock.secondFinalizers', 'secondFinalizerUser')
-      .leftJoinAndSelect('document.lastActionBy', 'lastActionBy')
+      .leftJoin('document.approvalFlow', 'approvalFlow')
+      .leftJoin('approvalFlow.approvers', 'approvalLevel')
+      .leftJoin('approvalLevel.firstApprover', 'firstApproverBlock')
+      .leftJoin('firstApproverBlock.users', 'firstApproverUser')
+      .leftJoin('approvalLevel.secondApprover', 'secondApproverBlock')
+      .leftJoin('secondApproverBlock.users', 'secondApproverUser')
+      .leftJoin('document.lastActionBy', 'lastActionBy')
+      .select([
+        'document.id', 'document.document_type_id', 'document.type',
+        'document.status', 'document.isDeleted', 'document.deletedAt', 'document.createdAt',
+        'lastActionBy.id', 'lastActionBy.firstName', 'lastActionBy.lastName',
+      ])
       .where(
         new Brackets((qb) => {
-          //   qb.where('verifier.id = :userId', { userId })
           qb.orWhere('firstApproverUser.id = :userId', { userId })
             .orWhere('secondApproverUser.id = :userId', { userId })
-            // .orWhere('thirdApproverUser.id = :userId', { userId })
-            // .orWhere('fourthApproverUser.id = :userId', { userId })
-            // .orWhere('fifthApproverUser.id = :userId', { userId })
-            // .orWhere('sixthApproverUser.id = :userId', { userId })
-            // .orWhere('firstFinalizerUser.id = :userId', { userId })
-            // .orWhere('secondFinalizerUser.id = :userId', { userId })
             .orWhere('lastActionBy.id = :userId', { userId });
         }),
       )
@@ -277,130 +259,69 @@ export class DocDoubleApproverService {
       .andWhere('document.isDeleted = :isDeleted', { isDeleted: includeDeleted })
       .andWhere(includeDeleted ? 'document.deletedAt IS NOT NULL' : 'document.deletedAt IS NULL');
 
-     //console.log("from queryBuilder: ",queryBuilder);
-      
-
     const sort = queryOptions?.sort || 'document.createdAt:DESC';
     const [sortField, sortOrderRaw] = sort.split(':');
     const sortOrder = (sortOrderRaw || 'DESC').toUpperCase() as 'ASC' | 'DESC';
-
     queryBuilder.orderBy(sortField, sortOrder);
 
     const page = queryOptions?.page || 1;
     const limit = queryOptions?.limit || 10;
-    const skip = (page - 1) * limit;
+    queryBuilder.skip((page - 1) * limit).take(limit);
 
-    queryBuilder.skip(skip).take(limit);
-
-    // Execute with count
     const [data, total] = await queryBuilder.getManyAndCount();
-
-    //console.log("data & total:", data, total);
-    
 
     return {
       data,
-      meta: {
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-      },
+      meta: { total, page, pages: Math.ceil(total / limit) },
     };
-
   }
 
   //TODO: For View
    async getDocumentById(id: string): Promise<any> {
-    try {
-      //TODO: By Shri
-      console.log("In document double service",id);
-      
-      const document = await this.documentbRepository.findOne({
-        where: { id },
-        relations: [
-          'lastActionBy',
-          'approvalInfo',
-          'approvalInfo.firstFinalized',
-          'approvalInfo.secondFinalized',
-          'approvalInfo.firstApproved',
-          'approvalInfo.secondApproved',
-          'approvalInfo.thirdApproved',
-          'approvalInfo.verified',
-        ],
-        order: { createdAt: 'DESC' },
-      });
+    const document = await this.documentbRepository
+      .createQueryBuilder('document')
+      .leftJoin('document.lastActionBy', 'lastActionBy')
+      .leftJoin('document.approvalInfo', 'approvalInfo')
+      .leftJoin('approvalInfo.verified', 'verified')
+      .leftJoin('approvalInfo.firstApproved', 'firstApproved')
+      .leftJoin('approvalInfo.secondApproved', 'secondApproved')
+      .leftJoin('approvalInfo.thirdApproved', 'thirdApproved')
+      .leftJoin('approvalInfo.firstFinalized', 'firstFinalized')
+      .leftJoin('approvalInfo.secondFinalized', 'secondFinalized')
+      .select([
+        'document.id', 'document.document_type_id', 'document.status',
+        'lastActionBy.firstName',
+        'approvalInfo.id',
+        'verified.userName', 'verified.status',
+        'firstApproved.userName', 'firstApproved.status',
+        'secondApproved.userName', 'secondApproved.status',
+        'thirdApproved.userName', 'thirdApproved.status',
+        'firstFinalized.userName', 'firstFinalized.status',
+        'secondFinalized.userName', 'secondFinalized.status',
+      ])
+      .where('document.id = :id', { id })
+      .getOne();
 
-      console.log("Approval flow : ", document);
-      
+    if (!document) throw new Error(`Document with ID ${id} not found`);
 
-      if (!document) {
-        throw new Error(`Document with ID ${id} not found`);
-      }
+    const a = document.approvalInfo;
+    const mapStage = (stage: any) => stage ? { name: stage.userName, status: stage.status } : null;
 
-   //   console.log("+++++++++++++++++++++++++++++++++++");
-      
-      //TODO: By Shri
-      const approvalInfo = document.approvalInfo;
-      const approvalInfoSummary = approvalInfo
-        ? {
-          verified: approvalInfo.verified
-            ? {
-              name: approvalInfo.verified.userName,
-              status: approvalInfo.verified.status,
-            }
-            : null,
-          firstApproved: approvalInfo.firstApproved
-            ? {
-              name: approvalInfo.firstApproved.userName,
-              status: approvalInfo.firstApproved.status,
-            }
-            : null,
-          secondApproved: approvalInfo.secondApproved
-            ? {
-              name: approvalInfo.secondApproved.userName,
-              status: approvalInfo.secondApproved.status,
-            }
-            : null,
-          thirdApproved: approvalInfo.thirdApproved
-            ? {
-              name: approvalInfo.thirdApproved.userName,
-              status: approvalInfo.thirdApproved.status,
-            }
-            : null,
-          firstFinalized: approvalInfo.firstFinalized
-            ? {
-              name: approvalInfo.firstFinalized.userName,
-              status: approvalInfo.firstFinalized.status,
-            }
-            : null,
-          secondFinalized: approvalInfo.secondFinalized
-            ? {
-              name: approvalInfo.secondFinalized.userName,
-              status: approvalInfo.secondFinalized.status,
-            }
-            : null,
-        }
-        : null;
-
-   //     console.log("Approva summary: ", approvalInfoSummary);
-        
-
-      // Construct response
-      return {
-        documentId: document.id,
-        // documentType: document.type,
-        documentTypeId: document.document_type_id,
-        status: document.status,
-        //type: document.type,
-        overAllStatus: document.status,
-        // createdAt: document.createdAt,
-        createdBy: document.lastActionBy?.firstName ?? null,
-        // ...documentDataByForm, // full GRN info (or null)
-        approvalSummary: approvalInfoSummary, // name + status summary
-      };
-    } catch (error) {
-      throw new Error(`Error fetching document: ${error}`);
-    }
+    return {
+      documentId: document.id,
+      documentTypeId: document.document_type_id,
+      status: document.status,
+      overAllStatus: document.status,
+      createdBy: document.lastActionBy?.firstName ?? null,
+      approvalSummary: a ? {
+        verified: mapStage(a.verified),
+        firstApproved: mapStage(a.firstApproved),
+        secondApproved: mapStage(a.secondApproved),
+        thirdApproved: mapStage(a.thirdApproved),
+        firstFinalized: mapStage(a.firstFinalized),
+        secondFinalized: mapStage(a.secondFinalized),
+      } : null,
+    };
   }
 
 

@@ -353,118 +353,106 @@ export class CustomerDeliveryChallanService {
 
     const challan = await this.challanRepository
       .createQueryBuilder('challan')
-      .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-      .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
-      .leftJoinAndSelect('products.productName', 'productName')
-      .leftJoinAndSelect('products.variant', 'variant')
-      .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-      .leftJoinAndSelect(
-        'products.packagingMaterialUoM',
-        'packagingMaterialUoM',
-      )
-      .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('challan.customerName', 'customerName')
-      .leftJoinAndSelect('challan.billingAddress', 'billingAddress')
-      .leftJoinAndSelect('challan.deliveryAddress', 'deliveryAddress')
-      .leftJoinAndSelect('challan.companyName', 'companyName')
-      .leftJoinAndSelect('challan.offices', 'office')
-      .leftJoinAndSelect('challan.grnNo', 'grn')
+      .leftJoin('challan.deliveryChallanProducts', 'products')
+      .leftJoin('challan.fromLocation', 'fromLocation')
+      .leftJoin('products.productName', 'productName')
+      .leftJoin('products.variant', 'variant')
+      .leftJoin('products.packagingMaterial', 'packagingMaterial')
+      .leftJoin('products.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('products.saleUoM', 'saleUoM')
+      .leftJoin('challan.customerName', 'customerName')
+      .leftJoin('challan.billingAddress', 'billingAddress')
+      .leftJoin('challan.deliveryAddress', 'deliveryAddress')
+      .leftJoin('challan.companyName', 'companyName')
+      .leftJoin('challan.offices', 'office')
+      .leftJoin('challan.grnNo', 'grn')
+      .select([
+        'challan.id', 'challan.challanNo', 'challan.poNumber', 'challan.transitInsuranceNo',
+        'challan.driverName', 'challan.contactNo', 'challan.altContactNo',
+        'challan.vehicleNo', 'challan.licenseNo', 'challan.receiverName', 'challan.rmn',
+        'challan.totalProductAmount', 'challan.netProductWeight',
+        'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+        'challan.totalAmtInWords', 'challan.requestingDepartment',
+        'challan.remark', 'challan.anyAttachment', 'challan.createdAt',
+        'fromLocation.id', 'customerName.id',
+        'billingAddress.id', 'billingAddress.address1', 'billingAddress.address2',
+        'billingAddress.location', 'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+        'deliveryAddress.id', 'deliveryAddress.address1', 'deliveryAddress.address2',
+        'deliveryAddress.location', 'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+        'companyName.id', 'office.id', 'grn.id',
+        'products.id', 'products.quantity', 'products.unitPrice', 'products.amount',
+        'products.netWeight', 'products.grossWeight',
+        'products.acceptedQty', 'products.rejectedQty', 'products.returnedQty',
+        'products.changedQty', 'products.changedPrice',
+        'products.packagingMaterialAmount', 'products.packagingMaterialUnitPrice',
+        'products.packagingMaterialQuantity', 'products.packagingMaterialTotalWeight',
+        'products.packingMaterialWeight',
+        'productName.id', 'variant.id',
+        'saleUoM.id', 'packagingMaterial.id', 'packagingMaterialUoM.id',
+      ])
       .where('challan.id = :id', { id })
       .getOne();
 
-    if (!challan) {
-      throw new AppError(400, `Delivery Challan with id ${id} not found`);
-    }
+    if (!challan) throw new AppError(400, `Delivery Challan with id ${id} not found`);
 
     const { createdDate, createdTime } = formatDateTime(challan.createdAt);
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
 
     const formattedChallan = {
       id: challan.id,
       challanNo: challan.challanNo,
-      poNumber: challan.poNumber,
-      customerName: challan.customerName?.id || null,
-      fromLocation: challan.fromLocation?.id || null,
-      transitInsuranceNo: challan.transitInsuranceNo,
-      billingAddress: challan.billingAddress
-        ? {
-          id: challan.billingAddress.id,
-          address1: challan.billingAddress.address1,
-          address2: challan.billingAddress.address2,
-          location: challan.billingAddress.location,
-          city: challan.billingAddress.city,
-          state: challan.billingAddress.state,
-          pincode: challan.billingAddress.pincode,
-        }
-        : null,
-
-      deliveryAddress: challan.deliveryAddress
-        ? {
-          id: challan.deliveryAddress.id,
-          address1: challan.deliveryAddress.address1,
-          address2: challan.deliveryAddress.address2,
-          location: challan.deliveryAddress.location,
-          city: challan.deliveryAddress.city,
-          state: challan.deliveryAddress.state,
-          pincode: challan.deliveryAddress.pincode,
-        }
-        : null,
-
-      companyName: challan.companyName?.id || null,
-      office: challan.offices?.id || null,
-      grnNo: challan.grnNo?.id || null,
-      driverName: challan.driverName,
-      contactNo: challan.contactNo,
-      altContactNo: challan.altContactNo,
-      vehicleNo: challan.vehicleNo,
-      licenseNo: challan.licenseNo,
-      receiverName: challan.receiverName,
-        rmn:challan.rmn,
-      totalProductAmount: challan.totalProductAmount,
-      netProductWeight: challan.netProductWeight,
-      netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-      totalAmtInWords: challan.totalAmtInWords,
+      poNumber: challan.poNumber ?? null,
+      customerName: challan.customerName?.id ?? null,
+      fromLocation: challan.fromLocation?.id ?? null,
+      transitInsuranceNo: challan.transitInsuranceNo ?? null,
+      billingAddress: mapAddress(challan.billingAddress),
+      deliveryAddress: mapAddress(challan.deliveryAddress),
+      companyName: challan.companyName?.id ?? null,
+      office: challan.offices?.id ?? null,
+      grnNo: challan.grnNo?.id ?? null,
+      driverName: challan.driverName ?? null,
+      contactNo: challan.contactNo ?? null,
+      altContactNo: challan.altContactNo ?? null,
+      vehicleNo: challan.vehicleNo ?? null,
+      licenseNo: challan.licenseNo ?? null,
+      receiverName: challan.receiverName ?? null,
+      rmn: challan.rmn ?? null,
+      totalProductAmount: challan.totalProductAmount ?? null,
+      netProductWeight: challan.netProductWeight ?? null,
+      netPackagingMaterialWeight: challan.netPackagingMaterialWeight ?? null,
+      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount ?? null,
+      totalAmtInWords: challan.totalAmtInWords ?? null,
+      requestingDepartment: challan.requestingDepartment ?? null,
+      remark: challan.remark ?? null,
+      anyAttachment: challan.anyAttachment ?? null,
       createdDate,
       createdTime,
-      requestingDepartment: challan.requestingDepartment,
-      // approvalStatus: challan.approvalStatus,
-      remark: challan.remark,
-      anyAttachment: challan.anyAttachment,
-
-      deliveryChallanProducts: challan.deliveryChallanProducts.map(
-        (product) => ({
-          id: product.id,
-          productName: product.productName?.id,
-          variant: product.variant?.id || null,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-          netWeight: product.netWeight,
-          grossWeight: product.grossWeight,
-
-          // Acceptance/Rejection fields
-          acceptedQty: product.acceptedQty,
-          rejectedQty: product.rejectedQty,
-
-          // Return fields
-          returnedQty: product.returnedQty || 0,
-
-
-          // Changed/Modified fields
-          changedQty: product.changedQty,
-          changedPrice: product.changedPrice,
-
-          saleUoM: product.saleUoM?.id || null,
-          packagingMaterial:
-            product.packagingMaterial?.id || null,
-          packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
-          packagingMaterialAmount: product.packagingMaterialAmount,
-          packingMaterialWeight:product.packingMaterialWeight||null,
-          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-          packagingMaterialQuantity: product.packagingMaterialQuantity,
-          packagingMaterialTotalWeight: product.packagingMaterialTotalWeight,
-        }),
-      ),
+      deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        netWeight: p.netWeight,
+        grossWeight: p.grossWeight,
+        acceptedQty: p.acceptedQty,
+        rejectedQty: p.rejectedQty,
+        returnedQty: p.returnedQty ?? 0,
+        changedQty: p.changedQty,
+        changedPrice: p.changedPrice,
+        saleUoM: p.saleUoM?.id ?? null,
+        packagingMaterial: p.packagingMaterial?.id ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.id ?? null,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packingMaterialWeight: p.packingMaterialWeight ?? null,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+      })),
     };
 
     const result = { data: formattedChallan };
@@ -472,6 +460,9 @@ export class CustomerDeliveryChallanService {
     return result;
   }
 
+
+
+  
   public async getByIdCustomerDeliveryChallanForView(
     docId: string,
   ): Promise<any> {
@@ -481,148 +472,122 @@ export class CustomerDeliveryChallanService {
 
     const document = await this.docDoubleApproverService.getDocumentById(docId);
     const id = document.documentTypeId;
+    if (!id) return null;
 
-    if (id) {
-      const challan = await this.challanRepository
-        .createQueryBuilder('challan')
-        .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-        .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
-        .leftJoinAndSelect('products.productName', 'productName')
-        .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-        .leftJoinAndSelect('products.variant', 'variant')
-        //.leftJoinAndSelect('documentApproval.documentdef', 'documentdef')
-        .leftJoinAndSelect(
-          'products.packagingMaterialUoM',
-          'packagingMaterialUoM',
-        )
-        .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-        .leftJoinAndSelect('challan.customerName', 'customerName')
-        .leftJoinAndSelect('challan.billingAddress', 'billingAddress')
-        .leftJoinAndSelect('challan.deliveryAddress', 'deliveryAddress')
-        .leftJoinAndSelect('challan.companyName', 'company')
-        .leftJoinAndSelect('challan.offices', 'office')
-        .leftJoinAndSelect('challan.grnNo', 'grn')
+    const challan = await this.challanRepository
+      .createQueryBuilder('challan')
+      .leftJoin('challan.deliveryChallanProducts', 'products')
+      .leftJoin('challan.fromLocation', 'fromLocation')
+      .leftJoin('products.productName', 'productName')
+      .leftJoin('products.packagingMaterial', 'packagingMaterial')
+      .leftJoin('products.variant', 'variant')
+      .leftJoin('products.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('products.saleUoM', 'saleUoM')
+      .leftJoin('challan.customerName', 'customerName')
+      .leftJoin('challan.billingAddress', 'billingAddress')
+      .leftJoin('challan.deliveryAddress', 'deliveryAddress')
+      .leftJoin('challan.companyName', 'company')
+      .leftJoin('challan.offices', 'office')
+      .leftJoin('challan.grnNo', 'grn')
+      .select([
+        'challan.id', 'challan.challanNo', 'challan.poNumber', 'challan.transitInsuranceNo',
+        'challan.driverName', 'challan.contactNo', 'challan.altContactNo',
+        'challan.vehicleNo', 'challan.licenseNo', 'challan.receiverName',
+        'challan.totalProductAmount', 'challan.netProductWeight',
+        'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+        'challan.totalAmtInWords', 'challan.requestingDepartment',
+        'challan.remark', 'challan.anyAttachment', 'challan.createdAt',
+        'fromLocation.name',
+        'customerName.organisationName',
+        'billingAddress.id', 'billingAddress.address1', 'billingAddress.address2',
+        'billingAddress.location', 'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+        'deliveryAddress.id', 'deliveryAddress.address1', 'deliveryAddress.address2',
+        'deliveryAddress.location', 'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+        'company.name', 'office.name', 'grn.grnNo',
+        'products.id', 'products.quantity', 'products.unitPrice', 'products.amount',
+        'products.netWeight', 'products.grossWeight',
+        'products.acceptedQty', 'products.returnedQty', 'products.rejectedQty',
+        'products.changedQty', 'products.changedPrice',
+        'products.packagingMaterialAmount', 'products.packagingMaterialUnitPrice',
+        'products.packagingMaterialQuantity', 'products.packagingMaterialTotalWeight',
+        'productName.name', 'variant.variantName',
+        'saleUoM.unit', 'packagingMaterial.packagingMaterialName', 'packagingMaterialUoM.unit',
+      ])
+      .where('challan.id = :id', { id })
+      .getOne();
 
-        .where('challan.id = :id', { id })
-        .getOne();
+    if (!challan) throw new AppError(400, `Delivery Challan with id ${id} not found`);
 
-      if (!challan) {
-        throw new AppError(
-          400,
-          `Delivery Challan with challanNo ${id} not found`,
-        );
-      }
+    const { createdDate, createdTime } = formatDateTime(challan.createdAt);
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
 
-      const { createdDate, createdTime } = formatDateTime(challan.createdAt);
+    const formattedChallan = {
+      id: challan.id,
+      documentId: document.id,
+      challanNo: challan.challanNo,
+      poNumber: challan.poNumber ?? null,
+      customerName: challan.customerName?.organisationName ?? null,
+      transitInsuranceNo: challan.transitInsuranceNo ?? null,
+      fromLocation: challan.fromLocation?.name ?? null,
+      billingAddress: mapAddress(challan.billingAddress),
+      deliveryAddress: mapAddress(challan.deliveryAddress),
+      companyName: challan.companyName?.name ?? null,
+      office: challan.offices?.name ?? null,
+      grnNo: challan.grnNo?.grnNo ?? null,
+      driverName: challan.driverName ?? null,
+      contactNo: challan.contactNo ?? null,
+      altContactNo: challan.altContactNo ?? null,
+      vehicleNo: challan.vehicleNo ?? null,
+      licenseNo: challan.licenseNo ?? null,
+      receiverName: challan.receiverName ?? null,
+      totalProductAmount: challan.totalProductAmount ?? null,
+      netProductWeight: challan.netProductWeight ?? null,
+      netPackagingMaterialWeight: challan.netPackagingMaterialWeight ?? null,
+      totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount ?? null,
+      totalAmtInWords: challan.totalAmtInWords ?? null,
+      requestingDepartment: challan.requestingDepartment ?? null,
+      remark: challan.remark ?? null,
+      anyAttachment: challan.anyAttachment ?? null,
+      createdDate,
+      createdTime,
+      overAllStatus: document.overAllStatus,
+      createdBy: document.createdBy,
+      approvalSummary: document.approvalSummary,
+      deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        netWeight: p.netWeight,
+        grossWeight: p.grossWeight,
+        acceptedQty: p.acceptedQty,
+        returnedQty: p.returnedQty,
+        rejectedQty: p.rejectedQty,
+        changedQty: p.changedQty,
+        changedPrice: p.changedPrice,
+        saleUoM: p.saleUoM?.unit ?? null,
+        packingMaterial: p.packagingMaterial?.packagingMaterialName ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.unit ?? null,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+      })),
+    };
 
-
-
-
-
-
-
-
-
-
-
-
-
-      const formattedChallan = {
-        id: challan.id,
-        challanNo: challan.challanNo,
-        poNumber: challan.poNumber,
-
-        customerName: challan.customerName?.organisationName || null,
-        transitInsuranceNo: challan.transitInsuranceNo,
-        fromLocation: challan.fromLocation?.name || null,
-        billingAddress: challan.billingAddress
-          ? {
-            id: challan.billingAddress.id,
-            address1: challan.billingAddress.address1,
-            address2: challan.billingAddress.address2,
-            location: challan.billingAddress.location,
-            city: challan.billingAddress.city,
-            state: challan.billingAddress.state,
-            pincode: challan.billingAddress.pincode,
-          }
-          : null,
-
-        deliveryAddress: challan.deliveryAddress
-          ? {
-            id: challan.deliveryAddress.id,
-            address1: challan.deliveryAddress.address1,
-            address2: challan.deliveryAddress.address2,
-            location: challan.deliveryAddress.location,
-            city: challan.deliveryAddress.city,
-            state: challan.deliveryAddress.state,
-            pincode: challan.deliveryAddress.pincode,
-          }
-          : null,
-
-        companyName: challan.companyName?.name || null,
-        office: challan.offices?.name || null,
-        grnNo: challan.grnNo?.grnNo || null,
-        driverName: challan.driverName,
-        contactNo: challan.contactNo,
-        altContactNo: challan.altContactNo,
-        vehicleNo: challan.vehicleNo,
-        licenseNo: challan.licenseNo,
-        receiverName: challan.receiverName,
-        totalProductAmount: challan.totalProductAmount,
-        netProductWeight: challan.netProductWeight,
-        netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-        totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-        totalAmtInWords: challan.totalAmtInWords,
-        createdDate,
-        createdTime,
-        requestingDepartment: challan.requestingDepartment,
-        //approvalStatus: challan.approvalStatus,
-        remark: challan.remark,
-        anyAttachment: challan.anyAttachment,
-
-        deliveryChallanProducts: challan.deliveryChallanProducts.map(product => {
-          return {
-            id: product.id,
-            productName: product.productName?.name,
-            variant: product.variant?.variantName,
-
-            // Original values
-            quantity: product.quantity,
-            unitPrice: product.unitPrice,
-            amount: product.amount,
-            netWeight: product.netWeight,
-            grossWeight: product.grossWeight,
-            acceptedQty:product.acceptedQty,
-            returnedQty:product.returnedQty,
-            rejectedQty:product.rejectedQty,
-
-            // Changed values
-            changedQty: product.changedQty,
-            changedPrice: product.changedPrice,
-
-            // Packaging
-            saleUoM: product.saleUoM?.unit || null,
-            packingMaterial: product.packagingMaterial?.packagingMaterialName || null,
-            packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-            packagingMaterialAmount: product.packagingMaterialAmount,
-            packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-            packagingMaterialQuantity: product.packagingMaterialQuantity,
-            packagingMaterialTotalWeight: product.packagingMaterialTotalWeight,
-          };
-        }),
-
-
-        overAllStatus: document.overAllStatus,
-        createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
-        documentId: document.id,
-      };
-
-      const viewResult = { data: formattedChallan };
-      await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
-      return viewResult;
-    }
+    const viewResult = { data: formattedChallan };
+    await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
+    return viewResult;
   }
+
+
+
+
 
   public async getAllCustomerDeliveryChallans(
     queryOptions: PaginationOptions,
@@ -640,221 +605,119 @@ export class CustomerDeliveryChallanService {
       );
 
     const typedDocuments = data as DocumentWithRelatedData[];
-    const activeDocuments = typedDocuments
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    for (const doc of activeDocuments) {
-      //  console.log("DOC TYPE ID: ",doc.document_type_id);
 
-      if (!doc.document_type_id) continue;
-      try {
-        console.log('ID:', doc.document_type_id);
-        doc.relatedData = await this.challanRepository.findOne({
-          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-          relations: [
-            'customerName',
-            'fromLocation',
-            'billingAddress',
-            'deliveryAddress',
-            'companyName',
-            'offices',
-            'grnNo',
-            'deliveryChallanProducts',
-          ],
-        });
+    const challanIds = typedDocuments
+      .map((doc) => doc.document_type_id)
+      .filter(Boolean);
 
-        //console.log("ChallanNO:", doc.relatedData.challanNo);
-      } catch (error) {
-        doc.relatedData = null;
-      }
+    let challanMap = new Map<string, any>();
+    if (challanIds.length > 0) {
+      const challans = await this.challanRepository
+        .createQueryBuilder('challan')
+        .leftJoin('challan.customerName', 'customerName')
+        .leftJoin('challan.fromLocation', 'fromLocation')
+        .leftJoin('challan.billingAddress', 'billingAddress')
+        .leftJoin('challan.deliveryAddress', 'deliveryAddress')
+        .leftJoin('challan.companyName', 'company')
+        .leftJoin('challan.offices', 'office')
+        .leftJoin('challan.grnNo', 'grn')
+        .leftJoin('challan.deliveryChallanProducts', 'products')
+        .select([
+          'challan.id', 'challan.challanNo', 'challan.poNumber', 'challan.transitInsuranceNo',
+          'challan.isReturned', 'challan.totalProductAmount', 'challan.netProductWeight',
+          'challan.netPackagingMaterialWeight', 'challan.totalPackagingMaterialAmount',
+          'challan.totalAmtInWords', 'challan.driverName', 'challan.licenseNo',
+          'challan.contactNo', 'challan.altContactNo', 'challan.vehicleNo',
+          'challan.receiverName', 'challan.rmn', 'challan.remark', 'challan.anyAttachment',
+          'customerName.organisationName',
+          'fromLocation.id', 'fromLocation.name',
+          'billingAddress.id', 'billingAddress.address1', 'billingAddress.address2',
+          'billingAddress.location', 'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+          'deliveryAddress.id', 'deliveryAddress.address1', 'deliveryAddress.address2',
+          'deliveryAddress.location', 'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+          'company.id', 'company.name',
+          'office.id', 'office.name',
+          'grn.grnNo',
+          'products.id',
+          'products.packagingMaterialQuantity', 'products.packagingMaterialUnitPrice',
+          'products.packagingMaterialAmount', 'products.packagingMaterialTotalWeight',
+          'products.amount', 'products.unitPrice',
+          'products.grossWeight', 'products.netWeight',
+        ])
+        .where('challan.id IN (:...ids)', { ids: challanIds })
+        .andWhere('challan.isDeleted = false')
+        .andWhere('challan.deletedAt IS NULL')
+        .getMany();
+
+      challanMap = new Map(challans.map((c) => [c.id, c]));
     }
 
-    const relatedDataOnly = activeDocuments
-      .filter((doc) => doc.relatedData)
-      .map((doc) => ({
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        ...doc.relatedData,
-        id: doc.relatedData.id,
-        challanNo: doc.relatedData.challanNo,
-        customerName: doc.relatedData.customerName?.organisationName || null,
-        // ? {
-        //     id: doc.relatedData.customerName.id,
-        //     organisationName: doc.relatedData.customerName.organisationName,
-        //   }
-        // : null,
-        transitInsuranceNo: doc.relatedData.transitInsuranceNo,
-        totalProductAmount: doc.relatedData.totalProductAmount,
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
 
-        // ✅ NEW: Return indicators for list view
-        isReturned: doc.relatedData.isReturned || false,
-        returnsCount: doc.relatedData.returns?.length || 0,
-        toLocationInput: doc.relatedData.toLocationInput
-          ? {
-            id: doc.relatedData.toLocationInput.id,
-            address1: doc.relatedData.toLocationInput.address1,
-            address2: doc.relatedData.toLocationInput.address2,
-            location: doc.relatedData.toLocationInput.location,
-            city: doc.relatedData.toLocationInput.city,
-            state: doc.relatedData.toLocationInput.state,
-            pincode: doc.relatedData.toLocationInput.pincode,
-          }
-          : null,
-        fromLocationInput: doc.relatedData.fromLocationInput
-          ? {
-            id: doc.relatedData.fromLocationInput.id,
-            address1: doc.relatedData.fromLocationInput.address1,
-            address2: doc.relatedData.fromLocationInput.address2,
-            location: doc.relatedData.fromLocationInput.location,
-            city: doc.relatedData.fromLocationInput.city,
-            state: doc.relatedData.fromLocationInput.state,
-            pincode: doc.relatedData.fromLocationInput.pincode,
-          }
-          : null,
-
-        fromLocation: doc.relatedData.fromLocation
-          ? {
-            id: doc.relatedData.fromLocation.id,
-            name: doc.relatedData.fromLocation.name,
-          }
-          : null,
-
-        companyName: doc.relatedData.companyName
-          ? {
-            id: doc.relatedData.companyName.id,
-            name: doc.relatedData.companyName.name,
-          }
-          : null,
-
-        //  challanNo: doc.relatedData
-        //  companyName: doc.relatedData.companyName.name || null,
-        //fromLocation: doc.relatedData.fromLocation.id || null,
-        //  toLocation: doc.relatedData.toLocation || null,
-        //  tranferType: doc.relatedData.tranferType || null
-        // location: doc.relatedData.location.name || null,
-      }));
-    console.log('Related Data : ', relatedDataOnly);
+    const relatedDataOnly = typedDocuments
+      .filter((doc) => doc.document_type_id && challanMap.has(doc.document_type_id))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((doc) => {
+        const challan = challanMap.get(doc.document_type_id);
+        if (!challan) return null;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          id: challan.id,
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy.firstName} ${doc.lastActionBy.lastName}`,
+          createdDate,
+          createdTime,
+          challanNo: challan.challanNo,
+          poNumber: challan.poNumber ?? null,
+          customerName: challan.customerName?.organisationName ?? null,
+          billingAddress: mapAddress(challan.billingAddress),
+          deliveryAddress: mapAddress(challan.deliveryAddress),
+          fromLocation: challan.fromLocation ? { id: challan.fromLocation.id, name: challan.fromLocation.name } : null,
+          transitInsuranceNo: challan.transitInsuranceNo ?? null,
+          grnNo: challan.grnNo?.grnNo ?? null,
+          companyName: challan.companyName ? { id: challan.companyName.id, name: challan.companyName.name } : null,
+          office: challan.offices?.name ?? null,
+          netProductWeight: challan.netProductWeight ?? null,
+          netPackagingMaterialWeight: challan.netPackagingMaterialWeight ?? null,
+          totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount ?? null,
+          totalProductAmount: challan.totalProductAmount ?? null,
+          totalAmtInWords: challan.totalAmtInWords ?? null,
+          driverName: challan.driverName ?? null,
+          licenseNo: challan.licenseNo ?? null,
+          contactNo: challan.contactNo ?? null,
+          altContactNo: challan.altContactNo ?? null,
+          vehicleNo: challan.vehicleNo ?? null,
+          receiverName: challan.receiverName ?? null,
+          rmn: challan.rmn ?? null,
+          remark: challan.remark ?? null,
+          anyAttachment: challan.anyAttachment ?? null,
+          deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p: any) => ({
+            id: p.id,
+            packagingMaterialQuantity: p.packagingMaterialQuantity,
+            packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+            packagingMaterialAmount: p.packagingMaterialAmount,
+            packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+            amount: p.amount,
+            unitPrice: p.unitPrice,
+            grossWeight: p.grossWeight,
+            netWeight: p.netWeight,
+          })),
+        };
+      })
+      .filter(Boolean);
 
     const listResponse = {
       data: relatedDataOnly,
-      meta: {
-        total: meta.total,
-        page: meta.page,
-        pages: meta.pages,
-      },
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(key, listResponse, CACHE_TTL);
     return listResponse;
-
-    // const queryBuilder = this.challanRepository
-    //   .createQueryBuilder('challan')
-    //   .leftJoinAndSelect('challan.deliveryChallanProducts', 'products')
-    //   .leftJoinAndSelect('products.productName', 'productName')
-    //   .leftJoinAndSelect('challan.fromLocation', 'fromLocation')
-    //   .leftJoinAndSelect('products.packagingMaterial', 'packagingMaterial')
-    //   .leftJoinAndSelect(
-    //     'products.packagingMaterialUoM',
-    //     'packagingMaterialUoM',
-    //   )
-    //   .leftJoinAndSelect('products.saleUoM', 'saleUoM')
-    //   .leftJoinAndSelect('challan.customerName', 'customerName')
-    //   .leftJoinAndSelect('challan.billingAddress', 'billingAddress')
-    //   .leftJoinAndSelect('challan.deliveryAddress', 'deliveryAddress')
-    //   .leftJoinAndSelect('challan.companyName', 'company')
-    //   .leftJoinAndSelect('challan.offices', 'office')
-    //   .leftJoinAndSelect('challan.grnNo', 'grn');
-
-    // const deliveryChallans = await buildQuery(
-    //   queryBuilder,
-    //   queryOptions,
-    //   'challan',
-    // );
-
-    // const response = {
-    //   data: deliveryChallans.data.map((challan) => {
-    //     const { createdDate, createdTime } = formatDateTime(challan.createdAt);
-
-    //     return {
-    //       id: challan.id,
-    //       challanNo: challan.challanNo,
-    //       poNumber: challan.poNumber,
-    //       fromLocation: challan.fromLocation?.name || null,
-    //       customerName: challan.customerName?.organisationName || null,
-
-    //       billingAddress: challan.billingAddress
-    //         ? {
-    //           id: challan.billingAddress.id,
-    //           address1: challan.billingAddress.address1,
-    //           address2: challan.billingAddress.address2,
-    //           location: challan.billingAddress.location,
-    //           city: challan.billingAddress.city,
-    //           state: challan.billingAddress.state,
-    //           pincode: challan.billingAddress.pincode,
-    //         }
-    //         : null,
-    //       deliveryAddress: challan.deliveryAddress
-    //         ? {
-    //           id: challan.deliveryAddress.id,
-    //           address1: challan.deliveryAddress.address1,
-    //           address2: challan.deliveryAddress.address2,
-    //           location: challan.deliveryAddress.location,
-    //           city: challan.deliveryAddress.city,
-    //           state: challan.deliveryAddress.state,
-    //           pincode: challan.deliveryAddress.pincode,
-    //         }
-    //         : null,
-    //       companyName: challan.companyName?.name || null,
-    //       office: challan.offices?.name || null,
-    //       grnNo: challan.grnNo?.grnNo || null,
-    //       driverName: challan.driverName,
-    //       contactNo: challan.contactNo,
-    //       altContactNo: challan.altContactNo,
-    //       vehicleNo: challan.vehicleNo,
-    //       licenseNo: challan.licenseNo,
-    //       receiverName: challan.receiverName,
-
-    //       totalProductAmount: challan.totalProductAmount,
-    //       netProductWeight: challan.netProductWeight,
-    //       netPackagingMaterialWeight: challan.netPackagingMaterialWeight,
-    //       totalPackagingMaterialAmount: challan.totalPackagingMaterialAmount,
-    //       totalAmtInWords: challan.totalAmtInWords,
-    //       createdDate,
-    //       createdTime,
-    //       requestingDepartment: challan.requestingDepartment,
-    //       approvalStatus: challan.approvalStatus,
-    //       remark: challan.remark,
-    //       anyAttachment: challan.anyAttachment,
-    //       deliveryChallanProducts: challan.deliveryChallanProducts.map(
-    //         (product) => ({
-    //           id: product.id,
-    //           productName: product.productName?.name,
-    //           quantity: product.quantity,
-    //           unitPrice: product.unitPrice,
-    //           amount: product.amount,
-    //           saleUoM: product.saleUoM?.unit || null,
-    //           packingMaterial:
-    //             product.packagingMaterial?.packagingMaterialName || null,
-    //           packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-    //           packagingMaterialAmount: product.packagingMaterialAmount,
-    //           packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-    //           packagingMaterialQuantity: product.packagingMaterialQuantity,
-    //           packagingMaterialTotalWeight:
-    //             product.packagingMaterialTotalWeight,
-    //         }),
-    //       ),
-    //     };
-    //   }),
-    //   meta: deliveryChallans.meta,
-    // };
-    // const formattedResponse = {
-    //   data: response.data,
-    //   meta: response.meta,
-    // };
-
-    // return formattedResponse;
   }
+
 
   async update(id: string, data: any): Promise<any> {
     try {
