@@ -6,7 +6,7 @@ import { TYPES } from '../types';
 import { GrnRepository } from '../repositories/grn.repository';
 import { format } from 'date-fns';
 import { AuditLogService } from './auditLog.service';
-import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocumentTypeEnum } from '../entities/docuemnt.entity';
@@ -61,7 +61,6 @@ export class TPVoucherService {
     await queryRunner.startTransaction();
 
     try {
-      //TODO: Check approval flow is exit or not for logged user
 
        const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(tpvoucherData.requestedBy, 'transport-payment-voucher')
 
@@ -69,23 +68,20 @@ export class TPVoucherService {
         throw new Error('Approval flow not found');
       }
 
-
       tpvoucherData.voucherNo = await this.generateTransportPaymentVoucherNo();
 
       const currentDate = new Date();
       tpvoucherData.createdDate = currentDate;
       tpvoucherData.createdTime = currentDate.toLocaleTimeString();
-      console.log(tpvoucherData.createdTime);
-  console.log(tpvoucherData.products.length);
-  if (tpvoucherData.products && Array.isArray(tpvoucherData.products)) {
-      const products = await queryRunner.manager.findBy(this.productRepository.target, {
-        id: In(tpvoucherData.products),
-      });
-      tpvoucherData.products = products; // ✅ replace IDs with actual entities
-    }
+
+      if (tpvoucherData.products && Array.isArray(tpvoucherData.products)) {
+        const products = await queryRunner.manager.findBy(this.productRepository.target, {
+          id: In(tpvoucherData.products),
+        });
+        tpvoucherData.products = products;
+      }
 
       const newVoucher = queryRunner.manager.create(this.tpVoucherRepository.target, tpvoucherData);
-      console.log(newVoucher);
       const saveVoucher= await queryRunner.manager.save(newVoucher);
       const document = await this.documentbService.createDocument({
               type: DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
@@ -96,23 +92,17 @@ export class TPVoucherService {
               lastActionBy: { id: tpvoucherData.requestedBy },
               document_type_id : Array.isArray(saveVoucher) ? (saveVoucher[0] as TPVoucher)?.id : (saveVoucher as TPVoucher).id
             }, );
-            //console.log('Document created:', docuemnt);
-            //const saved = await this.grnRepository.save(savedGrn);
       
-      // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
 
-      // Start approval flow after commit so voucher is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
 
       await this.invalidateCache();
       return saveVoucher;
     } catch (error: any) {
-      // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Release query runner
       await queryRunner.release();
     }
   }
@@ -136,7 +126,6 @@ export class TPVoucherService {
     const typedDocuments = data as DocumentWithRelatedData[];
     const activeDocuments = typedDocuments;
 
-    // ---- Batch fetch instead of N+1 ----
     const voucherIds = activeDocuments
       .map(doc => doc.document_type_id)
       .filter(Boolean) as string[];
@@ -152,17 +141,19 @@ export class TPVoucherService {
       : [];
 
     const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const recycleDocCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
     let relatedDataOnly = activeDocuments
       .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
       .map((doc) => {
         const rd: any = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {
           documentId: doc.id,
           overAllStatus: doc.status,
-          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
           ...rd,
           id: rd.id,
           companyName: rd.companyName?.name || null,
@@ -198,6 +189,12 @@ export class TPVoucherService {
         if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
         return String(valA).localeCompare(String(valB)) * sortOrder;
       });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(recycleDocCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(recycleDocCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
     }
 
     const result = {
@@ -207,159 +204,13 @@ export class TPVoucherService {
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
-  // public async getAllTPVouchers(
-  //   queryOptions: PaginationOptions,userId: string,
-  // ): Promise<{ data: any[]; meta: any }> {
-  //   const { search } = queryOptions;
 
-  //   const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-  //             userId,
-  //             DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
-  //             queryOptions
-  //           );
           
-  //          // console.log('data in grn service', documentData);
             
-  //             const typedDocuments = data as DocumentWithRelatedData[];
-  //           for (const doc of typedDocuments) {
-  //               if (!doc.document_type_id) continue;
           
-  //               try {
-  //                   doc.relatedData = await this.tpVoucherRepository.findOne({
-  //                     where: { id: doc.document_type_id },
-  //                     relations: ['grnNo', 'companyName'],
-  //                   });
                   
-  //               } catch {
-  //                 doc.relatedData = null;
-  //               }
-  //             }
     
-  //             let relatedDataOnly = typedDocuments
-  //        //  .filter((d) => d)
-  //           .map((doc) => ({
-  //             documentId: doc.id,
-  //             // documentType: doc.type,
-  //             // documentTypeId: doc.document_type_id,
-  //             overAllStatus: doc.status,
-  //             createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-  //             createdDate: formatDateTime(doc.createdAt).createdDate,
-  //             createdTime: formatDateTime(doc.createdAt).createdTime,
-  //             ...doc.relatedData,
-  //            id: doc.relatedData.id,
-  //           companyName: doc.relatedData.companyName?.name || null,
-  //           grnNo: doc.relatedData.grnNo?.grnNo || null    
-  //           }))
-  //   // ✅ Helper to flatten objects into a searchable string
-  // const objectToString = (obj: any): string => {
-  //   if (obj == null) return '';
-  //   if (typeof obj === 'object') {
-  //     return Object.values(obj).map((v) => objectToString(v)).join(' ');
-  //   }
-  //   return String(obj);
-  // };
 
-  // // ✅ Apply search filter (deep search across all fields)
-  // if (search && search.trim()) {
-  //   const term = search.toLowerCase();
-  //   relatedDataOnly = relatedDataOnly.filter((item) =>
-  //     objectToString(item).toLowerCase().includes(term)
-  //   );
-  // }
-
-  //   // 🔄 Sorting
-  // if (queryOptions.sort) {
-  //   const [field, direction] = queryOptions.sort.split(':');
-  //   const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-  //   const getNestedValue = (obj: any, path: string) =>
-  //     path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-  //   relatedDataOnly.sort((a, b) => {
-  //     const valA = getNestedValue(a, field);
-  //     const valB = getNestedValue(b, field);
-
-  //     if (valA == null && valB == null) return 0;
-  //     if (valA == null) return -1 * sortOrder;
-  //     if (valB == null) return 1 * sortOrder;
-
-  //     if (!isNaN(valA) && !isNaN(valB)) {
-  //       return (Number(valA) - Number(valB)) * sortOrder;
-  //     }
-  //     return String(valA).localeCompare(String(valB)) * sortOrder;
-  //   });
-  // }
-  //     return {
-  // data: relatedDataOnly,
-  // meta: {
-  //   total: meta.total,
-  //   page: meta.page,
-  //   pages: meta.pages
-  // } 
-  //       };
-
-    // let queryBuilder = await this.tpVoucherRepository
-    //   .createQueryBuilder('tpVoucher')
-    //   .leftJoinAndSelect('tpVoucher.grnNo', 'grn')
-    //   .leftJoinAndSelect('tpVoucher.requestedBy', 'requestedBy')
-    //   .leftJoinAndSelect('tpVoucher.companyName', 'companyName')
-    //   .select([
-    //     'tpVoucher.id',
-    //     'tpVoucher.debitCreditTo',
-    //     'tpVoucher.payReceivedFrom',
-    //     'tpVoucher.location',
-    //     'tpVoucher.driverName',
-    //     'tpVoucher.contactNo',
-    //     'tpVoucher.altContactNo',
-    //     'tpVoucher.vehicleNo',
-    //     'tpVoucher.dispatchLocation',
-    //     'tpVoucher.destinationLocation',
-    //     'tpVoucher.remark',
-    //     'tpVoucher.requestingDepartment',
-    //     'tpVoucher.products',
-    //     'tpVoucher.paymentMode',
-    //     'tpVoucher.freightAmt',
-    //     'tpVoucher.totalAmt',
-    //     'tpVoucher.amtWords',
-    //     'tpVoucher.kyc',
-    //     'tpVoucher.voucherNo',
-    //     'tpVoucher.createdAt',
-
-    //     'tpVoucher.approvalStatus',
-    //     'tpVoucher.receiverName',
-    //     'tpVoucher.anyAttachment',
-
-    //     'companyName.name',
-
-    //     'grn.grnNo',
-    //     'requestedBy.id',
-    //     'requestedBy.firstName',
-    //     'requestedBy.lastName',
-    //   ])
-    //   .orderBy('tpVoucher.createdAt', 'DESC');
-
-    // const { data, meta } = await buildQuery(
-    //   queryBuilder,
-    //   queryOptions,
-    //   'tpVoucher',
-    // );
-    // const vouchers = data;
-    // const formatResponse = vouchers.map((voucher) => {
-    //   const rawDate = voucher.createdAt;
-    //   const { createdDate, createdTime } = formatDateTime(rawDate);
-    //   return {
-    //     ...voucher,
-    //     grnNo: voucher.grnNo ? voucher.grnNo.grnNo : null,
-    //     companyName: voucher.companyName?.name || null,
-    //     createdTime: createdTime,
-    //     createdDate: createdDate,
-    //   };
-    // });
-    // return {
-    //   data: formatResponse,
-    //   meta,
-    // };
- // }
 public async getAllTPVouchers(
     queryOptions: PaginationOptions, userId: string,
   ): Promise<{ data: any[]; meta: any }> {
@@ -378,7 +229,6 @@ public async getAllTPVouchers(
     const typedDocuments = data as DocumentWithRelatedData[];
     const activeDocuments = typedDocuments;
 
-    // ---- Batch fetch: one query instead of N+1 ----
     const voucherIds = activeDocuments
       .map(doc => doc.document_type_id)
       .filter(Boolean) as string[];
@@ -395,39 +245,42 @@ public async getAllTPVouchers(
       : [];
 
     const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const docCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-    let relatedDataOnly = activeDocuments.map((doc) => {
-      const rd: any = doc.document_type_id ? (voucherMap.get(doc.document_type_id) || {}) : {};
-      return {
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        id: rd.id || null,
-        companyName: rd.companyName?.name || null,
-        grnNo: rd.grnNo?.grnNo || null,
-        altContactNo: rd.altContactNo || null,
-        amtWords: rd.amtWords || null,
-        contactNo: rd.contactNo || null,
-        debitCreditTo: rd.debitCreditTo || null,
-        destinationLocation: rd.destinationLocation || null,
-        dispatchLocation: rd.dispatchLocation || null,
-        driverName: rd.driverName || null,
-        kyc: rd.kyc || null,
-        location: rd.location || null,
-        payReceivedFrom: rd.payReceivedFrom || null,
-        paymentMode: rd.paymentMode || null,
-        receiverName: rd.receiverName || null,
-        remark: rd.remark || null,
-        totalAmt: rd.totalPayableAmt || null,
-        vehicleNo: rd.vehicleNo || null,
-        voucherNo: rd.voucherNo || null,
-        freightAmt: rd.freightAmt || null,
-      };
-    });
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd: any = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id || null,
+          companyName: rd.companyName?.name || null,
+          grnNo: rd.grnNo?.grnNo || null,
+          altContactNo: rd.altContactNo || null,
+          amtWords: rd.amtWords || null,
+          contactNo: rd.contactNo || null,
+          debitCreditTo: rd.debitCreditTo || null,
+          destinationLocation: rd.destinationLocation || null,
+          dispatchLocation: rd.dispatchLocation || null,
+          driverName: rd.driverName || null,
+          kyc: rd.kyc || null,
+          location: rd.location || null,
+          payReceivedFrom: rd.payReceivedFrom || null,
+          paymentMode: rd.paymentMode || null,
+          receiverName: rd.receiverName || null,
+          remark: rd.remark || null,
+          totalAmt: rd.totalPayableAmt || null,
+          vehicleNo: rd.vehicleNo || null,
+          voucherNo: rd.voucherNo || null,
+          freightAmt: rd.freightAmt || null,
+        };
+      });
 
-    // 🔍 Deep Search
     const objectToString = (obj: any): string => {
       if (obj == null) return '';
       if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
@@ -441,7 +294,6 @@ public async getAllTPVouchers(
       );
     }
 
-    // 🔄 Sorting
     if (queryOptions.sort) {
       const [field, direction] = queryOptions.sort.split(':');
       const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
@@ -457,21 +309,22 @@ public async getAllTPVouchers(
         if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
         return String(valA).localeCompare(String(valB)) * sortOrder;
       });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(docCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(docCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
     }
 
     const result = {
       data: relatedDataOnly,
-      meta: {
-        total: meta.total,
-        page: meta.page,
-        pages: meta.pages,
-      },
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
 
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
-
 
   public async getTPVoucherById(id: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
@@ -547,7 +400,6 @@ public async getAllTPVouchers(
     const id = document.documentTypeId;
     if (!id) throw new Error(`Document type ID not found for document: ${docid}`);
 
-
     const voucher = await this.tpVoucherRepository
       .createQueryBuilder('tpVoucher')
       .leftJoinAndSelect('tpVoucher.grnNo', 'grn')
@@ -620,7 +472,6 @@ public async getAllTPVouchers(
       .getOne();
     if (!voucher) return null;
     const rawDate = voucher.createdAt;
-    console.log("rawDate in getTPVoucherByIdForUpdate", voucher);
     const { createdDate, createdTime } = formatDateTime(rawDate);
     const formatResponse = {
       id: voucher.id,
@@ -638,11 +489,9 @@ public async getAllTPVouchers(
       vehicleNo: voucher.vehicleNo,
       dispatchLocation: voucher.dispatchLocation,
       destinationLocation: voucher.destinationLocation,
-      //products: voucher.products,
        products: voucher.products?.map(product => product?.id) || null,
       paymentMode: voucher.paymentMode,
       freightAmt: voucher.freightAmt,
-      //totalAmt: voucher.totalAmt,
       totalPayableAmt: voucher.totalPayableAmt,   // ✅ or finalPayableAmt
      extraAmt: voucher.extraAmt,
      deductionAmt: voucher.deductionAmt,
@@ -679,29 +528,24 @@ public async getAllTPVouchers(
 
   const originalVoucher = { ...voucher, products: [...(voucher.products || [])] };
 
-  // ✅ Handle GRN Relation
   const grnNo = updatedData.grnNo;
   if (grnNo) {
     const grn = await this.grnRepository.findOne({ where: { grnNo } });
     if (grn) voucher.grnNo = grn;
   }
 
-  // ✅ Handle Products Relation explicitly
   if (updatedData.products && Array.isArray(updatedData.products)) {
-    const productEntities = await this.productRepository.findByIds(updatedData.products);
+    const productEntities = await this.productRepository.find({ where: { id: In(updatedData.products) } });
     voucher.products = productEntities;
   }
 
-  // ✅ Merge other non-relational fields
   Object.assign(voucher, {
     ...updatedData,
     products: voucher.products, // keep updated relation
   });
 
-  // ✅ Save the updated entity
   const savedVoucher = await this.tpVoucherRepository.save(voucher);
 
-  // ✅ Log changes
   await this.auditLogService.logChange(
     'TPVoucher',
     id,
@@ -715,25 +559,14 @@ public async getAllTPVouchers(
 }
 
   public async deleteTPVoucher(id: string): Promise<boolean> {
-    const tpVoucher = await this.tpVoucherRepository.findOne({
-      where: { id },
-    });
+    const exists = await this.tpVoucherRepository.count({ where: { id } });
+    if (!exists) return false;
 
-    if (!tpVoucher) {
-      return false;
-    }
-
-    const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    console.log(
-      `TP Voucher with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
-    tpVoucher.deletionScheduledAt = sixMonthsFromNow;
-    await this.tpVoucherRepository.save(tpVoucher);
+    await this.tpVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
     return true;
   }
@@ -744,60 +577,62 @@ public async getAllTPVouchers(
 
     const lastVoucher = await this.tpVoucherRepository
       .createQueryBuilder('tpVoucher')
-      .where('tpVoucher.voucherNo LIKE :datePattern', {
-        datePattern: `TPV-${formattedDate}-%`,
-      })
+      .where('tpVoucher.voucherNo LIKE :datePattern', { datePattern: `TPV-${formattedDate}-%` })
       .orderBy('tpVoucher.voucherNo', 'DESC')
       .getOne();
 
     let newSerialNumber = 1;
-
     if (lastVoucher) {
-      const lastSerialNumber = parseInt(
-        lastVoucher.voucherNo.split('-')[2],
-        10,
-      );
+      const lastSerialNumber = parseInt(lastVoucher.voucherNo.split('-')[2], 10);
       newSerialNumber = lastSerialNumber + 1;
     }
 
-    const voucherNo = `TPV-${formattedDate}`;
-    return voucherNo;
+    return `TPV-${formattedDate}`;
   }
-  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];
 
-  for (const id of ids) {
-    try {
-      const tpVoucher = await this.tpVoucherRepository.findOne({ where: { id } });
-      if (!tpVoucher) {
-        failed.push({ id, reason: 'Transport Payment Voucher not found' });
-        continue;
-      }
+  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<{ message: string }> {
+    if (!ids.length) return { message: 'No IDs provided' };
 
-      // Soft delete related document
-      const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: tpVoucher.id },
-      });
-      if (relatedDocument) {
-        await this.documentbRepository.softDelete(relatedDocument.id);
-        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
-      }
+    const [tpVouchers, relatedDocuments] = await Promise.all([
+      this.tpVoucherRepository.find({ where: { id: In(ids) } }),
+      this.documentbRepository
+        .createQueryBuilder('doc')
+        .select(['doc.id', 'doc.document_type_id'])
+        .where('doc.document_type_id IN (:...ids)', { ids })
+        .getMany(),
+    ]);
 
-      // Soft delete TP Voucher
-      await this.tpVoucherRepository.softDelete(tpVoucher.id);
-      await this.tpVoucherRepository.update(tpVoucher.id, { isDeleted: true } as any);
+    const foundIds = new Set(tpVouchers.map(v => v.id));
+    const missingId = ids.find(id => !foundIds.has(id));
+    if (missingId) throw new Error(`Transport Payment Voucher with ID ${missingId} not found`);
 
-      // Invalidate cache for this specific voucher
-      await this.invalidateCache(id);
-
-      success.push(id);
-    } catch (error: any) {
-      failed.push({ id, reason: error.message || 'Unknown error' });
+    const docIds = relatedDocuments.map(d => d.id);
+    if (docIds.length) {
+      await this.documentbRepository
+        .createQueryBuilder()
+        .update()
+        .set({ isDeleted: true } as any)
+        .whereInIds(docIds)
+        .execute();
     }
-  }
 
-  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-  return { success, failed, message };
-}
+    await this.tpVoucherRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isDeleted: true } as any)
+      .whereInIds(ids)
+      .execute();
+
+    await Promise.all([
+      ...ids.flatMap(id => [
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      ]),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ]);
+
+    return { message: 'Transport Payment Voucher records marked for deletion successfully' };
+  }
 }

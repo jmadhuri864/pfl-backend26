@@ -47,17 +47,43 @@ export class DocSingalApproverService {
 
   //Todo:New By Vaishali
   //TODO: Approve Document
-  private async invalidateRelatedCache(type: DocumentTypeEnum, documentId?: string): Promise<void> {
+  private async invalidateRelatedCache(type: DocumentTypeEnum, documentId?: string, documentTypeId?: string): Promise<void> {
     const prefixMap: Partial<Record<DocumentTypeEnum, string[]>> = {
       [DocumentTypeEnum.RFPA]: ['rfpa:list:*', 'rfpa:all:*', 'rfpa:rfpanumbers:*', 'rfpa:recycle:*'],
-      [DocumentTypeEnum.DEAL_SLIP]: ['dealslip:list:*', 'dealslip:all:*'],
-      [DocumentTypeEnum.AQR]: ['aqr:list:*', 'aqr:all:*'],
+      [DocumentTypeEnum.DEAL_SLIP]: ['dealslip:list:*', 'dealslip:all:*', 'dealslip:nos:*'],
+      [DocumentTypeEnum.AQR]: ['aqr:list:*', 'aqr:all:*', 'aqr:recycle:*'],
     };
     const patterns = prefixMap[type] ?? [];
     const tasks: Promise<any>[] = patterns.map(p => this.cacheService.invalidatePattern(p));
+
     if (documentId) {
       tasks.push(this.cacheService.invalidatePattern(`singledoc:view:${documentId}:*`));
     }
+
+    // Bust per-document view/id/update caches
+    if (documentTypeId) {
+      if (type === DocumentTypeEnum.RFPA) {
+        tasks.push(
+          this.cacheService.del(`rfpa:view:${documentTypeId}`),
+          this.cacheService.del(`rfpa:id:${documentTypeId}`),
+          this.cacheService.del(`rfpa:update:${documentTypeId}`),
+        );
+      } else if (type === DocumentTypeEnum.DEAL_SLIP) {
+        tasks.push(
+          this.cacheService.del(`dealslip:view:${documentTypeId}`),
+          this.cacheService.del(`dealslip:id:${documentTypeId}`),
+          this.cacheService.del(`dealslip:update:${documentTypeId}`),
+          ...(documentId ? [this.cacheService.del(`dealslip:docview:${documentId}`)] : []),
+        );
+      } else if (type === DocumentTypeEnum.AQR) {
+        tasks.push(
+          this.cacheService.del(`aqr:view:${documentTypeId}`),
+          this.cacheService.del(`aqr:id:${documentTypeId}`),
+          this.cacheService.del(`aqr:update:${documentTypeId}`),
+        );
+      }
+    }
+
     await Promise.all(tasks);
   }
 
@@ -152,7 +178,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type, documentId);
+          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id);
           // 🔔 Creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
@@ -173,7 +199,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type, documentId);
+          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id);
 
           // 🔔 Actor
           await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);

@@ -2,30 +2,25 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { CashVoucher } from '../entities/mCashVoucher.entity';
 import { MultiCashVoucherRepository } from '../repositories/multicashVoucher.repository';
-import { format } from 'date-fns';
 import { GrnRepository } from '../repositories/grn.repository';
 import { DeliveryChallanRepository } from '../repositories/deliveryChallan.repository';
 import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
-import { instanceToPlain } from 'class-transformer';
-import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { UserRepository } from '../repositories/user.repository';
-import { request } from 'http';
 import { NotificationService } from './notification.service';
-import { set } from 'lodash';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentStatus } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { LessThan, DataSource } from 'typeorm';
+import { In, DataSource } from 'typeorm';
+import { format } from 'date-fns';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
-
-
 
 @injectable()
 export class MultiCashVoucherService {
@@ -77,256 +72,100 @@ public async getAllVouchers(
     if (cached) return cached;
 
     const { search } = queryOptions;
-    const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-          userId,
-          DocumentTypeEnum.MULTI_CASH_VOUCHER,
-          queryOptions,
-        );
-      
-       // console.log('data in grn service', documentData);
-        
-          const typedDocuments = data as DocumentWithRelatedData[];
-          const activeDocuments = typedDocuments;
-        for (const doc of activeDocuments) {
-            if (!doc.document_type_id) continue;
-      
-            try {
-                doc.relatedData = await this.cashVoucherRepository.findOne({
-                  where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-                  relations: ['particulars', 'grnNo', 'challanNo', 'companyName'],
-                });
-              
-            } catch {
-              doc.relatedData = null;
-            }
-          }
-
-          let relatedDataOnly = activeDocuments
-     //  .filter((d) => d)
-        .map((doc) => ({
-          documentId: doc.id,
-          // documentType: doc.type,
-          // documentTypeId: doc.document_type_id,
-          overAllStatus: doc.status,
-          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
-          //...doc.relatedData,
-         id: doc.relatedData.id,
-        companyName: doc.relatedData.companyName?.name || null,
-        grnNo: doc.relatedData.grnNo?.grnNo || null,
-        challanNo: doc.relatedData.challanNo?.challanNo || null,  
-            debitCreditTo:doc.relatedData.debitCreditTo,
-            voucherNo:doc.relatedData.voucherNo,
-            payReceivedFrom:doc.relatedData.payReceivedFrom,
-            location:doc.relatedData.location,
-            totalAmt:doc.relatedData.totalAmt,
-            amtWords:doc.relatedData.amtWords,
-            paymentMode:doc.relatedData.paymentMode,
-            receiverName:doc.relatedData.receiverName,
-            remark:doc.relatedData.remark,
-        
-        }))
-// ✅ Helper to flatten objects into a searchable string
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  // ✅ Apply deep search across all fields
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const { data, meta } = await this.documentbService.getAllDocumentByUserId(
+      userId,
+      DocumentTypeEnum.MULTI_CASH_VOUCHER,
+      queryOptions,
     );
-  }
-   // 🔄 Sorting (optional, for consistency)
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    const activeDocuments = data as DocumentWithRelatedData[];
+    const voucherIds = activeDocuments.map(d => d.document_type_id).filter(Boolean) as string[];
 
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
+    const vouchers = voucherIds.length
+      ? await this.cashVoucherRepository
+          .createQueryBuilder('v')
+          .leftJoinAndSelect('v.companyName', 'companyName')
+          .leftJoinAndSelect('v.grnNo', 'grnNo')
+          .leftJoinAndSelect('v.challanNo', 'challanNo')
+          .where('v.id IN (:...ids)', { ids: voucherIds })
+          .andWhere('v.isDeleted = false')
+          .andWhere('v.deletedAt IS NULL')
+          .getMany()
+      : [];
+    const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const docCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id,
+          companyName: rd.companyName?.name || null,
+          grnNo: rd.grnNo?.grnNo || null,
+          challanNo: rd.challanNo?.challanNo || null,
+          debitCreditTo: rd.debitCreditTo,
+          voucherNo: rd.voucherNo,
+          payReceivedFrom: rd.payReceivedFrom,
+          location: rd.location,
+          totalAmt: rd.totalAmt,
+          amtWords: rd.amtWords,
+          paymentMode: rd.paymentMode,
+          receiverName: rd.receiverName,
+          remark: rd.remark,
+        };
+      });
 
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-  const result = {
-  data: relatedDataOnly,
-  meta: {
-    total: meta.total,
-    page: meta.page,
-    pages: meta.pages
-  }
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter(item => objectToString(item).toLowerCase().includes(term));
+    }
+
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(docCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(docCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
+    }
+
+    const result = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
-    
   }
-//   public async getAllVouchers(
-//     queryOptions: PaginationOptions, userId: string
-//   ): Promise<{ data: any[]; meta: any }> {
-//     const { search } = queryOptions;
-//     const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-//           userId,
-//           DocumentTypeEnum.MULTI_CASH_VOUCHER,
-//           queryOptions,
-//         );
       
-//        // console.log('data in grn service', documentData);
         
-//           const typedDocuments = data as DocumentWithRelatedData[];
-//         for (const doc of typedDocuments) {
-//             if (!doc.document_type_id) continue;
       
-//             try {
-//                 doc.relatedData = await this.cashVoucherRepository.findOne({
-//                   where: { id: doc.document_type_id },
-//                   relations: ['particulars', 'grnNo', 'challanNo', 'companyName'],
-//                 });
               
-//             } catch {
-//               doc.relatedData = null;
-//             }
-//           }
-
-//           let relatedDataOnly = typedDocuments
-//      //  .filter((d) => d)
-//         .map((doc) => ({
-//           documentId: doc.id,
-//           // documentType: doc.type,
-//           // documentTypeId: doc.document_type_id,
-//           overAllStatus: doc.status,
-//           createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-//           createdDate: formatDateTime(doc.createdAt).createdDate,
-//           createdTime: formatDateTime(doc.createdAt).createdTime,
-//           ...doc.relatedData,
-//          id: doc.relatedData.id,
-//         companyName: doc.relatedData.companyName?.name || null,
-//         grnNo: doc.relatedData.grnNo?.grnNo || null,
-//         challanNo: doc.relatedData.challanNo?.challanNo || null,       
-//         }))
-// // ✅ Helper to flatten objects into a searchable string
-//   const objectToString = (obj: any): string => {
-//     if (obj == null) return '';
-//     if (typeof obj === 'object') {
-//       return Object.values(obj).map((v) => objectToString(v)).join(' ');
-//     }
-//     return String(obj);
-//   };
-
-//   // ✅ Apply deep search across all fields
-//   if (search && search.trim()) {
-//     const term = search.toLowerCase();
-//     relatedDataOnly = relatedDataOnly.filter((item) =>
-//       objectToString(item).toLowerCase().includes(term)
-//     );
-//   }
-//    // 🔄 Sorting (optional, for consistency)
-//   if (queryOptions.sort) {
-//     const [field, direction] = queryOptions.sort.split(':');
-//     const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-//     const getNestedValue = (obj: any, path: string) =>
-//       path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-//     relatedDataOnly.sort((a, b) => {
-//       const valA = getNestedValue(a, field);
-//       const valB = getNestedValue(b, field);
-
-//       if (valA == null && valB == null) return 0;
-//       if (valA == null) return -1 * sortOrder;
-//       if (valB == null) return 1 * sortOrder;
-
-//       if (!isNaN(valA) && !isNaN(valB)) {
-//         return (Number(valA) - Number(valB)) * sortOrder;
-//       }
-//       return String(valA).localeCompare(String(valB)) * sortOrder;
-//     });
-//   }
-//   return {
-//   data: relatedDataOnly,
-//   meta: {
-//     total: meta.total,
-//     page: meta.page,
-//     pages: meta.pages
-//   }
-//     };
-    // let queryBuilder = this.cashVoucherRepository
-    //   .createQueryBuilder('voucher')
-    //   .leftJoinAndSelect('voucher.particulars', 'particulars')
-    //   .leftJoinAndSelect('voucher.grnNo', 'grn')
-    //   .leftJoinAndSelect('voucher.companyName', 'companyName')
-    //   .leftJoinAndSelect('voucher.challanNo', 'challan')
-    //   .leftJoinAndSelect('voucher.requestedBy', 'requestedBy')
-    //   .select([
-    //     'voucher.id',
-    //     'voucher.requestingDepartment',
-    //     'voucher.debitCreditTo',
-    //     'voucher.voucherNo',
-    //     'voucher.payReceivedFrom',
-    //     'voucher.location',
-    //     'voucher.totalAmt',
-    //     'voucher.createdAt',
-    //     'voucher.amtWords',
-    //     'voucher.paymentMode',
-    //     'voucher.anyAttachment',
-    //     'voucher.approvalStatus',
-    //     'voucher.receiverName',
-    //     'voucher.remark',
-    //     'particulars.id',
-    //     'particulars.description',
-    //     'particulars.amt',
-    //     'requestedBy.id',
-    //     'requestedBy.firstName',
-    //     'requestedBy.lastName',
-    //     'companyName.name',
-    //     'grn.id',
-    //     'grn.grnNo',
-    //     'challan.id',
-    //     'challan.challanNo',
-    //   ])
-    //   .orderBy('voucher.createdAt', 'DESC');
-
-    // //const data =await buildQuery(queryBuilder, queryOptions, "voucher");
-    // const { data, meta } = await buildQuery(
-    //   queryBuilder,
-    //   queryOptions,
-    //   'voucher',
-    // );
-
-    // const formattedVouchers = data.map((voucher) => {
-    //   const rawDate = voucher.createdAt;
-    //   const { createdDate, createdTime } = formatDateTime(rawDate);
-    //   return {
-    //     ...voucher,
-    //     grnNo: voucher.grnNo?.grnNo || null,
-    //     challanNo: voucher.challanNo?.challanNo || null,
-    //     companyName: voucher.companyName?.name || null,
-    //     createdTime: createdTime,
-    //     createdDate: createdDate,
-    //   };
-    // });
-
-    // return {
-    //   data: formattedVouchers,
-    //   meta,
-    // };
-  //}
 
   public async getVoucherById(id: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
@@ -471,19 +310,9 @@ public async getAllVouchers(
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const document = await this.documentbService.getDocumentById(
-      docid
-    );
-
-    console.log("docuemnt is ", document);
-    
-
-    const id =  document.documentTypeId;
-    console.log("id is ", id);
-    
-    if (!id) {
-      throw new AppError(404, `Voucher with ID ${id} not found`);
-    }
+    const document = await this.documentbService.getDocumentById(docid);
+    const id = document.documentTypeId;
+    if (!id) throw new AppError(404, `Voucher with ID ${id} not found`);
 
     const voucher = await this.cashVoucherRepository
       .createQueryBuilder('voucher')
@@ -537,33 +366,27 @@ public async getAllVouchers(
       ...voucher,
       grnNo: voucher.grnNo?.grnNo || null,
       challanNo: voucher.challanNo?.challanNo || null,
-      requestedBy:
-        voucher.requestedBy?.firstName||null +
-          ' ' +
-          voucher.requestedBy?.middleName|| null+
-          ' ' +
-          voucher.requestedBy?.lastName || null,
+      requestedBy: voucher.requestedBy
+        ? `${voucher.requestedBy.firstName || ''} ${(voucher.requestedBy as any).middleName || ''} ${voucher.requestedBy.lastName || ''}`.trim() || null
+        : null,
       companyName: voucher.companyName?.name || null,
-
-      createdTime: createdTime,
-      createdDate: createdDate,
+      createdTime,
+      createdDate,
       overAllStatus: document.overAllStatus,
-        createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
-        documentId: document.id,
+      createdBy: document.createdBy,
+      approvalSummary: document.approvalSummary,
+      documentId: document.id,
     };
     await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
     return viewResult;
   }
 
-  //TODO: Create Voucher (Correction By Shri)
   public async createVoucher(voucherData: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      //TODO: Check approval flow is exit or not for logged user
 
        const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'multi-cash-voucher')
 
@@ -571,8 +394,6 @@ public async getAllVouchers(
         throw new Error('Approval flow not found');
       }
 
-
-      console.log('voucherData is ', voucherData.requestedBy);
       const voucherNo = await this.generateVoucherNo();
       voucherData.voucherNo = voucherNo;
 
@@ -604,32 +425,6 @@ public async getAllVouchers(
 
       const voucher = await queryRunner.manager.save(cashVoucher) as CashVoucher | CashVoucher[];
 
-    //  console.log("Voucher created:", voucher);
-
-      // const manager = await this.userRepository.findOne({
-      //   where: { id: voucherData.requestedBy },
-      //   relations: ['reportingManagers', 'reportingManagers.reportingTo'],
-      // });
-
-      // if (!manager) {
-      //   throw new Error(`User with ID ${voucherData.requestedBy} not found`);
-      // }
-
-      // const reportingManagers = manager.reportingManagers.flatMap(
-      //   (rm) => rm.reportingTo,
-      // );
-      // setTimeout(async () => {
-      //   for (const reportingManager of reportingManagers) {
-      //     const message = `A new Multi Cash Voucher has been created by ${manager.firstName} ${manager.lastName}.`;
-      //     console.log('message is ', message);
-      //     console.log('reportingManager is ', reportingManager.id);
-      //     await this.notificationService.createNoti(message, reportingManager.id);
-      //   }
-      // }, 1000);
-
-    //  console.log("Log ID", Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id);
-
-
       const document = await this.documentbService.createDocument({
               type: 'multi-cash-voucher',
               docDef: DocDefEnum.PROCUREMENT,
@@ -639,23 +434,17 @@ public async getAllVouchers(
               lastActionBy: { id: voucherData.requestedBy },
               document_type_id : Array.isArray(voucher) ? (voucher[0] as CashVoucher)?.id : (voucher as CashVoucher).id
             }, );
-            //console.log('Document created:', docuemnt);
-            //const saved = await this.grnRepository.save(savedGrn);
 
-      // Commit transaction - all operations succeeded
       await queryRunner.commitTransaction();
 
-      // Start approval flow after commit so voucher is visible to other DB connections
       await this.documentbService.startApprovalFlow(document.id);
       await this.invalidateCache();
 
       return voucher;
     } catch (error: any) {
-      // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Release query runner
       await queryRunner.release();
     }
   }
@@ -669,97 +458,88 @@ public async getAllRecycleBinVouchers(
     if (cached) return cached;
 
     const { search } = queryOptions;
-    const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-          userId,
-          DocumentTypeEnum.MULTI_CASH_VOUCHER,
-          queryOptions,
-          false,
-          true // includeDeleted for recycle bin
-        );
-      
-       // console.log('data in grn service', documentData);
-        
-          const typedDocuments = data as DocumentWithRelatedData[];
-          const activeDocuments = typedDocuments;
-        for (const doc of activeDocuments) {
-            if (!doc.document_type_id) continue;
-      
-            try {
-                doc.relatedData = await this.cashVoucherRepository.findOne({
-                  where: { id: doc.document_type_id, isDeleted: true },
-                  relations: ['particulars', 'grnNo', 'challanNo', 'companyName'],
-                });
-              
-            } catch {
-              doc.relatedData = null;
-            }
-          }
-
-          let relatedDataOnly = activeDocuments
-     //  .filter((d) => d)
-        .map((doc) => ({
-          documentId: doc.id,
-          // documentType: doc.type,
-          // documentTypeId: doc.document_type_id,
-          overAllStatus: doc.status,
-          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
-          ...doc.relatedData,
-         id: doc.relatedData.id,
-        companyName: doc.relatedData.companyName?.name || null,
-        grnNo: doc.relatedData.grnNo?.grnNo || null,
-        challanNo: doc.relatedData.challanNo?.challanNo || null,       
-        }))
-// ✅ Helper to flatten objects into a searchable string
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  // ✅ Apply deep search across all fields
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const { data, meta } = await this.documentbService.getAllDocumentByUserId(
+      userId,
+      DocumentTypeEnum.MULTI_CASH_VOUCHER,
+      queryOptions,
+      false,
+      true,
     );
-  }
-   // 🔄 Sorting (optional, for consistency)
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    const activeDocuments = data as DocumentWithRelatedData[];
+    const voucherIds = activeDocuments.map(d => d.document_type_id).filter(Boolean) as string[];
 
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
+    const vouchers = voucherIds.length
+      ? await this.cashVoucherRepository
+          .createQueryBuilder('v')
+          .leftJoinAndSelect('v.companyName', 'companyName')
+          .leftJoinAndSelect('v.grnNo', 'grnNo')
+          .leftJoinAndSelect('v.challanNo', 'challanNo')
+          .where('v.id IN (:...ids)', { ids: voucherIds })
+          .andWhere('v.isDeleted = true')
+          .getMany()
+      : [];
+    const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const recycleDocCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
+          ...rd,
+          id: rd.id,
+          companyName: rd.companyName?.name || null,
+          grnNo: rd.grnNo?.grnNo || null,
+          challanNo: rd.challanNo?.challanNo || null,
+        };
+      });
 
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-  const recycleResult = {
-  data: relatedDataOnly,
-  meta: {
-    total: meta.total,
-    page: meta.page,
-    pages: meta.pages
-  }
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter(item => objectToString(item).toLowerCase().includes(term));
+    }
+
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(recycleDocCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(recycleDocCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
+    }
+
+    const recycleResult = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
     return recycleResult;
-    
   }
 
   public async updateVoucher(
@@ -772,53 +552,26 @@ public async getAllRecycleBinVouchers(
 
     const originalVoucher = { ...voucher };
 
-    console.log(updatedData.grnNo);
-    console.log(typeof updatedData.grnNo);
-    const grnNo = updatedData.grnNo;
-    console.log(grnNo);
+    const grn = await this.grnRepository.findOne({ where: { grnNo: updatedData.grnNo } });
+    if (grn) updatedData.grnNo = grn;
 
-    const grn = await this.grnRepository.findOne({
-      where: { grnNo },
-    });
-
-    if (grn) {
-      updatedData.grnNo = grn;
-    }
     Object.assign(voucher, updatedData);
     await this.cashVoucherRepository.save(voucher);
 
-    await this.auditLogService.logChange(
-      'CashVoucher',
-      voucher.id,
-      originalVoucher,
-      voucher,
-      updatedBy,
-    );
+    await this.auditLogService.logChange('CashVoucher', voucher.id, originalVoucher, voucher, updatedBy);
     await this.invalidateCache(id);
     return voucher;
   }
 
   async deleteVoucher(id: string): Promise<boolean> {
-    const voucher = await this.cashVoucherRepository.findOne({ where: { id } });
+    const exists = await this.cashVoucherRepository.count({ where: { id } });
+    if (!exists) throw new AppError(404, `Voucher with ID ${id} not found`);
 
-    if (!voucher) {
-      throw new AppError(404, `Voucher with ID ${id} not found`);
-    }
-
-    const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    console.log(
-      `Voucher with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
-    voucher.deletionScheduledAt = sixMonthsFromNow;
-
-    await this.cashVoucherRepository.save(voucher);
-
-    console.log(`Voucher with ID ${id} marked for deletion in 6 months.`);
+    await this.cashVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
     return true;
   }
@@ -867,43 +620,50 @@ public async getAllRecycleBinVouchers(
 
     return pdfUrl;
   }
-  public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];
+  public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<{ message: string }> {
+    if (!ids.length) return { message: 'No IDs provided' };
 
-  for (const id of ids) {
-    try {
-      const multiCashVoucher = await this.cashVoucherRepository.findOne({ where: { id } });
-      if (!multiCashVoucher) {
-        failed.push({ id, reason: 'multiCashVoucher not found' });
-        continue;
-      }
+    const [vouchers, relatedDocuments] = await Promise.all([
+      this.cashVoucherRepository.find({ where: { id: In(ids) } }),
+      this.documentbRepository
+        .createQueryBuilder('doc')
+        .select(['doc.id', 'doc.document_type_id'])
+        .where('doc.document_type_id IN (:...ids)', { ids })
+        .getMany(),
+    ]);
 
-      // Soft delete related document
-      const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: multiCashVoucher.id },
-      });
-      if (relatedDocument) {
-        await this.documentbRepository.softDelete(relatedDocument.id);
-        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
-      }
+    const foundIds = new Set(vouchers.map(v => v.id));
+    const missingId = ids.find(id => !foundIds.has(id));
+    if (missingId) throw new AppError(404, `MultiCashVoucher with ID ${missingId} not found`);
 
-      // Soft delete voucher
-      await this.cashVoucherRepository.softDelete(multiCashVoucher.id);
-      await this.cashVoucherRepository.update(multiCashVoucher.id, { isDeleted: true } as any);
-
-      // Invalidate cache for this specific voucher
-      await this.invalidateCache(id);
-
-      success.push(id);
-    } catch (error: any) {
-      failed.push({ id, reason: error.message || 'Unknown error' });
+    const docIds = relatedDocuments.map(d => d.id);
+    if (docIds.length) {
+      await this.documentbRepository
+        .createQueryBuilder()
+        .update()
+        .set({ isDeleted: true } as any)
+        .whereInIds(docIds)
+        .execute();
     }
+
+    await this.cashVoucherRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isDeleted: true } as any)
+      .whereInIds(ids)
+      .execute();
+
+    await Promise.all([
+      ...ids.flatMap(id => [
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      ]),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ]);
+
+    return { message: 'MultiCashVoucher records marked for deletion successfully' };
   }
-
-  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-  return { success, failed, message };
-}
-
 
 }

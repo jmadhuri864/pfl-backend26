@@ -2,15 +2,13 @@ import { inject, injectable } from "inversify";
 import { TYPES } from "../types";
 import { GrnRepository } from "../repositories/grn.repository";
 import { ProductVarientRepository } from "../repositories/varients.repository";
-import { DataSource, ILike, In } from "typeorm";
+import { DataSource, In } from "typeorm";
 import { UserLogger } from "../utils/logger";
 import { ReturnToVendorRepository } from "../repositories/returnToVendor.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
 import { DocumentbService, DocumentWithRelatedData } from "./documentb.service";
 import { DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
 import { DocDoubleApproverService } from "./docDoubleApprover.service";
 import { PaginationOptions } from "../utils/pagination";
 import { formatDateTime } from "../utils/dateUtils";
@@ -56,10 +54,19 @@ export class ReturnToVendorService {
       const mm = (now.getMonth() + 1).toString().padStart(2, '0');
       const dd = now.getDate().toString().padStart(2, '0');
       const datePrefix = `RTV${yyyy}${mm}${dd}`;
-      const count = await this.postReturnToVendorRepository.count({
-        where: { rtvNo: ILike(`${datePrefix}%`) },
-      });
-      return `${datePrefix}${(count + 1).toString().padStart(5, '0')}`;
+
+      const result = await this.postReturnToVendorRepository
+        .createQueryBuilder('rtv')
+        .select('MAX(rtv.rtvNo)', 'maxNo')
+        .where('rtv.rtvNo LIKE :prefix', { prefix: `${datePrefix}%` })
+        .getRawOne();
+
+      let nextSeq = 1;
+      if (result?.maxNo) {
+        const parsed = parseInt(result.maxNo.replace(datePrefix, ''), 10);
+        if (!isNaN(parsed)) nextSeq = parsed + 1;
+      }
+      return `${datePrefix}${nextSeq.toString().padStart(5, '0')}`;
     }
 
     public async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any>{
@@ -68,13 +75,11 @@ export class ReturnToVendorService {
       await queryRunner.startTransaction();
 
       try {
-          // 1️⃣ Validate required input
           if (!returnData.grnNo) {
             throw new Error('GRN number is required');
           }
           returnData.isChanged = true;
 
-          // 2️⃣ Fetch GRN
           const grn = await queryRunner.manager.findOne(this.grnRepository.target, {
             where: { id: returnData.grnNo },
             relations: ['selectedVendor', 'grnProducts', 'grnProducts.productName', 'grnProducts.variant'],
@@ -84,7 +89,6 @@ export class ReturnToVendorService {
             throw new Error('GRN not found');
           }
 
-          // 3️⃣ Normalize variants input
           let variantIds: string[] = [];
           if (Array.isArray(returnData.variants)) {
             variantIds = returnData.variants;
@@ -92,16 +96,13 @@ export class ReturnToVendorService {
             variantIds = [returnData.variants];
           }
 
-          // 4️⃣ Fetch variant entities
           const variants = await this.productVarientsRepository.find({
             where: { id: In(variantIds) },
             relations: ['product'],
           });
 
-          // 5️⃣ Extract product IDs
           const productIds = variants.map((v: any) => v.product?.id).filter(Boolean);
 
-          // 6️⃣ Create and save return entity
           const rtvNo = await this.generateSerialNo();
           const newReturn = queryRunner.manager.create(this.postReturnToVendorRepository.target, {
             ...returnData,
@@ -114,10 +115,8 @@ export class ReturnToVendorService {
           const savedNewReturn = await queryRunner.manager.save(newReturn);
           const savedreturn = Array.isArray(savedNewReturn) ? savedNewReturn[0] : savedNewReturn;
 
-          // 7️⃣ Commit transaction before starting approval flow
           await queryRunner.commitTransaction();
 
-          // 8️⃣ Create document and start approval flow (outside transaction)
           const document = await this.documentbService.createDocument({
             type: DocumentTypeEnum.RETURN_TO_VENDOR,
             docDef: DocDefEnum.OPERATION,
@@ -133,12 +132,10 @@ export class ReturnToVendorService {
             console.warn('Approval flow not started (no flow configured):', approvalError?.message);
           }
 
-          // 9️⃣ Process inventory (outside transaction, non-critical)
           if (Array.isArray(savedreturn.rtvProducts)) {
             await this.processInventoryForReturn(savedreturn);
           }
 
-          // 🔟 Log creation
           UserLogger.logRfpaCreated(savedreturn.id, requestedBy, clientIp);
           await this.invalidateCache();
           return savedreturn;
@@ -147,7 +144,6 @@ export class ReturnToVendorService {
           try {
             await queryRunner.rollbackTransaction();
           } catch {
-            // transaction already committed or not started — safe to ignore
           }
           throw error;
       } finally {
@@ -161,11 +157,9 @@ export class ReturnToVendorService {
             const locationId = returnRecord?.location?.id ?? returnRecord?.location;
 
             if (!Array.isArray(returnRecord.rtvProducts) || returnRecord.rtvProducts.length === 0) {
-                console.log('📦 No products to process for inventory');
                 return;
             }
 
-            // Group products by productId to identify products with multiple variants
             const productGroups = new Map<string, any[]>();
             for (const item of returnRecord.rtvProducts) {
                 const productId = item?.productName?.id ?? item?.productName;
@@ -177,14 +171,10 @@ export class ReturnToVendorService {
                 }
             }
 
-            console.log(`\n📦 Processing ${returnRecord.rtvProducts.length} items from ${productGroups.size} unique product(s)`);
-
-            // Process each item
             for (const item of returnRecord.rtvProducts) {
                 const itemVariantId = item?.variant?.id ?? item?.variant;
                 const itemProductId = item?.productName?.id ?? item?.productName;
                 
-                // Check if this product has multiple variants
                 const variantCount = productGroups.get(itemProductId)?.length || 1;
                 const isMultiVariant = variantCount > 1;
 
@@ -204,12 +194,7 @@ export class ReturnToVendorService {
                 const amount = +(itemUnitPrice * itemQuantity).toFixed(2);
 
                 const variantLabel = isMultiVariant ? `[Variant ${variantCount}/${productGroups.get(itemProductId)?.length}]` : '';
-                console.log(`\n📤 Processing RTV item: productId=${itemProductId} ${variantLabel}`);
-                console.log(`   ├─ variantId=${itemVariantId}`);
-                console.log(`   ├─ quantity=${itemQuantity}, unitPrice=${itemUnitPrice}, netWeight=${itemNetWeight}`);
-                console.log(`   └─ amount=${amount}`);
 
-                // Find existing stock by relation ids
                 const existingStock = await this.inventoryStockRepository.findOne({
                     where: {
                         company: { id: companyId },
@@ -226,13 +211,8 @@ export class ReturnToVendorService {
                     existingStock.inwardQty = +(currentInwardQty - itemNetWeight).toFixed(2);
                     existingStock.inwardAmt = +(currentInwardAmt - amount).toFixed(2);
 
-                    console.log(`   ✅ Updated existing stock`);
-                    console.log(`      └─ InwardQty: ${currentInwardQty} → ${existingStock.inwardQty}`);
-                    console.log(`      └─ InwardAmt: ${currentInwardAmt} → ${existingStock.inwardAmt}`);
-
                     await this.inventoryStockRepository.save(existingStock);
                 } else {
-                    // Create a new stock record representing the negative movement (returned to vendor)
                     const newStock = this.inventoryStockRepository.create({
                         company: { id: companyId },
                         location: { id: locationId },
@@ -244,15 +224,10 @@ export class ReturnToVendorService {
                         dumpAmt: 0,
                     });
 
-                    console.log(`   ✅ Created new stock entry (first return for this variant)`);
-                    console.log(`      └─ InwardQty: ${newStock.inwardQty}`);
-                    console.log(`      └─ InwardAmt: ${newStock.inwardAmt}`);
-
                     await this.inventoryStockRepository.save(newStock);
                 }
             }
 
-            console.log(`\n✅ Inventory processing completed for return: ${returnRecord.id}\n`);
         } catch (error) {
             console.error('❌ Error processing inventory for return:', error);
             throw error;
@@ -276,7 +251,6 @@ export class ReturnToVendorService {
         const activeDocuments = typedDocuments
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        // ---- Batch fetch instead of N+1 ----
         const rtvIds = activeDocuments
             .map(doc => doc.document_type_id)
             .filter(Boolean) as string[];
@@ -295,18 +269,20 @@ export class ReturnToVendorService {
             : [];
 
         const recordMap = new Map(records.map(r => [r.id, r]));
+        const docCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
         let relatedDataOnly = activeDocuments
             .filter(doc => doc.document_type_id && recordMap.has(doc.document_type_id))
             .map((doc) => {
                 const rd: any = recordMap.get(doc.document_type_id!)!;
+                const { createdDate, createdTime } = formatDateTime(doc.createdAt);
                 return {
                     id: rd.id,
                     documentId: doc.id,
                     overAllStatus: doc.status,
                     createdBy: doc.lastActionBy ? `${doc.lastActionBy.firstName} ${doc.lastActionBy.lastName}` : null,
-                    createdDate: formatDateTime(doc.createdAt).createdDate,
-                    createdTime: formatDateTime(doc.createdAt).createdTime,
+                    createdDate,
+                    createdTime,
                     grnNo: rd.grnNo?.grnNo ?? null,
                     rtvNo: rd.rtvNo ?? null,
                     companyName: rd.companyName?.name ?? null,
@@ -332,6 +308,28 @@ export class ReturnToVendorService {
             relatedDataOnly = relatedDataOnly.filter((item) =>
                 objectToString(item).toLowerCase().includes(term)
             );
+        }
+
+        if (queryOptions.sort) {
+            const [field, direction] = queryOptions.sort.split(':');
+            const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+            const getNestedValue = (obj: any, path: string) =>
+                path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+            relatedDataOnly.sort((a, b) => {
+                const valA = getNestedValue(a, field);
+                const valB = getNestedValue(b, field);
+                if (valA == null && valB == null) return 0;
+                if (valA == null) return -1 * sortOrder;
+                if (valB == null) return 1 * sortOrder;
+                if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+                return String(valA).localeCompare(String(valB)) * sortOrder;
+            });
+        } else {
+            relatedDataOnly.sort((a, b) => {
+                const tA = new Date(docCreatedAtMap.get(a.documentId) ?? 0).getTime();
+                const tB = new Date(docCreatedAtMap.get(b.documentId) ?? 0).getTime();
+                return tB - tA;
+            });
         }
 
         const result = {
@@ -365,8 +363,6 @@ export class ReturnToVendorService {
             throw error;
         }
     }
-
-
 
      public async getByIdForUpdate(id: string): Promise<any> {
         const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
@@ -484,7 +480,6 @@ export class ReturnToVendorService {
                 throw new Error('Return to vendor ID is required');
             }
 
-            // Fetch existing record
             const existingRecord = await this.postReturnToVendorRepository.findOne({
                 where: { id },
                 relations: ['rtvProducts', 'rtvProducts.productName', 'rtvProducts.variant', 'companyName', 'location'],
@@ -496,9 +491,6 @@ export class ReturnToVendorService {
 
             const original = { ...existingRecord };
 
-            // Capture old rtvProducts BEFORE Object.assign mutates existingRecord
-            //const oldRtvProducts = existingRecord.rtvProducts ? [...existingRecord.rtvProducts] : [];
-
             const oldRtvProducts = existingRecord.rtvProducts.map(p => ({
     productName: p.productName?.id ?? p.productName,
     variant: p.variant?.id ?? p.variant,
@@ -509,9 +501,7 @@ export class ReturnToVendorService {
 
             if(updateData.id) delete updateData.id;
 
-            // Re-process inventory FIRST with correct old/new separation
             if (updateData.rtvProducts && Array.isArray(updateData.rtvProducts)) {
-                console.log('🔄 Re-processing inventory stock for updated return...');
                 await this.reprocessInventoryForUpdate(existingRecord, oldRtvProducts, updateData.rtvProducts);
             }
 
@@ -536,15 +526,12 @@ export class ReturnToVendorService {
                 return;
             }
 
-            // Build per-variant aggregates for old and new lists so we can compute a single delta
             const makeKey = (p: any, v: any) => `${p}::${v}`;
 
             const oldMap = new Map<string, { productId: string, variantId: string, weight: number, amount: number, count: number }>();
             const newMap = new Map<string, { productId: string, variantId: string, weight: number, amount: number, count: number }>();
 
             const accumulate = (map: Map<string, any>, item: any) => {
-                // const productId = item?.productName?.id ?? item?.productName;
-                // const variantId = item?.variant?.id ?? item?.variant;
 
                     const productId =
                     item?.productName?.id ??
@@ -573,11 +560,6 @@ export class ReturnToVendorService {
             for (const it of oldProducts) accumulate(oldMap, it);
             for (const it of newProducts) accumulate(newMap, it);
 
-            console.log(`\n🔄 Re-processing inventory stock for updated return...`);
-            console.log(`📊 Old: ${oldProducts.length} items from ${oldMap.size} variant-keys`);
-            console.log(`📊 New: ${newProducts.length} items from ${newMap.size} variant-keys\n`);
-
-            // For each variant key present in either map compute delta = new - old, then apply that delta
             const allKeys = new Set<string>([...oldMap.keys(), ...newMap.keys()]);
             for (const key of allKeys) {
                 const oldEntry = oldMap.get(key) || { productId: null, variantId: null, weight: 0, amount: 0, count: 0 };
@@ -595,10 +577,6 @@ export class ReturnToVendorService {
                 const deltaAmount = +(newEntry.amount - oldEntry.amount).toFixed(2);
 
                 const variantLabel = (oldEntry.count + newEntry.count) > 1 ? `[Aggregated ${oldEntry.count + newEntry.count}]` : '';
-                console.log(`\n🔁 Variant: productId=${productId} variantId=${variantId} ${variantLabel}`);
-                console.log(`   ├─ OldWeight=${oldEntry.weight}, OldAmt=${oldEntry.amount}`);
-                console.log(`   ├─ NewWeight=${newEntry.weight}, NewAmt=${newEntry.amount}`);
-                console.log(`   └─ DeltaWeight=${deltaWeight}, DeltaAmt=${deltaAmount}`);
 
                 const stock = await this.inventoryStockRepository.findOne({
                     where: {
@@ -613,20 +591,12 @@ export class ReturnToVendorService {
                     const currentInwardQty = Number(stock.inwardQty) || 0;
                     const currentInwardAmt = Number(stock.inwardAmt) || 0;
 
-                    // When deltaWeight > 0 => more returned now -> decrease inwardQty by delta (more negative)
-                    // When deltaWeight < 0 => less returned now -> increase inwardQty by |delta|
                     stock.inwardQty = +(currentInwardQty - deltaWeight).toFixed(2);
                     stock.inwardAmt = +(currentInwardAmt - deltaAmount).toFixed(2);
 
-                    console.log(`   ✅ Updated stock`);
-                    console.log(`      └─ InwardQty: ${currentInwardQty} → ${stock.inwardQty}`);
-                    console.log(`      └─ InwardAmt: ${currentInwardAmt} → ${stock.inwardAmt}`);
-
                     await this.inventoryStockRepository.save(stock);
                 } else {
-                    // No existing stock: create only if net delta causes a non-zero movement
                     if (deltaWeight === 0 && deltaAmount === 0) {
-                        console.log('   ℹ️ No change and no stock exists — skipping creation');
                         continue;
                     }
 
@@ -644,15 +614,10 @@ export class ReturnToVendorService {
                         dumpAmt: 0,
                     });
 
-                    console.log(`   ✅ Created new stock entry`);
-                    console.log(`      └─ InwardQty: ${newStock.inwardQty}`);
-                    console.log(`      └─ InwardAmt: ${newStock.inwardAmt}`);
-
                     await this.inventoryStockRepository.save(newStock);
                 }
             }
 
-            console.log(`\n✅ Inventory re-processing completed successfully\n`);
         } catch (error) {
             console.error('❌ Error re-processing inventory:', error);
             throw error;
@@ -692,37 +657,39 @@ export class ReturnToVendorService {
     }
 }
 
-    public async deleteMultipleReturnToVendor(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-        const success: string[] = [];
-        const failed: { id: string; reason: string }[] = [];
+    public async deleteMultipleReturnToVendor(ids: string[]): Promise<{ message: string }> {
+        if (!ids.length) return { message: 'No IDs provided' };
 
-        for (const id of ids) {
-            try {
-                const record = await this.postReturnToVendorRepository.findOne({
-                    where: { id },
-                    withDeleted: true,
-                });
-                if (!record) {
-                    failed.push({ id, reason: 'Return to vendor record not found' });
-                    continue;
-                }
-                if (record.isDeleted) {
-                    failed.push({ id, reason: 'Record already deleted' });
-                    continue;
-                }
+        const records = await this.postReturnToVendorRepository.find({
+            where: { id: In(ids) },
+            withDeleted: true,
+        });
 
-                await this.postReturnToVendorRepository.softDelete(id);
-                record.isDeleted = true;
-                record.deletedAtNew = new Date();
-                await this.postReturnToVendorRepository.save(record);
-                await this.invalidateCache(id);
-                success.push(id);
-            } catch (error: any) {
-                failed.push({ id, reason: error.message || 'Unknown error' });
-            }
-        }
+        const foundIds = new Set(records.map(r => r.id));
+        const missingId = ids.find(id => !foundIds.has(id));
+        if (missingId) throw new Error(`Return to vendor record with ID ${missingId} not found`);
 
-        const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-        return { success, failed, message };
+        const alreadyDeleted = records.find(r => r.isDeleted);
+        if (alreadyDeleted) throw new Error(`Record with ID ${alreadyDeleted.id} is already deleted`);
+
+        const now = new Date();
+        await this.postReturnToVendorRepository.softDelete(ids);
+        await this.postReturnToVendorRepository
+            .createQueryBuilder()
+            .update()
+            .set({ isDeleted: true, deletedAtNew: now } as any)
+            .whereInIds(ids)
+            .execute();
+
+        await Promise.all([
+            ...ids.flatMap(id => [
+                this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+                this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+                this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+            ]),
+            this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+        ]);
+
+        return { message: 'Return to vendor records deleted successfully' };
     }
 }

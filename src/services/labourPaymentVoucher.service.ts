@@ -6,17 +6,16 @@ import { format } from 'date-fns';
 import { GrnRepository } from '../repositories/grn.repository';
 import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
-import { buildQuery, PaginationOptions } from '../utils/pagination';
+import { PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { ApprovalFlowService } from './approvalFlow.service';
-import { LessThan, DataSource } from 'typeorm';
+import { In, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
-
 
 @injectable()
 export class LabourPaymentVoucherService {
@@ -59,14 +58,6 @@ export class LabourPaymentVoucherService {
     await queryRunner.startTransaction();
 
     try {
-      //TODO: Check approval flow is exit or not for logged user
-
-      //  const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'labor-payment-voucher')
-
-      // if (!approvalFlowExit) {
-      //   throw new Error('Approval flow not found');
-      // }
-
 
       const voucherNo = await this.generateVoucherNo();
       data.voucherNo = voucherNo;
@@ -75,10 +66,8 @@ export class LabourPaymentVoucherService {
 
       const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) as LPVoucher | LPVoucher[];
 
-      // Commit transaction before starting approval flow
       await queryRunner.commitTransaction();
 
-      // Create document and start approval flow (with notification) outside the transaction
       const document = await this.documentbService.createDocument({
               type: DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
               docDef: DocDefEnum.PROCUREMENT,
@@ -94,163 +83,19 @@ export class LabourPaymentVoucherService {
             
       return saveLPVoucher;
     } catch (error: any) {
-      // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Release query runner
       await queryRunner.release();
     }
   }
 
-  // public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
-
-  //   const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-  //             userId,
-  //             DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
-  //             queryOptions
-  //           );
-  //            const { search } = queryOptions;
           
-  //          // console.log('data in grn service', documentData);
             
-  //             const typedDocuments = data as DocumentWithRelatedData[];
-  //           for (const doc of typedDocuments) {
-  //               if (!doc.document_type_id) continue;
           
-  //               try {
-  //                   doc.relatedData = await this.lpVoucherRepository.findOne({
-  //                     where: { id: doc.document_type_id },
-  //                     relations: ['companyName', 'grnNo'],
-  //                   });
-  //               } catch {
-  //                 doc.relatedData = null;
-  //               }
-  //             }
     
-  //             let relatedDataOnly = typedDocuments
-  //        //  .filter((d) => d)
-  //           .map((doc) => ({
-  //             documentId: doc.id,
-  //             // documentType: doc.type,
-  //             // documentTypeId: doc.document_type_id,
-  //             overAllStatus: doc.status,
-  //             createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-  //             createdDate: formatDateTime(doc.createdAt).createdDate,
-  //             createdTime: formatDateTime(doc.createdAt).createdTime,
-  //             ...doc.relatedData,
-  //            id: doc.relatedData.id,
-  //           companyName: doc.relatedData.companyName?.name || null,
-  //           grnNo: doc.relatedData.grnNo?.grnNo || null     
-  //           }))
-  //             // ✅ Helper to flatten object into a searchable string
-  // const objectToString = (obj: any): string => {
-  //   if (obj == null) return '';
-  //   if (typeof obj === 'object') {
-  //     return Object.values(obj).map((v) => objectToString(v)).join(' ');
-  //   }
-  //   return String(obj);
-  // };
 
-  // // ✅ Apply deep search filtering
-  // if (search && search.trim()) {
-  //   const term = search.toLowerCase();
-  //   relatedDataOnly = relatedDataOnly.filter((item) =>
-  //     objectToString(item).toLowerCase().includes(term)
-  //   );
-  // }
-
-  // // 🔄 Sorting support
-  // if (queryOptions.sort) {
-  //   const [field, direction] = queryOptions.sort.split(':');
-  //   const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-  //   const getNestedValue = (obj: any, path: string) =>
-  //     path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-  //   relatedDataOnly.sort((a, b) => {
-  //     const valA = getNestedValue(a, field);
-  //     const valB = getNestedValue(b, field);
-
-  //     if (valA == null && valB == null) return 0;
-  //     if (valA == null) return -1 * sortOrder;
-  //     if (valB == null) return 1 * sortOrder;
-
-  //     if (!isNaN(valA) && !isNaN(valB)) {
-  //       return (Number(valA) - Number(valB)) * sortOrder;
-  //     }
-  //     return String(valA).localeCompare(String(valB)) * sortOrder;
-  //   });
-  // }
     
-  //     return {
-  // data: relatedDataOnly,
-  // meta: {
-  //   total: meta.total,
-  //   page: meta.page,
-  //   pages: meta.pages
-  // } 
-  //       };
-
-    // let queryBuilder = await this.lpVoucherRepository
-    //   .createQueryBuilder('lpVoucher')
-    //   .leftJoinAndSelect('lpVoucher.companyName', 'companyName')
-    //   .leftJoinAndSelect('lpVoucher.grnNo', 'grn')
-    //   .leftJoinAndSelect('lpVoucher.requestedBy', 'requestedBy')
-
-    //   .select([
-    //     'lpVoucher.id',
-    //     'lpVoucher.voucherNo',
-    //     'lpVoucher.approvalStatus',
-    //     'lpVoucher.debitCreditTo',
-    //     'lpVoucher.payReceivedFrom',
-    //     'lpVoucher.location',
-    //     'lpVoucher.noOfLabours',
-    //     'lpVoucher.loadingDate',
-    //     'lpVoucher.contactNo',
-    //     'lpVoucher.altContactNo',
-    //     'lpVoucher.products',
-    //     'lpVoucher.paymentMode',
-    //     'lpVoucher.ratePerLabour',
-    //     'lpVoucher.totalAmt',
-    //     'lpVoucher.createdAt',
-
-    //     'lpVoucher.kyc',
-
-    //     'lpVoucher.receiverName',
-    //     'lpVoucher.amtWords',
-    //     'lpVoucher.anyAttachment',
-    //     'lpVoucher.requestingDepartment',
-
-    //     'companyName.id',
-    //     'companyName.name',
-    //     'grn.grnNo',
-    //     'requestedBy.id',
-    //     'requestedBy.firstName',
-    //     'requestedBy.lastName',
-    //   ])
-    //   .orderBy('lpVoucher.createdAt', 'DESC');
-    // const { data, meta } = await buildQuery(
-    //   queryBuilder,
-    //   queryOptions,
-    //   'lpVoucher',
-    // );
-    // const formatResponse = data.map((voucher) => {
-    //   const rawDate = voucher.createdAt;
-    //   const { createdDate, createdTime } = formatDateTime(rawDate);
-    //   return {
-    //     ...voucher,
-    //     grnNo: voucher.grnNo ? voucher.grnNo.grnNo : null,
-    //     companyName: voucher.companyName?.name || null,
-    //     createdTime: createdTime,
-    //     createdDate: createdDate,
-    //   };
-    // });
-    // return {
-    //   data: formatResponse,
-    //   meta,
-    // };
-  //}
 
   public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
@@ -258,96 +103,86 @@ export class LabourPaymentVoucherService {
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-              userId,
-              DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
-              queryOptions
-            );
-             const { search } = queryOptions;
-          
-           // console.log('data in grn service', documentData);
-            
-              const typedDocuments = data as DocumentWithRelatedData[];
-const activeDocuments = typedDocuments;
-
-            for (const doc of activeDocuments) {
-                if (!doc.document_type_id) continue;
-          
-                try {
-                    doc.relatedData = await this.lpVoucherRepository.findOne({
-                      where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-                      relations: ['companyName', 'grnNo'],
-                    });
-                } catch {
-                  doc.relatedData = null;
-                }
-              }
-
-              let relatedDataOnly = activeDocuments
-            .map((doc) => ({
-              documentId: doc.id,
-              // documentType: doc.type,
-              // documentTypeId: doc.document_type_id,
-              overAllStatus: doc.status,
-              createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-              createdDate: formatDateTime(doc.createdAt).createdDate,
-              createdTime: formatDateTime(doc.createdAt).createdTime,
-              ...doc.relatedData,
-             id: doc.relatedData.id,
-            companyName: doc.relatedData.companyName?.name || null,
-            grnNo: doc.relatedData.grnNo?.grnNo || null     
-            }))
-              // ✅ Helper to flatten object into a searchable string
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  // ✅ Apply deep search filtering
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const { data, meta } = await this.documentbService.getAllDocumentByUserId(
+      userId,
+      DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
+      queryOptions,
     );
-  }
+    const { search } = queryOptions;
+    const activeDocuments = data as DocumentWithRelatedData[];
 
-  // 🔄 Sorting support
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    const voucherIds = activeDocuments.map(d => d.document_type_id).filter(Boolean) as string[];
+    const vouchers = voucherIds.length
+      ? await this.lpVoucherRepository
+          .createQueryBuilder('v')
+          .leftJoinAndSelect('v.companyName', 'companyName')
+          .leftJoinAndSelect('v.grnNo', 'grnNo')
+          .where('v.id IN (:...ids)', { ids: voucherIds })
+          .andWhere('v.isDeleted = false')
+          .andWhere('v.deletedAt IS NULL')
+          .getMany()
+      : [];
+    const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const docCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-    
-      const listResult = {
-  data: relatedDataOnly,
-  meta: {
-    total: meta.total,
-    page: meta.page,
-    pages: meta.pages
-  } 
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
+          ...rd,
+          id: rd.id,
+          companyName: rd.companyName?.name || null,
+          grnNo: rd.grnNo?.grnNo || null,
         };
+      });
+
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter(item => objectToString(item).toLowerCase().includes(term));
+    }
+
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(docCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(docCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
+    }
+
+    const listResult = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
+    };
     await this.cacheService.set(cacheKey, listResult, this.CACHE_TTL);
     return listResult;
-}
+  }
 
   public async getLPVoucherById(id: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
@@ -487,98 +322,87 @@ remark:voucher.remark || null,
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const {data, meta} = await this.documentbService.getAllDocumentByUserId(
-              userId,
-              DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
-              queryOptions,
-              false,
-              true  // includeDeleted for recycle bin
-            );
-             const { search } = queryOptions;
-          
-           // console.log('data in grn service', documentData);
-            
-              const typedDocuments = data as DocumentWithRelatedData[];
-const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === true);
-
-            for (const doc of activeDocuments) {
-                if (!doc.document_type_id) continue;
-          
-                try {
-                    doc.relatedData = await this.lpVoucherRepository.findOne({
-                      where: { id: doc.document_type_id, isDeleted: true },
-                      relations: ['companyName', 'grnNo'],
-                    });
-                } catch {
-                  doc.relatedData = null;
-                }
-              }
-
-              let relatedDataOnly = activeDocuments
-            .map((doc) => ({
-              documentId: doc.id,
-              // documentType: doc.type,
-              // documentTypeId: doc.document_type_id,
-              overAllStatus: doc.status,
-              createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-              createdDate: formatDateTime(doc.createdAt).createdDate,
-              createdTime: formatDateTime(doc.createdAt).createdTime,
-              ...doc.relatedData,
-             id: doc.relatedData.id,
-            companyName: doc.relatedData.companyName?.name || null,
-            grnNo: doc.relatedData.grnNo?.grnNo || null     
-            }))
-              // ✅ Helper to flatten object into a searchable string
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  // ✅ Apply deep search filtering
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const { data, meta } = await this.documentbService.getAllDocumentByUserId(
+      userId,
+      DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
+      queryOptions,
+      false,
+      true,
     );
-  }
+    const { search } = queryOptions;
+    const activeDocuments = (data as DocumentWithRelatedData[]);
 
-  // 🔄 Sorting support
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    const voucherIds = activeDocuments.map(d => d.document_type_id).filter(Boolean) as string[];
+    const vouchers = voucherIds.length
+      ? await this.lpVoucherRepository
+          .createQueryBuilder('v')
+          .leftJoinAndSelect('v.companyName', 'companyName')
+          .leftJoinAndSelect('v.grnNo', 'grnNo')
+          .where('v.id IN (:...ids)', { ids: voucherIds })
+          .andWhere('v.isDeleted = true')
+          .getMany()
+      : [];
+    const voucherMap = new Map(vouchers.map(v => [v.id, v]));
+    const recycleDocCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-    
-      const recycleResult = {
-  data: relatedDataOnly,
-  meta: {
-    total: meta.total,
-    page: meta.page,
-    pages: meta.pages
-  } 
+    let relatedDataOnly = activeDocuments
+      .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = voucherMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
+          createdDate,
+          createdTime,
+          ...rd,
+          id: rd.id,
+          companyName: rd.companyName?.name || null,
+          grnNo: rd.grnNo?.grnNo || null,
         };
+      });
+
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter(item => objectToString(item).toLowerCase().includes(term));
+    }
+
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    } else {
+      relatedDataOnly.sort((a, b) => {
+        const tA = new Date(recycleDocCreatedAtMap.get(a.documentId) ?? 0).getTime();
+        const tB = new Date(recycleDocCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        return tB - tA;
+      });
+    }
+
+    const recycleResult = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
+    };
     await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
     return recycleResult;
-}
+  }
 
    public async getLPVoucherByIdForUpdate(id: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
@@ -643,128 +467,93 @@ remark : voucher.remark || null,
 
     const originalVoucher = { ...voucher };
 
-    console.log(updatedData.grnNo);
-    console.log(typeof updatedData.grnNo);
-    const grnNo = updatedData.grnNo;
-    console.log(grnNo);
-    const grn = await this.grnRepository.findOne({
-      where: { grnNo },
-    });
-
-    if (grn) {
-      updatedData.grnNo = grn;
-    }
+    const grn = await this.grnRepository.findOne({ where: { grnNo: updatedData.grnNo } });
+    if (grn) updatedData.grnNo = grn;
 
     Object.assign(voucher, updatedData);
-
     const updatedVoucher = await this.lpVoucherRepository.save(voucher);
 
-    await this.auditLogService.logChange(
-      'LPVoucher',
-      voucher.id,
-      originalVoucher,
-      updatedVoucher,
-      updatedBy,
-    );
-
+    await this.auditLogService.logChange('LPVoucher', voucher.id, originalVoucher, updatedVoucher, updatedBy);
     await this.invalidateCache(id);
     return updatedVoucher;
   }
 
-  // Delete an LP Voucher with scheduled deletion (6 months)
   async deleteLPVoucher(id: string): Promise<boolean> {
-    const lpVoucher = await this.lpVoucherRepository.findOne({ where: { id } });
+    const exists = await this.lpVoucherRepository.count({ where: { id } });
+    if (!exists) throw new AppError(404, `LP Voucher with ID ${id} not found`);
 
-    if (!lpVoucher) {
-      throw new AppError(404, `LP Voucher with ID ${id} not found`);
-    }
+    const sixMonthsFromNow = new Date();
+    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    // Calculate the date 6 months ahead
-    const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-
-    // Log the scheduled deletion
-    console.log(
-      `LP Voucher with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
-    // Set the deletionScheduledAt field for the LP Voucher
-    lpVoucher.deletionScheduledAt = sixMonthsFromNow;
-
-    // Save the updated LP Voucher with the scheduled deletion date
-    await this.lpVoucherRepository.save(lpVoucher);
-
-    console.log(`LP Voucher with ID ${id} marked for deletion in 6 months.`);
+    await this.lpVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
     return true;
   }
 
   public async generateVoucherNo(): Promise<string> {
     const today = new Date();
-    const formattedDate = format(today, 'yyyyMMdd'); // e.g., 20241017
+    const formattedDate = format(today, 'yyyyMMdd');
 
-    // Query to get the last cash voucher for the current date
     const lastVoucher = await this.lpVoucherRepository
       .createQueryBuilder('cashVoucher')
-      .where('cashVoucher.voucherNo LIKE :datePattern', {
-        datePattern: `CV-${formattedDate}-%`,
-      })
+      .where('cashVoucher.voucherNo LIKE :datePattern', { datePattern: `CV-${formattedDate}-%` })
       .orderBy('cashVoucher.voucherNo', 'DESC')
       .getOne();
 
-    let newSerialNumber = 1; // Default to 1 if no vouchers exist for the current date
-
+    let newSerialNumber = 1;
     if (lastVoucher) {
-      // Extract the serial number from the last voucher
-      const lastSerialNumber = parseInt(
-        lastVoucher.voucherNo.split('-')[2],
-        10,
-      );
-      newSerialNumber = lastSerialNumber + 1; // Increment the serial number
+      const lastSerialNumber = parseInt(lastVoucher.voucherNo.split('-')[2], 10);
+      newSerialNumber = lastSerialNumber + 1;
     }
 
-    // Create the voucher number in the format CV-yyyyMMdd-serialNumber
-    const voucherNo = `LV-${formattedDate}`;
-    return voucherNo;
+    return `LV-${formattedDate}`;
   }
-  public async deleteMultipleLPVoucher(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
-  const failed: { id: string; reason: string }[] = [];
 
-  for (const id of ids) {
-    try {
-      const lpVoucher = await this.lpVoucherRepository.findOne({ where: { id } });
-      if (!lpVoucher) {
-        failed.push({ id, reason: 'LP Voucher not found' });
-        continue;
-      }
+  public async deleteMultipleLPVoucher(ids: string[]): Promise<{ message: string }> {
+    if (!ids.length) return { message: 'No IDs provided' };
 
-      // Soft delete related document
-      const relatedDocument = await this.documentbRepository.findOne({
-        where: { document_type_id: lpVoucher.id },
-      });
-      if (relatedDocument) {
-        await this.documentbRepository.softDelete(relatedDocument.id);
-        await this.documentbRepository.update(relatedDocument.id, { isDeleted: true } as any);
-      }
+    const [lpVouchers, relatedDocuments] = await Promise.all([
+      this.lpVoucherRepository.find({ where: { id: In(ids) } }),
+      this.documentbRepository
+        .createQueryBuilder('doc')
+        .select(['doc.id', 'doc.document_type_id'])
+        .where('doc.document_type_id IN (:...ids)', { ids })
+        .getMany(),
+    ]);
 
-      // Soft delete LP Voucher
-      await this.lpVoucherRepository.softDelete(lpVoucher.id);
-      await this.lpVoucherRepository.update(lpVoucher.id, { isDeleted: true } as any);
+    const foundIds = new Set(lpVouchers.map(v => v.id));
+    const missingId = ids.find(id => !foundIds.has(id));
+    if (missingId) throw new AppError(404, `LP Voucher with ID ${missingId} not found`);
 
-      // Invalidate cache for this specific voucher
-      await this.invalidateCache(id);
-
-      success.push(id);
-    } catch (error: any) {
-      failed.push({ id, reason: error.message || 'Unknown error' });
+    const docIds = relatedDocuments.map(d => d.id);
+    if (docIds.length) {
+      await this.documentbRepository
+        .createQueryBuilder()
+        .update()
+        .set({ isDeleted: true } as any)
+        .whereInIds(docIds)
+        .execute();
     }
-  }
 
-  const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
-  return { success, failed, message };
-}
+    await this.lpVoucherRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isDeleted: true } as any)
+      .whereInIds(ids)
+      .execute();
+
+    await Promise.all([
+      ...ids.flatMap(id => [
+        this.cacheService.del(`${this.CACHE_PREFIX}:id:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:view:${id}`),
+        this.cacheService.del(`${this.CACHE_PREFIX}:update:${id}`),
+      ]),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
+      this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
+    ]);
+
+    return { message: 'LP Voucher records marked for deletion successfully' };
+  }
 
 }
