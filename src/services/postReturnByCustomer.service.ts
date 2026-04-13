@@ -396,11 +396,18 @@ export class PostReturnByCustomerService {
     const records = rbcIds.length
       ? await this.postReturnByCustomerRepository
           .createQueryBuilder('rbc')
-          .leftJoinAndSelect('rbc.companyName', 'companyName')
-          .leftJoinAndSelect('rbc.deliveryChallanNo', 'deliveryChallanNo')
-          .leftJoinAndSelect('rbc.returnedProducts', 'returnedProducts')
-          .leftJoinAndSelect('returnedProducts.productName', 'productName')
-          .leftJoinAndSelect('returnedProducts.saleUoM', 'saleUoM')
+          .leftJoin('rbc.companyName', 'companyName')
+          .leftJoin('rbc.deliveryChallanNo', 'deliveryChallanNo')
+          .leftJoin('rbc.returnedProducts', 'returnedProducts')
+          .leftJoin('returnedProducts.productName', 'productName')
+          .leftJoin('returnedProducts.saleUoM', 'saleUoM')
+          .select([
+            'rbc.id', 'rbc.rbcNo', 'rbc.date', 'rbc.remark',
+            'companyName.name',
+            'deliveryChallanNo.challanNo',
+            'returnedProducts.id', 'returnedProducts.unitPrice',
+            'productName.name', 'saleUoM.unit',
+          ])
           .where('rbc.id IN (:...ids)', { ids: rbcIds })
           .andWhere('rbc.isDeleted = false')
           .andWhere('rbc.deletedAt IS NULL')
@@ -412,17 +419,26 @@ export class PostReturnByCustomerService {
     let relatedDataOnly = activeDocuments
       .filter(doc => doc.document_type_id && recordMap.has(doc.document_type_id))
       .map((doc) => {
-        const rd: any = recordMap.get(doc.document_type_id!)!;
+        const rd = recordMap.get(doc.document_type_id!)!;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {
           documentId: doc.id,
           overAllStatus: doc.status,
-          createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-          createdDate: formatDateTime(doc.createdAt).createdDate,
-          createdTime: formatDateTime(doc.createdAt).createdTime,
-          ...rd,
+          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id,
+          rbcNo: rd.rbcNo ?? null,
           date: formatDateTime(rd.date).createdDate,
-          companyName: rd.companyName?.name || null,
-          deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
+          remark: rd.remark ?? null,
+          companyName: rd.companyName?.name ?? null,
+          deliveryChallanNo: rd.deliveryChallanNo?.challanNo ?? null,
+          returnedProducts: (rd.returnedProducts ?? []).map((p: any) => ({
+            id: p.id,
+            productName: p.productName?.name ?? null,
+            saleUoM: p.saleUoM?.unit ?? null,
+            unitPrice: p.unitPrice,
+          })),
         };
       });
 
@@ -453,75 +469,71 @@ export class PostReturnByCustomerService {
     if (cached) return cached;
 
     const document1 = await this.docDoubleApproverService.getDocumentById(docid);
-    const relatedId = document1.documentTypeId;
-    console.log('relatedId:', relatedId);
-    const id = relatedId;
+    const id = document1.documentTypeId;
+    if (!id) return null;
+
     const result = await this.postReturnByCustomerRepository
       .createQueryBuilder('postReturn')
-      .leftJoinAndSelect('postReturn.companyName', 'company')
-      .leftJoinAndSelect('postReturn.location', 'location')
-      .leftJoinAndSelect('postReturn.deliveryChallanNo', 'deliveryChallanNo')
-      .leftJoinAndSelect('postReturn.returnedProducts', 'returnedProduct')
-      .leftJoinAndSelect('returnedProduct.productName', 'product')
-      .leftJoinAndSelect('returnedProduct.variant','variant')
-      .leftJoinAndSelect('returnedProduct.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('postReturn.customerName', 'customerName')
-      .leftJoinAndSelect('postReturn.createdBy', 'createdByUser')
-
+      .leftJoin('postReturn.companyName', 'company')
+      .leftJoin('postReturn.location', 'location')
+      .leftJoin('postReturn.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('postReturn.returnedProducts', 'returnedProduct')
+      .leftJoin('returnedProduct.productName', 'product')
+      .leftJoin('returnedProduct.variant', 'variant')
+      .leftJoin('returnedProduct.saleUoM', 'saleUoM')
+      .leftJoin('postReturn.customerName', 'customerName')
+      .select([
+        'postReturn.id', 'postReturn.date', 'postReturn.remark', 'postReturn.createdAt',
+        'company.name', 'location.name',
+        'deliveryChallanNo.challanNo',
+        'customerName.organisationName',
+        'returnedProduct.id', 'returnedProduct.unitPrice',
+        'returnedProduct.returnedQty', 'returnedProduct.returnedQtyAmt',
+        'returnedProduct.rejectedQty', 'returnedProduct.rejectedQtyAmt',
+        'returnedProduct.returnedNetWt', 'returnedProduct.returnedPackingMaterialWt',
+        'returnedProduct.returnedGrossWt', 'returnedProduct.rejectedNetWt',
+        'returnedProduct.rejectedGrossWt', 'returnedProduct.rejectedPackingMaterialWt',
+        'product.name', 'variant.variantName', 'saleUoM.unit',
+      ])
       .where('postReturn.id = :id', { id })
       .getOne();
 
-    if (!result) {
-      throw new Error(`PostReturnByCustomer with ID ${id} not found`);
-    }
-    const rawDate = result.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    const date = formatDateTime(result.date);
+    if (!result) throw new Error(`PostReturnByCustomer with ID ${id} not found`);
+
+    const { createdDate, createdTime } = formatDateTime(result.createdAt);
+
     const viewResult = {
       id: result.id,
-
-      companyName: result.companyName?.name,
-      customerName: result.customerName?.organisationName,
-      location: result.location?.name || null,
-      //  ? {
-      //   id: result.companyName.id,
-      //   companyName: result.companyName.name,
-      // } : null,
-      date: date.createdDate,
+      documentId: document1.documentId,
+      overAllStatus: document1.status,
+      createdBy: document1.createdBy,
       createdDate,
       createdTime,
-
-      deliveryChallanNo: result.deliveryChallanNo?.challanNo,
-      // ? {
-      //   id: result.deliveryChallanNo.id,
-      //   deliveryChallanNo: result.deliveryChallanNo.challanNo
-      // } : null,
-
-      remark: result.remark,
-
-      returnedProducts: result.returnedProducts.map((returnedProduct) => ({
-        productName: returnedProduct.productName?.name,
-        variant:returnedProduct.variant?.variantName,
-        saleUoM: returnedProduct.saleUoM?.unit || null,
-        returnedQty: returnedProduct.returnedQty,
-        returnedQtyAmt: returnedProduct.returnedQtyAmt,
-        rejectedQty: returnedProduct.rejectedQty,
-        rejectedQtyAmt: returnedProduct.rejectedQtyAmt,
-        returnedNetWt: returnedProduct.returnedNetWt,
-        returnedPackingMaterialWt: returnedProduct.returnedPackingMaterialWt,
-        returnedGrossWt: returnedProduct.returnedGrossWt,
-        rejectedNetWt: returnedProduct.rejectedNetWt,
-        rejectedGrossWt: returnedProduct.rejectedGrossWt,
-        rejectedPackingMaterialWt: returnedProduct.rejectedPackingMaterialWt,
-        unitPrice: returnedProduct.unitPrice,
-        documentId: document1.documentId,
-        overAllStatus: document1.status,
-        createdBy: document1.createdBy,
-        createdDate: formatDateTime(document1.createdAt).createdDate,
-        createdTime: formatDateTime(document1.createdAt).createdTime,
-        approvalSummary: document1.approvalSummary,
+      approvalSummary: document1.approvalSummary,
+      companyName: result.companyName?.name ?? null,
+      customerName: result.customerName?.organisationName ?? null,
+      location: result.location?.name ?? null,
+      date: formatDateTime(result.date).createdDate,
+      deliveryChallanNo: result.deliveryChallanNo?.challanNo ?? null,
+      remark: result.remark ?? null,
+      returnedProducts: (result.returnedProducts ?? []).map((p) => ({
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        saleUoM: p.saleUoM?.unit ?? null,
+        unitPrice: p.unitPrice,
+        returnedQty: p.returnedQty,
+        returnedQtyAmt: p.returnedQtyAmt,
+        rejectedQty: p.rejectedQty,
+        rejectedQtyAmt: p.rejectedQtyAmt,
+        returnedNetWt: p.returnedNetWt,
+        returnedPackingMaterialWt: p.returnedPackingMaterialWt,
+        returnedGrossWt: p.returnedGrossWt,
+        rejectedNetWt: p.rejectedNetWt,
+        rejectedGrossWt: p.rejectedGrossWt,
+        rejectedPackingMaterialWt: p.rejectedPackingMaterialWt,
       })),
     };
+
     await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
     return viewResult;
   }
@@ -534,85 +546,79 @@ export class PostReturnByCustomerService {
     // docid can be either the document ID or the RBC record ID
     let document1 = await this.documentbRepository.findOne({
       where: { id: docid },
+      select: ['id'],
     });
-
-    // If not found by document ID, try by document_type_id (RBC record ID)
     if (!document1) {
       document1 = await this.documentbRepository.findOne({
         where: { document_type_id: docid },
+        select: ['id'],
       });
     }
-
-    if (!document1) {
-      throw new Error(`Document with ID ${docid} not found`);
-    }
+    if (!document1) throw new Error(`Document with ID ${docid} not found`);
 
     const fullDocument = await this.docDoubleApproverService.getDocumentById(document1.id);
     const id = fullDocument.documentTypeId;
+
     const result = await this.postReturnByCustomerRepository
       .createQueryBuilder('postReturn')
-      .leftJoinAndSelect('postReturn.companyName', 'company')
-      .leftJoinAndSelect('postReturn.location', 'location')
-      .leftJoinAndSelect('postReturn.deliveryChallanNo', 'deliveryChallanNo')
-      .leftJoinAndSelect('postReturn.returnedProducts', 'returnedProduct')
-      .leftJoinAndSelect('returnedProduct.productName', 'product')
-      .leftJoinAndSelect('returnedProduct.variant','variant')
-      .leftJoinAndSelect('returnedProduct.saleUoM', 'saleUoM')
-      .leftJoinAndSelect('postReturn.customerName', 'customerName')
-
+      .leftJoin('postReturn.companyName', 'company')
+      .leftJoin('postReturn.location', 'location')
+      .leftJoin('postReturn.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('postReturn.returnedProducts', 'returnedProduct')
+      .leftJoin('returnedProduct.productName', 'product')
+      .leftJoin('returnedProduct.variant', 'variant')
+      .leftJoin('returnedProduct.saleUoM', 'saleUoM')
+      .leftJoin('postReturn.customerName', 'customerName')
+      .select([
+        'postReturn.id', 'postReturn.date', 'postReturn.remark', 'postReturn.createdAt',
+        'company.id', 'location.id', 'deliveryChallanNo.id', 'customerName.id',
+        'returnedProduct.id', 'returnedProduct.unitPrice',
+        'returnedProduct.returnedQty', 'returnedProduct.returnedQtyAmt',
+        'returnedProduct.rejectedQty', 'returnedProduct.rejectedQtyAmt',
+        'returnedProduct.returnedNetWt', 'returnedProduct.returnedPackingMaterialWt',
+        'returnedProduct.returnedGrossWt', 'returnedProduct.rejectedNetWt',
+        'returnedProduct.rejectedGrossWt', 'returnedProduct.rejectedPackingMaterialWt',
+        'product.id', 'variant.id', 'saleUoM.id',
+      ])
       .where('postReturn.id = :id', { id })
       .getOne();
 
-    if (!result) {
-      throw new Error(`PostReturnByCustomer with ID ${id} not found`);
-    }
-    const rawDate = result.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    const date = formatDateTime(result.date);
+    if (!result) throw new Error(`PostReturnByCustomer with ID ${id} not found`);
+
+    const { createdDate, createdTime } = formatDateTime(result.createdAt);
+
     const updateResult = {
       id: result.id,
-
-      companyName: result.companyName?.id,
-      //  ? {
-      //   id: result.companyName.id,
-      //   companyName: result.companyName.name,
-      // } : null,
-      customerName: result.customerName?.id,
-      date: date.createdDate,
+      documentId: fullDocument.documentId,
+      overAllStatus: fullDocument.status,
+      createdBy: fullDocument.createdBy,
       createdDate,
       createdTime,
-      location: result.location?.id,
-      deliveryChallanNo: result.deliveryChallanNo?.id,
-      // ? {
-      //   id: result.deliveryChallanNo.id,
-      //   deliveryChallanNo: result.deliveryChallanNo.challanNo
-      // } : null,
-
-      remark: result.remark,
-
-      returnedProducts: result.returnedProducts.map((returnedProduct) => ({
-        productName: returnedProduct.productName?.id,
-        variant:returnedProduct.variant?.id,
-        saleUoM: returnedProduct.saleUoM?.id || null,
-        returnedQty: returnedProduct.returnedQty,
-        returnedQtyAmt: returnedProduct.returnedQtyAmt,
-        rejectedQty: returnedProduct.rejectedQty,
-        rejectedQtyAmt: returnedProduct.rejectedQtyAmt,
-        returnedNetWt: returnedProduct.returnedNetWt,
-        returnedPackingMaterialWt: returnedProduct.returnedPackingMaterialWt,
-        returnedGrossWt: returnedProduct.returnedGrossWt,
-        rejectedNetWt: returnedProduct.rejectedNetWt,
-        rejectedGrossWt: returnedProduct.rejectedGrossWt,
-        rejectedPackingMaterialWt: returnedProduct.rejectedPackingMaterialWt,
-        unitPrice: returnedProduct.unitPrice,
-        documentId: fullDocument.documentId,
-        overAllStatus: fullDocument.status,
-        createdBy: fullDocument.createdBy,
-        createdDate: formatDateTime(fullDocument.createdAt).createdDate,
-        createdTime: formatDateTime(fullDocument.createdAt).createdTime,
-        approvalSummary: fullDocument.approvalSummary,
+      approvalSummary: fullDocument.approvalSummary,
+      companyName: result.companyName?.id ?? null,
+      customerName: result.customerName?.id ?? null,
+      date: formatDateTime(result.date).createdDate,
+      location: result.location?.id ?? null,
+      deliveryChallanNo: result.deliveryChallanNo?.id ?? null,
+      remark: result.remark ?? null,
+      returnedProducts: (result.returnedProducts ?? []).map((p) => ({
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        saleUoM: p.saleUoM?.id ?? null,
+        unitPrice: p.unitPrice,
+        returnedQty: p.returnedQty,
+        returnedQtyAmt: p.returnedQtyAmt,
+        rejectedQty: p.rejectedQty,
+        rejectedQtyAmt: p.rejectedQtyAmt,
+        returnedNetWt: p.returnedNetWt,
+        returnedPackingMaterialWt: p.returnedPackingMaterialWt,
+        returnedGrossWt: p.returnedGrossWt,
+        rejectedNetWt: p.rejectedNetWt,
+        rejectedGrossWt: p.rejectedGrossWt,
+        rejectedPackingMaterialWt: p.rejectedPackingMaterialWt,
       })),
     };
+
     await this.cacheService.set(cacheKey, updateResult, this.CACHE_TTL);
     return updateResult;
   }

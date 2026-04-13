@@ -163,45 +163,67 @@ export class SecondSaleService {
         queryOptions,
       );
       const { search } = queryOptions;
-
       const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments;
 
-      // ---- Batch fetch: one query instead of N+1 ----
-      const saleIds = activeDocuments
-        .map(doc => doc.document_type_id)
+      const saleIds = typedDocuments
+        .map((doc) => doc.document_type_id)
         .filter(Boolean) as string[];
 
-      const sales = saleIds.length
-        ? await this.secondSaleRepository
-            .createQueryBuilder('ss')
-            .leftJoinAndSelect('ss.companyName', 'companyName')
-            .leftJoinAndSelect('ss.location', 'location')
-            .where('ss.id IN (:...ids)', { ids: saleIds })
-            .andWhere('ss.isDeleted = false')
-            .andWhere('ss.deletedAt IS NULL')
-            .getMany()
-        : [];
+      let saleMap = new Map<string, any>();
+      if (saleIds.length > 0) {
+        const sales = await this.secondSaleRepository
+          .createQueryBuilder('ss')
+          .leftJoin('ss.companyName', 'companyName')
+          .leftJoin('ss.location', 'location')
+          .select([
+            'ss.id', 'ss.secondSaleNo', 'ss.saleDate', 'ss.customerName',
+            'ss.customerContactNo', 'ss.customerEmail', 'ss.reasonForSale',
+            'ss.totalNetWeight', 'ss.totalGrossWeight', 'ss.totalAmt',
+            'ss.totalAmtInWords', 'ss.paidAmount', 'ss.paymentMode',
+            'ss.pendingAmt', 'ss.remarks',
+            'companyName.name', 'location.name',
+          ])
+          .where('ss.id IN (:...ids)', { ids: saleIds })
+          .andWhere('ss.isDeleted = false')
+          .andWhere('ss.deletedAt IS NULL')
+          .getMany();
 
-      const saleMap = new Map(sales.map(s => [s.id, s]));
+        saleMap = new Map(sales.map((s) => [s.id, s]));
+      }
 
-      let relatedDataOnly = activeDocuments
-        .filter(doc => doc.document_type_id && saleMap.has(doc.document_type_id))
+      let relatedDataOnly = typedDocuments
+        .filter((doc) => doc.document_type_id && saleMap.has(doc.document_type_id))
         .map((doc) => {
-          const rd: any = saleMap.get(doc.document_type_id!)!;
+          const rd = saleMap.get(doc.document_type_id!);
+          if (!rd) return null;
+          const { createdDate, createdTime } = formatDateTime(doc.createdAt);
           return {
             documentId: doc.id,
             overAllStatus: doc.status,
-            createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-            createdDate: formatDateTime(doc.createdAt).createdDate,
-            createdTime: formatDateTime(doc.createdAt).createdTime,
-            ...rd,
-            companyName: rd.companyName?.name || null,
-            location: rd.location?.name || null,
+            createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+            createdDate,
+            createdTime,
+            id: rd.id,
+            secondSaleNo: rd.secondSaleNo ?? null,
+            saleDate: rd.saleDate ?? null,
+            customerName: rd.customerName ?? null,
+            customerContactNo: rd.customerContactNo ?? null,
+            customerEmail: rd.customerEmail ?? null,
+            reasonForSale: rd.reasonForSale ?? null,
+            totalNetWeight: rd.totalNetWeight ?? null,
+            totalGrossWeight: rd.totalGrossWeight ?? null,
+            totalAmt: rd.totalAmt ?? null,
+            totalAmtInWords: rd.totalAmtInWords ?? null,
+            paidAmount: rd.paidAmount ?? null,
+            paymentMode: rd.paymentMode ?? null,
+            pendingAmt: rd.pendingAmt ?? null,
+            remarks: rd.remarks ?? null,
+            companyName: rd.companyName?.name ?? null,
+            location: rd.location?.name ?? null,
           };
-        });
+        })
+        .filter(Boolean);
 
-      // 🔍 Deep search
       const objectToString = (obj: any): string => {
         if (obj == null) return '';
         if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
@@ -211,11 +233,10 @@ export class SecondSaleService {
       if (search && search.trim()) {
         const term = search.toLowerCase();
         relatedDataOnly = relatedDataOnly.filter((item) =>
-          objectToString(item).toLowerCase().includes(term)
+          objectToString(item).toLowerCase().includes(term),
         );
       }
 
-      // 🔄 Sorting
       if (queryOptions.sort) {
         const [field, direction] = queryOptions.sort.split(':');
         const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
@@ -235,17 +256,12 @@ export class SecondSaleService {
 
       const result = {
         data: relatedDataOnly,
-        meta: {
-          total: meta.total,
-          page: meta.page,
-          pages: meta.pages,
-        },
+        meta: { total: meta.total, page: meta.page, pages: meta.pages },
       };
 
       await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
       return result;
     } catch (error) {
-      console.error("Error fetching SecondSale:", error);
       throw error;
     }
   }
@@ -312,83 +328,99 @@ export class SecondSaleService {
 
     const document = await this.docDoubleApproverService.getDocumentById(docId);
     const id = document.documentTypeId;
+    if (!id) return null;
 
-    if (id) {
-      const secondSale = await this.secondSaleRepository
-        .createQueryBuilder("secondSale")
-        .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
-        .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
-        .leftJoinAndSelect("secondSale.location", "location")
-        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
-        .leftJoinAndSelect("secondSaleProducts.productName", "product")
-        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
-        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
-        .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM", "packagingMaterialUoM")
-        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
-        .where("secondSale.id = :id", { id })
-        .getOne();
-      if (!secondSale) throw new AppError(404, "Second Sale not found");
+    const secondSale = await this.secondSaleRepository
+      .createQueryBuilder('secondSale')
+      .leftJoin('secondSale.secondSaleProducts', 'secondSaleProducts')
+      .leftJoin('secondSale.companyName', 'companyName')
+      .leftJoin('secondSale.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('secondSale.location', 'location')
+      .leftJoin('secondSale.customerAddress', 'customerAddress')
+      .leftJoin('secondSaleProducts.productName', 'product')
+      .leftJoin('secondSaleProducts.variant', 'variant')
+      .leftJoin('secondSaleProducts.saleUoM', 'saleUoM')
+      .leftJoin('secondSaleProducts.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('secondSaleProducts.packagingMaterial', 'packagingMaterial')
+      .select([
+        'secondSale.id', 'secondSale.saleDate', 'secondSale.customerName',
+        'secondSale.customerContactNo', 'secondSale.customerEmail',
+        'secondSale.reasonForSale', 'secondSale.secondSaleNo',
+        'secondSale.totalNetWeight', 'secondSale.totalGrossWeight', 'secondSale.totalAmt',
+        'secondSale.totalAmtInWords', 'secondSale.paidAmount', 'secondSale.paymentMode',
+        'secondSale.pendingAmt', 'secondSale.remarks', 'secondSale.createdAt',
+        'companyName.name', 'location.name', 'deliveryChallanNo.challanNo',
+        'customerAddress.id', 'customerAddress.address1', 'customerAddress.address2',
+        'customerAddress.city', 'customerAddress.state', 'customerAddress.location', 'customerAddress.pincode',
+        'secondSaleProducts.id', 'secondSaleProducts.quantity', 'secondSaleProducts.unitPrice',
+        'secondSaleProducts.amount', 'secondSaleProducts.grossWeight',
+        'secondSaleProducts.packagingMaterialWeight', 'secondSaleProducts.netWeight',
+        'secondSaleProducts.packagingMaterialQuantity', 'secondSaleProducts.packagingMaterialUnitPrice',
+        'secondSaleProducts.packagingMaterialAmount', 'secondSaleProducts.packagingMaterialTotalWeight',
+        'product.name', 'variant.variantName',
+        'saleUoM.unit', 'packagingMaterialUoM.unit', 'packagingMaterial.packagingMaterialName',
+      ])
+      .where('secondSale.id = :id', { id })
+      .getOne();
 
-      const rawDate = secondSale.createdAt;
-      const { createdDate, createdTime } = formatDateTime(rawDate);
+    if (!secondSale) throw new AppError(404, 'Second Sale not found');
 
-      const result = {
-        id: secondSale?.id,
-        companyName: secondSale?.companyName?.name || null,
-        location: secondSale?.location?.name || null,
-        deliveryChallanNo: secondSale?.deliveryChallanNo?.challanNo || null,
-        saleDate: secondSale?.saleDate || null,
-        createdDate,
-        createdTime,
-        customerName: secondSale?.customerName || null,
-        customerContactNo: secondSale?.customerContactNo || null,
-        customerEmail: secondSale?.customerEmail || null,
-        customerAddress: secondSale?.customerAddress ? {
-          id: secondSale.customerAddress.id,
-          address1: secondSale.customerAddress.address1,
-          address2: secondSale.customerAddress.address2,
-          city: secondSale.customerAddress.city,
-          state: secondSale.customerAddress.state,
-          location: secondSale.customerAddress.location,
-          pincode: secondSale.customerAddress.pincode,
-        } : null,
-        reasonForSale: secondSale?.reasonForSale || null,
-        secondSaleNo: secondSale?.secondSaleNo || null,
-        secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
-          id: product.id,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-          grossWeight: product.grossWeight,
-          packagingMaterialWeight: product.packagingMaterialWeight,
-          netWeight: product.netWeight,
-          packagingMaterialQuantity: product.packagingMaterialQuantity,
-          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-          packagingMaterialAmount: product.packagingMaterialAmount,
-          productName: product.productName?.name || null,
-          variant: product.variant?.variantName || null,
-          saleUoM: product.saleUoM?.unit || null,
-          packagingMaterialUoM: product.packagingMaterialUoM?.unit || null,
-          packagingMaterial: product.packagingMaterial?.packagingMaterialName || null,
-        })) || [],
-        totalNetWeight: secondSale?.totalNetWeight || null,
-        totalGrossWeight: secondSale?.totalGrossWeight || null,
-        totalAmt: secondSale?.totalAmt || null,
-        totalAmtInWords: secondSale?.totalAmtInWords || null,
-        paidAmount: secondSale?.paidAmount || null,
-        paymentMode: secondSale?.paymentMode || null,
-        pendingAmt: secondSale?.pendingAmt || null,
-        remarks: secondSale?.remarks || null,
-        overAllStatus: document.overAllStatus,
-        createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
-        documentId: document.id,
-      };
-      await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-      return result;
-    }
+    const { createdDate, createdTime } = formatDateTime(secondSale.createdAt);
+    const addr = secondSale.customerAddress;
+
+    const result = {
+      id: secondSale.id,
+      documentId: document.id,
+      overAllStatus: document.overAllStatus,
+      createdBy: document.createdBy,
+      approvalSummary: document.approvalSummary,
+      companyName: secondSale.companyName?.name ?? null,
+      location: secondSale.location?.name ?? null,
+      deliveryChallanNo: secondSale.deliveryChallanNo?.challanNo ?? null,
+      saleDate: secondSale.saleDate ?? null,
+      createdDate,
+      createdTime,
+      customerName: secondSale.customerName ?? null,
+      customerContactNo: secondSale.customerContactNo ?? null,
+      customerEmail: secondSale.customerEmail ?? null,
+      customerAddress: addr ? {
+        id: addr.id, address1: addr.address1, address2: addr.address2,
+        city: addr.city, state: addr.state, location: addr.location, pincode: addr.pincode,
+      } : null,
+      reasonForSale: secondSale.reasonForSale ?? null,
+      secondSaleNo: secondSale.secondSaleNo ?? null,
+      totalNetWeight: secondSale.totalNetWeight ?? null,
+      totalGrossWeight: secondSale.totalGrossWeight ?? null,
+      totalAmt: secondSale.totalAmt ?? null,
+      totalAmtInWords: secondSale.totalAmtInWords ?? null,
+      paidAmount: secondSale.paidAmount ?? null,
+      paymentMode: secondSale.paymentMode ?? null,
+      pendingAmt: secondSale.pendingAmt ?? null,
+      remarks: secondSale.remarks ?? null,
+      secondSaleProducts: (secondSale.secondSaleProducts ?? []).map((p: any) => ({
+        id: p.id,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        grossWeight: p.grossWeight,
+        packagingMaterialWeight: p.packagingMaterialWeight,
+        netWeight: p.netWeight,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        saleUoM: p.saleUoM?.unit ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.unit ?? null,
+        packagingMaterial: p.packagingMaterial?.packagingMaterialName ?? null,
+      })),
+    };
+
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
+  
 
 
 
@@ -397,87 +429,90 @@ export class SecondSaleService {
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    try {
-      const secondSale = await this.secondSaleRepository
-        .createQueryBuilder("secondSale")
-        .leftJoinAndSelect(
-          "secondSale.secondSaleProducts",
-          "secondSaleProducts"
-        )
-        .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
-        .leftJoinAndSelect("secondSale.location", "location")
-        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
-        .leftJoinAndSelect("secondSaleProducts.productName", "product")
-        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
-        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
-        .leftJoinAndSelect("secondSaleProducts.packagingMaterialUoM","packagingMaterialUoM")
-        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
-        .where("secondSale.id = :id", { id })
-        .getOne();
-      if (!secondSale) {
-        throw new AppError(404, "Second Sale not found");
-      }
-      console.log(secondSale)
-      const rawDate = secondSale.createdAt;
-      const { createdDate, createdTime } = formatDateTime(rawDate);
-      const formatResponse = {
-        id: secondSale?.id,
-        companyName: secondSale?.companyName?.id || null,
-        location: secondSale?.location?.id || null,
-        deliveryChallanNo: secondSale?.deliveryChallanNo?.id || null,
-        saleDate: secondSale?.saleDate || null,
-        createdDate,
-        createdTime,
-        customerName: secondSale?.customerName || null,
-        customerContactNo: secondSale?.customerContactNo || null,
-        customerEmail: secondSale?.customerEmail || null,
-        reasonForSale: secondSale?.reasonForSale || null,
-        secondSaleNo: secondSale?.secondSaleNo || null,
-        customerAddress: secondSale?.customerAddress ? {
-          id: secondSale.customerAddress.id,
-          address1: secondSale.customerAddress.address1,
-          address2: secondSale.customerAddress.address2,
-          city: secondSale.customerAddress.city,
-          state: secondSale.customerAddress.state,
-          location: secondSale.customerAddress.location,
-          pincode: secondSale.customerAddress.pincode,
-          
-        } : null,
-        secondSaleProducts: secondSale?.secondSaleProducts?.map((product: any) => ({
-          id: product.id,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-          grossWeight: product.grossWeight,
-         packagingMaterialWeight: product.packagingMaterialWeight,
-          netWeight: product.netWeight,
-          packagingMaterialQuantity: product.packagingMaterialQuantity,
-          packagingMaterialUnitPrice: product.packagingMaterialUnitPrice,
-          packagingMaterialAmount: product.packagingMaterialAmount,
-          productName: product.productName?.id || null,
-          variant: product.variant?.id || null,
-          saleUoM: product.saleUoM?.id || null,
-          packagingMaterialTotalWeight:product.packagingMaterialTotalWeight,
-          packagingMaterialUoM: product.packagingMaterialUoM?.id || null,
-          packagingMaterial: product.packagingMaterial?.id || null,
-        })) || [],
-        totalNetWeight: secondSale?.totalNetWeight || null,
-        totalGrossWeight: secondSale?.totalGrossWeight || null,
-        totalAmt: secondSale?.totalAmt || null,
-        totalAmtInWords: secondSale?.totalAmtInWords || null,
-        paidAmount: secondSale?.paidAmount || null,
-        paymentMode: secondSale?.paymentMode || null,
-        pendingAmt: secondSale?.pendingAmt || null,
-        remarks: secondSale?.remarks || null,
-      }
-      console.log(secondSale)
-      await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
-      return formatResponse || null;
-    } catch (error) {
-      console.error("Error fetching SecondSale by ID:", error);
-      throw error;
-    }
+    const secondSale = await this.secondSaleRepository
+      .createQueryBuilder('secondSale')
+      .leftJoin('secondSale.secondSaleProducts', 'secondSaleProducts')
+      .leftJoin('secondSale.companyName', 'companyName')
+      .leftJoin('secondSale.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('secondSale.location', 'location')
+      .leftJoin('secondSale.customerAddress', 'customerAddress')
+      .leftJoin('secondSaleProducts.productName', 'product')
+      .leftJoin('secondSaleProducts.variant', 'variant')
+      .leftJoin('secondSaleProducts.saleUoM', 'saleUoM')
+      .leftJoin('secondSaleProducts.packagingMaterialUoM', 'packagingMaterialUoM')
+      .leftJoin('secondSaleProducts.packagingMaterial', 'packagingMaterial')
+      .select([
+        'secondSale.id', 'secondSale.saleDate', 'secondSale.customerName',
+        'secondSale.customerContactNo', 'secondSale.customerEmail',
+        'secondSale.reasonForSale', 'secondSale.secondSaleNo',
+        'secondSale.totalNetWeight', 'secondSale.totalGrossWeight', 'secondSale.totalAmt',
+        'secondSale.totalAmtInWords', 'secondSale.paidAmount', 'secondSale.paymentMode',
+        'secondSale.pendingAmt', 'secondSale.remarks', 'secondSale.createdAt',
+        'companyName.id', 'location.id', 'deliveryChallanNo.id',
+        'customerAddress.id', 'customerAddress.address1', 'customerAddress.address2',
+        'customerAddress.city', 'customerAddress.state', 'customerAddress.location', 'customerAddress.pincode',
+        'secondSaleProducts.id', 'secondSaleProducts.quantity', 'secondSaleProducts.unitPrice',
+        'secondSaleProducts.amount', 'secondSaleProducts.grossWeight',
+        'secondSaleProducts.packagingMaterialWeight', 'secondSaleProducts.netWeight',
+        'secondSaleProducts.packagingMaterialQuantity', 'secondSaleProducts.packagingMaterialUnitPrice',
+        'secondSaleProducts.packagingMaterialAmount', 'secondSaleProducts.packagingMaterialTotalWeight',
+        'product.id', 'variant.id', 'saleUoM.id', 'packagingMaterialUoM.id', 'packagingMaterial.id',
+      ])
+      .where('secondSale.id = :id', { id })
+      .getOne();
+
+    if (!secondSale) throw new AppError(404, 'Second Sale not found');
+
+    const { createdDate, createdTime } = formatDateTime(secondSale.createdAt);
+    const addr = secondSale.customerAddress;
+
+    const formatResponse = {
+      id: secondSale.id,
+      companyName: secondSale.companyName?.id ?? null,
+      location: secondSale.location?.id ?? null,
+      deliveryChallanNo: secondSale.deliveryChallanNo?.id ?? null,
+      saleDate: secondSale.saleDate ?? null,
+      createdDate,
+      createdTime,
+      customerName: secondSale.customerName ?? null,
+      customerContactNo: secondSale.customerContactNo ?? null,
+      customerEmail: secondSale.customerEmail ?? null,
+      reasonForSale: secondSale.reasonForSale ?? null,
+      secondSaleNo: secondSale.secondSaleNo ?? null,
+      customerAddress: addr ? {
+        id: addr.id, address1: addr.address1, address2: addr.address2,
+        city: addr.city, state: addr.state, location: addr.location, pincode: addr.pincode,
+      } : null,
+      totalNetWeight: secondSale.totalNetWeight ?? null,
+      totalGrossWeight: secondSale.totalGrossWeight ?? null,
+      totalAmt: secondSale.totalAmt ?? null,
+      totalAmtInWords: secondSale.totalAmtInWords ?? null,
+      paidAmount: secondSale.paidAmount ?? null,
+      paymentMode: secondSale.paymentMode ?? null,
+      pendingAmt: secondSale.pendingAmt ?? null,
+      remarks: secondSale.remarks ?? null,
+      secondSaleProducts: (secondSale.secondSaleProducts ?? []).map((p: any) => ({
+        id: p.id,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
+        grossWeight: p.grossWeight,
+        packagingMaterialWeight: p.packagingMaterialWeight,
+        netWeight: p.netWeight,
+        packagingMaterialQuantity: p.packagingMaterialQuantity,
+        packagingMaterialUnitPrice: p.packagingMaterialUnitPrice,
+        packagingMaterialAmount: p.packagingMaterialAmount,
+        packagingMaterialTotalWeight: p.packagingMaterialTotalWeight,
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        saleUoM: p.saleUoM?.id ?? null,
+        packagingMaterialUoM: p.packagingMaterialUoM?.id ?? null,
+        packagingMaterial: p.packagingMaterial?.id ?? null,
+      })),
+    };
+
+    await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
+    return formatResponse;
   }
 
 
