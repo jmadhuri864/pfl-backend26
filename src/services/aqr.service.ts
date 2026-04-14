@@ -231,7 +231,7 @@ export class AqrService {
       .leftJoin("aqr.qcCheckBy", "qcCheckBy")
       .leftJoin("aqr.receivedBy", "receivedBy")
       .leftJoin("aqr.purchaseBy", "purchaseBy")
-      .leftJoinAndSelect("aqr.parameters", "parameters")
+      .leftJoin("aqr.parameters", "parameters")
       .select([
         "aqr.id", "aqr.aqrFor", "aqr.source", "aqr.arrivalDate",
         "aqr.arrivedQty", "aqr.samplingQty", "aqr.totalQty",
@@ -636,40 +636,81 @@ export class AqrService {
     const id = document.documentTypeId;
     if (!id) return null;
 
-    const aqr = await this.aqrRepo.findOne({
-      where: { id },
-      relations: [
-        "deliveryChallanNo", "companyName", "location",
-        "selectedVendor", "selectedVendor.officeAddress", "selectedVendor.vendorSaleInfo",
-        "selectedFarmer", "selectedFarmer.residensialAddress", "selectedFarmer.farmAddress",
-        "fromLocation", "product", "variant", "parameters",
-        "purchaseBy", "receivedBy", "qcCheckBy", "verifiedBy",
-      ],
-    });
+    const aqr = await this.aqrRepo
+      .createQueryBuilder('aqr')
+      .leftJoin('aqr.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('aqr.companyName', 'companyName')
+      .leftJoin('aqr.location', 'location')
+      .leftJoin('aqr.selectedVendor', 'selectedVendor')
+      .leftJoin('selectedVendor.vendorSaleInfo', 'vendorSaleInfo')
+      .leftJoin('selectedVendor.officeAddress', 'vendorOfficeAddress')
+      .leftJoin('aqr.selectedFarmer', 'selectedFarmer')
+      .leftJoin('selectedFarmer.residensialAddress', 'residensialAddress')
+      .leftJoin('selectedFarmer.farmAddress', 'farmAddress')
+      .leftJoin('aqr.fromLocation', 'fromLocation')
+      .leftJoin('aqr.product', 'product')
+      .leftJoin('aqr.variant', 'variant')
+      .leftJoin('aqr.parameters', 'parameters')
+      .leftJoin('aqr.purchaseBy', 'purchaseBy')
+      .leftJoin('aqr.receivedBy', 'receivedBy')
+      .leftJoin('aqr.qcCheckBy', 'qcCheckBy')
+      .leftJoin('aqr.verifiedBy', 'verifiedBy')
+      .select([
+        'aqr.id', 'aqr.aqrFor', 'aqr.source', 'aqr.arrivalDate',
+        'aqr.arrivedQty', 'aqr.samplingQty', 'aqr.totalQty',
+        'aqr.totalpercent', 'aqr.remark', 'aqr.createdAt',
+        'deliveryChallanNo.challanNo',
+        'companyName.id',
+        'location.name',
+        'selectedVendor.id', 'selectedVendor.companyName', 'selectedVendor.vendorCode',
+        'selectedVendor.officeContactNo', 'selectedVendor.officeEmail',
+        'vendorOfficeAddress.id', 'vendorOfficeAddress.address1', 'vendorOfficeAddress.address2',
+        'vendorOfficeAddress.location', 'vendorOfficeAddress.city', 'vendorOfficeAddress.state', 'vendorOfficeAddress.pincode',
+        'vendorSaleInfo.contactFName', 'vendorSaleInfo.contactLName',
+        'selectedFarmer.id', 'selectedFarmer.farmerfName', 'selectedFarmer.farmerlName',
+        'selectedFarmer.farmerCode', 'selectedFarmer.primaryMobileNo', 'selectedFarmer.email',
+        'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
+        'residensialAddress.location', 'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+        'farmAddress.id', 'farmAddress.address1', 'farmAddress.address2',
+        'farmAddress.location', 'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+        'fromLocation.name',
+        'product.name', 'product.productCode', 'product.packingType',
+        'variant.variantName',
+        'parameters.id', 'parameters.qualityParameterId', 'parameters.qualityParameterName',
+        'parameters.qualityParameterType', 'parameters.quantity', 'parameters.percentage',
+        'purchaseBy.firstName', 'purchaseBy.lastName',
+        'receivedBy.firstName', 'receivedBy.lastName',
+        'qcCheckBy.firstName', 'qcCheckBy.lastName',
+        'verifiedBy.firstName', 'verifiedBy.lastName',
+      ])
+      .where('aqr.id = :id', { id })
+      .getOne();
 
-    if (!aqr) throw new Error("AQR not found");
+    if (!aqr) throw new Error('AQR not found');
 
     const { createdDate, createdTime } = formatDateTime(aqr.createdAt);
-    const selectedParty = aqr.source === "vendor"
+    const mapUser = (u: any) => u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null;
+
+    const selectedParty = aqr.source === 'vendor'
       ? aqr.selectedVendor ? {
           id: aqr.selectedVendor.id,
-          companyName: aqr.selectedVendor.companyName || null,
-          vendorCode: aqr.selectedVendor.vendorCode || null,
-          officeContactNo: aqr.selectedVendor.officeContactNo || null,
-          officeEmail: aqr.selectedVendor.officeEmail || null,
-          officeAddress: aqr.selectedVendor.officeAddress || null,
+          companyName: aqr.selectedVendor.companyName ?? null,
+          vendorCode: aqr.selectedVendor.vendorCode ?? null,
+          officeContactNo: aqr.selectedVendor.officeContactNo ?? null,
+          officeEmail: aqr.selectedVendor.officeEmail ?? null,
+          officeAddress: aqr.selectedVendor.officeAddress ?? null,
           contactPersonName: aqr.selectedVendor.vendorSaleInfo
             ? `${aqr.selectedVendor.vendorSaleInfo.contactFName} ${aqr.selectedVendor.vendorSaleInfo.contactLName}`
             : null,
         } : null
       : aqr.selectedFarmer ? {
           id: aqr.selectedFarmer.id,
-          fullName: `${aqr.selectedFarmer.farmerfName || ""} ${aqr.selectedFarmer.farmerlName || ""}`.trim(),
-          farmerCode: aqr.selectedFarmer.farmerCode || null,
-          primaryMobileNo: aqr.selectedFarmer.primaryMobileNo || null,
-          email: aqr.selectedFarmer.email || null,
-          residensialAddress: aqr.selectedFarmer.residensialAddress || null,
-          farmAddress: aqr.selectedFarmer.farmAddress || null,
+          fullName: `${aqr.selectedFarmer.farmerfName ?? ''} ${aqr.selectedFarmer.farmerlName ?? ''}`.trim(),
+          farmerCode: aqr.selectedFarmer.farmerCode ?? null,
+          primaryMobileNo: aqr.selectedFarmer.primaryMobileNo ?? null,
+          email: aqr.selectedFarmer.email ?? null,
+          residensialAddress: aqr.selectedFarmer.residensialAddress ?? null,
+          farmAddress: aqr.selectedFarmer.farmAddress ?? null,
         } : null;
 
     const response = {
@@ -681,34 +722,34 @@ export class AqrService {
       approvalSummary: document.approvalSummary,
       id: aqr.id,
       aqrFor: aqr.aqrFor,
-      companyName: aqr.companyName?.id || null,
-      location: aqr.location?.name || null,
+      companyName: aqr.companyName?.id ?? null,
+      location: aqr.location?.name ?? null,
       source: aqr.source,
       selectedParty,
-      deliveryChallanNo: aqr.deliveryChallanNo?.challanNo || null,
-      fromLocation: aqr.fromLocation?.name || null,
-      product: aqr.product?.name || null,
-      productCode: aqr.product?.productCode || null,
-      packingType: aqr.product?.packingType || null,
-      variant: aqr.variant?.variantName || null,
-      arrivalDate: aqr.arrivalDate || null,
-      arrivedQty: aqr.arrivedQty || null,
-      samplingQty: aqr.samplingQty || null,
-      totalQty: aqr.totalQty || null,
-      totalpercent: aqr.totalpercent || null,
-      remark: aqr.remark || null,
-      purchaseBy: aqr.purchaseBy ? `${aqr.purchaseBy.firstName || ""} ${aqr.purchaseBy.lastName || ""}`.trim() : null,
-      receivedBy: aqr.receivedBy ? `${aqr.receivedBy.firstName || ""} ${aqr.receivedBy.lastName || ""}`.trim() : null,
-      qcCheckBy: aqr.qcCheckBy ? `${aqr.qcCheckBy.firstName || ""} ${aqr.qcCheckBy.lastName || ""}`.trim() : null,
-      verifiedBy: aqr.verifiedBy ? `${aqr.verifiedBy.firstName || ""} ${aqr.verifiedBy.lastName || ""}`.trim() : null,
-      parameters: aqr.parameters?.map((param) => ({
-        id: param.id || null,
-        qualityParameterId: param.qualityParameterId || null,
-        qualityParameterName: param.qualityParameterName || null,
-        qualityParameterType: param.qualityParameterType || null,
-        quantity: param.quantity || null,
-        percentage: param.percentage || null,
-      })) || [],
+      deliveryChallanNo: aqr.deliveryChallanNo?.challanNo ?? null,
+      fromLocation: aqr.fromLocation?.name ?? null,
+      product: aqr.product?.name ?? null,
+      productCode: aqr.product?.productCode ?? null,
+      packingType: aqr.product?.packingType ?? null,
+      variant: aqr.variant?.variantName ?? null,
+      arrivalDate: aqr.arrivalDate ?? null,
+      arrivedQty: aqr.arrivedQty ?? null,
+      samplingQty: aqr.samplingQty ?? null,
+      totalQty: aqr.totalQty ?? null,
+      totalpercent: aqr.totalpercent ?? null,
+      remark: aqr.remark ?? null,
+      purchaseBy: mapUser(aqr.purchaseBy),
+      receivedBy: mapUser(aqr.receivedBy),
+      qcCheckBy: mapUser(aqr.qcCheckBy),
+      verifiedBy: mapUser(aqr.verifiedBy),
+      parameters: (aqr.parameters ?? []).map((param) => ({
+        id: param.id ?? null,
+        qualityParameterId: param.qualityParameterId ?? null,
+        qualityParameterName: param.qualityParameterName ?? null,
+        qualityParameterType: param.qualityParameterType ?? null,
+        quantity: param.quantity ?? null,
+        percentage: param.percentage ?? null,
+      })),
     };
 
     await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
@@ -720,6 +761,9 @@ export class AqrService {
   public async updateAqr(id: string, data: any, updatedBy: string): Promise<any> {
     const existingAqr = await this.aqrRepo.findOne({ where: { id } });
     if (!existingAqr) return null;
+
+    console.log("Data ", data);
+    
 
     if (!data.dcDate || data.dcDate === "") data.dcDate = null;
     if (!data.arrivalDate || data.arrivalDate === "") data.arrivalDate = null;

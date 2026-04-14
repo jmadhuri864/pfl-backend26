@@ -750,99 +750,82 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    console.log('in service', id);
+    const inwardRegister = await this.inwardRegisterRepo
+      .createQueryBuilder('ir')
+      .leftJoin('ir.grnNo', 'grnNo')
+      .leftJoin('ir.location', 'location')
+      .leftJoin('ir.companyName', 'companyName')
+      .leftJoin('ir.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('ir.rbcNo', 'rbcNo')
+      .leftJoin('ir.selectedVendor', 'selectedVendor')
+      .leftJoin('ir.selectedFarmer', 'selectedFarmer')
+      .leftJoin('ir.inwardBy', 'inwardBy')
+      .leftJoin('ir.purchasedBy', 'purchasedBy')
+      .leftJoin('ir.inwardProducts', 'inwardProducts')
+      .leftJoin('inwardProducts.productName', 'productName')
+      .leftJoin('inwardProducts.uom', 'uom')
+      .leftJoin('inwardProducts.variant', 'variant')
+      .select([
+        'ir.id', 'ir.inwardType', 'ir.batchNo', 'ir.source', 'ir.date',
+        'ir.totalWeightInKg', 'ir.incomingGrossQty', 'ir.incomingNetQty',
+        'ir.inwardGrossQty', 'ir.inwardNetQty', 'ir.inwardCost', 'ir.remarks', 'ir.createdAt',
+        'grnNo.id', 'location.id', 'companyName.id',
+        'deliveryChallanNo.id', 'rbcNo.id',
+        'selectedVendor.id', 'selectedFarmer.id',
+        'inwardBy.id', 'purchasedBy.id',
+        'inwardProducts.id', 'inwardProducts.grossWeight', 'inwardProducts.netWeight',
+        'inwardProducts.weight', 'inwardProducts.packingMaterialWeight',
+        'inwardProducts.quantity', 'inwardProducts.unitPrice', 'inwardProducts.amount',
+        'productName.id', 'uom.id', 'variant.id',
+      ])
+      .where('ir.id = :id', { id })
+      .getOne();
 
-    // Fetch the inward register with relations
-    const inwardRegister = await this.inwardRegisterRepo.findOne({
-      where: { id },
-      relations: [
-        'grnNo',
-        'location',
-        'companyName',
-        'deliveryChallanNo',
-        'rbcNo',
-        'selectedVendor',
-        'selectedFarmer',
-        'inwardProducts',
-        'inwardBy',
-        'purchasedBy',
-        'inwardProducts.productName',
-        'inwardProducts.uom',
-      ],
-    });
+    if (!inwardRegister) return null;
 
-    if (!inwardRegister) {
-      return null; // Handle null case appropriately
-    }
-    // Dynamically construct the selectedParty field
-    // const selectedParty =
-    //   inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-    //     ? inwardRegister.selectedFarmer.id
-    //     : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-    //     ? inwardRegister.selectedVendor.id
-    //     : null;
-    const selectedParty =
-      inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-        ?  inwardRegister.selectedFarmer.id
-           
-        : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-        ? inwardRegister.selectedVendor.id
-        : null;
-    const rawDate = inwardRegister.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
+    const { createdDate, createdTime } = formatDateTime(inwardRegister.createdAt);
+
+    const selectedParty = inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+      ? inwardRegister.selectedFarmer.id
+      : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+      ? inwardRegister.selectedVendor.id
+      : null;
+
     const transformedInwardRegister = {
       id: inwardRegister.id,
-      createdDate: createdDate,
-      createdTime: createdTime,
-
+      createdDate,
+      createdTime,
       inwardType: inwardRegister.inwardType,
-      companyName: inwardRegister.companyName?.id||null,
-        
-      location: inwardRegister.location ? inwardRegister.location?.id : null,
+      companyName: inwardRegister.companyName?.id ?? null,
+      location: inwardRegister.location?.id ?? null,
       date: inwardRegister.date,
-       
       batchNo: inwardRegister.batchNo,
       source: inwardRegister.source,
       totalWeightInKg: inwardRegister.totalWeightInKg,
-      purchasedBy: inwardRegister.purchasedBy
-        ? inwardRegister.purchasedBy.id
-        : null,
+      purchasedBy: inwardRegister.purchasedBy?.id ?? null,
       incomingGrossQty: inwardRegister.incomingGrossQty,
       incomingNetQty: inwardRegister.incomingNetQty,
-
       inwardGrossQty: inwardRegister.inwardGrossQty,
       inwardNetQty: inwardRegister.inwardNetQty,
       inwardCost: inwardRegister.inwardCost,
       remarks: inwardRegister.remarks,
-      inwardBy: inwardRegister.inwardBy
-        ?  inwardRegister.inwardBy.id
-            
-        : null,
-      grnNo: inwardRegister.grnNo?.id||null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo?.id || null,
-      rbcNo: inwardRegister.rbcNo?.id || null,
-      
-
-      selectedParty: selectedParty,
-      inwardProducts: inwardRegister.inwardProducts.map((product) => ({
-        id: product?.id || null,
-        productName: product.productName
-          ?  product.productName.id
-             
-          : null,
-
-        variant: product.variant? product.variant.id:null,
-        grossWeight: product.grossWeight,
-        netWeight: product.netWeight,
-        uom: product.uom
-          ?  product.uom.id
-             
-          : null,
-weight:product.weight,
-        packingMaterialWeight: product.packingMaterialWeight,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        amount: product.amount,
+      inwardBy: inwardRegister.inwardBy?.id ?? null,
+      grnNo: inwardRegister.grnNo?.id ?? null,
+      deliveryChallanNo: inwardRegister.deliveryChallanNo?.id ?? null,
+      rbcNo: inwardRegister.rbcNo?.id ?? null,
+      selectedParty,
+      inwardProducts: (inwardRegister.inwardProducts ?? []).map((p) => ({
+        id: p.id ?? null,
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        uom: p.uom?.id ?? null,
+        grossWeight: p.grossWeight,
+        netWeight: p.netWeight,
+        weight: p.weight,
+        packingMaterialWeight: p.packingMaterialWeight,
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+        amount: p.amount,
       })),
     };
 
@@ -1281,116 +1264,107 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       DocumentTypeEnum.INWARD_REGISTER,
     );
     const { search } = queryOptions;
-  //  console.log('Fetched documents:', data);
-  
     const typedDocuments = data as DocumentWithRelatedData[];
-    // Exclude soft-deleted documents
-  //const activeDocuments = typedDocuments.filter(doc => doc.isDeleted === false);
-  const activeDocuments = typedDocuments
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
-    // if (typedDocuments.length > 0) {
-    //   console.log("doc.relatedData", typedDocuments[0].relatedData);
-    // } else {
-    //   console.log("No documents found for user.");
-    // }
-  
-    for (const doc of activeDocuments) {
-      console.log('doc_id', doc.document_type_id);
-      
-      if (!doc.document_type_id) continue;
-  
-      try {
-        console.log('---------------------');
-        
-        doc.relatedData = await this.inwardRegisterRepo.findOne({
-          where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-         relations: ['grnNo', 'deliveryChallanNo', 'rbcNo', 'companyName', 'location', 'selectedVendor', 'selectedFarmer', 'purchasedBy', 'inwardBy', 'inwardProducts', 'inwardProducts.productName', 'inwardProducts.uom'],
-        });
-        console.log('Related data fetched for document:', doc.id, doc.relatedData);
-        
-      } catch (e) {
-        console.log("in catch block", e);
-        doc.relatedData = null;
-      }
+
+    const inwardIds = typedDocuments
+      .map((doc) => doc.document_type_id)
+      .filter(Boolean) as string[];
+
+    let inwardMap = new Map<string, any>();
+    if (inwardIds.length > 0) {
+      const inwards = await this.inwardRegisterRepo
+        .createQueryBuilder('ir')
+        .leftJoin('ir.grnNo', 'grnNo')
+        .leftJoin('ir.deliveryChallanNo', 'deliveryChallanNo')
+        .leftJoin('ir.rbcNo', 'rbcNo')
+        .leftJoin('ir.companyName', 'companyName')
+        .leftJoin('ir.location', 'location')
+        .leftJoin('ir.selectedVendor', 'selectedVendor')
+        .leftJoin('ir.selectedFarmer', 'selectedFarmer')
+        .leftJoin('ir.purchasedBy', 'purchasedBy')
+        .leftJoin('ir.inwardBy', 'inwardBy')
+        .select([
+          'ir.id', 'ir.batchNo', 'ir.inwardType', 'ir.inwardNo', 'ir.source',
+          'ir.inwardNetQty', 'ir.inwardGrossQty', 'ir.incomingNetQty', 'ir.incomingGrossQty',
+          'ir.inwardCost', 'ir.totalWeightInKg', 'ir.remarks', 'ir.date',
+          'grnNo.grnNo', 'deliveryChallanNo.challanNo', 'rbcNo.rbcNo',
+          'companyName.name', 'location.name',
+          'selectedVendor.companyName', 'selectedFarmer.farmerfName',
+          'purchasedBy.firstName', 'inwardBy.firstName',
+        ])
+        .where('ir.id IN (:...ids)', { ids: inwardIds })
+        .andWhere('ir.isDeleted = false')
+        .andWhere('ir.deletedAt IS NULL')
+        .getMany();
+
+      inwardMap = new Map(inwards.map((i) => [i.id, i]));
     }
- // console.log('Related data fetched for documents:', typedDocuments);
-  
-    let relatedDataOnly = activeDocuments.map((doc) => {
-      const rd = doc.relatedData || {};
-      return {
-        documentId: doc.id,
-        overAllStatus: doc.status,
-        createdBy: `${doc.lastActionBy.firstName || null}  ${doc.lastActionBy.lastName || null}`,
-        createdDate: formatDateTime(doc.createdAt).createdDate,
-        createdTime: formatDateTime(doc.createdAt).createdTime,
-        // From relatedData
-      id: rd.id || null,
-      batchNo: rd.batchNo || null,
-      inwardType: rd.inwardType || null,
-    inwardNetQty:rd.inwardNetQty||null,
-    inwardGrossQty:rd.inwardGrossQty || null,
-    incomingNetQty:rd.incomingNetQty || null,
-    incomingGrossQty:rd.incomingGrossQty || null,
-      remarks: rd.remarks || null,
 
-      // purchasedQty: rd.purchasedQty || null,
-      // inwardQtyInKg: rd.inwardQtyInKg || null,
-      inwardCost: rd.inwardCost || null,
-      totalWeightInKg: rd.totalWeightInKg || null,
-      source: rd.source || null,
-inwardNo:rd.inwardNo||null,
-      grnNo: rd.grnNo?.grnNo || null,
-      deliveryChallanNo: rd.deliveryChallanNo?.challanNo || null,
-      rbcNo: rd.rbcNo?.rbcNo || null,
-      companyName: rd.companyName?.name || null,
-      location: rd.location?.name || null,
-      vendorName: rd.selectedVendor?.companyName || null,
-      farmerName: rd.selectedFarmer?.farmerfName || null,
-      purchasedBy: rd.purchasedBy?.name || null,
-      inwardBy: rd.inwardBy?.name || null,
-date:rd.date,
-      // Products
-      
-      };
-    });
-   // 🔍 Deep Search
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
+    let relatedDataOnly = typedDocuments
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((doc) => {
+        const rd = doc.document_type_id ? inwardMap.get(doc.document_type_id) : null;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd?.id ?? null,
+          batchNo: rd?.batchNo ?? null,
+          inwardType: rd?.inwardType ?? null,
+          inwardNo: rd?.inwardNo ?? null,
+          source: rd?.source ?? null,
+          inwardNetQty: rd?.inwardNetQty ?? null,
+          inwardGrossQty: rd?.inwardGrossQty ?? null,
+          incomingNetQty: rd?.incomingNetQty ?? null,
+          incomingGrossQty: rd?.incomingGrossQty ?? null,
+          inwardCost: rd?.inwardCost ?? null,
+          totalWeightInKg: rd?.totalWeightInKg ?? null,
+          remarks: rd?.remarks ?? null,
+          date: rd?.date ?? null,
+          grnNo: rd?.grnNo?.grnNo ?? null,
+          deliveryChallanNo: rd?.deliveryChallanNo?.challanNo ?? null,
+          rbcNo: rd?.rbcNo?.rbcNo ?? null,
+          companyName: rd?.companyName?.name ?? null,
+          location: rd?.location?.name ?? null,
+          vendorName: rd?.selectedVendor?.companyName ?? null,
+          farmerName: rd?.selectedFarmer?.farmerfName ?? null,
+          purchasedBy: rd?.purchasedBy?.firstName ?? null,
+          inwardBy: rd?.inwardBy?.firstName ?? null,
+        };
+      });
+
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term),
+      );
     }
-    return String(obj);
-  };
 
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
-    );
-  }
-   // 🔄 Sorting
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
 
     const allResult = {
       data: relatedDataOnly,
@@ -1398,7 +1372,7 @@ date:rd.date,
         total: relatedDataOnly.length,
         page: queryOptions.page || 1,
         pages: Math.ceil(relatedDataOnly.length / (queryOptions.limit || 10)),
-      }
+      },
     };
     await this.cacheService.set(cacheKey, allResult, this.CACHE_TTL);
     return allResult;
@@ -1411,161 +1385,152 @@ public async getInwardregisterByIdForView(docid: string, userId: string): Promis
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid, userId)
-    if(!document)
-    {
-      return null;
-    }
+    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid, userId);
+    if (!document) return null;
+
     const id = document.documentTypeId;
-    console.log('id in getDealSlipByIdForView', id);
-    
-    if (id) {
-      //console.log("Hiiiiiiiiiiiiiiiiiiiiiii");
-      //console.log('Document type ID not found for document:', id);
-      
-      const inwardRegister = await this.inwardRegisterRepo.findOne({
-        where: { id },
-        relations: [
-          'grnNo',
-        'deliveryChallanNo',
-        'rbcNo',
-        'companyName',
-        'location',
-          'selectedVendor',
-        'selectedVendor.officeAddress',
-        'selectedVendor.category',
-        'selectedVendor.subcategory',
-        'selectedVendor.vendorSaleInfo',
-        'selectedFarmer',
-        'selectedFarmer.farmAddress',
-        'selectedFarmer.residensialAddress',
-        'purchasedBy',
-        'inwardBy',
-        'fromLocation',
-        'customerName',
-        'inwardProducts',
-        'inwardProducts.productName',
-        'inwardProducts.uom',
-        'inwardProducts.variant',
-        ],
-      });
+    if (!id) return null;
 
-      console.log('inwardRegister in getInwardregisterByIdForView', inwardRegister);
-      
+    const inwardRegister = await this.inwardRegisterRepo
+      .createQueryBuilder('ir')
+      .leftJoin('ir.grnNo', 'grnNo')
+      .leftJoin('ir.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('ir.rbcNo', 'rbcNo')
+      .leftJoin('ir.companyName', 'companyName')
+      .leftJoin('ir.location', 'location')
+      .leftJoin('ir.fromLocation', 'fromLocation')
+      .leftJoin('ir.customerName', 'customerName')
+      .leftJoin('ir.selectedVendor', 'selectedVendor')
+      .leftJoin('selectedVendor.officeAddress', 'vendorOfficeAddress')
+      .leftJoin('selectedVendor.category', 'vendorCategory')
+      .leftJoin('selectedVendor.subcategory', 'vendorSubcategory')
+      .leftJoin('selectedVendor.vendorSaleInfo', 'vendorSaleInfo')
+      .leftJoin('ir.selectedFarmer', 'selectedFarmer')
+      .leftJoin('selectedFarmer.farmAddress', 'farmAddress')
+      .leftJoin('selectedFarmer.residensialAddress', 'residensialAddress')
+      .leftJoin('ir.purchasedBy', 'purchasedBy')
+      .leftJoin('ir.inwardBy', 'inwardBy')
+      .leftJoin('ir.inwardProducts', 'inwardProducts')
+      .leftJoin('inwardProducts.productName', 'productName')
+      .leftJoin('inwardProducts.uom', 'uom')
+      .leftJoin('inwardProducts.variant', 'variant')
+      .select([
+        'ir.id', 'ir.inwardType', 'ir.inwardNo', 'ir.batchNo', 'ir.remarks', 'ir.source',
+        'ir.incomingGrossQty', 'ir.incomingNetQty', 'ir.inwardGrossQty', 'ir.inwardNetQty',
+        'ir.inwardCost', 'ir.totalWeightInKg', 'ir.date', 'ir.createdAt',
+        'grnNo.grnNo', 'deliveryChallanNo.challanNo', 'rbcNo.rbcNo',
+        'companyName.name', 'location.name', 'fromLocation.name',
+        'customerName.organisationName',
+        'selectedVendor.companyName', 'selectedVendor.vendorCode',
+        'vendorOfficeAddress.id', 'vendorOfficeAddress.address1', 'vendorOfficeAddress.address2',
+        'vendorOfficeAddress.location', 'vendorOfficeAddress.city', 'vendorOfficeAddress.state', 'vendorOfficeAddress.pincode',
+        'vendorCategory.name', 'vendorSubcategory.name',
+        'vendorSaleInfo.contactFName', 'vendorSaleInfo.contactMName', 'vendorSaleInfo.contactLName',
+        'selectedFarmer.farmerfName', 'selectedFarmer.farmermName', 'selectedFarmer.farmerlName',
+        'selectedFarmer.primaryMobileNo', 'selectedFarmer.secondaryMobileNo',
+        'selectedFarmer.farmerCode', 'selectedFarmer.email',
+        'farmAddress.id', 'farmAddress.address1', 'farmAddress.address2',
+        'farmAddress.location', 'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+        'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
+        'residensialAddress.location', 'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+        'purchasedBy.firstName', 'purchasedBy.lastName',
+        'inwardBy.firstName', 'inwardBy.lastName',
+        'inwardProducts.id', 'inwardProducts.packingMaterialWeight', 'inwardProducts.quantity',
+        'inwardProducts.weight', 'inwardProducts.unitPrice', 'inwardProducts.amount',
+        'inwardProducts.netWeight', 'inwardProducts.grossWeight',
+        'productName.name', 'uom.unit', 'variant.variantName',
+      ])
+      .where('ir.id = :id', { id })
+      .getOne();
 
-      if (!inwardRegister) { 
-        throw new Error('inwardRegister not found');
-      }
- const selectedParty =
-      inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-        ? { 
-          fullname:inwardRegister.selectedFarmer.farmerfName+' '+inwardRegister.selectedFarmer.farmermName+' '+inwardRegister.selectedFarmer.farmerlName,
-          primaryMobileNo:inwardRegister.selectedFarmer.primaryMobileNo,
-          secondaryMobileNo:inwardRegister.selectedFarmer.secondaryMobileNo,
-          farmerCode:inwardRegister.selectedFarmer.farmerCode,
-          email:inwardRegister.selectedFarmer.email,
+    if (!inwardRegister) throw new Error('inwardRegister not found');
 
-           farmAddress:inwardRegister.selectedFarmer.farmAddress ? {
-            id:inwardRegister.selectedFarmer.farmAddress.id,
-            address1:inwardRegister.selectedFarmer.farmAddress.address1,
-            address2:inwardRegister.selectedFarmer.farmAddress.address2,
-            location:inwardRegister.selectedFarmer.farmAddress.location,
-            city:inwardRegister.selectedFarmer.farmAddress.city,
-            state:inwardRegister.selectedFarmer.farmAddress.state,
-            pincode:inwardRegister.selectedFarmer.farmAddress.pincode
+    const { createdDate, createdTime } = formatDateTime(inwardRegister.createdAt);
+    const mapAddress = (addr: any) => addr ? {
+      id: addr.id, address1: addr.address1, address2: addr.address2,
+      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    } : null;
 
-          }:null,
+    const sf = inwardRegister.selectedFarmer;
+    const sv = inwardRegister.selectedVendor;
 
-           residensialAddress:inwardRegister.selectedFarmer.residensialAddress ? {
-            id:inwardRegister.selectedFarmer.residensialAddress.id,
-            address1:inwardRegister.selectedFarmer.residensialAddress.address1,
-            address2:inwardRegister.selectedFarmer.residensialAddress.address2,
-            location:inwardRegister.selectedFarmer.residensialAddress.location,
-            city:inwardRegister.selectedFarmer.residensialAddress.city,
-            state:inwardRegister.selectedFarmer.residensialAddress.state,
-            pincode:inwardRegister.selectedFarmer.residensialAddress.pincode
-
-          }:null
-          
-
+    const selectedParty = inwardRegister.source === 'farmer' && sf
+      ? {
+          fullname: `${sf.farmerfName ?? ''} ${sf.farmermName ?? ''} ${sf.farmerlName ?? ''}`.trim(),
+          primaryMobileNo: sf.primaryMobileNo ?? null,
+          secondaryMobileNo: sf.secondaryMobileNo ?? null,
+          farmerCode: sf.farmerCode ?? null,
+          email: sf.email ?? null,
+          farmAddress: mapAddress(sf.farmAddress),
+          residensialAddress: mapAddress(sf.residensialAddress),
         }
-           
-        : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-        ? {
-          companyName:inwardRegister.selectedVendor.companyName,
-          category:inwardRegister.selectedVendor.category?.name,
-          subcategory:inwardRegister.selectedVendor.subcategory?.name,
-          vendorCode:inwardRegister.selectedVendor?.vendorCode,
-          contactPersonName:inwardRegister.selectedVendor.vendorSaleInfo.contactFName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactMName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactLName,
-          officeAddress:inwardRegister.selectedVendor.officeAddress ? {
-            id:inwardRegister.selectedVendor.officeAddress.id,
-            address1:inwardRegister.selectedVendor.officeAddress.address1,
-            address2:inwardRegister.selectedVendor.officeAddress.address2,
-            location:inwardRegister.selectedVendor.officeAddress.location,
-            city:inwardRegister.selectedVendor.officeAddress.city,
-            state:inwardRegister.selectedVendor.officeAddress.state,
-            pincode:inwardRegister.selectedVendor.officeAddress.pincode
-
-          }:null
+      : inwardRegister.source === 'vendor' && sv
+      ? {
+          companyName: sv.companyName ?? null,
+          category: sv.category?.name ?? null,
+          subcategory: sv.subcategory?.name ?? null,
+          vendorCode: sv.vendorCode ?? null,
+          contactPersonName: sv.vendorSaleInfo
+            ? `${sv.vendorSaleInfo.contactFName ?? ''} ${sv.vendorSaleInfo.contactMName ?? ''} ${sv.vendorSaleInfo.contactLName ?? ''}`.trim()
+            : null,
+          officeAddress: mapAddress(sv.officeAddress),
         }
-        : null;
-     
-      const rawDate = inwardRegister.createdAt;
-      const { createdDate, createdTime } = formatDateTime(rawDate);
-      return {
-    documentId: document.documentId,
-    overAllStatus: document.status,
-    createdBy: document.createdBy ,
-    createdDate,
-    createdTime,
-    approvalSummary: document.approvalSummary,
-selectedParty,
-    
-      // from InwardRegister:
+      : null;
+
+    const result = {
+      documentId: document.documentId,
+      overAllStatus: document.status,
+      createdBy: document.createdBy,
+      createdDate,
+      createdTime,
+      approvalSummary: document.approvalSummary,
+      selectedParty,
       id: inwardRegister.id,
       inwardType: inwardRegister.inwardType,
-      inwardNo:inwardRegister.inwardNo,
+      inwardNo: inwardRegister.inwardNo,
       batchNo: inwardRegister.batchNo,
       remarks: inwardRegister.remarks,
       source: inwardRegister.source,
-
       incomingGrossQty: inwardRegister.incomingGrossQty,
       incomingNetQty: inwardRegister.incomingNetQty,
-
       inwardGrossQty: inwardRegister.inwardGrossQty,
       inwardNetQty: inwardRegister.inwardNetQty,
       inwardCost: inwardRegister.inwardCost,
       totalWeightInKg: inwardRegister.totalWeightInKg,
-
-      grnNo: inwardRegister.grnNo?.grnNo || null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo?.challanNo || null,
-      rbcNo: inwardRegister.rbcNo?.rbcNo || null,
-      companyName: inwardRegister.companyName?.name || null,
-      location: inwardRegister.location?.name || null,
-      fromLocation: inwardRegister.fromLocation?.name || null,
-      customerName: inwardRegister.customerName?.organisationName || null,
+      grnNo: inwardRegister.grnNo?.grnNo ?? null,
+      deliveryChallanNo: inwardRegister.deliveryChallanNo?.challanNo ?? null,
+      rbcNo: inwardRegister.rbcNo?.rbcNo ?? null,
+      companyName: inwardRegister.companyName?.name ?? null,
+      location: inwardRegister.location?.name ?? null,
+      fromLocation: inwardRegister.fromLocation?.name ?? null,
+      customerName: inwardRegister.customerName?.organisationName ?? null,
       date: inwardRegister.date,
       purchasedBy: inwardRegister.purchasedBy
-        ? `${inwardRegister.purchasedBy.firstName || ''} ${inwardRegister.purchasedBy.lastName || ''}`.trim()
+        ? `${inwardRegister.purchasedBy.firstName ?? ''} ${inwardRegister.purchasedBy.lastName ?? ''}`.trim()
         : null,
-      inwardBy: `${inwardRegister.inwardBy?.firstName || ''} ${inwardRegister.inwardBy?.lastName || ''}`.trim() || null,
-
-      inwardProducts: inwardRegister.inwardProducts?.map((prod) => ({
+      inwardBy: inwardRegister.inwardBy
+        ? `${inwardRegister.inwardBy.firstName ?? ''} ${inwardRegister.inwardBy.lastName ?? ''}`.trim()
+        : null,
+      inwardProducts: (inwardRegister.inwardProducts ?? []).map((prod) => ({
         id: prod.id,
-        productName: prod.productName?.name || null,
-        uom: prod.uom?.unit || null,
-        variant: prod.variant?.variantName || null,
+        productName: prod.productName?.name ?? null,
+        uom: prod.uom?.unit ?? null,
+        variant: prod.variant?.variantName ?? null,
         packingMaterialWeight: prod.packingMaterialWeight,
         quantity: prod.quantity,
-        weight:prod.weight,
+        weight: prod.weight,
         unitPrice: prod.unitPrice,
         amount: prod.amount,
         netWeight: prod.netWeight,
         grossWeight: prod.grossWeight,
-      })) || [],
-  };
+      })),
+    };
+
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
-}
+
+
 public async deleteMultipleInwardRegister(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];  

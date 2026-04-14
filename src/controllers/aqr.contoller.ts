@@ -229,7 +229,7 @@ export class AqrController {
       if (!aqr) {
         ControllerLogger.logNotFound("AQR", id, req, res);
         throw new AppError(404, "AQR not found");
-      }
+      } 
 
       ControllerLogger.logView("AQR", id, req, res);
       return res.status(200).json({ status: "success", data: aqr });
