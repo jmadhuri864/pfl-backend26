@@ -426,111 +426,144 @@ const serialNo = await this.generateSerialNo();
       }
 
        async getDumpRegisterByIdforUpdate(id: string): Promise<any> {
-        const key = `${CACHE_PREFIX}:update:${id}`;
-        const cached = await this.cacheService.get<any>(key);
-        if (cached) return cached;
+    const key = `${CACHE_PREFIX}:update:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
-        const dumpRegister = await this.dumpRegisterRepository.findOne({
-          where: { id },
-          relations: ["location", "grn", "deliveryChallanNo", "rbcNo", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.variant", "dumpProducts.uom", "companyName"],
-        });
-      
-        if (!dumpRegister) {
-          throw new Error(`Dump Register with ID ${id} not found`);
-        }
+    const dumpRegister = await this.dumpRegisterRepository
+      .createQueryBuilder('dr')
+      .leftJoin('dr.location', 'location')
+      .leftJoin('dr.grn', 'grn')
+      .leftJoin('dr.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('dr.rbcNo', 'rbcNo')
+      .leftJoin('dr.requestedBy', 'requestedBy')
+      .leftJoin('dr.companyName', 'companyName')
+      .leftJoin('dr.dumpProducts', 'dumpProducts')
+      .leftJoin('dumpProducts.productName', 'productName')
+      .leftJoin('dumpProducts.variant', 'variant')
+      .leftJoin('dumpProducts.uom', 'uom')
+      .select([
+        'dr.id', 'dr.dumpType', 'dr.date', 'dr.batchNo', 'dr.remark',
+        'dr.totalDumpCost', 'dr.totalCostInWords', 'dr.totalQty', 'dr.createdAt',
+        'location.id', 'grn.id', 'deliveryChallanNo.id', 'rbcNo.id',
+        'requestedBy.id', 'companyName.id',
+        'dumpProducts.id', 'dumpProducts.quantity', 'dumpProducts.unitPrice', 'dumpProducts.amount',
+        'productName.id', 'variant.id', 'uom.id',
+      ])
+      .where('dr.id = :id', { id })
+      .getOne();
 
-        const rawDate = dumpRegister.createdAt;
-        const { createdDate, createdTime } = formatDateTime(rawDate);
-      
-        const updateResult = {
-          createdDate: createdDate, 
-          createdTime: createdTime, 
-          dumpType: dumpRegister.dumpType || null,
-          location: dumpRegister.location ? dumpRegister.location.id : null,
-          date: dumpRegister.date,
-          totalDumpCost: dumpRegister.totalDumpCost,
-          totalCostInWords: dumpRegister.totalCostInWords,
-          totalQty: dumpRegister.totalQty,
-          batchNo: dumpRegister.batchNo,
-          remark: dumpRegister.remark,
-          grn: dumpRegister.grn?.id || null,
-          deliveryChallanNo: dumpRegister.deliveryChallanNo?.id || null,
-          rbcNo: dumpRegister.rbcNo?.id || null,
-          requestedBy: dumpRegister.requestedBy?.id || null,
-          dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
-            id: dumpProduct.id,
-            productName: dumpProduct.productName?.id || null,
-            variant: dumpProduct.variant?.id || null,
-            uom: dumpProduct.uom?.id || null,
-            quantity: dumpProduct.quantity,
-            amount: dumpProduct.amount,
-            unitPrice: dumpProduct.unitPrice,
-          })),
-        };
-        await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
-        return updateResult;
-      }
+    if (!dumpRegister) throw new Error(`Dump Register with ID ${id} not found`);
+
+    const { createdDate, createdTime } = formatDateTime(dumpRegister.createdAt);
+
+    const updateResult = {
+      createdDate,
+      createdTime,
+      dumpType: dumpRegister.dumpType ?? null,
+      location: dumpRegister.location?.id ?? null,
+      companyName: dumpRegister.companyName?.id ?? null,
+      date: dumpRegister.date,
+      totalDumpCost: dumpRegister.totalDumpCost,
+      totalCostInWords: dumpRegister.totalCostInWords,
+      totalQty: dumpRegister.totalQty,
+      batchNo: dumpRegister.batchNo,
+      remark: dumpRegister.remark,
+      grn: dumpRegister.grn?.id ?? null,
+      deliveryChallanNo: dumpRegister.deliveryChallanNo?.id ?? null,
+      rbcNo: dumpRegister.rbcNo?.id ?? null,
+      requestedBy: dumpRegister.requestedBy?.id ?? null,
+      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.id ?? null,
+        variant: p.variant?.id ?? null,
+        uom: p.uom?.id ?? null,
+        quantity: p.quantity,
+        amount: p.amount,
+        unitPrice: p.unitPrice,
+      })),
+    };
+
+    await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
+    return updateResult;
+  }
 
       //TODO: Get DumpRegister for View
        async getDumpRegisterByIdforView(docId: string): Promise<any> {
-        const key = `${CACHE_PREFIX}:view:${docId}`;
-        const cached = await this.cacheService.get<any>(key);
-        if (cached) return cached;
+    const key = `${CACHE_PREFIX}:view:${docId}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
 
-        const document = await this.docDoubleApproverService.getDocumentById(docId);
-        const id = document.documentTypeId;
+    const document = await this.docDoubleApproverService.getDocumentById(docId);
+    const id = document.documentTypeId;
+    if (!id) return null;
 
-        if(id){
-        const dumpRegister = await this.dumpRegisterRepository.findOne({
-          where: { id },
-          relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.variant", "dumpProducts.uom", "companyName", "deliveryChallanNo", "rbcNo"],
-        });
-      
-        if (!dumpRegister) {
-          throw new Error(`Dump Register with ID ${id} not found`);
-        }
+    const dumpRegister = await this.dumpRegisterRepository
+      .createQueryBuilder('dr')
+      .leftJoin('dr.location', 'location')
+      .leftJoin('dr.grn', 'grn')
+      .leftJoin('dr.requestedBy', 'requestedBy')
+      .leftJoin('dr.companyName', 'companyName')
+      .leftJoin('dr.deliveryChallanNo', 'deliveryChallanNo')
+      .leftJoin('dr.rbcNo', 'rbcNo')
+      .leftJoin('dr.dumpProducts', 'dumpProducts')
+      .leftJoin('dumpProducts.productName', 'productName')
+      .leftJoin('dumpProducts.variant', 'variant')
+      .leftJoin('dumpProducts.uom', 'uom')
+      .select([
+        'dr.id', 'dr.dumpNo', 'dr.dumpType', 'dr.date', 'dr.batchNo',
+        'dr.totalDumpCost', 'dr.totalCostInWords', 'dr.totalQty', 'dr.remark', 'dr.createdAt',
+        'location.name', 'grn.grnNo', 'deliveryChallanNo.challanNo', 'rbcNo.rbcNo',
+        'companyName.name',
+        'requestedBy.firstName', 'requestedBy.lastName',
+        'dumpProducts.id', 'dumpProducts.quantity', 'dumpProducts.unitPrice', 'dumpProducts.amount',
+        'productName.name', 'variant.variantName', 'uom.unit',
+      ])
+      .where('dr.id = :id', { id })
+      .getOne();
 
-        const rawDate = dumpRegister.createdAt;
-        const { createdDate, createdTime } = formatDateTime(rawDate);
-      
-        const viewResult = {
-          id: dumpRegister.id,
-          dumpNo: dumpRegister.dumpNo || null,
-          grn: dumpRegister.grn?.grnNo || null,
-          deliveryChallanNo: dumpRegister.deliveryChallanNo?.challanNo || null,
-          rbcNo: dumpRegister.rbcNo?.rbcNo || null,
-          dumpType: dumpRegister.dumpType || null,
-          companyName: dumpRegister.companyName?.name || null,
-          createdDate: createdDate, 
-          createdTime: createdTime,   
-          location: dumpRegister.location?.name || null,
-          date: dumpRegister.date,
-          totalDumpCost: dumpRegister.totalDumpCost,
-          totalCostInWords: dumpRegister.totalCostInWords,
-          totalQty: dumpRegister.totalQty,
-          batchNo: dumpRegister.batchNo,
-          remark: dumpRegister.remark,
-          requestedBy: dumpRegister.requestedBy
-            ? `${dumpRegister.requestedBy.firstName} ${dumpRegister.requestedBy.lastName}`
-            : null,
-          dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
-            id: dumpProduct?.id,
-            productName: dumpProduct.productName?.name,
-            variant: dumpProduct.variant?.variantName || null,
-            uom: dumpProduct.uom?.unit || null,
-            quantity: dumpProduct.quantity,
-            amount: dumpProduct.amount,
-            unitPrice: dumpProduct.unitPrice,
-          })),
-          overAllStatus: document.overAllStatus,
-          createdBy: document.createdBy,
-          approvalSummary: document.approvalSummary,
-          documentId: document.documentId,
-        };
-        await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
-        return viewResult;
-      }
-      }
+    if (!dumpRegister) throw new Error(`Dump Register with ID ${id} not found`);
+
+    const { createdDate, createdTime } = formatDateTime(dumpRegister.createdAt);
+
+    const viewResult = {
+      id: dumpRegister.id,
+      documentId: document.documentId,
+      overAllStatus: document.overAllStatus,
+      createdBy: document.createdBy,
+      approvalSummary: document.approvalSummary,
+      dumpNo: dumpRegister.dumpNo ?? null,
+      grn: dumpRegister.grn?.grnNo ?? null,
+      deliveryChallanNo: dumpRegister.deliveryChallanNo?.challanNo ?? null,
+      rbcNo: dumpRegister.rbcNo?.rbcNo ?? null,
+      dumpType: dumpRegister.dumpType ?? null,
+      companyName: dumpRegister.companyName?.name ?? null,
+      location: dumpRegister.location?.name ?? null,
+      date: dumpRegister.date,
+      totalDumpCost: dumpRegister.totalDumpCost,
+      totalCostInWords: dumpRegister.totalCostInWords,
+      totalQty: dumpRegister.totalQty,
+      batchNo: dumpRegister.batchNo,
+      remark: dumpRegister.remark,
+      requestedBy: dumpRegister.requestedBy
+        ? `${dumpRegister.requestedBy.firstName} ${dumpRegister.requestedBy.lastName}`
+        : null,
+      createdDate,
+      createdTime,
+      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p) => ({
+        id: p.id,
+        productName: p.productName?.name ?? null,
+        variant: p.variant?.variantName ?? null,
+        uom: p.uom?.unit ?? null,
+        quantity: p.quantity,
+        amount: p.amount,
+        unitPrice: p.unitPrice,
+      })),
+    };
+
+    await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
+    return viewResult;
+  }
 //     async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
 
 //       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
@@ -672,120 +705,114 @@ const serialNo = await this.generateSerialNo();
 //     // meta,
 //     //     }
 // }
-async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
+async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Promise<any> {
     const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
-      const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
-        userId,
-        DocumentTypeEnum.DUMP_REGISTER,
-        queryOptions
-      );
- const { search } = queryOptions;
-      // let queryBuilder = await this.dumpRegisterRepository
-      // .createQueryBuilder("dump_register") 
-      // .leftJoinAndSelect("dump_register.location", "location")
-      // .leftJoinAndSelect("dump_register.dumpProducts", "dumpProducts")
-      // .leftJoinAndSelect("dump_register.grn", "grn")
-      // .leftJoinAndSelect("dump_register.requestedBy", "requestedBy")
-      // .leftJoinAndSelect("dumpProducts.productName", "productName") 
-      // .leftJoinAndSelect("dumpProducts.uom", "uom")
-      // .leftJoinAndSelect("dump_register.companyName", "companyName")
-      // .orderBy("dump_register.createdAt", "DESC");
-    
-      //   const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'dump_register');
-      
-      const typedDocuments = data as DocumentWithRelatedData[];
-      const activeDocuments = typedDocuments
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());  
-      for (const doc of activeDocuments) {
-            if (!doc.document_type_id) continue;
-            try {
-              doc.relatedData = await this.dumpRegisterRepository.findOne({
-                where: { id: doc.document_type_id, isDeleted: false, deletedAt: null as any },
-                relations: ['companyName', 'location', 'grn', 'deliveryChallanNo', 'rbcNo', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
-              });
-      
-            } catch {
-              doc.relatedData = null;
-            }
-          }
-      
-          let relatedDataOnly = activeDocuments
-            .filter((doc) => doc.relatedData)
-            .map((doc) => ({
-              documentId: doc.id,
-              overAllStatus: doc.status,
-              createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
-              createdDate: formatDateTime(doc.createdAt).createdDate,
-              createdTime: formatDateTime(doc.createdAt).createdTime,
-              id: doc.relatedData.id,
-              dumpNo: doc.relatedData.dumpNo,
-              companyName: doc.relatedData?.companyName?.name || null,
-              location: doc.relatedData?.location?.name || null,
-              grn: doc.relatedData?.grn?.grnNo || null,
-              deliveryChallanNo: doc.relatedData?.deliveryChallanNo?.challanNo || null,
-              rbcNo: doc.relatedData?.rbcNo?.rbcNo || null,
-              date: doc.relatedData.date,
-              batchNo: doc.relatedData.batchNo,
-              totalQty: doc.relatedData.totalQty,
-              totalDumpCost: doc.relatedData.totalDumpCost,
-              totalCostInWords: doc.relatedData.totalCostInWords,
-              remark: doc.relatedData.remark,
-              dumpType: doc.relatedData.dumpType || null,
-            }));
-
-             // 🔍 Deep search helper
-  const objectToString = (obj: any): string => {
-    if (obj == null) return '';
-    if (typeof obj === 'object') {
-      return Object.values(obj).map((v) => objectToString(v)).join(' ');
-    }
-    return String(obj);
-  };
-
-  // 🔍 Apply search filter
-  if (search && search.trim()) {
-    const term = search.toLowerCase();
-    relatedDataOnly = relatedDataOnly.filter((item) =>
-      objectToString(item).toLowerCase().includes(term)
+    const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+      userId,
+      DocumentTypeEnum.DUMP_REGISTER,
+      queryOptions,
     );
-  }
-   // 🔄 Sorting
-  if (queryOptions.sort) {
-    const [field, direction] = queryOptions.sort.split(':');
-    const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+    const { search } = queryOptions;
+    const typedDocuments = data as DocumentWithRelatedData[];
 
-    const getNestedValue = (obj: any, path: string) =>
-      path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+    const dumpIds = typedDocuments
+      .map((doc) => doc.document_type_id)
+      .filter(Boolean) as string[];
 
-    relatedDataOnly.sort((a, b) => {
-      const valA = getNestedValue(a, field);
-      const valB = getNestedValue(b, field);
+    let dumpMap = new Map<string, any>();
+    if (dumpIds.length > 0) {
+      const dumps = await this.dumpRegisterRepository
+        .createQueryBuilder('dr')
+        .leftJoin('dr.companyName', 'companyName')
+        .leftJoin('dr.location', 'location')
+        .leftJoin('dr.grn', 'grn')
+        .leftJoin('dr.deliveryChallanNo', 'deliveryChallanNo')
+        .leftJoin('dr.rbcNo', 'rbcNo')
+        .select([
+          'dr.id', 'dr.dumpNo', 'dr.date', 'dr.batchNo', 'dr.totalQty',
+          'dr.totalDumpCost', 'dr.totalCostInWords', 'dr.remark', 'dr.dumpType',
+          'companyName.name', 'location.name',
+          'grn.grnNo', 'deliveryChallanNo.challanNo', 'rbcNo.rbcNo',
+        ])
+        .where('dr.id IN (:...ids)', { ids: dumpIds })
+        .andWhere('dr.isDeleted = false')
+        .andWhere('dr.deletedAt IS NULL')
+        .getMany();
 
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return -1 * sortOrder;
-      if (valB == null) return 1 * sortOrder;
-
-      if (!isNaN(valA) && !isNaN(valB)) {
-        return (Number(valA) - Number(valB)) * sortOrder;
-      }
-      return String(valA).localeCompare(String(valB)) * sortOrder;
-    });
-  }
-      
-      const listResponse = {
-        data: relatedDataOnly,
-        meta: {
-          total: meta.total,
-          page: meta.page,
-          pages: meta.pages
-        }
-      };
-      await this.cacheService.set(key, listResponse, CACHE_TTL);
-      return listResponse;
+      dumpMap = new Map(dumps.map((d) => [d.id, d]));
     }
+
+    let relatedDataOnly = typedDocuments
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter((doc) => doc.document_type_id && dumpMap.has(doc.document_type_id))
+      .map((doc) => {
+        const rd = dumpMap.get(doc.document_type_id!);
+        if (!rd) return null;
+        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+        return {
+          documentId: doc.id,
+          overAllStatus: doc.status,
+          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+          createdDate,
+          createdTime,
+          id: rd.id,
+          dumpNo: rd.dumpNo ?? null,
+          companyName: rd.companyName?.name ?? null,
+          location: rd.location?.name ?? null,
+          grn: rd.grn?.grnNo ?? null,
+          deliveryChallanNo: rd.deliveryChallanNo?.challanNo ?? null,
+          rbcNo: rd.rbcNo?.rbcNo ?? null,
+          date: rd.date,
+          batchNo: rd.batchNo ?? null,
+          totalQty: rd.totalQty ?? null,
+          totalDumpCost: rd.totalDumpCost ?? null,
+          totalCostInWords: rd.totalCostInWords ?? null,
+          remark: rd.remark ?? null,
+          dumpType: rd.dumpType ?? null,
+        };
+      })
+      .filter(Boolean);
+
+    const objectToString = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+      return String(obj);
+    };
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase();
+      relatedDataOnly = relatedDataOnly.filter((item) =>
+        objectToString(item).toLowerCase().includes(term),
+      );
+    }
+
+    if (queryOptions.sort) {
+      const [field, direction] = queryOptions.sort.split(':');
+      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+      const getNestedValue = (obj: any, path: string) =>
+        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+      relatedDataOnly.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return -1 * sortOrder;
+        if (valB == null) return 1 * sortOrder;
+        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+        return String(valA).localeCompare(String(valB)) * sortOrder;
+      });
+    }
+
+    const listResponse = {
+      data: relatedDataOnly,
+      meta: { total: meta.total, page: meta.page, pages: meta.pages },
+    };
+    await this.cacheService.set(key, listResponse, CACHE_TTL);
+    return listResponse;
+  }
     
 public async updateDumpRegister(
   id: string,
