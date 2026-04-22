@@ -1265,7 +1265,8 @@ import { SalesTargetProductRepository } from "./repositories/salesTargetProduct.
 import { SalesTargetWeek } from "./entities/salesTargetWeek.entity";
 import { SalesAchievementRepository } from "./repositories/salesAchievement.repository";
 import { SalesAchievement } from "./entities/salesachivement.entity";
-//import { DashboardService } from "./services/dash;
+import { DashboardService } from "./services/dashboard.service";
+import { DashboardController } from "./controllers/dashboard.controller";
 
 import { ProcurementTargetProduct } from "./entities/procurementTargetProduct.entity";
 import { ProcurementTargetProductRepository } from "./repositories/procurmentTargetProduct.repository";
@@ -1360,9 +1361,9 @@ container.bind<SalesTargetController>(TYPES.SalesTargetController).to(SalesTarge
   return dataSource.getRepository(SalesAchievement).extend(SalesAchievementRepository);
 }).inRequestScope();
 
-// //dashboard
-// container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
-// container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
+// dashboard
+container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
+container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
 // //registration report
 container.bind<NewRegistrationService>(TYPES.NewRegistrationService).to(NewRegistrationService).inSingletonScope();
  container.bind<NewRegistrationController>(TYPES.NewRegistrationController).to(NewRegistrationController).inSingletonScope();

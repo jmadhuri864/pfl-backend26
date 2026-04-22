@@ -2,17 +2,15 @@ import { controller, httpGet, request, response } from "inversify-express-utils"
 import { Request, Response } from "express";
 import { inject } from "inversify";
 import { TYPES } from "../types";
-
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { DepartmentEnum } from "../entities/workflowClosure.entity";
-import { Status } from "../entities/salesTarget.entity";
+import { DashboardService } from "../services/dashboard.service";
 
 @controller('/dashboard', deserializeUser, requireUser)
 export class DashboardController {
-    // constructor(
-    //     @inject(TYPES.DashboardService)
-    //     private dashboardService: DashboardService
-    // ) {}
+    constructor(
+        @inject(TYPES.DashboardService)
+        private dashboardService: DashboardService
+    ) { }
 
     // // 📊 EXECUTIVE DASHBOARD
     // @httpGet('/executive')
@@ -22,7 +20,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -31,7 +29,7 @@ export class DashboardController {
     //         }
 
     //         const { startDate, endDate, department } = req.query;
-            
+
     //         const filters: any = {};
     //         if (startDate) filters.startDate = new Date(startDate as string);
     //         if (endDate) filters.endDate = new Date(endDate as string);
@@ -61,7 +59,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -70,7 +68,7 @@ export class DashboardController {
     //         }
 
     //         const { startDate, endDate, employeeId, customerId, productId } = req.query;
-            
+
     //         const filters: any = {};
     //         if (startDate) filters.startDate = new Date(startDate as string);
     //         if (endDate) filters.endDate = new Date(endDate as string);
@@ -102,7 +100,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -134,7 +132,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -143,7 +141,7 @@ export class DashboardController {
     //         }
 
     //         const { startDate, endDate, department, status } = req.query;
-            
+
     //         const filters: any = {};
     //         if (startDate) filters.startDate = new Date(startDate as string);
     //         if (endDate) filters.endDate = new Date(endDate as string);
@@ -174,7 +172,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -228,7 +226,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -237,11 +235,11 @@ export class DashboardController {
     //         }
 
     //         const { period = '6months', type = 'monthly' } = req.query;
-            
+
     //         // Calculate date range based on period
     //         const now = new Date();
     //         let startDate: Date;
-            
+
     //         switch (period) {
     //             case '3months':
     //                 startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
@@ -285,7 +283,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -294,11 +292,11 @@ export class DashboardController {
     //         }
 
     //         const { limit = '10', period = 'current_month' } = req.query;
-            
+
     //         // Calculate date range
     //         const now = new Date();
     //         let startDate: Date, endDate: Date;
-            
+
     //         switch (period) {
     //             case 'current_month':
     //                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -347,7 +345,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -356,7 +354,7 @@ export class DashboardController {
     //         }
 
     //         const { startDate, endDate } = req.query;
-            
+
     //         const filters: any = {};
     //         if (startDate) filters.startDate = new Date(startDate as string);
     //         if (endDate) filters.endDate = new Date(endDate as string);
@@ -388,7 +386,7 @@ export class DashboardController {
     // ) {
     //     try {
     //         const userId = res.locals.user?.id;
-            
+
     //         if (!userId) {
     //             return res.status(401).json({
     //                 success: false,
@@ -397,7 +395,7 @@ export class DashboardController {
     //         }
 
     //         const { startDate, endDate } = req.query;
-            
+
     //         const filters: any = {};
     //         if (startDate) filters.startDate = new Date(startDate as string);
     //         if (endDate) filters.endDate = new Date(endDate as string);
@@ -421,4 +419,84 @@ export class DashboardController {
     //         });
     //     }
     // }
+
+
+    //Top 5 customer
+    @httpGet("/top5/customer")
+    public async getTop5Customer(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
+
+            const data = await this.dashboardService.getTop5Customer({ teamLeaderId });
+
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 customers for team leader`
+                    : "Global top 5 customers",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 customers",
+            });
+        }
+    }
+
+    // Top 5 farmers
+    @httpGet("/top5/farmer")
+    public async getTop5Farmer(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
+
+            const data = await this.dashboardService.getTop5Farmer({ teamLeaderId });
+
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 farmers for team leader`
+                    : "Global top 5 farmers",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 farmers",
+            });
+        }
+    }
+
+    // Top 5 vendors
+    @httpGet("/top5/vendor")
+    public async getTop5Vendor(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
+
+            const data = await this.dashboardService.getTop5Vendor({ teamLeaderId });
+
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 vendors for team leader`
+                    : "Global top 5 vendors",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 vendors",
+            });
+        }
+    }
+
 }
