@@ -130,7 +130,7 @@ export class ReturnToVendorController {
 
       const returnRecord = await this.returnToVendorService.getByIdForView(docid);
 
-      ControllerLogger.logSuccess('Get return to vendor by ID', docid, req, res);
+      ControllerLogger.logSuccess('Get return to vendor by ID for viewed', docid, req, res);
 
       res.status(200).json({
         status: "success",

@@ -380,7 +380,7 @@ try {
           currentUserId
         );
       }
-
+      ControllerLogger.logSuccess('Inward_Register updated', updatedInwardRegister.id, req, res);
       res.status(200).json({
         status: 'success',
         message: 'Inward register updated successfully',
@@ -517,6 +517,7 @@ try {
   @httpGet('/view/:docid')
   public async getInwardregisterByIdForView(
     @requestParam('docid') docid: string,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -541,6 +542,9 @@ try {
       // Send a notification when the user logs in successfully
       // const message = Welcome back! You have successfully logged in.;
       // await this.notificationService.createNoti(message, requestedBy);
+
+       ControllerLogger.logView('INWARD_REGISTER', inwodRegister.id, req, res);
+
       res.status(200).json({
         status: 'success',
         data: inwodRegister,
