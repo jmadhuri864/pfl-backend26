@@ -1,4 +1,5 @@
 import { inject, injectable } from "inversify";
+<<<<<<< HEAD
 import { WorkflowHierarchyRepository } from "../repositories/WorkflowHierarchy.repository";
 import { TYPES } from "../types";
 import { DepartmentEnum, WorkflowHierarchy, normalizeDepartment } from "../entities/workflowClosure.entity";
@@ -2997,6 +2998,23 @@ return aggregated;
 }
 
 private async getEmployeeIds(teamLeaderId: string): Promise<string[]> {
+=======
+import { TYPES } from "../types";
+import { DataSource } from "typeorm";
+import { Invoice } from "../entities/invoice.entity";
+import { WorkflowHierarchy } from "../entities/workflowClosure.entity";
+import { GRN } from "../entities/grn.entity";
+import { Documentb, DocumentStatus, DocumentTypeEnum } from "../entities/docuemnt.entity";
+
+@injectable()
+export class DashboardService {
+  constructor(
+    @inject(TYPES.DataSource) private readonly dataSource: DataSource
+  ) {}
+
+  // ─── helper: get descendant employee IDs for a team leader ────────────────
+  private async getEmployeeIds(teamLeaderId: string): Promise<string[]> {
+>>>>>>> 556dc9334e34813dc01d0f7c1e346b6bb6abc1d3
     const rows = await this.dataSource
       .getRepository(WorkflowHierarchy)
       .createQueryBuilder("wh")
@@ -3243,5 +3261,8 @@ private async getEmployeeIds(teamLeaderId: string): Promise<string[]> {
       top5Vendors: top5,
     };
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 556dc9334e34813dc01d0f7c1e346b6bb6abc1d3
 }

@@ -2,7 +2,6 @@ import { controller, httpGet, request, response } from "inversify-express-utils"
 import { Request, Response } from "express";
 import { inject } from "inversify";
 import { TYPES } from "../types";
-
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { DepartmentEnum } from "../entities/workflowClosure.entity";
 import { Status } from "../entities/salesTarget.entity";
@@ -10,6 +9,10 @@ import { DashboardService } from "../services/dashboard.service";
 
 @controller('/dashboard', deserializeUser, requireUser)
 export class DashboardController {
+    constructor(
+        @inject(TYPES.DashboardService)
+        private dashboardService: DashboardService
+    ) { }
     constructor(
         @inject(TYPES.DashboardService)
         private dashboardService: DashboardService
