@@ -9,10 +9,7 @@ import { DashboardService } from "../services/dashboard.service";
 
 @controller('/dashboard', deserializeUser, requireUser)
 export class DashboardController {
-    constructor(
-        @inject(TYPES.DashboardService)
-        private dashboardService: DashboardService
-    ) { }
+    
     constructor(
         @inject(TYPES.DashboardService)
         private dashboardService: DashboardService
