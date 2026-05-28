@@ -3,7 +3,7 @@ import Model from "./model.entity";
 import { User } from "./user.entity";
 
 export enum DepartmentEnum {
-  PURCHASE = "purchase",
+  PURCHASE = "procurement",
   SALE = "sale",
   OPERATIONS = "operations",
   QUALITY_CHECKING = "quality_checking",
@@ -17,6 +17,46 @@ export enum DepartmentEnum {
   IT = "it",
   ADMIN = "admin",
   SUPERADMIN="superAdmin"
+}
+
+// Maps legacy/alias department strings to the current enum values
+const departmentAliasMap: Record<string, DepartmentEnum> = {
+  purchase: DepartmentEnum.PURCHASE,
+  procurement: DepartmentEnum.PURCHASE,
+  sales: DepartmentEnum.SALE,
+  sale: DepartmentEnum.SALE,
+  operation: DepartmentEnum.OPERATIONS,
+  operations: DepartmentEnum.OPERATIONS,
+  quality_checking: DepartmentEnum.QUALITY_CHECKING,
+  qualitychecking: DepartmentEnum.QUALITY_CHECKING,
+  business_development: DepartmentEnum.BUSINESS_DEVELOPMENT,
+  businessdevelopment: DepartmentEnum.BUSINESS_DEVELOPMENT,
+  branding_marketing: DepartmentEnum.BRANDING_MARKETING,
+  "branding_&_marketing": DepartmentEnum.BRANDING_MARKETING,
+  exports: DepartmentEnum.EXPORTS,
+  farming: DepartmentEnum.FARMING,
+  accounts: DepartmentEnum.ACCOUNTS,
+  finance: DepartmentEnum.FINANCE,
+  hr: DepartmentEnum.HR,
+  it: DepartmentEnum.IT,
+  admin: DepartmentEnum.ADMIN,
+  superadmin: DepartmentEnum.SUPERADMIN,
+};
+
+/**
+ * Normalizes an incoming department string to a valid DepartmentEnum value.
+ * Handles legacy values (e.g. "purchase" → "procurement") and case variations.
+ */
+export function normalizeDepartment(value: string): DepartmentEnum {
+  const lower = value?.toLowerCase?.();
+  if (lower && departmentAliasMap[lower]) {
+    return departmentAliasMap[lower];
+  }
+  const enumValues = Object.values(DepartmentEnum) as string[];
+  if (enumValues.includes(value)) {
+    return value as DepartmentEnum;
+  }
+  throw new Error(`Invalid department value: "${value}"`);
 }
 
 

@@ -56,18 +56,32 @@ export class ApprovalFlowController {
   ) {
     try {
       const type = typeof req.query.type === "string" ? req.query.type : undefined;
-      const flows = await this.approvalFlowService.getAll(type);
-      
-      if(!flows || flows.length === 0)
-      {
+
+      const pageParam = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limitParam = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+
+      // Only apply pagination if both page and limit are provided
+      const page = pageParam && limitParam ? pageParam : undefined;
+      const limit = pageParam && limitParam ? limitParam : undefined;
+
+      const result = await this.approvalFlowService.getAll(type, page, limit);
+
+      if (!result.data || result.data.length === 0) {
         ControllerLogger.logNotFound('Approval Flow', type || 'all', req, res);
         return res.status(404).json({ status: "error", message: "Not found" });
       }
-      
+
       // Log successful data retrieval
       ControllerLogger.logGetAllRecords('Approval Flow', req, res);
+
+      return res.status(200).json({
+        status: "success",
+        data: result.data,
+        allRecords: result.limit,
+          totalPages: result.totalPages,
+          page: result.page,
       
-      res.status(200).json({ status: "success", data: flows });
+      });
     } catch (err) {
       ControllerLogger.logError('Approval Flow retrieval', err, req, res);
       next(err);

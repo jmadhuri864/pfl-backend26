@@ -776,6 +776,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       customerImage: data.customerImage,
       organisationType: data.organisationType,
       otherType: data.otherType,
+      status:data.status,
       customerCategory: data.customerCategory?.id || null,
       customerCode: data.customerCode,
       emailSecondary: data.emailSecondary,
@@ -1501,6 +1502,19 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       console.error('❌ Error reading Excel file from Spaces:', error);
       throw new Error(`Failed to read Excel file: ${key}`);
     }
+  }
+
+  async submitCustomer(customerId: string, fileUpdates: Record<string, string | null> = {}): Promise<Customer> {
+    const customer = await this.customerRepository.findOne({ where: { id: customerId } });
+    if (!customer) throw new AppError(404, 'Customer not found');
+    customer.status = Status.PENDING;
+    // Apply file updates only if provided
+    Object.entries(fileUpdates).forEach(([key, value]) => {
+      if (value !== undefined) (customer as any)[key] = value;
+    });
+    const saved = await this.customerRepository.save(customer);
+    await this.invalidateCustomerCache(customerId);
+    return saved;
   }
 
    async approveCustomer(customerId: string, approverId: string,status:Status) {

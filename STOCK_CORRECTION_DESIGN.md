@@ -308,6 +308,111 @@ src/dtos/stockCorrection.dto.ts               ← NEW DTO
 
 ---
 
+## Dump (Damage Write-Off) Correction Flow
+
+Dump म्हणजे damaged / expired / unusable stock जो system मधून write-off करायचा आहे.
+
+### Entity — Extra Fields Needed
+
+`StockCorrection` entity मध्ये dump साठी हे fields add करा:
+
+```typescript
+// --- Dump / Damage specific ---
+
+@Column({ type: "enum", enum: ["damage", "expiry", "pest", "fire", "other"], nullable: true })
+dumpReason: string;           // Dump का झाला — damage / expiry / pest / fire
+
+@Column("decimal", { precision: 10, scale: 2, default: 0 })
+dumpQty: number;              // Kitki qty write-off karायची (e.g. 200 bags)
+
+@Column("decimal", { precision: 12, scale: 2, default: 0 })
+dumpAmt: number;              // Amount loss (optional — rate * dumpQty)
+
+@Column({ nullable: true })
+dumpRemarks: string;          // "200 bags damaged due to rain on 10-Apr-2026"
+
+@Column({ type: "date", nullable: true })
+dumpDate: Date;               // Keva dump kela
+```
+
+> **Note:** `correctionType = DAMAGE_WRITE_OFF` असेल तेव्हा हे fields relevant होतात.
+> `physicalQty = systemQty - dumpQty` असेल (stock कमी होतो).
+> `correctionDelta` negative असेल (e.g. -200).
+
+---
+
+### Dump Flow
+
+```
+Step 1: Manager submits dump correction
+  → correctionType = DAMAGE_WRITE_OFF
+  → systemQty = 4000 (current stock)
+  → dumpQty = 200 (damaged bags)
+  → physicalQty = 3800 (4000 - 200)
+  → correctionDelta = -200 (negative — stock कमी होतो)
+  → dumpReason = "damage"
+  → status = PENDING
+
+Step 2: Admin approves
+  → inventory_stock.inwardQty += correctionDelta  (4000 → 3800)
+  → inventory_stock.dumpQty += dumpQty            (existing dump + 200)
+  → inventory_stock.dumpAmt += dumpAmt            (amount loss track)
+  → status = APPROVED
+
+Step 3: Rejected असेल तर
+  → inventory_stock ला काहीच touch नाही
+  → dumpQty, inwardQty unchanged
+```
+
+---
+
+### Approve Correction — Dump Case Update
+
+```typescript
+async approveCorrection(correctionId: string, approverId: string) {
+  // ... (same transaction setup as above)
+
+  const stock = correction.inventoryStock;
+
+  // Update inward qty (common for all correction types)
+  stock.inwardQty = Number(stock.inwardQty) + Number(correction.correctionDelta);
+
+  // Dump specific — dumpQty & dumpAmt update
+  if (correction.correctionType === CorrectionType.DAMAGE_WRITE_OFF) {
+    stock.dumpQty = Number(stock.dumpQty || 0) + Number(correction.dumpQty);
+    stock.dumpAmt = Number(stock.dumpAmt || 0) + Number(correction.dumpAmt);
+  }
+
+  await queryRunner.manager.save(stock);
+  // ... rest same
+}
+```
+
+---
+
+### InventoryStock — Fields to Confirm
+
+`inventory_stock` table मध्ये हे fields असणे आवश्यक आहे:
+
+```
+dumpQty   decimal   -- Total dumped qty (cumulative)
+dumpAmt   decimal   -- Total dump amount loss (cumulative)
+```
+
+जर नसतील तर migration मध्ये add करा.
+
+---
+
+### API Endpoints (Dump)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/stock-correction` | Submit dump correction (`correctionType: damage_write_off`) |
+| GET | `/stock-correction/dump-history/:stockId` | Dump history for a stock |
+| PATCH | `/stock-correction/:id/approve` | Approve dump (updates dumpQty too) |
+
+---
+
 ## Alternative Approaches (and why not)
 
 ### ❌ Direct Update

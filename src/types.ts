@@ -466,6 +466,11 @@ RegistrationReportsController:Symbol.for("RegistrationReportsController"),
   RoleRepository: Symbol.for("RoleRepository"),
   RoleController: Symbol.for("RoleController"),
 
+  // stockCorrection
+  StockCorrectionRepository: Symbol.for("StockCorrectionRepository"),
+  StockCorrectionService: Symbol.for("StockCorrectionService"),
+  StockCorrectionController: Symbol.for("StockCorrectionController"),
+
 };
 
 export { TYPES };

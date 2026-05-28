@@ -482,6 +482,67 @@ console.log(req.body)
       next(error);
     }
   }
+  /**
+   * PATCH /vendors/submit/:id
+   * Submits the vendor (sets status to "pending"). Frontend calls this when user clicks "Create".
+   * - req.files madhe file asel → S3 var juna delete, nava upload
+   * - req.body madhe URL string asel → existing URL tashi rahu de
+   */
+  @httpPatch('/submit/:id',
+    upload.fields([
+      { name: 'gstnCopy', maxCount: 1 },
+      { name: 'panCardCopy', maxCount: 1 },
+      { name: 'msmeCopy', maxCount: 1 },
+      { name: 'cancelledChequeCopy', maxCount: 1 },
+    ]),
+  )
+  public async submitVendor(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const files = req.files as { [fieldname: string]: any[] } | undefined;
+      const body = req.body;
+
+      const fileUpdates: Record<string, string | null> = {};
+
+      const handleField = async (fieldName: string) => {
+        if (files?.[fieldName]?.[0]) {
+          const oldUrl = body[fieldName];
+          if (oldUrl && typeof oldUrl === 'string' && oldUrl.startsWith('http')) {
+            try {
+              const key = new URL(oldUrl).pathname.replace(/^\//, '');
+              await s3.send(new DeleteObjectCommand({ Bucket: process.env.DO_SPACES_BUCKET!, Key: key }));
+            } catch (e) {
+              console.warn(`Could not delete old ${fieldName} from S3:`, e);
+            }
+          }
+          fileUpdates[fieldName] = files[fieldName][0].location;
+        } else if (body[fieldName] && typeof body[fieldName] === 'string') {
+          fileUpdates[fieldName] = body[fieldName];
+        }
+      };
+
+      await handleField('gstnCopy');
+      await handleField('panCardCopy');
+      await handleField('msmeCopy');
+      await handleField('cancelledChequeCopy');
+
+      const vendor = await this.vendorService.submitVendor(id, fileUpdates);
+      ControllerLogger.logSuccess('Vendor submitted', id, req, res);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Vendor submitted successfully',
+        data: { id: vendor.id, status: vendor.status },
+      });
+    } catch (err) {
+      ControllerLogger.logError('Submit Vendor', err, req, res);
+      next(err);
+    }
+  }
+
   @httpPatch("/approve/:id")
   async approveVendor(
     @request() req: Request,

@@ -104,6 +104,75 @@ console.log(files)
     }
   }
 
+  /**
+   * PATCH /farmers/submit/:id
+   * Submits the farmer (sets status to "pending"). Frontend calls this when user clicks "Create".
+   * - req.files madhe file asel → S3 var juna delete, nava upload
+   * - req.body madhe URL string asel → existing URL tashi rahu de
+   */
+  @httpPatch(
+    '/submit/:id',
+    upload.fields([
+      { name: 'farmPhoto', maxCount: 1 },
+      { name: 'farmerPhoto', maxCount: 1 },
+      { name: 'idProofCopy', maxCount: 1 },
+      { name: 'sevenTwelveCopy', maxCount: 1 },
+    ]),
+  )
+  public async submitFarmer(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const files = req.files as { [fieldname: string]: any[] } | undefined;
+      const body = req.body;
+
+      const fileUpdates: Record<string, string | null> = {};
+
+      const handleField = async (fieldName: string) => {
+        if (files?.[fieldName]?.[0]) {
+          // New file uploaded → delete old from S3 if old URL exists in body
+          const oldUrl = body[fieldName];
+          if (oldUrl && typeof oldUrl === 'string' && oldUrl.startsWith('http')) {
+            try {
+              const key = new URL(oldUrl).pathname.replace(/^\//, '');
+              await s3.send(new DeleteObjectCommand({
+                Bucket: process.env.DO_SPACES_BUCKET!,
+                Key: key,
+              }));
+            } catch (e) {
+              console.warn(`Could not delete old ${fieldName} from S3:`, e);
+            }
+          }
+          fileUpdates[fieldName] = files[fieldName][0].location;
+        } else if (body[fieldName] && typeof body[fieldName] === 'string') {
+          // Existing URL string from frontend → keep as is
+          fileUpdates[fieldName] = body[fieldName];
+        }
+        // else → don't touch (undefined means no change)
+      };
+
+      await handleField('farmPhoto');
+      await handleField('farmerPhoto');
+      await handleField('idProofCopy');
+      await handleField('sevenTwelveCopy');
+
+      const farmer = await this.farmerService.submitFarmer(id, fileUpdates);
+
+      ControllerLogger.logSuccess('Farmer submitted', id, req, res);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Farmer submitted successfully',
+        data: { id: farmer.id, status: farmer.status },
+      });
+    } catch (err) {
+      ControllerLogger.logError('Submit Farmer', err, req, res);
+      next(err);
+    }
+  }
+
   @httpPatch("/approve/:id")
   async approveFarmer(
     @requestParam('id') farmerId: string,

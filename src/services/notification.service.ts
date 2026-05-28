@@ -4,6 +4,7 @@ import { NotificationRepository } from '../repositories/notification.repository'
 import { SSEService } from './sse.service';
 import { UserService } from '../services/user.service';
 import logger from '../utils/logger';
+import ExcelJS from 'exceljs';
 
 
 @injectable()
@@ -191,5 +192,79 @@ export class NotificationService {
     );
 
     await this.notificationRepository.save(notifications);
+  }
+
+  async exportToExcel(): Promise<Buffer> {
+    const notifications = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .leftJoinAndSelect('notification.user', 'user')
+      .select([
+        'notification.id',
+        'notification.message',
+        'notification.createdAt',
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.username',
+      ])
+      .orderBy('notification.createdAt', 'ASC')
+      .getMany();
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Notifications');
+
+    sheet.columns = [
+      { header: 'Sr. No.',    key: 'srNo',      width: 10 },
+      { header: 'Created At', key: 'createdAt', width: 22 },
+      { header: 'User ID',    key: 'userId',    width: 38 },
+      { header: 'Username',   key: 'username',  width: 25 },
+      { header: 'Message',    key: 'message',   width: 50 },
+    ];
+
+    // Style header row
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2E75B6' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 20;
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    notifications.forEach((noti, index) => {
+      const createdAt = noti.createdAt ? new Date(noti.createdAt) : null;
+      let formattedDate = '';
+      if (createdAt && !isNaN(createdAt.getTime())) {
+        const year  = createdAt.getFullYear();
+        const month = pad(createdAt.getMonth() + 1);
+        const day   = pad(createdAt.getDate());
+        let hours   = createdAt.getHours();
+        const mins  = pad(createdAt.getMinutes());
+        const ampm  = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        formattedDate = `${year}-${month}-${day} ${pad(hours)}:${mins} ${ampm}`;
+      }
+
+      const fullName = noti.user
+        ? `${noti.user.firstName ?? ''} ${noti.user.lastName ?? ''}`.trim()
+        : '';
+      const username = noti.user?.username ?? fullName;
+
+      sheet.addRow({
+        srNo:      index + 1,
+        createdAt: formattedDate,
+        userId:    noti.user?.id ?? '',
+        username,
+        message:   noti.message,
+      });
+    });
+
+    sheet.getColumn('message').alignment = { wrapText: true };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
   }
 }

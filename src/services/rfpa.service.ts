@@ -844,7 +844,9 @@ async getRFQByIdForUpdate(id: string) {
           id: rd.id,
           documentId: doc.id,
           overAllStatus: doc.status,
-          createdBy: doc.lastActionBy?.firstName || null,
+          createdBy: doc.lastActionBy
+            ? `${doc.lastActionBy.firstName || ''} ${doc.lastActionBy.lastName || ''}`.trim() || null
+            : null,
           createdDate,
           createdTime,
           rfpaId: rd.rfpaId || null,
@@ -1145,7 +1147,9 @@ public async getAllRFPANumbers(
           id: rd.id,
           documentId: doc.id,
           overAllStatus: doc.status,
-          createdBy: doc.lastActionBy?.firstName || null,
+          createdBy: doc.lastActionBy
+            ? `${doc.lastActionBy.firstName || ''} ${doc.lastActionBy.lastName || ''}`.trim() || null
+            : null,
           createdDate: formatDateTime(doc.createdAt).createdDate,
           createdTime: formatDateTime(doc.createdAt).createdTime,
           rfpaId: rd.rfpaId || null,

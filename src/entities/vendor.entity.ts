@@ -121,12 +121,12 @@ export class Vendor extends Model {
 
   @Column('character varying', { name: 'website', length: 100, nullable: true })
   website: string;
-  @Column('character varying', {
+  @Column({
     name: 'vendor_credit_terms',
-    length: 200,
+    type: 'integer',
     nullable: true,
   })
-  creditTerms: string;
+  creditTerms: number | null;
 
   @Column({
     type: 'enum',
@@ -247,11 +247,12 @@ export class Vendor extends Model {
   })
   tradeLicenseNumber: string;
 
-  @Column('text', {
+  @Column({
     name: 'proposed_payment_terms',
+    type: 'integer',
     nullable: true,
   })
-  proposedPaymentTerms: string;
+  proposedPaymentTerms: number | null;
 
   @Column('text', {
     name: 'any_other_details_regarding_team_and_infrastructure',

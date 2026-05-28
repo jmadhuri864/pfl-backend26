@@ -293,6 +293,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       .createQueryBuilder('farmer')
       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+      .leftJoin('farmer.createdBy', 'createdBy')
+      .addSelect(['createdBy.firstName', 'createdBy.lastName'])
       .orderBy('farmer.createdAt', 'DESC');
 
     const { data, meta } = await buildQuery(
@@ -309,6 +311,9 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       status: farmer.status,
+      createdBy: farmer.createdBy
+        ? `${farmer.createdBy.firstName || ''} ${farmer.createdBy.lastName || ''}`.trim() || null
+        : null,
       email: farmer.email,
       farmerCode: farmer.farmerCode,
       residensialAddress: farmer.residensialAddress
@@ -518,6 +523,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
         'farmer.totalLandArea', 'farmer.cultivationArea', 'farmer.sevenTwelveNo',
         'farmer.sevenTwelveCopy', 'farmer.primaryMobileNo', 'farmer.secondaryMobileNo',
         'farmer.email', 'farmer.farmerCode', 'farmer.farmerPhoto', 'farmer.farmPhoto',
+        'farmer.status',
         'farmer.createdAt',
         'createdBy.id',
         'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
@@ -545,6 +551,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       farmermName: farmer.farmermName ?? null,
       farmerlName: farmer.farmerlName ?? null,
       gender: farmer.gender,
+      status:farmer.status,
       dob: farmer.dob,
       idProofNo: farmer.idProofNo,
       idProofCopy: farmer.idProofCopy,
@@ -668,6 +675,20 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     await this.cacheService.set(key, result, CACHE_TTL);
     return result;
   }
+  async submitFarmer(farmerId: string, fileUpdates: Record<string, string | null> = {}): Promise<Farmer> {
+    const farmer = await this.farmerRepository.findOne({ where: { id: farmerId } });
+    if (!farmer) throw new AppError(404, 'Farmer not found');
+    farmer.status = Status.PENDING;
+    // Apply file updates only if provided
+    if (fileUpdates.farmPhoto !== undefined)       farmer.farmPhoto       = fileUpdates.farmPhoto       ?? farmer.farmPhoto;
+    if (fileUpdates.farmerPhoto !== undefined)     farmer.farmerPhoto     = fileUpdates.farmerPhoto     ?? farmer.farmerPhoto;
+    if (fileUpdates.idProofCopy !== undefined)     farmer.idProofCopy     = fileUpdates.idProofCopy     ?? farmer.idProofCopy;
+    if (fileUpdates.sevenTwelveCopy !== undefined) farmer.sevenTwelveCopy = fileUpdates.sevenTwelveCopy ?? farmer.sevenTwelveCopy;
+    const saved = await this.farmerRepository.save(farmer);
+    await this.invalidateFarmerCache(farmerId);
+    return saved;
+  }
+
   async approveFarmer(farmerId: string, approverId: string,status:Status) {
     console.log('Approver ID:', approverId);
     const approver = await this.userRepository.findOne({

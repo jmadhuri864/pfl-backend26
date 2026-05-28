@@ -341,15 +341,11 @@ export class ProductService {
     try {
       const queryBuilder = this.productRepository
         .createQueryBuilder('product')
-        .leftJoinAndSelect('product.classification', 'classification')
-        .leftJoinAndSelect('product.category', 'category')
-        .leftJoinAndSelect('product.subcategory', 'subcategory')
-        .leftJoinAndSelect('product.uom', 'uom')
-        .leftJoinAndSelect('product.qualityParameters', 'qualityParameters')
+        
         .select([
           'product.id',
           'product.name',
-          'product.description',
+          
           'product.productCode',
         ]);
 
@@ -1232,5 +1228,15 @@ export class ProductService {
     const result = await this.productRepository.softDelete({ id: In(userIds) });
     await this.invalidateProductCache();
     return result;
+  }
+
+  async getProductsByIds(ids: string[]): Promise<any[]> {
+    if (!ids || ids.length === 0) return [];
+
+    return await this.productRepository
+      .createQueryBuilder('product')
+      .select(['product.id', 'product.name', 'product.productCode'])
+      .where('product.id IN (:...ids)', { ids })
+      .getMany();
   }
 }

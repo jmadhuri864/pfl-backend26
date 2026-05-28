@@ -2,19 +2,23 @@ import { controller, httpGet, httpPatch, request, response, requestParam } from 
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { inject } from "inversify";
 import { TYPES } from "../types";
-
 import { Request, Response } from "express";
 import { NotificationService } from "../services/notification.service";
-
-
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { s3 } from "../middleware/spaces.config";
 
 @controller('/notification', deserializeUser, requireUser)
 export class NotificationController {
+  private s3Client: S3Client;
+  private bucketName: string;
+
   constructor(
-    //@inject(TYPES.SocketIoServerOne) private io: Server,
-  @inject(TYPES.NotificationService)
-  private readonly notificationService: NotificationService,
-) {}
+    @inject(TYPES.NotificationService)
+    private readonly notificationService: NotificationService,
+  ) {
+    this.s3Client = s3;
+    this.bucketName = process.env.DO_SPACES_BUCKET || 'your-bucket-name';
+  }
 
  /* @httpPost("/testNotification")
   public async testNotification(@request() req: Request, @response() res: Response): Promise<void> {
@@ -35,12 +39,9 @@ export class NotificationController {
     res.status(200).json({ success: true, message: "Notification sent to frontend" });
   }*/
 
-
   @httpGet("/getallNotification")
   public async getAllNotification(@request() req: Request, @response() res: Response): Promise<void> {
-    // Get all rooms
-    /* */
-    const data = await this.notificationService.getAllNoti()
+    const data = await this.notificationService.getAllNoti();
     res.status(200).json({ data });
   }
 
@@ -65,5 +66,37 @@ export class NotificationController {
     await this.notificationService.markAllAsRead(userId);
     res.status(200).json({ message: 'All notifications marked as read' });
   }
-}
 
+  @httpGet("/export-excel")
+  public async exportExcel(@request() req: Request, @response() res: Response): Promise<void> {
+    try {
+      const excelBuffer = await this.notificationService.exportToExcel();
+      const fileUrl = await this.uploadToS3(excelBuffer);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Notification report generated and stored successfully',
+        data: { fileUrl },
+      });
+    } catch (err) {
+      res.status(500).json({ status: 'error', message: 'Failed to export notifications' });
+    }
+  }
+
+  private async uploadToS3(excelBuffer: Buffer): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `Notifications_${timestamp}.xlsx`;
+    const s3Key = `reports/notifications/${fileName}`;
+
+    await this.s3Client.send(new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key,
+      Body: excelBuffer,
+      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ContentDisposition: `attachment; filename="${fileName}"`,
+      ACL: 'public-read',
+    }));
+
+    return `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${s3Key}`;
+  }
+}

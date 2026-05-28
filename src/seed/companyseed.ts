@@ -29,6 +29,7 @@ export async function seedDatabase() {
         for (const companyData of companies) {
             const company = companyRepo.create({
                 name: companyData.name,
+                officeAddress: companyData.officeAddress,
                 gstNo: companyData.gstNo,
                 fassaiNo: companyData.fassaiNo,
                 bankDetails: []

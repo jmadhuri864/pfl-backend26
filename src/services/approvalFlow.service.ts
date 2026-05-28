@@ -147,8 +147,8 @@ export class ApprovalFlowService {
     return await this.approvalFlowRepository.save(approvalFlow);
   }
 
- async getAll(type?: string): Promise<any> {
-    const query = await this.approvalFlowRepository
+ async getAll(type?: string, page?: number, limit?: number): Promise<any> {
+    const query = this.approvalFlowRepository
       .createQueryBuilder('approvalflows')
       .leftJoinAndSelect('approvalflows.creator', 'creator')
       .leftJoinAndSelect('approvalflows.verifiers', 'verifiers')
@@ -168,12 +168,19 @@ export class ApprovalFlowService {
       .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
       .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
       .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers');
+
     console.log(type);
     if (type) {
       query.where('approvalflows.type = :type', { type });
     }
 
-    const data = await query.getMany();
+    const isPaginated = page !== undefined && limit !== undefined;
+
+    if (isPaginated) {
+      query.skip((page! - 1) * limit!).take(limit!);
+    }
+
+    const [data, total] = await query.getManyAndCount();
 
     //console.log('getall', data);
     //     const mapApprover = (approver:any) =>
@@ -272,7 +279,16 @@ export class ApprovalFlowService {
       };
       return result;
     });
-    return formattedResponse;
+    const effectivePage = isPaginated ? page! : 1;
+    const effectiveLimit = isPaginated ? limit! : total;
+
+    return {
+      data: formattedResponse,
+      total,
+      page: effectivePage,
+      limit: effectiveLimit,
+      totalPages: isPaginated ? Math.ceil(total / limit!) : 1,
+    };
   }
 
   async getbyidforview(id: string): Promise<any> {

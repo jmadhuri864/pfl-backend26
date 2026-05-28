@@ -142,6 +142,19 @@ async createVendor(vendorDto: any): Promise<any> {
     await this.invalidateVendorCache();
     return saved;
   }
+  async submitVendor(vendorId: string, fileUpdates: Record<string, string | null> = {}): Promise<Vendor> {
+    const vendor = await this.vendorRepository.findOne({ where: { id: vendorId } });
+    if (!vendor) throw new AppError(404, 'Vendor not found');
+    vendor.status = Status.PENDING;
+    // Apply file updates only if provided
+    if (fileUpdates.gstnCopy !== undefined)           vendor.gstnCopy           = fileUpdates.gstnCopy ?? vendor.gstnCopy;
+    if (fileUpdates.panCardCopy !== undefined)        vendor.panCardCopy        = fileUpdates.panCardCopy ?? vendor.panCardCopy;
+    if (fileUpdates.msmeCopy !== undefined)           vendor.msmeCopy           = fileUpdates.msmeCopy ?? vendor.msmeCopy;
+    const saved = await this.vendorRepository.save(vendor);
+    await this.invalidateVendorCache(vendorId);
+    return saved;
+  }
+
 async approveVendor(vendorId: string, approverId: string,status:Status) {
 const approver = await this.userRepository.findOne({ where: { id: approverId }});
 if (!approver) throw new Error("Approver not found");
@@ -458,6 +471,7 @@ async getVendorByIdforupdate(id: string): Promise<any> {
       'vendor.ref2FName', 'vendor.ref2MName', 'vendor.ref2LName',
       'vendor.ref2PrimaryCNumb', 'vendor.ref2AltrCNumb', 'vendor.ref2Email',
       'vendor.createdAt',
+     
       'officeAddress.address1', 'officeAddress.address2', 'officeAddress.location',
       'officeAddress.city', 'officeAddress.state', 'officeAddress.pincode',
       'vendorSaleInfo.contactFName', 'vendorSaleInfo.contactMName', 'vendorSaleInfo.contactLName',
@@ -494,6 +508,7 @@ async getVendorByIdforupdate(id: string): Promise<any> {
     companyName: vendor.companyName,
     classification: vendor.classification,
     status: vendor.status,
+
     category: vendor.category?.id ?? null,
     subcategory: vendor.subcategory?.id ?? null,
     vendorGrade: vendor.vendorGrade,
@@ -1591,12 +1606,19 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
     .leftJoinAndSelect("vendor.category", "category")
     .leftJoinAndSelect("vendor.subcategory", "subcategory")
+    .leftJoin("vendor.createdBy", "createdBy")
     .select([
       "vendor.id",
       "vendor.companyName",
       "vendor.vendorCode",
       "vendor.officeContactNo",
       "vendor.officeEmail",
+      "vendor.paymentMode",
+      "vendor.proposedPaymentTerms",
+      "vendor.creditTerms",
+      "vendor.status",
+      "createdBy.firstName",
+      "createdBy.lastName",
       "category.name",
       "subcategory.name",
       "vendorSaleInfo.contactFName",
@@ -1621,6 +1643,13 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     vendorCode: vendor.vendorCode,
     officeContactNo: vendor.officeContactNo,
     officeEmail: vendor.officeEmail,
+    status: vendor.status || null,
+    createdBy: vendor.createdBy
+      ? `${vendor.createdBy.firstName || ''} ${vendor.createdBy.lastName || ''}`.trim() || null
+      : null,
+    paymentMode: vendor.paymentMode || null,
+    proposedPaymentTerms: vendor.proposedPaymentTerms || null,
+    creditTerms: vendor.creditTerms || null,
     contactPersonName: vendor.vendorSaleInfo
       ? `${vendor.vendorSaleInfo.contactFName || ""} ${vendor.vendorSaleInfo.contactMName || ""} ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
       : null,

@@ -16,6 +16,10 @@ import { SSEService } from '../services/sse.service';
 import { UserRepository } from '../repositories/user.repository';
 import { ActiveSessionRepository } from '../repositories/activeSession.repository';
 import { CacheService } from '../services/cache.service';
+import { WorkflowHierarchyService } from '../services/workFlowHierarchy.service';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
 
 const blacklistedTokensRepo = AppDataSource.getRepository(BlacklistedToken);
 
@@ -56,8 +60,14 @@ export class AuthController {
     private sseService: SSEService,
     @inject(TYPES.UserRepository)
     private userRepository: UserRepository,
+     @inject(TYPES.WorkflowHierarchyRepository)
+    private workflowrepo:WorkflowHierarchyRepository,
     @inject(TYPES.CacheService)
     private cacheService: CacheService,
+    @inject(TYPES.WorkflowHierarchyService)
+    private workflowHierarchyService: WorkflowHierarchyService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -244,6 +254,33 @@ export class AuthController {
 
       this.notificationService.createNoti('Login successfully', user.id).catch(() => {});
 
+      // Log login activity (fire-and-forget)
+      this.activityLogService.logActivity({
+        userId: user.id,
+        userName: name,
+        action: ActivityAction.LOGIN,
+        module: ActivityModule.OTHER,
+        description: `User logged in`,
+        ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+      // // Fetch the logged-in user's children tree across all departments
+      // const workflowTree = await this.workflowHierarchyService.getChildrenTreeForAllDepartments(user.id);
+      //  const hasWorkflow = workflowTree > 0;
+
+      // Check if the user has any workflow hierarchy entry (as ancestor or descendant)
+      const workflowCount = await this.workflowrepo.count({
+        where: [
+          { ancestor: { id: user.id } },
+          { descendant: { id: user.id } },
+        ],
+      });
+      const hasChild = workflowCount > 0;
+
       ControllerLogger.logAuth('User login', req, res, true);
       logger.info('User logged in successfully', { userId: user.id });
 
@@ -257,6 +294,8 @@ export class AuthController {
         currentWorkLocation: user.currentWorkLocation?.id,
         employeeId: user.employeeId,
         permissions,
+         hasChild,
+        //workflowTree,
       });
     } catch (err) {
       logger.error('Unexpected error during login', { error: err });
@@ -302,6 +341,22 @@ export class AuthController {
       // Remove active session
       if (decoded?.sub) {
         await this.activeSessionRepository.delete({ user_id: decoded.sub, is_active: true });
+      }
+
+      // Log logout activity (fire-and-forget)
+      if (user) {
+        this.activityLogService.logActivity({
+          userId: user.id,
+          userName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+          action: ActivityAction.LOGOUT,
+          module: ActivityModule.OTHER,
+          description: `User logged out`,
+          ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent'),
+          endpoint: req.originalUrl,
+          httpMethod: req.method,
+          statusCode: 200,
+        }).catch(() => {});
       }
 
       res.clearCookie('access_token');

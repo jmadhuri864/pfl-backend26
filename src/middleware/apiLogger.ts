@@ -1,5 +1,98 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserLogger } from '../utils/logger';
+import { container } from '../inversify.config';
+import { TYPES } from '../types';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+
+/**
+ * Map HTTP method + URL path → ActivityAction + ActivityModule
+ */
+const resolveActivity = (
+  method: string,
+  url: string,
+  statusCode: number,
+): { action: ActivityAction; module: ActivityModule; description: string } => {
+  const path = url.split('?')[0].toLowerCase();
+
+  // ── Module detection — exact route prefix match ───────────────────────────
+  let module = ActivityModule.OTHER;
+
+  if      (path.startsWith('/grns') || path.startsWith('/grn-report'))
+    module = ActivityModule.GRN;
+  else if (path.startsWith('/rfpa'))
+    module = ActivityModule.RFPA;
+  else if (path.startsWith('/aqr'))
+    module = ActivityModule.AQR;
+  else if (path.startsWith('/dealslip'))
+    module = ActivityModule.DEAL_SLIP;
+  else if (path.startsWith('/final-invoice') || path.startsWith('/saleorders') || path.startsWith('/invoice'))
+    module = ActivityModule.INVOICE;
+  else if (path.startsWith('/secondsales'))
+    module = ActivityModule.SECOND_SALE;
+  else if (path.startsWith('/returns'))
+    module = ActivityModule.RETURN;
+  else if (path.startsWith('/return-to-vendor'))
+    module = ActivityModule.RETURN_TO_VENDOR;
+  else if (path.startsWith('/customers') || path.startsWith('/customer-bank') || path.startsWith('/customer-billing') || path.startsWith('/customer-delivery') || path.startsWith('/delivery-details') || path.startsWith('/statutory-details'))
+    module = ActivityModule.CUSTOMER;
+  else if (path.startsWith('/vendors') || path.startsWith('/vendor-categories') || path.startsWith('/vendor-subcategories'))
+    module = ActivityModule.VENDOR;
+  else if (path.startsWith('/products') || path.startsWith('/productvarient') || path.startsWith('/varients') || path.startsWith('/packingmaterial') || path.startsWith('/productcategory') || path.startsWith('/productsubcategory') || path.startsWith('/productclassification') || path.startsWith('/productspecification') || path.startsWith('/crops'))
+    module = ActivityModule.PRODUCT;
+  else if (path.startsWith('/uoms') || path.startsWith('/uom-conversion'))
+    module = ActivityModule.UOM;
+  else if (path.startsWith('/employee') || path.startsWith('/user') || path.startsWith('/roles') || path.startsWith('/super-admin'))
+    module = ActivityModule.USER;
+  else if (path.startsWith('/reports') || path.startsWith('/registration-reports') || path.startsWith('/new-registration-reports') || path.startsWith('/sales-reports') || path.startsWith('/procurement-reports') || path.startsWith('/procurement-report') || path.startsWith('/delivery-challan-report') || path.startsWith('/final-invoice-report') || path.startsWith('/crystalreports') || path.startsWith('/userreport'))
+    module = ActivityModule.REPORT;
+  else if (path.startsWith('/dashboard') || path.startsWith('/admin/dashboard') || path.startsWith('/api/management') || path.startsWith('/api/procurment'))
+    module = ActivityModule.DASHBOARD;
+  else if (path.startsWith('/deliverychallan') || path.startsWith('/other-delivery-challan') || path.startsWith('/tranfer-delivery-challan') || path.startsWith('/customer-delivery-challan'))
+    module = ActivityModule.OTHER_DELIVERY_CHALLAN;
+  else if (path.startsWith('/multicashvoucher'))
+    module = ActivityModule.MULTI_CASH_VOUCHER;
+  else if (path.startsWith('/lpvoucher'))
+    module = ActivityModule.LABOUR_PAYMENT;
+  else if (path.startsWith('/labors') || path.startsWith('/templabour') || path.startsWith('/labourregister'))
+    module = ActivityModule.LABOUR_REGISTER;
+  else if (path.startsWith('/laborattendances') || path.startsWith('/labourattendance'))
+    module = ActivityModule.LABOUR_ATTENDANCE;
+  else if (path.startsWith('/tpvoucher'))
+    module = ActivityModule.TRANSPORT_PAYMENT;
+  else if (path.startsWith('/pmpvoucher'))
+    module = ActivityModule.VOUCHER;
+  else if (path.startsWith('/location-offices'))
+    module = ActivityModule.OFFICE;
+  else if (path.startsWith('/inwardregister'))
+    module = ActivityModule.INWARD_REGISTER;
+  else if (path.startsWith('/eodstock') || path.startsWith('/skueodstock') || path.startsWith('/stock-correction') || path.startsWith('/inventorystock'))
+    module = ActivityModule.INVENTORY;
+  else if (path.startsWith('/dumpregister'))
+    module = ActivityModule.DUMP_REGISTER;
+  else if (path.startsWith('/approval-flow') || path.startsWith('/document') || path.startsWith('/departments') || path.startsWith('/levels') || path.startsWith('/location-branches') || path.startsWith('/company') || path.startsWith('/workflow') || path.startsWith('/approval'))
+    module = ActivityModule.SETTINGS;
+
+  // ── Action detection ──────────────────────────────────────────────────────
+  let action = ActivityAction.VIEW;
+  if (method === 'POST')
+    action = ActivityAction.CREATE;
+  else if (method === 'PATCH' || method === 'PUT')
+    action = ActivityAction.UPDATE;
+  else if (method === 'DELETE')
+    action = ActivityAction.DELETE;
+  else if (path.includes('/export') || path.includes('/download') || path.includes('/report'))
+    action = ActivityAction.EXPORT;
+  else if (path.includes('/approve'))
+    action = ActivityAction.APPROVE;
+  else if (path.includes('/reject'))
+    action = ActivityAction.REJECT;
+
+  // ── Human-readable description ────────────────────────────────────────────
+  const description = getReadableMessage(method, url, statusCode);
+
+  return { action, module, description };
+};
 
 /**
  * Convert API endpoints to user-friendly messages
@@ -259,6 +352,37 @@ export const apiLogger = (req: Request, res: Response, next: NextFunction) => {
     
     // Log the user-friendly message with IP address
     UserLogger.infoWithIp(readableMessage, user, clientIp);
+
+    // ── DB Activity Log (fire-and-forget, only for authenticated users) ──────
+    if (user?.id) {
+      setImmediate(() => {
+        try {
+          const activityLogService = container.get<UserActivityLogService>(TYPES.UserActivityLogService);
+          const { action, module, description } = resolveActivity(req.method, req.originalUrl, statusCode);
+
+          activityLogService.logActivity({
+            userId: user.id,
+            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            action,
+            module,
+            description,
+            metadata: {
+              params: req.params,
+              query: req.query,
+            },
+            ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode,
+            responseTime: duration,
+            isError: statusCode >= 400,
+          }).catch(() => {});
+        } catch (_) {
+          // Never break the response
+        }
+      });
+    }
     
     // Call original json method
     return originalJson.call(this, body);

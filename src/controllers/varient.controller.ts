@@ -23,6 +23,31 @@ export class VarientsController {
     private productVarientService: ProductVarientsService,
   ) {}
 
+  @httpPost('/getvarients/byids')
+  public async getVarientsByIds(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { ids } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new AppError(400, 'ids must be a non-empty array');
+      }
+
+      const varients = await this.productVarientService.getVarientsByIds(ids);
+
+      res.status(200).json({
+        status: 'success',
+        data: varients,
+      });
+    } catch (error) {
+      logger.error('Error fetching varients by ids:', error);
+      next(error);
+    }
+  }
+
   @httpPost('/')
   public async createVarient(
     @request() req: Request,

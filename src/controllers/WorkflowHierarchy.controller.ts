@@ -5,7 +5,7 @@ import { TYPES } from "../types";
 import { WorkflowHierarchyService } from "../services/workFlowHierarchy.service";
 import { NotificationService } from "../services/notification.service";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
-import { DepartmentEnum } from "../entities/workflowClosure.entity";
+import { DepartmentEnum, normalizeDepartment } from "../entities/workflowClosure.entity";
 import { ControllerLogger } from "../utils/controllerLogger";
 
 @controller("/workflow", deserializeUser, requireUser)
@@ -20,20 +20,21 @@ export class WorkflowHierarchyController {
   async addRelation(req: Request, res: Response) {
     try {
       console.log(req.body)
-      const { department, managerId,newSubordinate } = req.body;
+      const { department: rawDepartment, managerId, newSubordinate } = req.body;
      
-      const subordinateId=newSubordinate
-   
+      const subordinateId = newSubordinate;
 
-      if (!department || !managerId || !subordinateId) {
+      if (!rawDepartment || !managerId || !subordinateId) {
         return res.status(400).json({
           status: "fail",
           message: "Department, managerId, and subordinateId are required"
         });
       }
 
+      const department = normalizeDepartment(rawDepartment);
+
       const result = await this.workflowService.addSingleRelation(
-        department as DepartmentEnum,
+        department,
         managerId,
         subordinateId
       );
@@ -67,17 +68,19 @@ export class WorkflowHierarchyController {
   @httpPost("/bulk")
   async addBulkRelations(req: Request, res: Response) {
     try {
-      const { department, relations } = req.body;
+      const { department: rawDepartment, relations } = req.body;
 
-      if (!department || !relations || !Array.isArray(relations)) {
+      if (!rawDepartment || !relations || !Array.isArray(relations)) {
         return res.status(400).json({
           status: "fail",
           message: "Department and relations array are required"
         });
       }
 
+      const department = normalizeDepartment(rawDepartment);
+
       const result = await this.workflowService.addBulkRelations(
-        department as DepartmentEnum,
+        department,
         relations
       );
 
@@ -113,14 +116,16 @@ export class WorkflowHierarchyController {
 
     try {
       const { managerId } = req.query;
-      const { department } = req.params;
+      const { department: rawDepartment } = req.params;
 
-      if (!department) {
+      if (!rawDepartment) {
         return res.status(400).json({
           status: "fail",
           message: "Department is required"
         });
       }
+
+      const department = normalizeDepartment(rawDepartment);
 
       let result;
       
@@ -128,12 +133,12 @@ export class WorkflowHierarchyController {
         // If managerId is provided, get subordinates for that manager
         result = await this.workflowService.getSubordinates(
           managerId as string,
-          department as DepartmentEnum
+          department
         );
       } else {
         // If no managerId, get complete department tree
         result = await this.workflowService.getWorkflowTree(
-          department as DepartmentEnum
+          department
         );
       }
 
@@ -165,18 +170,20 @@ export class WorkflowHierarchyController {
   @httpGet("/managers/:subordinateId/:department")
   async getManagers(req: Request, res: Response) {
     try {
-      const { subordinateId, department } = req.params;
+      const { subordinateId, department: rawDepartment } = req.params;
 
-      if (!subordinateId || !department) {
+      if (!subordinateId || !rawDepartment) {
         return res.status(400).json({
           status: "fail",
           message: "SubordinateId and department are required"
         });
       }
 
+      const department = normalizeDepartment(rawDepartment);
+
       const managers = await this.workflowService.getManagers(
         subordinateId,
-        department as DepartmentEnum
+        department
       );
 
       ControllerLogger.logList('Workflow managers', req, res);
@@ -200,18 +207,20 @@ export class WorkflowHierarchyController {
   @httpGet("/manager-tree/:managerId/:department")
   async getManagerTree(req: Request, res: Response) {
     try {
-      const { managerId, department } = req.params;
+      const { managerId, department: rawDepartment } = req.params;
 
-      if (!managerId || !department) {
+      if (!managerId || !rawDepartment) {
         return res.status(400).json({
           status: "fail",
           message: "ManagerId and department are required"
         });
       }
 
+      const department = normalizeDepartment(rawDepartment);
+
       const tree = await this.workflowService.getManagerTree(
         managerId,
-        department as DepartmentEnum
+        department
       );
 
       ControllerLogger.logView('Manager tree', managerId, req, res);
@@ -232,7 +241,7 @@ export class WorkflowHierarchyController {
 async updateOneNode(req: Request, res: Response) {
   try {
     const { 
-      department, 
+      department: rawDepartment, 
       managerId, 
       oldSubordinate, 
       newSubordinate 
@@ -240,12 +249,14 @@ async updateOneNode(req: Request, res: Response) {
 const oldSubordinateId=oldSubordinate;
 const newSubordinateId=newSubordinate;
     // Validate input
-    if (!department || !managerId || !oldSubordinateId || !newSubordinateId) {
+    if (!rawDepartment || !managerId || !oldSubordinateId || !newSubordinateId) {
       return res.status(400).json({
         status: "fail",
         message: "department, managerId, oldSubordinateId, newSubordinateId are required"
       });
     }
+
+    const department = normalizeDepartment(rawDepartment);
 
     const result = await this.workflowService.updateSingleNode(
       department,
@@ -286,30 +297,23 @@ const newSubordinateId=newSubordinate;
   @httpDelete("/delete-node/:department/:nodeId")
   async deleteSingleNode(req: Request, res: Response) {
     try {
-      const { department, nodeId } = req.params;
+      const { department: rawDepartment, nodeId } = req.params;
 
-      if (!department || !nodeId) {
+      if (!rawDepartment || !nodeId) {
         return res.status(400).json({
           status: "fail",
           message: "Department and nodeId are required"
         });
       }
 
+      const department = normalizeDepartment(rawDepartment);
+
       const result = await this.workflowService.deleteSingleNode(
-        department as DepartmentEnum,
+        department,
         nodeId
       );
 
       ControllerLogger.logSuccess('Workflow node deleted', nodeId, req, res);
-
-      // Send notification for workflow node deletion
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Workflow node deleted successfully: ${nodeId}`,
-      //     userId
-      //   );
-      // }
 
       return res.status(200).json({
         status: "success",
@@ -332,10 +336,12 @@ const newSubordinateId=newSubordinate;
   @httpGet("/check-duplicates/:department?")
   async checkDuplicates(req: Request, res: Response) {
     try {
-      const { department } = req.params;
+      const { department: rawDepartment } = req.params;
+
+      const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
 
       const result = await this.workflowService.checkDuplicates(
-        department as DepartmentEnum | undefined
+        department
       );
 
       ControllerLogger.logList('Workflow duplicates check', req, res);
@@ -360,10 +366,12 @@ const newSubordinateId=newSubordinate;
   @httpDelete("/clean-duplicates/:department?")
   async cleanDuplicates(req: Request, res: Response) {
     try {
-      const { department } = req.params;
+      const { department: rawDepartment } = req.params;
+
+      const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
 
       const result = await this.workflowService.cleanDuplicates(
-        department as DepartmentEnum | undefined
+        department
       );
 
       ControllerLogger.logSuccess('Workflow duplicates cleaned', `${result.deletedCount} removed`, req, res);
@@ -386,6 +394,34 @@ const newSubordinateId=newSubordinate;
       return res.status(500).json({
         status: "error",
         message: error.message
+      });
+    }
+  }
+@httpGet("/user/details/:id")
+  async getUserWorkflows(req: Request, res: Response) {
+    try {
+      const userId = req.params.id;
+
+      if (!userId) {
+        return res.status(400).json({
+          status: "fail",
+          message: "userId is required",
+        });
+      }
+
+      const data = await this.workflowService.getUserWorkflowsByDepartment(userId);
+
+      ControllerLogger.logView("User workflows by department", userId, req, res);
+
+      return res.status(200).json({
+        status: "success",
+        data,
+      });
+    } catch (error: any) {
+      ControllerLogger.logError("User workflows retrieval", error, req, res);
+      return res.status(500).json({
+        status: "error",
+        message: error.message,
       });
     }
   }

@@ -211,6 +211,116 @@ customerData.createdBy = res.locals.user.id;
   //   }
   // }
 
+  /**
+   * PATCH /customers/submit/:id
+   * Submits the customer (sets status to "pending"). Frontend calls this when user clicks "Create".
+   * - req.files madhe file asel → S3 var juna delete, nava upload
+   * - req.body madhe URL string asel → existing URL tashi rahu de
+   */
+  @httpPatch('/submit/:id',
+    handleMulterFields([
+      { name: 'customerImage', maxCount: 1 },
+      { name: 'bankDetails[cancelledChequeCopy]', maxCount: 1 },
+      { name: 'bankDetails[bankStatementCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[panCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[aadharCopy]', maxCount: 1 },
+      { name: 'billBookCopy', maxCount: 1 },
+      { name: 'statutoryDetails[incorpoCertificateCopy]', maxCount: 1 },
+      { name: 'statutoryDetails[regiCertificateCopy]', maxCount: 1 },
+      { name: 'billingFormatCopy', maxCount: 1 },
+      { name: 'billingAddressProofCopy', maxCount: 1 },
+      { name: 'deliveryAddressProofCopy', maxCount: 1 },
+      { name: 'docEvidenceCopy', maxCount: 1 },
+      { name: 'mandiLicenceCopy', maxCount: 1 },
+      { name: 'regiCopy', maxCount: 1 },
+      { name: 'electricityBillCopy', maxCount: 1 },
+      { name: 'visitingCardCopy', maxCount: 1 },
+      { name: 'lc', maxCount: 1 },
+      { name: 'bg', maxCount: 1 },
+    ]),
+  )
+  public async submitCustomer(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const files = req.files as { [fieldname: string]: any[] } | undefined;
+      const body = req.body;
+
+      const fileUpdates: Record<string, string | null> = {};
+
+      const handleField = async (fieldName: string, bodyPath?: string) => {
+        const fileKey = fieldName;
+        if (files?.[fileKey]?.[0]) {
+          // New file → delete old from S3 if old URL exists
+          let oldUrl: string | undefined;
+          if (bodyPath) {
+            // nested path like "bankDetails.cancelledChequeCopy"
+            const parts = bodyPath.split('.');
+            oldUrl = parts.reduce((obj: any, key) => obj?.[key], body);
+          } else {
+            oldUrl = body[fieldName];
+          }
+          if (oldUrl && typeof oldUrl === 'string' && oldUrl.startsWith('http')) {
+            try {
+              const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+              const { s3 } = await import('../middleware/spaces.config');
+              const key = new URL(oldUrl).pathname.replace(/^\//, '');
+              await s3.send(new DeleteObjectCommand({ Bucket: process.env.DO_SPACES_BUCKET!, Key: key }));
+            } catch (e) {
+              console.warn(`Could not delete old ${fieldName} from S3:`, e);
+            }
+          }
+          fileUpdates[fieldName] = files[fileKey][0].location;
+        } else {
+          // No new file → keep existing URL from body
+          let existingUrl: string | undefined;
+          if (bodyPath) {
+            const parts = bodyPath.split('.');
+            existingUrl = parts.reduce((obj: any, key) => obj?.[key], body);
+          } else {
+            existingUrl = body[fieldName];
+          }
+          if (existingUrl && typeof existingUrl === 'string') {
+            fileUpdates[fieldName] = existingUrl;
+          }
+        }
+      };
+
+      await handleField('customerImage');
+      await handleField('bankDetails[cancelledChequeCopy]',        'bankDetails.cancelledChequeCopy');
+      await handleField('bankDetails[bankStatementCopy]',          'bankDetails.bankStatementCopy');
+      await handleField('statutoryDetails[panCopy]',               'statutoryDetails.panCopy');
+      await handleField('statutoryDetails[aadharCopy]',            'statutoryDetails.aadharCopy');
+      await handleField('billBookCopy',                            'statutoryDetails.billBookCopy');
+      await handleField('statutoryDetails[incorpoCertificateCopy]','statutoryDetails.incorpoCertificateCopy');
+      await handleField('statutoryDetails[regiCertificateCopy]',   'statutoryDetails.regiCertificateCopy');
+      await handleField('billingFormatCopy',                       'billingDetails.billingFormatCopy');
+      await handleField('billingAddressProofCopy',                 'billingDetails.billingAddressProofCopy');
+      await handleField('deliveryAddressProofCopy',                'deliveryDetails.deliveryAddressProofCopy');
+      await handleField('docEvidenceCopy',                         'paymentTerms.docEvidenceCopy');
+      await handleField('mandiLicenceCopy',                        'keyMobileNumbers.mandiLicenceCopy');
+      await handleField('regiCopy',                                'keyMobileNumbers.regiCopy');
+      await handleField('electricityBillCopy',                     'keyMobileNumbers.electricityBillCopy');
+      await handleField('visitingCardCopy',                        'keyMobileNumbers.visitingCardCopy');
+      await handleField('lc',                                      'paymentTerms.lc');
+      await handleField('bg',                                      'paymentTerms.bg');
+
+      const customer = await this.customerService.submitCustomer(id, fileUpdates);
+      ControllerLogger.logSuccess('Customer submitted', id, req, res);
+      return res.status(200).json({
+        status: 'success',
+        message: 'Customer submitted successfully',
+        data: { id: customer.id, status: customer.status },
+      });
+    } catch (err) {
+      ControllerLogger.logError('Submit Customer', err, req, res);
+      next(err);
+    }
+  }
+
 @httpPatch("/approve/:id")
 async approveCustomer(
   @request() req: Request, 

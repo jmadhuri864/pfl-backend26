@@ -27,6 +27,7 @@ export class AddressController {
       const address = await this.addressService.fetchAddressByPincode(pincode);
       return res.status(200).json(address);
     } catch (err: any) {
+      console.log(err);
       return res.status(404).json({ error: err.message });
     }
   }

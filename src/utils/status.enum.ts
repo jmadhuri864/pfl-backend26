@@ -4,6 +4,8 @@ export enum Status {
   APPROVED = "approved",
   REJECTED = "notapproved",
   ACTIVE = "active",
+  INCOMPLETE = "incomplete",
+  DRAFT = "draft",
 }
 
 // src/utils/approvalStatus.enum.ts

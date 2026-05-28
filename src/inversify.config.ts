@@ -350,8 +350,73 @@ import { RoleController } from "./controllers/role.controller";
 import { RoleService } from "./services/role.service";
 import { RoleRepository } from "./repositories/role.repository";
 import { Role } from "./entities/role.entity";
+import { StockCorrectionRepository } from "./repositories/stockCorrection.repository";
+import { StockCorrectionService } from "./services/stockCorrection.service";
+import { StockCorrectionController } from "./controllers/stockCorrection.controller";
+import { StockCorrection } from "./entities/stockCorrection.entity";
+// SSE Service and Controller
+import { SSEService } from "./services/sse.service";
+import { SSEController } from "./controllers/sse.controller";
+import { SSEHelperService } from "./utils/SSE_HELPER_SERVICE";
+// Performance optimization services
+import { CacheService } from "./services/cache.service";
+import { QueryOptimizerService } from "./services/queryOptimizer.service";
+import { CrystalReportService } from "./services/crystalReport.service";
+// Procurement Crystal Report
+import { ProcurementCrystalReportService } from "./services/procurementCrystalReport.service";
+import { ProcurementCrystalReportController } from "./controllers/procurementCrystalReport.controller";
 
+// Sales Crystal Report
+import { SalesCrystalReportService } from "./services/salesCrystalReport.service";
+import { SalesCrystalReportController } from "./controllers/salesCrystalReport.controller";
+// User Activity Logging
+import { UserActivityLog } from "./entities/userActivityLog.entity";
+import { UserActivityLogRepository } from "./repositories/userActivityLog.repository";
+import { UserActivityLogService } from "./services/userActivityLog.service";
+import { UserActivityLogController } from "./controllers/userActivityLog.controller";
+//import { LogCleanupService } from "./services/lo";
+import { WorkflowHierarchy } from "./entities/workflowClosure.entity";
+import { WorkflowHierarchyRepository } from "./repositories/WorkflowHierarchy.repository";
+import { WorkflowHierarchyService } from "./services/workFlowHierarchy.service";
+import { WorkflowHierarchyController } from "./controllers/WorkflowHierarchy.controller";
+import { ProcurementTargetRepository } from "./repositories/procurementTarget.repository";
+import { ProcurementTarget } from "./entities/procurmentTarget.entity";
+import { ProcurementTargetService } from "./services/procurementTarget.service";
+import { ProcurementTargetController } from "./controllers/procurementTarget.controller";
+import { SalesTarget } from "./entities/salesTarget.entity";
+import { SalesTargetRepository } from "./repositories/salesTarget.repository";
+import { SalesTargetService } from "./services/salesTarget.service";
+import { SalesTargetController } from "./controllers/salesTarget.controller";
+import { SalesTargetProduct } from "./entities/salesTargetProduct.entity";
+import { SalesTargetWeekRepository } from "./repositories/salesTargetWeek.repository";
+import { SalesTargetProductRepository } from "./repositories/salesTargetProduct.repository";
+import { SalesTargetWeek } from "./entities/salesTargetWeek.entity";
+import { SalesAchievementRepository } from "./repositories/salesAchievement.repository";
+import { SalesAchievement } from "./entities/salesachivement.entity";
+//import { DashboardService } from "./services/dash;
 
+import { ProcurementTargetProduct } from "./entities/procurementTargetProduct.entity";
+import { ProcurementTargetProductRepository } from "./repositories/procurmentTargetProduct.repository";
+import { ProcurementTargetWeek } from "./entities/procurementTargetWeek.entity";
+import { ProcurementTargetWeekRepository } from "./repositories/procurmentTargetWeek.repository";
+import { ProcurementTargetAchievementRepository } from "./repositories/procurmentAchievement.repository";
+import { ProcurementAchievement } from "./entities/procurementAchievement.entity";
+import { PaymentInfoForRFPA } from "./entities/rfpaPayementInfo.entity";
+import { RfpaPaymentInfoRepository } from "./repositories/rfpaPaymentInfo.repository";
+import { RegistrationReportsController } from "./controllers/registrationReport.controller";
+import { RegistrationReportService } from "./services/registrationReport.service";
+import { NewRegistrationController } from "./controllers/newRegistration.controller";
+import { NewRegistrationService } from "./services/newRegistration.service";
+import { ReturnToVendorService } from "./services/retrunToVendor.service";
+import { ReturnToVendorRepository } from "./repositories/returnToVendor.repository";
+import { ReturnToVendor } from "./entities/returnToVendor.entity";
+import { ReturnToVendorController } from "./controllers/returnToVendor.controller";
+import { FinalInvoiceReportController } from "./controllers/finalInvoiceReport.controller";
+import { FinalInvoiceReportService } from "./services/finalInvoiceReport.service";
+// Test Controller
+import { TestController } from "./controllers/test.controller";
+import { DashboardService } from "./services/dashboard.service";
+import { DashboardController } from "./controllers/dashboard.controller";
 const container = new Container();
 //socket server
 // Initialize Socket.IO server
@@ -1163,10 +1228,6 @@ container.bind<UserReportController>(TYPES.UserReportController).to(UserReportCo
 container.bind<SuperAdminController>(TYPES.SuperAdminController).to(SuperAdminController).inSingletonScope();
 container.bind<SuperAdminService>(TYPES.SuperAdminService).to(SuperAdminService).inSingletonScope();
 
-// Performance optimization services
-import { CacheService } from "./services/cache.service";
-import { QueryOptimizerService } from "./services/queryOptimizer.service";
-import { CrystalReportService } from "./services/crystalReport.service";
 
 // Bind performance optimization services
 container
@@ -1185,9 +1246,7 @@ container
   .to(CrystalReportService)
   .inSingletonScope();
 
-// Procurement Crystal Report
-import { ProcurementCrystalReportService } from "./services/procurementCrystalReport.service";
-import { ProcurementCrystalReportController } from "./controllers/procurementCrystalReport.controller";
+
 
 container
   .bind<ProcurementCrystalReportService>(TYPES.ProcurementCrystalReportService)
@@ -1199,9 +1258,7 @@ container
   .to(ProcurementCrystalReportController)
   .inSingletonScope();
 
-// Sales Crystal Report
-import { SalesCrystalReportService } from "./services/salesCrystalReport.service";
-import { SalesCrystalReportController } from "./controllers/salesCrystalReport.controller";
+
 
 container
   .bind<SalesCrystalReportService>(TYPES.SalesCrystalReportService)
@@ -1213,10 +1270,7 @@ container
   .to(SalesCrystalReportController)
   .inSingletonScope();
 
-// SSE Service and Controller
-import { SSEService } from "./services/sse.service";
-import { SSEController } from "./controllers/sse.controller";
-import { SSEHelperService } from "./utils/SSE_HELPER_SERVICE";
+
 
 container
   .bind<SSEService>(TYPES.SSEService)
@@ -1233,58 +1287,14 @@ container
   .to(SSEHelperService)
   .inSingletonScope();
 
-// Test Controller
-import { TestController } from "./controllers/test.controller";
+
 
 container
   .bind<TestController>(TYPES.TestController)
   .to(TestController)
   .inSingletonScope();
 
-// User Activity Logging
-import { UserActivityLog } from "./entities/userActivityLog.entity";
-import { UserActivityLogRepository } from "./repositories/userActivityLog.repository";
-import { UserActivityLogService } from "./services/userActivityLog.service";
-import { UserActivityLogController } from "./controllers/userActivityLog.controller";
-//import { LogCleanupService } from "./services/lo";
-import { WorkflowHierarchy } from "./entities/workflowClosure.entity";
-import { WorkflowHierarchyRepository } from "./repositories/WorkflowHierarchy.repository";
-import { WorkflowHierarchyService } from "./services/workFlowHierarchy.service";
-import { WorkflowHierarchyController } from "./controllers/WorkflowHierarchy.controller";
-import { ProcurementTargetRepository } from "./repositories/procurementTarget.repository";
-import { ProcurementTarget } from "./entities/procurmentTarget.entity";
-import { ProcurementTargetService } from "./services/procurementTarget.service";
-import { ProcurementTargetController } from "./controllers/procurementTarget.controller";
-import { SalesTarget } from "./entities/salesTarget.entity";
-import { SalesTargetRepository } from "./repositories/salesTarget.repository";
-import { SalesTargetService } from "./services/salesTarget.service";
-import { SalesTargetController } from "./controllers/salesTarget.controller";
-import { SalesTargetProduct } from "./entities/salesTargetProduct.entity";
-import { SalesTargetWeekRepository } from "./repositories/salesTargetWeek.repository";
-import { SalesTargetProductRepository } from "./repositories/salesTargetProduct.repository";
-import { SalesTargetWeek } from "./entities/salesTargetWeek.entity";
-import { SalesAchievementRepository } from "./repositories/salesAchievement.repository";
-import { SalesAchievement } from "./entities/salesachivement.entity";
-//import { DashboardService } from "./services/dash;
 
-import { ProcurementTargetProduct } from "./entities/procurementTargetProduct.entity";
-import { ProcurementTargetProductRepository } from "./repositories/procurmentTargetProduct.repository";
-import { ProcurementTargetWeek } from "./entities/procurementTargetWeek.entity";
-import { ProcurementTargetWeekRepository } from "./repositories/procurmentTargetWeek.repository";
-import { ProcurementTargetAchievementRepository } from "./repositories/procurmentAchievement.repository";
-import { ProcurementAchievement } from "./entities/procurementAchievement.entity";
-import { PaymentInfoForRFPA } from "./entities/rfpaPayementInfo.entity";
-import { RfpaPaymentInfoRepository } from "./repositories/rfpaPaymentInfo.repository";
-import { RegistrationReportsController } from "./controllers/registrationReport.controller";
-import { RegistrationReportService } from "./services/registrationReport.service";
-import { NewRegistrationController } from "./controllers/newRegistration.controller";
-import { NewRegistrationService } from "./services/newRegistration.service";
-import { ReturnToVendorService } from "./services/retrunToVendor.service";
-import { ReturnToVendorRepository } from "./repositories/returnToVendor.repository";
-import { ReturnToVendor } from "./entities/returnToVendor.entity";
-import { ReturnToVendorController } from "./controllers/returnToVendor.controller";
-import { FinalInvoiceReportController } from "./controllers/finalInvoiceReport.controller";
-import { FinalInvoiceReportService } from "./services/finalInvoiceReport.service";
 
 // import { RegistrationReportService } from "./services/registrationReport.service";
 // import { RegistrationReportController } from "./controllers/registrationReport.controller";
@@ -1361,8 +1371,8 @@ container.bind<SalesTargetController>(TYPES.SalesTargetController).to(SalesTarge
 }).inRequestScope();
 
 // //dashboard
-// container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
-// container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
+ container.bind<DashboardService>(TYPES.DashboardService).to(DashboardService).inSingletonScope();
+container.bind<DashboardController>(TYPES.DashboardController).to(DashboardController).inSingletonScope();
 // //registration report
 container.bind<NewRegistrationService>(TYPES.NewRegistrationService).to(NewRegistrationService).inSingletonScope();
  container.bind<NewRegistrationController>(TYPES.NewRegistrationController).to(NewRegistrationController).inSingletonScope();
@@ -1394,5 +1404,13 @@ container.bind<RoleRepository>(TYPES.RoleRepository).toDynamicValue((context) =>
 }).inRequestScope();
 container.bind<RoleService>(TYPES.RoleService).to(RoleService).inSingletonScope();
 container.bind<RoleController>(TYPES.RoleController).to(RoleController).inSingletonScope();
+
+// stockCorrection
+container.bind<StockCorrectionRepository>(TYPES.StockCorrectionRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(StockCorrection).extend(StockCorrectionRepository);
+}).inRequestScope();
+container.bind<StockCorrectionService>(TYPES.StockCorrectionService).to(StockCorrectionService).inSingletonScope();
+container.bind<StockCorrectionController>(TYPES.StockCorrectionController).to(StockCorrectionController).inSingletonScope();
 
 export { container };

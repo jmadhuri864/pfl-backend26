@@ -257,6 +257,31 @@ export class ProductController {
     }
   }
 
+  @httpPost('/getproduct/byids')
+  public async getProductsByIds(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { ids } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new AppError(400, 'ids must be a non-empty array');
+      }
+
+      const products = await this.productService.getProductsByIds(ids);
+
+      res.status(200).json({
+        status: 'success',
+        data: products,
+      });
+    } catch (error) {
+      logger.error('Error fetching products by ids:', error);
+      next(error);
+    }
+  }
+
   @httpPost('/', uploadSingle.single('image'))
   public async create(
     @request() req: Request,

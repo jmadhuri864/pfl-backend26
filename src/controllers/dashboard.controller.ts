@@ -6,419 +6,571 @@ import { TYPES } from "../types";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { DepartmentEnum } from "../entities/workflowClosure.entity";
 import { Status } from "../entities/salesTarget.entity";
+import { DashboardService } from "../services/dashboard.service";
 
 @controller('/dashboard', deserializeUser, requireUser)
 export class DashboardController {
-    // constructor(
-    //     @inject(TYPES.DashboardService)
-    //     private dashboardService: DashboardService
-    // ) {}
+    constructor(
+        @inject(TYPES.DashboardService)
+        private dashboardService: DashboardService
+    ) { }
 
-    // // 📊 EXECUTIVE DASHBOARD
-    // @httpGet('/executive')
-    // async getExecutiveDashboard(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+    //TODO:Get Procurement Team Performance 
+    @httpGet('/midlevel/procurement/team-performance')
+    async getProcurementTeamPerformance(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        const userId = res.locals.user.id;
+        console.log("User ID in DashboardController:", userId);
+        try {
+            const data = await this.dashboardService.getProcurementTeamPerformance(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Procurement team performance data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const { startDate, endDate, department } = req.query;
-            
-    //         const filters: any = {};
-    //         if (startDate) filters.startDate = new Date(startDate as string);
-    //         if (endDate) filters.endDate = new Date(endDate as string);
-    //         if (department) filters.department = department as DepartmentEnum;
+    //TODO:Get Sale Team Performance
+    @httpGet('/midlevel/sale/team-performance')
+    async getSaleTeamPerformance(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        const userId = res.locals.user?.id;
+        try {
+            const data = await this.dashboardService.getSaleTeamPerformance(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Sale team performance data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const data = await this.dashboardService.getExecutiveDashboard(userId, filters);
+    //TODO:Get Total Procurement Amt And Qty By Source Wise For Current Month
+    @httpGet('/midlevel/procurement/source-wise')
+    async getProcurementSourceWise(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        const userId = res.locals.user?.id;
+        try {
+            const data = await this.dashboardService.getProcurementSourceWise(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Procurement source-wise data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data,
-    //             message: "Executive dashboard data retrieved successfully"
-    //         });
+    //TODO:Get Procurement Team Memebers Performance Overview in Deashboard
+    @httpGet('/midlevel/procurement/team-members-performance')
+    async getProcurementTeamMembersPerformance(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        const userId = res.locals.user.id;
+        console.log("User ID in DashboardController:", userId);
+        try {
+            const data = await this.dashboardService.getProcurementTeamMembersPerformance(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Procurement team members performance data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
+    //TODO:Get Sale Team Memebers Performance Overview in Deashboard
+    @httpGet('/midlevel/sale/team-members-performance')
+    async getSaleTeamMembersPerformance(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        const userId = res.locals.user.id;
+        console.log("User ID in DashboardController:", userId);
+        try {
+            const data = await this.dashboardService.getSaleTeamMembersPerformance(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Sale team members performance data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+        }
+    //TODO:Get Farmer Registration Overview of Team in Dashboard
+      @httpGet("/registration-insight/farmer-registration")
+    async getFarmerRegistrationOverviewOfTeam(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getFarmerRegistrationOverviewOfTeam(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Farmer registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    // // 📈 SALES PERFORMANCE DASHBOARD
-    // @httpGet('/sales-performance')
-    // async getSalesPerformanceDashboard(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+    //TODO:Get Vendor Registration Overview of Team in Dashboard
+      @httpGet("/registration-insight/vendor-registration")
+    async getVendorRegistrationOverviewOfTeam(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getVendorRegistrationOverviewOfTeam(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Vendor registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const { startDate, endDate, employeeId, customerId, productId } = req.query;
-            
-    //         const filters: any = {};
-    //         if (startDate) filters.startDate = new Date(startDate as string);
-    //         if (endDate) filters.endDate = new Date(endDate as string);
-    //         if (employeeId) filters.employeeId = employeeId as string;
-    //         if (customerId) filters.customerId = customerId as string;
-    //         if (productId) filters.productId = productId as string;
+    //TODO:Get Customer Registration Overview of Team in Dashboard
+      @httpGet("/registration-insight/customer-registration/")
+    async getCustomerRegistrationOverviewOfTeam(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getCustomerRegistrationOverviewOfTeam(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Customer registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const data = await this.dashboardService.getSalesPerformanceDashboard(userId, filters);
+     //TODO:Get Farmer Registration Overview of Each Team Member Of A Team in Dashboard
+      @httpGet("/registration-insight/farmer-registration/team-members-performance")
+    async getFarmerRegistrationOverviewOfEachTeamMember(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Farmer registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data,
-    //             message: "Sales performance dashboard data retrieved successfully"
-    //         });
+     //TODO:Get Vendor Registration Overview of Each Team Member Of A Team in Dashboard
+      @httpGet("/registration-insight/vendor-registration/team-members-performance")
+    async getVendorRegistrationOverviewOfEachTeamMember(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Vendor registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
+     //TODO:Get Customer Registration Overview of Each Team Member Of A Team in Dashboard
+      @httpGet("/registration-insight/customer-registration/team-members-performance")
+    async getCustomerRegistrationOverviewOfEachTeamMember(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+       const teamLeaderId = res.locals.user?.id as string;
+        try {
+            const data = await this.dashboardService.getCustomerRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Customer registration overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    // // 🏢 WORKFLOW HIERARCHY DASHBOARD
-    // @httpGet('/workflow-hierarchy')
-    // async getWorkflowHierarchyDashboard(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+    @httpGet("/employee-count/by-dept")
+    public async getEmployeeCountByDept(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { department } = req.query;
+            const userId = res.locals.user?.id;
 
-    //         const data = await this.dashboardService.getWorkflowHierarchyDashboard(userId);
+            const data = await this.dashboardService.getEmployeeCountByDept({ userId, department });
+console.log(data);
+            return res.status(200).json({
+                success: true,
+                message: userId
+                    ? `Employee team stats for user ${userId}`
+                    : "Global employee team stats",
+                data,
+            });
+        } catch (error: any) {
+            console.log(error);
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch employee team stats",
+            });
+        }
+    }
+//TODO:Get Procurement Overview for all team in Dashboard
+    @httpGet('/upper-level/procurement-overview')
+    async getProcurementOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getProcurementOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Procurement overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data,
-    //             message: "Workflow hierarchy dashboard data retrieved successfully"
-    //         });
+     //TODO:Get Sale Overview for all team in Dashboard
+    @httpGet('/upper-level/sale-overview')
+    async getSaleOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getSaleOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Sale overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
+    //TODO:Get GRN Overview for all team in Dashboard
+    @httpGet('/upper-level/grn-overview')
+    async getGRNOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getGRNOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "GRN overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    // // 📋 MONTHLY PLAN ANALYTICS
-    // @httpGet('/monthly-plan-analytics')
-    // async getMonthlyPlanAnalytics(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+    //TODO:Get Invoice Overview for all team in Dashboard
+    @httpGet('/upper-level/invoice-overview')
+    async getInvoiceOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getInvoiceOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Invoice overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const { startDate, endDate, department, status } = req.query;
-            
-    //         const filters: any = {};
-    //         if (startDate) filters.startDate = new Date(startDate as string);
-    //         if (endDate) filters.endDate = new Date(endDate as string);
-    //         if (department) filters.department = department as DepartmentEnum;
-    //         if (status) filters.status = status as Status;
+    //TODO:Get sale overview by customer type wise in Dashboard
+    @httpGet('/upper-level/customer-type-wise/sale-overview')
+    async getCustomerTypeWiseSaleOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getCustomerTypeWiseSaleOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Customer type wise sale overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const data = await this.dashboardService.getMonthlyPlanAnalytics(userId, filters);
+    //TODO:Get sale overview by customer category wise in Dashboard
+    @httpGet('/upper-level/customer-category-wise/sale-overview')
+    async getCustomerCategoryWiseSaleOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getCustomerCategoryWiseSaleOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Customer Category wise sale overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data,
-    //             message: "Monthly plan analytics retrieved successfully"
-    //         });
+    //TODO:Get Procurement Overview by vendor category wise in Dashboard
+    @httpGet('/upper-level/vendor-category-wise/procurement-overview')
+    async getVendorCategoryWiseProcurementOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getVendorCategoryWiseProcurementOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Vendor Category wise procurement overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
+        //TODO:Get Procurement Overview by vendor subcategory wise in Dashboard
+    @httpGet('/upper-level/vendor-subcategory-wise/procurement-overview')
+    async getVendorSubcategoryWiseProcurementOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getVendorSubcategoryWiseProcurementOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Vendor Subcategory wise procurement overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    // // 📊 QUICK STATS (for widgets)
-    // @httpGet('/quick-stats')
-    // async getQuickStats(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+    //TODO:Get Location Wise sale overview in Dashboard (Sale Distribution by location)
+    @httpGet('/upper-level/location-wise/sale-distribution')
+    async getLocationWiseSaleOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getLocationWiseSaleOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Location wise sale overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         // Get current month data
-    //         const now = new Date();
-    //         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    //         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        //TODO:Get Location Wise procurement overview in Dashboard (Procurement Distribution by location)
+    @httpGet('/upper-level/location-wise/procurement-distribution')
+    async getLocationWiseProcurementOverview(
+        @request() req: Request,
+        @response() res: Response
+    ) {
+        try {
+            const data = await this.dashboardService.getLocationWiseProcurementOverview();
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Location wise procurement overview data retrieved successfully"
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //         const filters = {
-    //             startDate: startOfMonth,
-    //             endDate: endOfMonth
-    //         };
+    //Top 5 customer
+    @httpGet("/top5/customer")
+    public async getTop5Customer(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
 
-    //         const executiveData = await this.dashboardService.getExecutiveDashboard(userId, filters);
-    //         const hierarchyData = await this.dashboardService.getWorkflowHierarchyDashboard(userId);
+            const data = await this.dashboardService.getTop5Customer({ teamLeaderId });
 
-    //         const quickStats = {
-    //             totalPlans: executiveData.overallStats.totalPlans,
-    //             approvedPlans: executiveData.overallStats.approvedPlans,
-    //             //achievementRate: executiveData.overallStats.achievementRate,
-    //             teamSize: hierarchyData.totalTeamSize,
-    //             directReports: hierarchyData.totalDirectReports,
-    //             totalTargetAmount: executiveData.overallStats.totalTargetAmount,
-    //             totalAchievedAmount: executiveData.overallStats.totalAchievedAmount,
-    //             activeEmployees: executiveData.overallStats.activeEmployees
-    //         };
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 customers for team leader`
+                    : "Global top 5 customers",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 customers",
+            });
+        }
+    }
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data: quickStats,
-    //             message: "Quick stats retrieved successfully"
-    //         });
+    // Top 5 farmers
+    @httpGet("/top5/farmer")
+    public async getTop5Farmer(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
+            const data = await this.dashboardService.getTop5Farmer({ teamLeaderId });
 
-    // // 📈 PERFORMANCE TRENDS
-    // @httpGet('/performance-trends')
-    // async getPerformanceTrends(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 farmers for team leader`
+                    : "Global top 5 farmers",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 farmers",
+            });
+        }
+    }
 
-    //         const { period = '6months', type = 'monthly' } = req.query;
-            
-    //         // Calculate date range based on period
-    //         const now = new Date();
-    //         let startDate: Date;
-            
-    //         switch (period) {
-    //             case '3months':
-    //                 startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    //                 break;
-    //             case '6months':
-    //                 startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    //                 break;
-    //             case '1year':
-    //                 startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    //                 break;
-    //             default:
-    //                 startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    //         }
+    // Top 5 vendors
+    @httpGet("/top5/vendor")
+    public async getTop5Vendor(
+        @request() req: Request,
+        @response() res: Response,
+    ) {
+        try {
+            const { teamLeaderId } = req.query;
 
-    //         const filters = { startDate, endDate: now };
-    //         const data = await this.dashboardService.getExecutiveDashboard(userId, filters);
+            const data = await this.dashboardService.getTop5Vendor({ teamLeaderId });
 
-    //         return res.status(200).json({
-    //             success: true,
-    //             data: {
-    //                 trends: data.trends,
-    //                 period,
-    //                 type
-    //             },
-    //             message: "Performance trends retrieved successfully"
-    //         });
+            return res.status(200).json({
+                success: true,
+                message: teamLeaderId
+                    ? `Top 5 vendors for team leader`
+                    : "Global top 5 vendors",
+                data,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Failed to fetch top 5 vendors",
+            });
+        }
+    }
 
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
-
-    // // 🎯 TOP PERFORMERS
-    // @httpGet('/top-performers')
-    // async getTopPerformers(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
-
-    //         const { limit = '10', period = 'current_month' } = req.query;
-            
-    //         // Calculate date range
-    //         const now = new Date();
-    //         let startDate: Date, endDate: Date;
-            
-    //         switch (period) {
-    //             case 'current_month':
-    //                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    //                 endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    //                 break;
-    //             case 'last_month':
-    //                 startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    //                 endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-    //                 break;
-    //             case 'quarter':
-    //                 const quarter = Math.floor(now.getMonth() / 3);
-    //                 startDate = new Date(now.getFullYear(), quarter * 3, 1);
-    //                 endDate = new Date(now.getFullYear(), (quarter + 1) * 3, 0);
-    //                 break;
-    //             default:
-    //                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    //                 endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    //         }
-
-    //         const filters = { startDate, endDate };
-    //         const data = await this.dashboardService.getExecutiveDashboard(userId, filters);
-
-    //         return res.status(200).json({
-    //             success: true,
-    //             data: {
-    //                 topPerformers: data.topPerformers.slice(0, parseInt(limit as string)),
-    //                 period,
-    //                 totalCount: data.topPerformers.length
-    //             },
-    //             message: "Top performers retrieved successfully"
-    //         });
-
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
-
-    // // 📊 DEPARTMENT COMPARISON
-    // @httpGet('/department-comparison')
-    // async getDepartmentComparison(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
-
-    //         const { startDate, endDate } = req.query;
-            
-    //         const filters: any = {};
-    //         if (startDate) filters.startDate = new Date(startDate as string);
-    //         if (endDate) filters.endDate = new Date(endDate as string);
-
-    //         const data = await this.dashboardService.getExecutiveDashboard(userId, filters);
-
-    //         return res.status(200).json({
-    //             success: true,
-    //             data: {
-    //                 departmentPerformance: data.departmentPerformance,
-    //                 filters
-    //             },
-    //             message: "Department comparison retrieved successfully"
-    //         });
-
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
-
-    // // 📋 PLAN STATUS OVERVIEW
-    // @httpGet('/plan-status-overview')
-    // async getPlanStatusOverview(
-    //     @request() req: Request,
-    //     @response() res: Response
-    // ) {
-    //     try {
-    //         const userId = res.locals.user?.id;
-            
-    //         if (!userId) {
-    //             return res.status(401).json({
-    //                 success: false,
-    //                 message: "User not authenticated"
-    //             });
-    //         }
-
-    //         const { startDate, endDate } = req.query;
-            
-    //         const filters: any = {};
-    //         if (startDate) filters.startDate = new Date(startDate as string);
-    //         if (endDate) filters.endDate = new Date(endDate as string);
-
-    //         const data = await this.dashboardService.getExecutiveDashboard(userId, filters);
-
-    //         return res.status(200).json({
-    //             success: true,
-    //             data: {
-    //                 planStatusDistribution: data.planStatusDistribution,
-    //                 overallStats: data.overallStats,
-    //                 filters
-    //             },
-    //             message: "Plan status overview retrieved successfully"
-    //         });
-
-    //     } catch (error: any) {
-    //         return res.status(500).json({
-    //             success: false,
-    //             message: error.message
-    //         });
-    //     }
-    // }
 }

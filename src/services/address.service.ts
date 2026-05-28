@@ -6,6 +6,10 @@ import { Address } from '../entities/address.entity';
 import { CacheService } from './cache.service';
 import AppError from '../utils/appError';
 import axios from 'axios';
+import https from 'https';
+
+// Bypass expired SSL cert on api.postalpincode.in
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const CACHE_TTL_PINCODE = 86400; // 24 hours — pincode data rarely changes
 const CACHE_TTL_ADDRESS = 300;   // 5 minutes
@@ -80,7 +84,7 @@ export class AddressService {
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
-    const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);
+    const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`, { httpsAgent });
     const data: any = response.data;
 
     if (data[0]?.Status === 'Success' && data[0].PostOffice?.length > 0) {

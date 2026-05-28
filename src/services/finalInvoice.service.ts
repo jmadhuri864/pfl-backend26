@@ -7,7 +7,7 @@ import AppError from '../utils/appError';
 import { DataSource } from 'typeorm';
 import { Invoice } from '../entities/invoice.entity';
 import { InvoiceProduct } from '../entities/invoiceProduct.entity';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliveryChallan.repository';
 import { DocumentbService } from './documentb.service';
 import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
@@ -512,118 +512,117 @@ export class FinalInvoiceService {
     queryOptions: PaginationOptions,
     userId: string,
   ): Promise<any> {
-    const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
-      userId,
-      DocumentTypeEnum.FINAL_INVOICE,
-      queryOptions,
-    );
+    const cacheKey = `${this.CACHE_PREFIX}:all:${userId}:${createHash('md5').update(JSON.stringify(queryOptions)).digest('hex')}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-    const { search } = queryOptions;
-    const typedDocuments = data as DocumentWithRelatedData[];
+    const { search, sort, page = 1, limit = 10 } = queryOptions;
 
-    // batch fetch — no N+1
-    const invoiceIds = typedDocuments
-      .map((doc) => doc.document_type_id)
-      .filter(Boolean) as string[];
+    // Single joined query — invoice + document in one shot
+    const qb = this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .innerJoin('document', 'doc', 'doc.document_type_id = invoice.id AND doc.type = :docType AND doc.isDeleted = false AND doc.deletedAt IS NULL', { docType: DocumentTypeEnum.FINAL_INVOICE })
+      .innerJoin('doc.approvalFlow', 'approvalFlow')
+      .innerJoin('approvalFlow.approvers', 'approvalLevel')
+      .leftJoin('approvalLevel.firstApprover', 'firstApproverBlock')
+      .leftJoin('firstApproverBlock.users', 'firstApproverUser')
+      .leftJoin('approvalLevel.secondApprover', 'secondApproverBlock')
+      .leftJoin('secondApproverBlock.users', 'secondApproverUser')
+      .leftJoin('doc.lastActionBy', 'lastActionBy')
+      .leftJoin('invoice.companyName', 'company')
+      .leftJoin('invoice.deliveryChallan', 'deliveryChallan')
+      .leftJoin('invoice.customerName', 'customerName')
+      .leftJoin('invoice.fromLocation', 'fromLocation')
+      .leftJoin('invoice.billingAddress', 'billingAddress')
+      .leftJoin('invoice.deliveryAddress', 'deliveryAddress')
+      .select([
+        'invoice.id', 'invoice.invoiceNo', 'invoice.invoiceDate', 'invoice.vehicleNo',
+        'invoice.poNumber', 'invoice.totalProductAmount', 'invoice.netProductWeight',
+        'invoice.totalAmount', 'invoice.createdAt',
+        'company.name', 'deliveryChallan.challanNo',
+        'customerName.organisationName', 'fromLocation.name',
+        'billingAddress.address1', 'billingAddress.address2', 'billingAddress.location',
+        'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
+        'deliveryAddress.address1', 'deliveryAddress.address2', 'deliveryAddress.location',
+        'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
+      ])
+      .addSelect('doc.id', 'docId')
+      .addSelect('doc.status', 'docStatus')
+      .addSelect('doc.createdAt', 'docCreatedAt')
+      .addSelect('lastActionBy.id', 'lastActionById')
+      .addSelect('lastActionBy.firstName', 'lastActionByFirstName')
+      .addSelect('lastActionBy.lastName', 'lastActionByLastName')
+      .where('invoice.isDeleted = false')
+      .andWhere('invoice.deletedAt IS NULL')
+      .andWhere(
+        new Brackets((qb) => {
+          qb.orWhere('firstApproverUser.id = :userId', { userId })
+            .orWhere('secondApproverUser.id = :userId', { userId })
+            .orWhere('lastActionBy.id = :userId', { userId });
+        }),
+      );
 
-    let invoiceMap = new Map<string, any>();
-    if (invoiceIds.length > 0) {
-      const invoices = await this.invoiceRepository
-        .createQueryBuilder('invoice')
-        .leftJoin('invoice.companyName', 'company')
-        .leftJoin('invoice.deliveryChallan', 'deliveryChallan')
-        .leftJoin('invoice.customerName', 'customerName')
-        .leftJoin('invoice.fromLocation', 'fromLocation')
-        .leftJoin('invoice.billingAddress', 'billingAddress')
-        .leftJoin('invoice.deliveryAddress', 'deliveryAddress')
-        .select([
-          'invoice.id', 'invoice.invoiceNo', 'invoice.invoiceDate', 'invoice.vehicleNo',
-          'invoice.poNumber', 'invoice.totalProductAmount', 'invoice.netProductWeight',
-          'invoice.totalAmount',
-          'company.name', 'deliveryChallan.challanNo',
-          'customerName.organisationName', 'fromLocation.name',
-          'billingAddress.address1', 'billingAddress.address2', 'billingAddress.location',
-          'billingAddress.city', 'billingAddress.state', 'billingAddress.pincode',
-          'deliveryAddress.address1', 'deliveryAddress.address2', 'deliveryAddress.location',
-          'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
-        ])
-        .where('invoice.id IN (:...ids)', { ids: invoiceIds })
-        .andWhere('invoice.isDeleted = false')
-        .andWhere('invoice.deletedAt IS NULL')
-        .getMany();
-
-      invoiceMap = new Map(invoices.map((i) => [i.id, i]));
+    if (search && search.trim()) {
+      const term = `%${search.toLowerCase()}%`;
+      qb.andWhere(
+        new Brackets((qb) => {
+          qb.orWhere('LOWER(invoice.invoiceNo) LIKE :term', { term })
+            .orWhere('LOWER(company.name) LIKE :term', { term })
+            .orWhere('LOWER(customerName.organisationName) LIKE :term', { term })
+            .orWhere('LOWER(deliveryChallan.challanNo) LIKE :term', { term })
+            .orWhere('LOWER(invoice.vehicleNo) LIKE :term', { term })
+            .orWhere('LOWER(invoice.poNumber) LIKE :term', { term })
+            .orWhere('LOWER(fromLocation.name) LIKE :term', { term });
+        }),
+      );
     }
+
+    const [sortField, sortDir] = (sort || 'invoice.createdAt:DESC').split(':');
+    const sortOrder = (sortDir || 'DESC').toUpperCase() as 'ASC' | 'DESC';
+    qb.orderBy(sortField, sortOrder);
+
+    const total = await qb.getCount();
+    const raw = await qb.offset((page - 1) * limit).limit(limit).getRawAndEntities();
 
     const formatAddr = (addr: any) => addr
       ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
           .filter(Boolean).join(' ')
       : null;
 
-    let relatedDataOnly = typedDocuments
-      .filter((doc) => doc.document_type_id && invoiceMap.has(doc.document_type_id))
-      .map((doc) => {
-        const rd = invoiceMap.get(doc.document_type_id!);
-        if (!rd) return null;
-        const { createdDate, createdTime } = formatDateTime(doc.createdAt);
-        return {
-          documentId: doc.id,
-          overAllStatus: doc.status,
-          createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
-          createdDate,
-          createdTime,
-          id: rd.id,
-          invoiceNo: rd.invoiceNo,
-          invoiceDate: rd.invoiceDate,
-          vehicleNo: rd.vehicleNo ?? null,
-          companyName: rd.companyName?.name ?? null,
-          deliveryChallan: rd.deliveryChallan?.challanNo ?? null,
-          customerName: rd.customerName?.organisationName ?? null,
-          poNumber: rd.poNumber,
-          fromLocation: rd.fromLocation?.name ?? null,
-          totalProductAmount: rd.totalProductAmount,
-          netProductWeight: rd.netProductWeight,
-          totalAmount: rd.totalAmount,
-          billingAddress: formatAddr(rd.billingAddress),
-          deliveryAddress: formatAddr(rd.deliveryAddress),
-        };
-      })
-      .filter(Boolean);
+    const data = raw.entities.map((invoice, i) => {
+      const r = raw.raw[i];
+      const { createdDate, createdTime } = formatDateTime(r.docCreatedAt ?? invoice.createdAt);
+      const firstName = r.lastActionByFirstName ?? '';
+      const lastName = r.lastActionByLastName ?? '';
+      return {
+        documentId: r.docId,
+        overAllStatus: r.docStatus,
+        createdBy: `${firstName} ${lastName}`.trim(),
+        createdDate,
+        createdTime,
+        id: invoice.id,
+        invoiceNo: invoice.invoiceNo,
+        invoiceDate: invoice.invoiceDate,
+        vehicleNo: invoice.vehicleNo ?? null,
+        companyName: (invoice as any).companyName?.name ?? null,
+        deliveryChallan: (invoice as any).deliveryChallan?.challanNo ?? null,
+        customerName: (invoice as any).customerName?.organisationName ?? null,
+        poNumber: invoice.poNumber,
+        fromLocation: (invoice as any).fromLocation?.name ?? null,
+        totalProductAmount: invoice.totalProductAmount,
+        netProductWeight: invoice.netProductWeight,
+        totalAmount: invoice.totalAmount,
+        billingAddress: formatAddr((invoice as any).billingAddress),
+        deliveryAddress: formatAddr((invoice as any).deliveryAddress),
+      };
+    });
 
-    const objectToString = (obj: any): string => {
-      if (obj == null) return '';
-      if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
-      return String(obj);
+    const result = {
+      data,
+      meta: { total, page, pages: Math.ceil(total / limit) },
     };
-
-    if (search && search.trim()) {
-      const term = search.toLowerCase();
-      relatedDataOnly = relatedDataOnly.filter((item) =>
-        objectToString(item).toLowerCase().includes(term),
-      );
-    }
-
-    if (queryOptions.sort) {
-      const [field, direction] = queryOptions.sort.split(':');
-      const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-      const getNestedValue = (obj: any, path: string) =>
-        path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-      relatedDataOnly.sort((a, b) => {
-        const valA = getNestedValue(a, field);
-        const valB = getNestedValue(b, field);
-        if (valA == null && valB == null) return 0;
-        if (valA == null) return -1 * sortOrder;
-        if (valB == null) return 1 * sortOrder;
-        if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
-        return String(valA).localeCompare(String(valB)) * sortOrder;
-      });
-    }
-
-    return {
-      data: relatedDataOnly,
-      meta: { total: meta.total, page: meta.page, pages: meta.pages },
-    };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
   async update(id: string, data: any): Promise<any> {
@@ -633,7 +632,9 @@ export class FinalInvoiceService {
       if (!invoice) return null;
 
       const updated = Object.assign(invoice, data);
-      return await this.invoiceRepository.save(updated);
+      const saved = await this.invoiceRepository.save(updated);
+      await this.invalidateCache(id);
+      return saved;
     } catch (err) {
       logger.error(`Error updating final invoice with ID: ${id}`, {
         error: err,
@@ -643,6 +644,10 @@ export class FinalInvoiceService {
   }
 
   public async getByIdForPdf(id: string): Promise<any> {
+      const cacheKey = `${this.CACHE_PREFIX}:pdf:${id}`;
+      const cached = await this.cacheService.get<any>(cacheKey);
+      if (cached) return cached;
+
       try {
         const invoice = await this.invoiceRepository.findOne({
           where: { id },
@@ -800,6 +805,7 @@ console.log(items)
           bankDetails: mappedBankDetails,
         };
 
+        await this.cacheService.set(cacheKey, formattedData, this.CACHE_TTL);
         return formattedData;
       } catch (error: any) {
         logger.error(`Error fetching invoice for PDF with ID: ${id}`, {
@@ -838,6 +844,7 @@ console.log(items)
 
       await this.invoiceRepository.softDelete(finalInvoice.id);
       await this.invoiceRepository.update(finalInvoice.id, { isDeleted: true } as any);
+      await this.invalidateCache(finalInvoice.id);
       success.push(id);
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });

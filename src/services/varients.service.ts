@@ -58,7 +58,17 @@ export class ProductVarientsService {
     return await this.productVarientRepository.save(variants);
   }
 
-    async getAllByFilter(queryOptions: PaginationOptions): Promise<any> {
+  async getVarientsByIds(ids: string[]): Promise<any[]> {
+    if (!ids || ids.length === 0) return [];
+
+    return await this.productVarientRepository
+      .createQueryBuilder('varient')
+      .select(['varient.id', 'varient.variantName', 'varient.variantCode'])
+      .where('varient.id IN (:...ids)', { ids })
+      .getMany();
+  }
+
+  async getAllByFilter(queryOptions: PaginationOptions): Promise<any> {
       try {
         const queryBuilder = this.productVarientRepository
           .createQueryBuilder('varient')
