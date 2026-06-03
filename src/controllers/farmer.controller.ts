@@ -128,7 +128,7 @@ console.log(files)
     try {
       const files = req.files as { [fieldname: string]: any[] } | undefined;
       const body = req.body;
-
+console.log(body);
       const fileUpdates: Record<string, string | null> = {};
 
       const handleField = async (fieldName: string) => {
@@ -159,7 +159,15 @@ console.log(files)
       await handleField('idProofCopy');
       await handleField('sevenTwelveCopy');
 
-      const farmer = await this.farmerService.submitFarmer(id, fileUpdates);
+      // body मधली बाकी farmer info पण pass करा
+      const farmerData = { ...body };
+      // file fields body मधून काढा — ते fileUpdates मधून येतात
+      delete farmerData.farmPhoto;
+      delete farmerData.farmerPhoto;
+      delete farmerData.idProofCopy;
+      delete farmerData.sevenTwelveCopy;
+
+      const farmer = await this.farmerService.submitFarmer(id, fileUpdates, farmerData);
 
       ControllerLogger.logSuccess('Farmer submitted', id, req, res);
       return res.status(200).json({

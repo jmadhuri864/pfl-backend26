@@ -24,7 +24,10 @@ export class DashboardController {
         const userId = res.locals.user.id;
         console.log("User ID in DashboardController:", userId);
         try {
-            const data = await this.dashboardService.getProcurementTeamPerformance(userId);
+            // Frontend sends month as 0-11 (JS convention), year as full year
+            const month = req.query.month !== undefined ? Number(req.query.month) : undefined;
+            const year  = req.query.year  !== undefined ? Number(req.query.year)  : undefined;
+            const data = await this.dashboardService.getProcurementTeamPerformance(userId, month, year);
             return res.status(200).json({
                 success: true,
                 data,
@@ -138,8 +141,9 @@ export class DashboardController {
             const data = await this.dashboardService.getFarmerRegistrationOverviewOfTeam(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Farmer registration overview data retrieved successfully"
+                
+                message: "Farmer registration overview data retrieved successfully",
+                data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -160,8 +164,9 @@ export class DashboardController {
             const data = await this.dashboardService.getVendorRegistrationOverviewOfTeam(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Vendor registration overview data retrieved successfully"
+                //data,
+                message: "Vendor registration overview data retrieved successfully",
+                 data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -172,7 +177,7 @@ export class DashboardController {
     }
 
     //TODO:Get Customer Registration Overview of Team in Dashboard
-      @httpGet("/registration-insight/customer-registration/")
+      @httpGet("/registration-insight/customer-registration")
     async getCustomerRegistrationOverviewOfTeam(
         @request() req: Request,
         @response() res: Response
@@ -182,8 +187,9 @@ export class DashboardController {
             const data = await this.dashboardService.getCustomerRegistrationOverviewOfTeam(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Customer registration overview data retrieved successfully"
+                //data,
+                message: "Customer registration overview data retrieved successfully",
+                 data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -204,8 +210,9 @@ export class DashboardController {
             const data = await this.dashboardService.getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Farmer registration overview data retrieved successfully"
+                //data,
+                message: "Farmer registration overview data retrieved successfully",
+                 data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -226,8 +233,9 @@ export class DashboardController {
             const data = await this.dashboardService.getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Vendor registration overview data retrieved successfully"
+                //data,
+                message: "Vendor registration overview data retrieved successfully",
+                 data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -248,8 +256,9 @@ export class DashboardController {
             const data = await this.dashboardService.getCustomerRegistrationOverviewOfEachTeamMember(teamLeaderId);
             return res.status(200).json({
                 success: true,
-                data,
-                message: "Customer registration overview data retrieved successfully"
+                //data,
+                message: "Customer registration overview data retrieved successfully",
+                 data:data.data
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -572,5 +581,77 @@ console.log(data);
             });
         }
     }
+@httpGet("/weekly-procurement-performance")
+async getWeeklyProcurementPerformance(
+  @request() req: Request,
+  @response() res: Response
+) {
+  try {
+    const userId = res.locals.user?.id as string;
 
+    const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
+
+    const data =
+      await this.dashboardService.getWeeklyProcurementPerformance(
+        userId,
+        month,
+        year
+      );
+
+    return res.status(200).json({
+      success: true,
+      data,
+      message:
+        "Weekly procurement performance retrieved successfully",
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+@httpGet("/weekly-sales-performance")
+async getWeeklySalesPerformance(
+  @request() req: Request,
+  @response() res: Response
+) {
+  try {
+    const userId = res.locals.user?.id as string;
+
+    const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
+
+    const data =
+      await this.dashboardService.getWeeklySalesPerformance(
+        userId,
+        month,
+        year
+      );
+
+    return res.status(200).json({
+      success: true,
+      data,
+      message:
+        "Weekly sales performance retrieved successfully",
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 }

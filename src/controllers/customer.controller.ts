@@ -308,7 +308,21 @@ customerData.createdBy = res.locals.user.id;
       await handleField('lc',                                      'paymentTerms.lc');
       await handleField('bg',                                      'paymentTerms.bg');
 
-      const customer = await this.customerService.submitCustomer(id, fileUpdates);
+      // body मधली बाकी customer info pass करा
+      const customerData = { ...body };
+      // file fields काढा
+      const fileFieldKeys = [
+        'customerImage',
+        'bankDetails[cancelledChequeCopy]', 'bankDetails[bankStatementCopy]',
+        'statutoryDetails[panCopy]', 'statutoryDetails[aadharCopy]', 'billBookCopy',
+        'statutoryDetails[incorpoCertificateCopy]', 'statutoryDetails[regiCertificateCopy]',
+        'billingFormatCopy', 'billingAddressProofCopy', 'deliveryAddressProofCopy',
+        'docEvidenceCopy', 'mandiLicenceCopy', 'regiCopy', 'electricityBillCopy',
+        'visitingCardCopy', 'lc', 'bg',
+      ];
+      for (const key of fileFieldKeys) delete customerData[key];
+
+      const customer = await this.customerService.submitCustomer(id, fileUpdates, customerData);
       ControllerLogger.logSuccess('Customer submitted', id, req, res);
       return res.status(200).json({
         status: 'success',

@@ -90,15 +90,22 @@ export class CustomerService {
         throw new AppError(404, 'User not found');
       }
 
-      // Set status based on user role
-      if (user?.roles && user.roles.includes('admin' as Role)) {
-        customerData.status = 'approved';
-      } else {
-        customerData.status = 'pending';
-      }
+      // Set status to draft regardless of role - must go through submit → pending → approve flow
+      customerData.status = 'draft';
 
-      // Generate customer code
-      customerData.customerCode = await generateIncrementalCode('customer');
+      // Generate customer code using raw SQL to bypass soft-delete filter
+      const custYear = new Date().getFullYear();
+      const custPrefix = `CUST${custYear}`;
+      const lastCustCode = await this.customerRepository.query(
+        `SELECT customercode FROM customers WHERE customercode LIKE $1 ORDER BY customercode DESC LIMIT 1`,
+        [`${custPrefix}%`]
+      );
+      let custNext = 1;
+      if (lastCustCode.length > 0 && lastCustCode[0].customercode) {
+        const lastNum = parseInt(lastCustCode[0].customercode.slice(custPrefix.length), 10);
+        if (!isNaN(lastNum)) custNext = lastNum + 1;
+      }
+      customerData.customerCode = `${custPrefix}${String(custNext).padStart(4, '0')}`;
 
       // Create main customer entity
       const customer = new Customer();
@@ -1504,17 +1511,67 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     }
   }
 
-  async submitCustomer(customerId: string, fileUpdates: Record<string, string | null> = {}): Promise<Customer> {
-    const customer = await this.customerRepository.findOne({ where: { id: customerId } });
+  async submitCustomer(
+    customerId: string,
+    fileUpdates: Record<string, string | null> = {},
+    customerData: Record<string, any> = {},
+  ): Promise<Customer> {
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      relations: ['customerAddress', 'bankDetails', 'statutoryDetails', 'billingDetails', 'deliveryDetails', 'paymentTerms', 'keyMobileNumbers', 'officeUseOnly'],
+    });
     if (!customer) throw new AppError(404, 'Customer not found');
+    console.log(`[submitCustomer] before save - id: ${customerId}, current status: ${customer.status}`);
+
     customer.status = Status.PENDING;
-    // Apply file updates only if provided
+
+    // ── Scalar fields apply करा ───────────────────────────────────────────
+    const scalarFields: (keyof Customer)[] = [
+      'organisationName', 'organisationType', 'otherType',
+      'primaryContactNo', 'secondaryContactNo', 'emailPrimary', 'emailSecondary',
+      'customerCode',
+    ];
+
+    for (const field of scalarFields) {
+      if (customerData[field] !== undefined && customerData[field] !== null && customerData[field] !== '') {
+        (customer as any)[field] = customerData[field];
+      }
+    }
+
+    // ── Helper: multipart/form-data madhe nested objects JSON string mhanun yetaat ──
+    const parseIfString = (val: any): any => {
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return val; }
+      }
+      return val;
+    };
+
+    // ── Nested relation objects apply करा ─────────────────────────────────
+    const nestedRelations = [
+      'bankDetails', 'statutoryDetails', 'billingDetails',
+      'deliveryDetails', 'paymentTerms', 'keyMobileNumbers',
+      'customerAddress', 'officeUseOnly',
+    ];
+    for (const rel of nestedRelations) {
+      const parsed = parseIfString(customerData[rel]);
+      if (parsed && typeof parsed === 'object') {
+        (customer as any)[rel] = { ...(customer as any)[rel], ...parsed };
+      }
+    }
+
+    // ── File updates apply करा ────────────────────────────────────────────
+    // File keys map to their nested location on the entity
     Object.entries(fileUpdates).forEach(([key, value]) => {
       if (value !== undefined) (customer as any)[key] = value;
     });
-    const saved = await this.customerRepository.save(customer);
+
+    await this.customerRepository.save(customer);
     await this.invalidateCustomerCache(customerId);
-    return saved;
+
+    // Fresh fetch to ensure returned status reflects DB state
+    const updated = await this.customerRepository.findOne({ where: { id: customerId } });
+    console.log(`[submitCustomer] after save - id: ${customerId}, new status: ${updated?.status}`);
+    return updated!;
   }
 
    async approveCustomer(customerId: string, approverId: string,status:Status) {
@@ -1533,6 +1590,12 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         where: { id: customerId },
       });
       if (!customer) throw new Error('customer not found');
+
+      // Customer must be in 'pending' or 'draft' status before it can be approved or rejected.
+      // Admin can directly approve a 'draft' customer (skipping the submit step).
+      if (customer.status !== Status.PENDING && customer.status !== Status.DRAFT) {
+        throw new AppError(400, `Customer cannot be approved because its current status is '${customer.status}'. Only customers with status 'pending' or 'draft' can be approved or rejected.`);
+      }
   
       customer.status = status;
       const saved = await this.customerRepository.save(customer);
@@ -1557,12 +1620,23 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       `Customer with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
     );
 
+    // Null out customerCode to free the unique constraint slot
     customer.deletionScheduledAt = sixMonthsFromNow;
+    customer.customerCode = null as any;
     await this.customerRepository.save(customer);
     await this.invalidateCustomerCache(id);
     return true;
   }
   async softDeleteCustomers(userIds: string[]) {
+    // Null out customerCode before soft-deleting so the unique constraint
+    // slot is freed and the code is never re-blocked.
+    await this.customerRepository
+      .createQueryBuilder()
+      .update(Customer)
+      .set({ customerCode: () => 'NULL' })
+      .where('id IN (:...ids)', { ids: userIds })
+      .execute();
+
     const result = await this.customerRepository.softDelete({ id: In(userIds) });
     await this.invalidateCustomerCache();
     return result;

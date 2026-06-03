@@ -675,18 +675,74 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     await this.cacheService.set(key, result, CACHE_TTL);
     return result;
   }
-  async submitFarmer(farmerId: string, fileUpdates: Record<string, string | null> = {}): Promise<Farmer> {
-    const farmer = await this.farmerRepository.findOne({ where: { id: farmerId } });
+  async submitFarmer(
+    farmerId: string,
+    fileUpdates: Record<string, string | null> = {},
+    farmerData: Record<string, any> = {},
+  ): Promise<Farmer> {
+    const farmer = await this.farmerRepository.findOne({
+      where: { id: farmerId },
+      relations: ['residensialAddress', 'farmAddress', 'crops'],
+    });
     if (!farmer) throw new AppError(404, 'Farmer not found');
+    console.log(`[submitFarmer] before save - id: ${farmerId}, current status: ${farmer.status}`);
+
     farmer.status = Status.PENDING;
-    // Apply file updates only if provided
+
+    // ── Helper: multipart/form-data madhe nested objects JSON string mhanun yetaat ──
+    const parseIfString = (val: any): any => {
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return val; }
+      }
+      return val;
+    };
+
+    
+    const scalarFields: (keyof Farmer)[] = [
+      'farmerfName', 'farmermName', 'farmerlName',
+      'primaryMobileNo', 'secondaryMobileNo', 'email',
+      'gender', 'dob', 'landHoldingStatus', 'landStatus',
+      'totalLandArea', 'cultivationArea', 'farmerCode',
+      'farmerGrading', 'sevenTwelveNo', 'idProofNo',
+      'dateOfVisit', 'howDoYouSell',
+    ];
+
+    for (const field of scalarFields) {
+      if (farmerData[field] !== undefined && farmerData[field] !== null && farmerData[field] !== '') {
+        (farmer as any)[field] = farmerData[field];
+      }
+    }
+
+    
+    const residensialAddressData = parseIfString(farmerData.residensialAddress);
+    if (residensialAddressData && typeof residensialAddressData === 'object') {
+      Object.assign(farmer.residensialAddress ??= {} as Address, residensialAddressData);
+    }
+
+    const farmAddressData = parseIfString(farmerData.farmAddress);
+    if (farmAddressData && typeof farmAddressData === 'object') {
+      Object.assign(farmer.farmAddress ??= {} as Address, farmAddressData);
+    }
+
+    // ── Crops update ───────────────────────────────────────────────────────
+    const cropsData = parseIfString(farmerData.crops);
+    if (Array.isArray(cropsData) && cropsData.length > 0) {
+      farmer.crops = cropsData as Crop[];
+    }
+
+    // ── File updates apply
     if (fileUpdates.farmPhoto !== undefined)       farmer.farmPhoto       = fileUpdates.farmPhoto       ?? farmer.farmPhoto;
     if (fileUpdates.farmerPhoto !== undefined)     farmer.farmerPhoto     = fileUpdates.farmerPhoto     ?? farmer.farmerPhoto;
     if (fileUpdates.idProofCopy !== undefined)     farmer.idProofCopy     = fileUpdates.idProofCopy     ?? farmer.idProofCopy;
     if (fileUpdates.sevenTwelveCopy !== undefined) farmer.sevenTwelveCopy = fileUpdates.sevenTwelveCopy ?? farmer.sevenTwelveCopy;
-    const saved = await this.farmerRepository.save(farmer);
+
+    await this.farmerRepository.save(farmer);
     await this.invalidateFarmerCache(farmerId);
-    return saved;
+
+    // Fresh fetch to ensure returned status reflects DB state
+    const updated = await this.farmerRepository.findOne({ where: { id: farmerId } });
+    console.log(`[submitFarmer] after save - id: ${farmerId}, new status: ${updated?.status}`);
+    return updated!;
   }
 
   async approveFarmer(farmerId: string, approverId: string,status:Status) {
@@ -705,6 +761,12 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       where: { id: farmerId },
     });
     if (!farmer) throw new Error('farmer not found');
+
+    // Farmer must be in 'pending' status before it can be approved or rejected.
+    // A 'draft' farmer has not been submitted yet, so it cannot be approved.
+    if (farmer.status !== Status.PENDING) {
+      throw new AppError(400, `Farmer cannot be approved because its current status is '${farmer.status}'. Only farmers with status 'pending' can be approved or rejected.`);
+    }
 
     farmer.status = status;
     const saved = await this.farmerRepository.save(farmer);
@@ -762,14 +824,26 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       id: farmerData.createdBy,
     });
     console.log("in user service",user);
-    if (user?.roles && user.roles.includes('admin' as Role)) {
-      farmerData.status = 'approved';
-    }
+
+    // Always set status to draft - must go through submit → pending → approve flow
+    farmerData.status = 'draft';
+
     console.log('in create farmer');
-    let sequenceNumber = await this.farmerRepository.count(); // Get initial count once
-    farmerData.farmerCode = `FARM${new Date().getFullYear()}${String(
-      ++sequenceNumber,
-    ).padStart(4, '0')}`;
+
+    // Use raw SQL to find the highest farmer code, bypassing soft-delete filter
+    const farmYear = new Date().getFullYear();
+    const farmPrefix = `FARM${farmYear}`;
+    const lastFarmCode = await this.farmerRepository.query(
+      `SELECT "farmerCode" FROM farmer WHERE "farmerCode" LIKE $1 ORDER BY "farmerCode" DESC LIMIT 1`,
+      [`${farmPrefix}%`]
+    );
+    let farmNext = 1;
+    if (lastFarmCode.length > 0 && lastFarmCode[0].farmerCode) {
+      const lastNum = parseInt(lastFarmCode[0].farmerCode.slice(farmPrefix.length), 10);
+      if (!isNaN(lastNum)) farmNext = lastNum + 1;
+    }
+    farmerData.farmerCode = `${farmPrefix}${String(farmNext).padStart(4, '0')}`;
+
     const farmer = this.farmerRepository.create(farmerData);
     console.log('it will create farmer');
     const saved = await this.farmerRepository.save(farmer);
@@ -1047,7 +1121,9 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       .where('"farmerId" = :id', { id })
       .execute();
 
+    // Null out farmerCode to free the unique constraint slot
     farmer.deletionScheduledAt = sixMonthsFromNow;
+    farmer.farmerCode = null as any;
     await this.farmerRepository.save(farmer);
     await this.invalidateFarmerCache(id);
 
@@ -1118,11 +1194,19 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
           continue;
         }
 
-        // ✅ Generate code
-        const count = await farmerRepository.count();
-        const farmerCode = `FARM${new Date().getFullYear()}${String(
-          count + 1,
-        ).padStart(4, '0')}`;
+        // ✅ Generate code using max existing code to avoid duplicates
+        const bulkFarmerYear = new Date().getFullYear();
+        const bulkFarmerPrefix = `FARM${bulkFarmerYear}`;
+        const lastFarmerCode = await farmerRepository.query(
+          `SELECT "farmerCode" FROM farmer WHERE "farmerCode" LIKE $1 ORDER BY "farmerCode" DESC LIMIT 1`,
+          [`${bulkFarmerPrefix}%`]
+        );
+        let bulkFarmerNext = 1;
+        if (lastFarmerCode.length > 0 && lastFarmerCode[0].farmerCode) {
+          const lastNum = parseInt(lastFarmerCode[0].farmerCode.slice(bulkFarmerPrefix.length), 10);
+          if (!isNaN(lastNum)) bulkFarmerNext = lastNum + 1;
+        }
+        const farmerCode = `${bulkFarmerPrefix}${String(bulkFarmerNext).padStart(4, '0')}`;
 
         const farmer = new Farmer();
 
@@ -1330,6 +1414,15 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     return farmer;
   }
   async softDeleteFarmers(farmerIds: string[]) {
+    // Null out farmerCode before soft-deleting so the unique constraint
+    // slot is freed and the code is never re-blocked.
+    await this.farmerRepository
+      .createQueryBuilder()
+      .update(Farmer)
+      .set({ farmerCode: () => 'NULL' })
+      .where('id IN (:...ids)', { ids: farmerIds })
+      .execute();
+
     const result = await this.farmerRepository.softDelete({
       id: In(farmerIds)
     });

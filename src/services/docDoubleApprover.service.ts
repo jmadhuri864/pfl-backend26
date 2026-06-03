@@ -14,6 +14,7 @@ import { PaginationOptions } from "../utils/pagination";
 import { Brackets } from "typeorm";
 import { DocumentbService } from "./documentb.service";
 import { getReadableDocumentType } from "../utils/documentTypeLabel";
+import { CacheService } from "./cache.service";
 
 @injectable()
 export class DocDoubleApproverService {
@@ -24,8 +25,17 @@ export class DocDoubleApproverService {
     @inject(TYPES.NotificationService) private notificationService: NotificationService,
     @inject(TYPES.ApprovalStageInfoRepository) private approvalStageInfoRepository: ApprovalStageInfoRepository,
     @inject(TYPES.DocumentApprovalFlowRepository) private documentApprovalFlowRepository: DocumentApprovalFlowRepository,
-    @inject(TYPES.DocumentbService) private documentBService: DocumentbService
+    @inject(TYPES.DocumentbService) private documentBService: DocumentbService,
+    @inject(TYPES.CacheService) private cacheService: CacheService,
   ) {
+  }
+
+  // Invalidate all caches that depend on a document's status
+  private async invalidateDocumentCache(documentId: string): Promise<void> {
+    await Promise.all([
+      this.cacheService.del(`finv:view:${documentId}`),
+      this.cacheService.invalidatePattern('finv:all:*'),
+    ]);
   }
 
   // Convert document type to readable format — moved to src/utils/documentTypeLabel.ts
@@ -103,6 +113,7 @@ export class DocDoubleApproverService {
     document.status = DocumentStatus.REJECT;
     await this.documentApprovalFlowRepository.save(info);
     await this.documentbRepository.save(document);
+    await this.invalidateDocumentCache(documentId);
 
     const docNo = await this.documentBService.resolveDocumentTypeNo(document);
     const readableType = getReadableDocumentType(document.type);
@@ -161,6 +172,9 @@ export class DocDoubleApproverService {
     const approvedLevelUsers = isFirstApprover ? firstBlock?.users ?? [] : secondBlock?.users ?? [];
     const otherLevelUsers = isFirstApprover ? secondBlock?.users ?? [] : firstBlock?.users ?? [];
 
+    // Invalidate cache on every approval action (approvalSummary changes)
+    await this.invalidateDocumentCache(documentId);
+
     // Check if both levels approved
     const firstApproved = info.firstApproved?.status === ApproverStatus.APPROVED;
     const secondApproved = info.secondApproved?.status === ApproverStatus.APPROVED;
@@ -169,6 +183,7 @@ export class DocDoubleApproverService {
       document.status = DocumentStatus.COMPLETE;
       document.remarks = `${document.type} Approved by Required Approvers`;
       await this.documentbRepository.save(document);
+      await this.invalidateDocumentCache(documentId);
 
       // 🔔 Actor
       await this.notificationService.createNoti(`You approved ${docLabel2} at ${approvedLevel}`, userId);

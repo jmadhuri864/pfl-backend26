@@ -20,6 +20,7 @@ import { WorkflowHierarchyService } from '../services/workFlowHierarchy.service'
 import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
+import { MoreThan } from 'typeorm';
 
 const blacklistedTokensRepo = AppDataSource.getRepository(BlacklistedToken);
 
@@ -272,12 +273,13 @@ export class AuthController {
       // const workflowTree = await this.workflowHierarchyService.getChildrenTreeForAllDepartments(user.id);
       //  const hasWorkflow = workflowTree > 0;
 
-      // Check if the user has any workflow hierarchy entry (as ancestor or descendant)
+      // Check if the user has any subordinates in the workflow hierarchy (depth > 0 means actual children)
       const workflowCount = await this.workflowrepo.count({
-        where: [
-          { ancestor: { id: user.id } },
-          { descendant: { id: user.id } },
-        ],
+        where: {
+          ancestor: { id: user.id },
+          depth: MoreThan(0),
+          isDeleted: false,
+        },
       });
       const hasChild = workflowCount > 0;
 

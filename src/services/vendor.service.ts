@@ -94,10 +94,9 @@ async createVendor(vendorDto: any): Promise<any> {
     console.log("in the service", vendorDto);
 
     const user = await this.userRepository.findOneBy({id: vendorDto.createdBy});
-    if(user?.roles && user.roles.includes("admin" as Role)){
-      vendorDto.status = "approved";
-      
-    }
+
+    // Always set status to draft - must go through submit → pending → approve flow
+    vendorDto.status = 'draft';
     if(vendorDto.listOfAllProducts && Array.isArray(vendorDto.listOfAllProducts)){
       const productIds = vendorDto.listOfAllProducts.map((p: any) => p.id || p);
       console.log("Product IDs to find:", productIds);
@@ -132,47 +131,161 @@ async createVendor(vendorDto: any): Promise<any> {
     }
     //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
 
-    let sequenceNumber = await this.vendorRepository.count();
-      const vendorCode = `VENDOR${new Date().getFullYear()}${String(++sequenceNumber).padStart(4, '0')}`;
+    const year = new Date().getFullYear();
+    const prefix = `VENDOR${year}`;
 
-    vendorDto.vendorCode = vendorCode;
-    const newVendor = this.vendorRepository.create(vendorDto);
-    console.log("new vendor is", newVendor);
-    const saved = await this.vendorRepository.save(newVendor);
+    // Retry loop to handle race conditions where two requests generate the same code simultaneously
+    let saved;
+    let attempts = 0;
+    while (true) {
+      attempts++;
+      if (attempts > 10) throw new AppError(500, 'Failed to generate a unique vendor code after multiple attempts');
+
+      // Use raw SQL to find the highest vendor code for this year,
+      // bypassing TypeORM's soft-delete filter (deletedAt IS NULL) so we never
+      // re-use a code that belongs to a soft-deleted or isDeleted record.
+      const result = await this.vendorRepository.query(
+        `SELECT vendor_code FROM vendor WHERE vendor_code LIKE $1 ORDER BY vendor_code DESC LIMIT 1`,
+        [`${prefix}%`]
+      );
+
+      let nextNumber = 1;
+      if (result.length > 0 && result[0].vendor_code) {
+        const lastNumber = parseInt(result[0].vendor_code.slice(prefix.length), 10);
+        if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
+      }
+
+      const vendorCode = `${prefix}${String(nextNumber).padStart(4, '0')}`;
+      vendorDto.vendorCode = vendorCode;
+      const newVendor = this.vendorRepository.create(vendorDto);
+      console.log("new vendor is", newVendor);
+
+      try {
+        saved = await this.vendorRepository.save(newVendor);
+        break; // success
+      } catch (err: any) {
+        // Postgres unique violation code
+        if (err?.driverError?.code === '23505' || err?.code === '23505') {
+          console.warn(`Vendor code ${vendorCode} collision, retrying... (attempt ${attempts})`);
+          continue; // retry with next number
+        }
+        throw err; // unrelated error, rethrow
+      }
+    }
+
     await this.invalidateVendorCache();
     return saved;
   }
-  async submitVendor(vendorId: string, fileUpdates: Record<string, string | null> = {}): Promise<Vendor> {
-    const vendor = await this.vendorRepository.findOne({ where: { id: vendorId } });
+  async submitVendor(
+    vendorId: string,
+    fileUpdates: Record<string, string | null> = {},
+    vendorData: Record<string, any> = {},
+  ): Promise<Vendor> {
+    const vendor = await this.vendorRepository.findOne({
+      where: { id: vendorId },
+      relations: ['officeAddress', 'ref1Address', 'ref2Address', 'vendorSaleInfo', 'vendorBankDetails'],
+    });
     if (!vendor) throw new AppError(404, 'Vendor not found');
+    console.log(`[submitVendor] before save - id: ${vendorId}, current status: ${vendor.status}`);
+
     vendor.status = Status.PENDING;
-    // Apply file updates only if provided
-    if (fileUpdates.gstnCopy !== undefined)           vendor.gstnCopy           = fileUpdates.gstnCopy ?? vendor.gstnCopy;
-    if (fileUpdates.panCardCopy !== undefined)        vendor.panCardCopy        = fileUpdates.panCardCopy ?? vendor.panCardCopy;
-    if (fileUpdates.msmeCopy !== undefined)           vendor.msmeCopy           = fileUpdates.msmeCopy ?? vendor.msmeCopy;
-    const saved = await this.vendorRepository.save(vendor);
+
+    // ── Scalar fields apply
+    const scalarFields: (keyof Vendor)[] = [
+      'companyName', 'officeContactNo', 'officeEmail', 'gstn', 'ifGstnCopy',
+      'panNo', 'ifPanCardCopy', 'msmeNo', 'ifMsmeCopy', 'website',
+      'creditTerms', 'classification', 'vendorCode', 'vendorGrade',
+      'dateOfIncorporation', 'inFandVBusinessSince', 'dispatchCenter',
+      'warehouseLocations', 'packingCenterLocation', 'tradeLicenseNumber',
+      'proposedPaymentTerms', 'anyDetailsTeamAndInfra', 'otherProductOrService',
+      'paymentMode', 'ref1FName', 'ref1MName', 'ref1LName', 'ref1PrimaryCNumb',
+      'ref1AltrCNumb', 'ref1Email', 'ref2FName', 'ref2MName', 'ref2LName',
+      'ref2PrimaryCNumb', 'ref2AltrCNumb', 'ref2Email',
+    ];
+
+    for (const field of scalarFields) {
+      if (vendorData[field] !== undefined && vendorData[field] !== null && vendorData[field] !== '') {
+        (vendor as any)[field] = vendorData[field];
+      }
+    }
+
+    // ── Helper: multipart/form-data madhe nested objects JSON string mhanun yetaat ──
+    const parseIfString = (val: any): any => {
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return val; }
+      }
+      return val;
+    };
+
+    // ── Nested object fields ──────────────────────────────────────────────
+    const officeAddressData = parseIfString(vendorData.officeAddress);
+    if (officeAddressData && typeof officeAddressData === 'object') {
+      Object.assign(vendor.officeAddress ??= {} as Address, officeAddressData);
+    }
+    const ref1AddressData = parseIfString(vendorData.ref1Address);
+    if (ref1AddressData && typeof ref1AddressData === 'object') {
+      Object.assign(vendor.ref1Address ??= {} as Address, ref1AddressData);
+    }
+    const ref2AddressData = parseIfString(vendorData.ref2Address);
+    if (ref2AddressData && typeof ref2AddressData === 'object') {
+      Object.assign(vendor.ref2Address ??= {} as Address, ref2AddressData);
+    }
+    const vendorSaleInfoData = parseIfString(vendorData.vendorSaleInfo);
+    if (vendorSaleInfoData && typeof vendorSaleInfoData === 'object') {
+      Object.assign(vendor.vendorSaleInfo ??= {} as VendorSaleInfo, vendorSaleInfoData);
+    }
+    const vendorBankDetailsData = parseIfString(vendorData.vendorBankDetails);
+    if (vendorBankDetailsData && typeof vendorBankDetailsData === 'object') {
+      Object.assign(vendor.vendorBankDetails ??= {} as BankDetailsvend, vendorBankDetailsData);
+    }
+
+    // ── File updates apply करा ────────────────────────────────────────────
+    if (fileUpdates.gstnCopy !== undefined)    vendor.gstnCopy    = fileUpdates.gstnCopy    ?? vendor.gstnCopy;
+    if (fileUpdates.panCardCopy !== undefined) vendor.panCardCopy = fileUpdates.panCardCopy ?? vendor.panCardCopy;
+    if (fileUpdates.msmeCopy !== undefined)    vendor.msmeCopy    = fileUpdates.msmeCopy    ?? vendor.msmeCopy;
+    // cancelledChequeCopy is inside vendorBankDetails — handled above via nested object
+
+    await this.vendorRepository.save(vendor);
     await this.invalidateVendorCache(vendorId);
-    return saved;
+
+    // Fresh fetch to ensure returned status reflects DB state
+    const updated = await this.vendorRepository.findOne({ where: { id: vendorId } });
+    console.log(`[submitVendor] after save - id: ${vendorId}, new status: ${updated?.status}`);
+    return updated!;
   }
 
-async approveVendor(vendorId: string, approverId: string,status:Status) {
-const approver = await this.userRepository.findOne({ where: { id: approverId }});
-if (!approver) throw new Error("Approver not found");
+async approveVendor(vendorId: string, approverId: string, status: Status) {
+  const approver = await this.userRepository.findOne({ where: { id: approverId } });
+  if (!approver) throw new Error("Approver not found");
 
+  const isAdmin = approver.roles && approver.roles.includes("admin" as Role);
+  if (!isAdmin) {
+    throw new Error("Only admin can approve vendors");
+  }
 
-if (!approver.roles || !approver.roles.includes("admin" as Role)) {
-  throw new Error("Only admin can approve vendors");
-}
+  const vendor = await this.vendorRepository.findOne({ where: { id: vendorId } });
+  if (!vendor) throw new Error("Vendor not found");
 
+  // Admin: draft asel tar directly approve karu shakto (DRAFT → approved)
+  // Non-admin (future): faqt pending aselach approve hota — but currently only admin reaches here
+  // If vendor is draft → only admin can approve directly
+  // If vendor is pending → admin can approve
+  // Any other status → cannot approve
+  if (vendor.status === Status.DRAFT) {
+    // Admin can directly approve draft — no submit step required
+  } else if (vendor.status === Status.PENDING) {
+    // Normal flow — pending → approve
+  } else {
+    throw new AppError(
+      400,
+      `Vendor cannot be approved because its current status is '${vendor.status}'. Only vendors with status 'draft' or 'pending' can be approved or rejected.`
+    );
+  }
 
-const vendor = await this.vendorRepository.findOne({ where: { id: vendorId } });
-if (!vendor) throw new Error("Vendor not found");
-
-
-vendor.status = status;
-const saved = await this.vendorRepository.save(vendor);
-await this.invalidateVendorCache(vendorId);
-return saved;
+  vendor.status = status;
+  const saved = await this.vendorRepository.save(vendor);
+  await this.invalidateVendorCache(vendorId);
+  return saved;
 }
   
   async getVendorById(id: string): Promise<Vendor | null> {
@@ -680,8 +793,19 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 
 
 
-      let sequenceNumber = await this.vendorRepository.count();
-      const vendorCode = `VENDOR${new Date().getFullYear()}${String(++sequenceNumber).padStart(4, '0')}`;
+      const bulkYear = new Date().getFullYear();
+      const bulkPrefix = `VENDOR${bulkYear}`;
+      const lastBulkVendor = await this.vendorRepository
+        .createQueryBuilder('vendor')
+        .where('vendor.vendorCode LIKE :prefix', { prefix: `${bulkPrefix}%` })
+        .orderBy('vendor.vendorCode', 'DESC')
+        .getOne();
+      let bulkNextNumber = 1;
+      if (lastBulkVendor?.vendorCode) {
+        const lastNum = parseInt(lastBulkVendor.vendorCode.slice(bulkPrefix.length), 10);
+        if (!isNaN(lastNum)) bulkNextNumber = lastNum + 1;
+      }
+      const vendorCode = `${bulkPrefix}${String(bulkNextNumber).padStart(4, '0')}`;
 
         // --- Vendor Base ---
         const vendor = new Vendor();
@@ -1539,8 +1663,10 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       `Vendor with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
     );
 
-    // Step 4: Set the deletionScheduledAt field for the vendor
+    // Step 4: Set the deletionScheduledAt field and null out vendorCode
+    // to free the unique constraint slot so the code is never re-blocked.
     vendor.deletionScheduledAt = sixMonthsFromNow;
+    vendor.vendorCode = null as any;
     await this.vendorRepository.save(vendor);
     await this.invalidateVendorCache(id);
 
@@ -1836,6 +1962,15 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 }
 
 async softDeleteVendors(vendorIds: string[]) {
+  // Null out vendorCode before soft-deleting so the unique constraint
+  // slot is freed and the code can be reused (or at least not block new inserts).
+  await this.vendorRepository
+    .createQueryBuilder()
+    .update(Vendor)
+    .set({ vendorCode: () => 'NULL' })
+    .where('id IN (:...ids)', { ids: vendorIds })
+    .execute();
+
   const result = await this.vendorRepository.softDelete({
     id: In(vendorIds)
   });

@@ -530,7 +530,29 @@ console.log(req.body)
       await handleField('msmeCopy');
       await handleField('cancelledChequeCopy');
 
-      const vendor = await this.vendorService.submitVendor(id, fileUpdates);
+      // body मधली बाकी vendor info pass करा
+      const vendorData = { ...body };
+      // file fields काढा
+      delete vendorData.gstnCopy;
+      delete vendorData.panCardCopy;
+      delete vendorData.msmeCopy;
+      delete vendorData.cancelledChequeCopy;
+
+      // JSON strings parse करा (multipart madhe strings astat)
+      const jsonFields = [
+        'officeAddress', 'ref1Address', 'ref2Address',
+        'vendorSaleInfo', 'vendorBankDetails',
+        'mainProduct', 'listOfAllProducts',
+        'mainPackingMaterial', 'listOfPackingMaterial',
+        'subcategory', 'category',
+      ];
+      for (const field of jsonFields) {
+        if (vendorData[field] && typeof vendorData[field] === 'string') {
+          try { vendorData[field] = JSON.parse(vendorData[field]); } catch { /* leave as-is */ }
+        }
+      }
+
+      const vendor = await this.vendorService.submitVendor(id, fileUpdates, vendorData);
       ControllerLogger.logSuccess('Vendor submitted', id, req, res);
       return res.status(200).json({
         status: 'success',

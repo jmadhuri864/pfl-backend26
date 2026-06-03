@@ -10,7 +10,7 @@ import { InvoiceProduct } from '../entities/invoiceProduct.entity';
 import { Repository, Brackets } from 'typeorm';
 import { CustomerDeliveryChallanRepository } from '../repositories/customerDeliveryChallan.repository';
 import { DocumentbService } from './documentb.service';
-import { DocumentStatus, DocumentTypeEnum } from '../entities/docuemnt.entity';
+import { DocumentStatus, DocumentTypeEnum, Documentb } from '../entities/docuemnt.entity';
 import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { toWords } from 'number-to-words';
@@ -521,7 +521,7 @@ export class FinalInvoiceService {
     // Single joined query — invoice + document in one shot
     const qb = this.invoiceRepository
       .createQueryBuilder('invoice')
-      .innerJoin('document', 'doc', 'doc.document_type_id = invoice.id AND doc.type = :docType AND doc.isDeleted = false AND doc.deletedAt IS NULL', { docType: DocumentTypeEnum.FINAL_INVOICE })
+      .innerJoin(Documentb, 'doc', 'doc.document_type_id = invoice.id::text AND doc.type = :docType AND doc.isDeleted = false AND doc.deletedAt IS NULL', { docType: DocumentTypeEnum.FINAL_INVOICE })
       .innerJoin('doc.approvalFlow', 'approvalFlow')
       .innerJoin('approvalFlow.approvers', 'approvalLevel')
       .leftJoin('approvalLevel.firstApprover', 'firstApproverBlock')
