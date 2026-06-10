@@ -42,7 +42,6 @@ import { NotificationService } from "../services/notification.service";
       try {
         logger.info("Attempting to create a new laborer", { requestedBy: res.locals.user?.id });
         const laborData = req.body;
-  console.log(laborData)
         const labor = await this.laborRegisterService.createLabor(laborData);
         logger.info("Laborer created successfully", { laborId: labor.id });
         ControllerLogger.logSuccess('Labour Register created', labor.id, req, res);

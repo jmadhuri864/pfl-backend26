@@ -25,7 +25,6 @@ async createMonthlySalesPlan (@request() req: Request, @response() res: Response
     // ✅ resolve employeeId
     const employeeId = payload.employee ?? loggedInUserId;
     
-console.log(payload)
    
     const result = await this.salesTargetService.create({
       ...payload,
@@ -66,7 +65,6 @@ async getMonthlyPlanViewStructured(
     });
 
   } catch (error: any) {
-    console.log(error);
     return res.status(500).json({
       success: false,
       message: error.message
@@ -100,7 +98,6 @@ async getMonthlyPlanUpdateStructured(
     });
 
   } catch (error: any) {
-    console.log(error);
     return res.status(500).json({
       success: false,
       message: error.message
@@ -201,7 +198,6 @@ async getAllTargets(
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     
-    console.log(employeeid)
     const data = await this.salesTargetService.getalltargets(employeeid, page, limit);
 
     return res.status(200).json({

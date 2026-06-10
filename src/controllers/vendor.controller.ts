@@ -47,7 +47,6 @@ export class VendorController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("Received request to get vendor by ID");
       const vendor = await this.vendorService.getVendorById(id);
       if (!vendor) {
         return next(new AppError(404, "Vendor not found"));
@@ -287,10 +286,7 @@ public async getVendorsWithId(
     @next() next: NextFunction
   ) {
     //console.log("Request body:", req.body); // Log the body
-console.log("Request files:", req.files); // Log the files
-console.log(req.body)
     try {
-      console.log("================================");
       
       const vendorData = req.body;
       vendorData.createdBy = res.locals.user.id;
@@ -321,7 +317,6 @@ console.log(req.body)
         msmeCopy?: Express.Multer.File[];
         cancelledChequeCopy?: Express.Multer.File[];
       };
-      console.log(files)
 
      
     if (files.gstnCopy) vendorData.gstnCopy = (files.gstnCopy[0] as any).location;
@@ -337,7 +332,6 @@ console.log(req.body)
     if (vendorData.dateOfIncorporation === 'null' || vendorData.dateOfIncorporation === '') {
       vendorData.dateOfIncorporation = null;
     }
-    console.log("Vendor data with files:", vendorData);
       //console.log("vendor sale info",vendorData);
       const newVendor = await this.vendorService.createVendor(vendorData);
       if( !newVendor){
@@ -362,7 +356,6 @@ console.log(req.body)
         message: "Vendor created successfully",
       });
     } catch (err) {
-      console.log(err);
       ControllerLogger.logError('Vendor creation', err, req, res);
       next(err);
     }
@@ -380,7 +373,6 @@ console.log(req.body)
       }
 
       const filePath = (req.file as any).location;
-      console.log('Processing vendor Excel file from:', filePath);
       
       const result = await this.vendorService.createVendorWithExcel(filePath);
       
@@ -394,7 +386,6 @@ console.log(req.body)
           );
         }
       } catch (notifError) {
-        console.log('Vendor Excel upload notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Vendor Excel uploaded', 'bulk', req, res);
@@ -427,8 +418,6 @@ console.log(req.body)
       const updateBy = res.locals.user.id;
 
       const vendorUpdateData: any = { ...req.body };
-      console.log("vendordata",req.body);
-      console.log("vendorUpdateData",vendorUpdateData);
 
       // Parse JSON strings for nested objects (sent as strings in multipart/form-data)
       const jsonFields = [
@@ -659,7 +648,6 @@ console.log(req.body)
 public async filterVendors(req: Request, res: Response, next: NextFunction) {
     try {
 
-      console.log("Filtering vendors with query:", req.query);
       
 
       const {
@@ -729,7 +717,6 @@ public async filterVendors(req: Request, res: Response, next: NextFunction) {
           );
         }
       } catch (notifError) {
-        console.log('Template access notification error:', notifError);
       }
       
       ControllerLogger.logList('Vendor Template URL Generated', req, res);

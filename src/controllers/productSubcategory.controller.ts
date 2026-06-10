@@ -51,7 +51,6 @@ export class ProductSubcategoryController {
                                 search: search as string|| '',
                               };
       const subcategories = await this.productSubcategoryService.getAll(queryOptions);
-      console.log()
       if (!subcategories.data.length) {
         ControllerLogger.logError('Product Subcategory list retrieval', new AppError(404, "No product subcategories found"), req, res);
         return next(new AppError(404, "No product subcategories found"));
@@ -154,7 +153,6 @@ export class ProductSubcategoryController {
   ) {
     try {
       const updatedBy=res.locals.updatedBy
-      console.log(subcategoryData)
       const subcategory = await this.productSubcategoryService.update(
         id,
         subcategoryData,

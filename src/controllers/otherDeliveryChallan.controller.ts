@@ -87,7 +87,6 @@ export class OtherDeliveryChallanController {
     try {
       const otherDeliveryChallanData = req.body;
       const requestedBy = res.locals.user.id;
-      console.log(req.body);
       otherDeliveryChallanData.createdBy = requestedBy;
       otherDeliveryChallanData.requestedBy = requestedBy;
       otherDeliveryChallanData.requestingDepartment = res.locals.user.selectDepartment;

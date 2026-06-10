@@ -17,11 +17,12 @@ import { PostReturnByCustomer } from '../entities/postReturnByCustomer.entity';
 import { SecondSale } from '../entities/secondSale.entity';
 
 import {Invoice} from '../entities/invoice.entity';
+import logger from './logger';
 
 
 export const startAutoDeleteJob = () => {
   cron.schedule('*/5 * * * *', async () => {  // runs every 5 minutes
-    console.log('Running auto-delete job...');
+    logger.info('Running auto-delete job...');
 
     const repositories = [
       AppDataSource.getRepository(GRN),
@@ -56,7 +57,7 @@ export const startAutoDeleteJob = () => {
       if (oldRecords.length > 0) {
         if (oldRecords.length > 0) {
           await repo.remove(oldRecords);
-          console.log(`Deleted ${oldRecords.length} old records from ${repo.metadata.name}`);
+          logger.info(`Deleted ${oldRecords.length} old records from ${repo.metadata.name}`);
         }
       }
     }

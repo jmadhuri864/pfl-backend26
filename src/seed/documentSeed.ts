@@ -4,15 +4,16 @@ import * as path from 'path';
 import { AppDataSource } from '../utils/data-source';
 
 import { DocumentDefinition } from '../entities/documentdef.entity';
+import logger from '../utils/logger';
 
 export async function seedDocumentDefDatabase() {
     try {
-        console.log('Checking for existing documentDefination data...');
+        logger.info('Checking for existing documentDefination data...');
 
         const documentRepo = AppDataSource.getRepository(DocumentDefinition);
        
 
-        console.log('Seeding database with fresh data...');
+        logger.info('Seeding database with fresh data...');
 
         // Read JSON file
         const filePath = path.join(__dirname, '..', 'data', 'documentDefination.json');
@@ -37,9 +38,9 @@ export async function seedDocumentDefDatabase() {
             
         }
 
-        console.log('Seeding completed successfully!');
+        logger.info('Seeding completed successfully!');
     } catch (error) {
-        console.error('Error while seeding database:', error);
+        logger.error('Error while seeding database:', error);
     }
 }
 

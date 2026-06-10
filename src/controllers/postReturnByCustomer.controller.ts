@@ -27,7 +27,6 @@ export class PostReturnByCustomerController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("Fetching all post returns");
       const { page, limit, search, sort,id} = req.query;
           
       
@@ -41,7 +40,6 @@ export class PostReturnByCustomerController {
       };
 
       const userId = res.locals.user?.id;
-console.log("User ID:", userId);
       const postReturns = await this.postReturnByCustomerService.getAllPostReturnByCustomer(queryOptions, userId);
       
       // Log the successful retrieval
@@ -220,7 +218,6 @@ console.log("User ID:", userId);
     @next() next: NextFunction
   ) {
     try {
-      console.log(postReturnData)
 
       const requestedBy = res.locals.user.id; // Pass full user object
       const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
@@ -244,7 +241,6 @@ console.log("User ID:", userId);
         message: "Post return created successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Post Return By Customer creation', error, req, res);
       if (error instanceof Error) {
                return next(new AppError(400, error.message)); // ← sends 400 with real message
@@ -265,7 +261,6 @@ console.log("User ID:", userId);
       
         
         
-        console.log(data)
        
       
         const updatedBy = res.locals.updatedBy;
@@ -294,7 +289,6 @@ console.log("User ID:", userId);
         });
       } catch (err) {
         logger.error(`Error updating postreturn with ID: ${id}`, { error: err });
-        console.log(err)
         ControllerLogger.logError('Post Return By Customer update', err, req, res);
         next(err);
       }
@@ -305,7 +299,6 @@ console.log("User ID:", userId);
       @next() next: NextFunction,) {
   
         try{
-          console.log("Filter :"+ req.body);
           
           const buffer = await this.postReturnByCustomerService.generateReturnByCustomerReport(req.body);
   

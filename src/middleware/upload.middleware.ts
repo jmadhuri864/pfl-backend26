@@ -28,11 +28,12 @@ export const upload = multer({
   storage: multerS3({
     s3,
     bucket: process.env.DO_SPACES_BUCKET!,
-    acl: 'public-read', // Make files publicly accessible
+    acl: 'private', // Sensitive documents — use pre-signed URLs for access
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (_req, file, cb) => {
       const timestamp = Date.now();
-      const fileName = `${file.originalname}`;
+      const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${timestamp}-${sanitizedFilename}`;
       cb(null, `documents/${fileName}`);
     },
   }),
@@ -56,11 +57,12 @@ export const uploadFlexible = multer({
   storage: multerS3({
     s3,
     bucket: process.env.DO_SPACES_BUCKET!,
-    acl: 'public-read',
+    acl: 'private', // Sensitive documents — use pre-signed URLs for access
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (_req, file, cb) => {
       const timestamp = Date.now();
-      const fileName = `${timestamp}-${file.originalname}`;
+      const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${timestamp}-${sanitizedFilename}`;
       cb(null, `documents/${fileName}`);
     },
   }),

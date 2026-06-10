@@ -67,10 +67,6 @@ export class NewRegistrationController {
       const filters: NewRegistrationFilters = req.body;
 
       // Log request body to understand frontend data structure
-      console.log('=== New Registration Report Request ===');
-      console.log('Request Body:', JSON.stringify(req.body, null, 2));
-      console.log('Employee Filter (from frontend):', filters.employee);
-      console.log('======================================');
 
       // Normalize employee field (frontend sends 'employee', we use 'employees' internally)
       if (filters.employee && Array.isArray(filters.employee)) {
@@ -206,7 +202,6 @@ export class NewRegistrationController {
           );
         }
       } catch (notifError) {
-        console.log('Registration report notification error:', notifError);
       }
 
       ControllerLogger.logSuccess(

@@ -5,6 +5,7 @@ import { ApprovalLevelRepository } from "../repositories/approvalLevel.repositor
 import { TYPES } from "../types";
 import { UserRepository } from "../repositories/user.repository";
 import { Department } from "../utils/status.enum";
+import logger from "../utils/logger";
 
 @injectable()
 export class ApprovalLevelService {
@@ -31,7 +32,7 @@ export class ApprovalLevelService {
       });
 
       if (existingApprovalLevel) {
-        console.log(`Approval level already exists for employee: ${employee.firstName}, department: ${department}`);
+        logger.info(`Approval level already exists for employee: ${employee.firstName}, department: ${department}`);
         return; // Skip if approval level already exists
       }
 
@@ -44,10 +45,10 @@ export class ApprovalLevelService {
      
       // Save the new approval level
       await this.approvalLevelRepository.save(approvalLevel);
-      console.log(`Created approval level for employee: ${employee.firstName}, department: ${department}`);
+      logger.info(`Created approval level for employee: ${employee.firstName}, department: ${department}`);
 
     } catch (error) {
-      console.error("Error creating approval level: ", error);
+      logger.error("Error creating approval level: ", error);
       throw new Error("Failed to create approval level");
     }
   }

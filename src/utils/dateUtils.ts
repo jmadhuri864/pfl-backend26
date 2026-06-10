@@ -1,4 +1,5 @@
 import moment from "moment";
+import logger from "./logger";
 
 /**
  * Parses a date (string or Date object) and extracts the formatted date and time separately.
@@ -7,7 +8,7 @@ import moment from "moment";
  */
 export function formatDateTime(rawDate: string | Date): { createdDate: string | null, createdTime: string | null } {
   if (!rawDate) {
-    console.error("Invalid input date:", rawDate);
+    logger.error("Invalid input date: " + rawDate);
     return { createdDate: null, createdTime: null };
   }
 
@@ -18,12 +19,12 @@ export function formatDateTime(rawDate: string | Date): { createdDate: string | 
   } else if (typeof rawDate === "string") {
     parsedDate = moment(rawDate, "DD-MM-YYYY hh:mm A", true);
   } else {
-    console.error("Invalid date type:", typeof rawDate);
+    logger.error("Invalid date type: " + typeof rawDate);
     return { createdDate: null, createdTime: null };
   }
 
   if (!parsedDate.isValid()) {
-    console.error("Invalid date value:", rawDate);
+    logger.error("Invalid date value: " + rawDate);
     return { createdDate: null, createdTime: null };
   }
 

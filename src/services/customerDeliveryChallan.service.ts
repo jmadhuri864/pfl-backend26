@@ -330,7 +330,7 @@ export class CustomerDeliveryChallanService {
     } catch (error: any) {
       // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
-      console.error('Error creating Delivery Challan:', error);
+      logger.error('Error creating Delivery Challan:', error);
       // Re-throw AppError instances (like insufficient stock) to preserve the error message
       if (error instanceof AppError) {
         throw error;
@@ -739,7 +739,7 @@ export class CustomerDeliveryChallanService {
 
   async delete(id: string): Promise<boolean> {
     try {
-      console.log(id);
+      
       const result = await this.challanRepository.delete(id);
       await this.invalidateCDCCache(id);
       return result.affected !== 0;
@@ -869,9 +869,9 @@ export class CustomerDeliveryChallanService {
       await this.challanRepository.save(challan);
       await this.invalidateCDCCache(deliveryChallanId);
 
-      console.log(`Delivery challan ${challan.challanNo} updated with return data`);
+      
     } catch (error) {
-      console.error('Error updating delivery challan with returns:', error);
+      logger.error('Error updating delivery challan with returns:', error);
       throw error;
     }
   }

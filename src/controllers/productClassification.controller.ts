@@ -63,7 +63,6 @@ export class ProductClassificationController {
         page:classifications.meta.page,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('Product Classification list retrieval', error, req, res);
       next(new AppError(500, "Error fetching classifications"));
     }

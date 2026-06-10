@@ -69,7 +69,6 @@ export class CustomerDeliveryChallanController {
           );
         }
       } catch (notifError) {
-        console.log('Customer delivery challan creation notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Customer Delivery Challan created', challan.id, req, res);
@@ -262,7 +261,6 @@ export class CustomerDeliveryChallanController {
           );
         }
       } catch (notifError) {
-        console.log('Customer delivery challan update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Customer Delivery Challan updated', id, req, res);
@@ -377,7 +375,6 @@ export class CustomerDeliveryChallanController {
           );
         }
       } catch (notifError) {
-        console.log('Delivery challan returns update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Delivery Challan updated with returns', id, req, res);

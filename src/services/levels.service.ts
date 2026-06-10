@@ -45,10 +45,7 @@ export class LevelsService {
     sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
-    // Log the scheduled deletion
-    console.log(
-      `Level with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
+    
 
     // Set the deletionScheduledAt field for the level
     level.deletionScheduledAt = sixMonthsFromNow;
@@ -56,7 +53,7 @@ export class LevelsService {
     // Save the updated level with the scheduled deletion date
     await this.levelsRepository.save(level);
 
-    console.log(`Level with ID ${id} marked for deletion in 6 months.`);
+    
     return true;
   }
 

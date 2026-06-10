@@ -117,7 +117,7 @@ async getTotalQtyAndAmount(startDate: Date, endDate: Date): Promise<any> {
     .innerJoin(GRN, "grn", "grn.id = grnProduct.grn") 
     .where("grn.createdAt BETWEEN :startDate AND :endDate", { startDate, endDate })
     .getRawOne();
-console.log(result)
+
 
   return {
     totalQuantityInKg: Number(result.totalQuantityInKg),
@@ -432,7 +432,7 @@ async getDashboardMetrics(start: Date, end: Date) {
     this.getTopVendors(start, end),
     this.getTopProducts(start, end),
   ]);
-console.log(trends)
+
   return { metrics, trends, topVendors, topProducts };
 }
 
@@ -457,8 +457,7 @@ private async getBasicMetrics(start: Date, end: Date) {
 
 
 private async getPurchaseTrends(start: Date, end: Date) {
-  console.log("start:", start.toLocaleDateString());
-  console.log("end:", end.toLocaleDateString());
+  
 
   const rawTrends = await this.grnRepository
     .createQueryBuilder('grn')

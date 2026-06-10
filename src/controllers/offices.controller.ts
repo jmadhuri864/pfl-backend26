@@ -46,11 +46,9 @@ export class OfficesController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(officeType);
       //const officeData = CreateOfficeBodySchema.parse(req.body);
       const officeData = req.body;
       officeData.type = officeType;
-      console.log(officeData);
       const office = await this.officesService.createOffice(officeData);
       if (!office) {
         return next(new AppError(400, 'Office could not be created'));
@@ -194,7 +192,6 @@ export class OfficesController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(officeType);
       const { page, limit, search, sort, officeId } = req.query;
 
       const queryOptions: PaginationOptions = {
@@ -280,8 +277,6 @@ export class OfficesController {
   ) {
     try {
       const updatedBy = res.locals.updatedBy;
-      console.log(updatedBy);
-      console.log(req.body);
       const updateData = req.body;
       updateData.type = officeType;
 

@@ -31,8 +31,5 @@ export function setAttachmentUrls(requestData: any, files: any[]): void {
   const urls = extractFileUrls(files);
   if (urls.length > 0) {
     requestData.anyAttachment = urls;
-    console.log(`Processed ${urls.length} attachment files:`, urls);
-  } else {
-    console.log('No valid attachment files found');
   }
 }

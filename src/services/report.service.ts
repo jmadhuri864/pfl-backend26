@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 import { AppDataSource } from '../utils/data-source';
 import { ReportFilters } from '../controllers/report.controller';
 import * as ExcelJS from 'exceljs';
+import logger from '../utils/logger';
 
 export interface ReportData {
   name: string;
@@ -27,7 +28,7 @@ export class ReportService {
 
   async generateReport(filters: ReportFilters): Promise<ReportData[]> {
     try {
-      console.log(filters)
+      
       // Build date range based on period
       const dateRange = this.buildDateRange(filters);
       
@@ -51,7 +52,7 @@ export class ReportService {
           throw new Error(`Unsupported report type: ${filters.reportBased}`);
       }
     } catch (error) {
-      console.error('Error generating report:', error);
+  logger.error('Error generating report:', error);
       throw error;
     }
   }
@@ -72,7 +73,7 @@ export class ReportService {
         averageAmount: Math.round(averageAmount * 100) / 100, // Round to 2 decimal places
       };
     } catch (error) {
-      console.error('Error generating report summary:', error);
+      logger.error('Error generating report summary:', error);
       throw error;
     }
   }
@@ -273,7 +274,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getEmployeeReport:', error);
+        logger.error('Error in getEmployeeReport:', error);
         throw error;
       }
     }
@@ -405,7 +406,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getLocationReport:', error);
+    logger.error('Error in getLocationReport:', error);
         throw error;
       }
     }
@@ -520,7 +521,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getCompanyReport:', error);
+        logger.error('Error in getCompanyReport:', error);
         throw error;
       }
     }
@@ -587,7 +588,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSourceReport:', error);
+      logger.error('Error in getSourceReport:', error);
       throw error;
     }
   }
@@ -701,7 +702,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getVendorReport:', error);
+    logger.error('Error in getVendorReport:', error);
         throw error;
       }
     }
@@ -815,7 +816,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getFarmerReport:', error);
+        logger.error('Error in getFarmerReport:', error);
         throw error;
       }
     }
@@ -927,7 +928,7 @@ export class ReportService {
           amount: parseFloat(row.amount) || 0,
         }));
       } catch (error) {
-        console.error('Error in getProductReport:', error);
+        logger.error('Error in getProductReport:', error);
         throw error;
       }
     }
@@ -1145,7 +1146,7 @@ export class ReportService {
       return Buffer.from(buffer);
 
     } catch (error) {
-      console.error('Error generating Excel report:', error);
+      logger.error('Error generating Excel report:', error);
       throw error;
     }
   }
@@ -1161,7 +1162,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [companyIds]);
       return result.map((row: any) => row.name).join(', ');
     } catch (error) {
-      console.error('Error fetching company names:', error);
+      logger.error('Error fetching company names:', error);
       return 'Selected Companies';
     }
   }
@@ -1180,7 +1181,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [locationIds]);
       return result.map((row: any) => row.location_name).join(', ');
     } catch (error) {
-      console.error('Error fetching location names:', error);
+    logger.error('Error fetching location names:', error);
       return 'Selected Locations';
     }
   }
@@ -1195,7 +1196,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [vendorIds]);
       return result.map((row: any) => row.company_name).join(', ');
     } catch (error) {
-      console.error('Error fetching vendor names:', error);
+      logger.error('Error fetching vendor names:', error);
       return 'Selected Vendors';
     }
   }
@@ -1214,7 +1215,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [farmerIds]);
       return result.map((row: any) => row.farmer_name).join(', ');
     } catch (error) {
-      console.error('Error fetching farmer names:', error);
+      logger.error('Error fetching farmer names:', error);
       return 'Selected Farmers';
     }
   }
@@ -1233,7 +1234,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [employeeIds]);
       return result.map((row: any) => row.employee_name).join(', ');
     } catch (error) {
-      console.error('Error fetching employee names:', error);
+      logger.error('Error fetching employee names:', error);
       return 'Selected Employees';
     }
   }
@@ -1248,7 +1249,7 @@ export class ReportService {
       const result = await AppDataSource.query(query, [productIds]);
       return result.map((row: any) => row.product_name).join(', ');
     } catch (error) {
-      console.error('Error fetching product names:', error);
+      logger.error('Error fetching product names:', error);
       return 'Selected Products';
     }
   }
@@ -1257,7 +1258,7 @@ export class ReportService {
 
   async generateSalesReport(filters: any): Promise<ReportData[]> {
     try {
-      console.log(filters);
+   
       const dateRange = this.buildDateRange(filters);
       
       switch (filters.reportBased) {
@@ -1275,7 +1276,7 @@ export class ReportService {
           throw new Error(`Unsupported sales report type: ${filters.reportBased}`);
       }
     } catch (error) {
-      console.error('Error generating sales report:', error);
+      logger.error('Error generating sales report:', error);
       throw error;
     }
   }
@@ -1349,7 +1350,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSalesEmployeeReport:', error);
+      logger.error('Error in getSalesEmployeeReport:', error);
       throw error;
     }
   }
@@ -1418,7 +1419,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSalesLocationReport:', error);
+      logger.error('Error in getSalesLocationReport:', error);
       throw error;
     }
   }
@@ -1486,7 +1487,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSalesCompanyReport:', error);
+      logger.error('Error in getSalesCompanyReport:', error);
       throw error;
     }
   }
@@ -1554,7 +1555,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSalesCustomerReport:', error);
+    logger.error('Error in getSalesCustomerReport:', error);
       throw error;
     }
   }
@@ -1622,7 +1623,7 @@ export class ReportService {
         amount: parseFloat(row.amount) || 0,
       }));
     } catch (error) {
-      console.error('Error in getSalesProductReport:', error);
+  logger.error('Error in getSalesProductReport:', error);
       throw error;
     }
   }

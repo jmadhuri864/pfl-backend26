@@ -762,7 +762,7 @@ export class AqrService {
     const existingAqr = await this.aqrRepo.findOne({ where: { id } });
     if (!existingAqr) return null;
 
-    console.log("Data ", data);
+  //  console.log("Data ", data);
     
 
     if (!data.dcDate || data.dcDate === "") data.dcDate = null;

@@ -109,7 +109,6 @@ public async createPaymentRequest(
     const paymentRequestData = req.body;
     paymentRequestData.requestedBy = res.locals.user.id;
     const id = req.params.id
-    console.log(req.body)
     logger.info("Creating a new payment request", { id });
     const newPaymentRequest = await this.paymentRequestService.createPaymentRequest(paymentRequestData,id);
     logger.info("Payment request created successfully");

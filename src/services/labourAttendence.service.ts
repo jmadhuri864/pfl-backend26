@@ -34,13 +34,13 @@ constructor(
     });
   }
   public async createAttendance(attendanceData: any): Promise<any> {
-    console.log("in service",attendanceData);
+   
   
 
   // Assign the laborDetails to the attendance object
   //attendanceData.laborDetails = laborDetails;
     const attendance = this.laborAttendanceRepository.create(attendanceData);
-    //console.lo()
+    
     return this.laborAttendanceRepository.save(attendance);
   }
   public async updateAttendance(
@@ -88,9 +88,7 @@ async deleteAttendance(id: string): Promise<boolean> {
   const sixMonthsFromNow = new Date(now);
   sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
   sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-
-  // Log the scheduled deletion
-  console.log(`Attendance with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+  
 
   // Set the deletionScheduledAt field for the attendance
   attendance.deletionScheduledAt = sixMonthsFromNow;
@@ -98,7 +96,6 @@ async deleteAttendance(id: string): Promise<boolean> {
   // Save the updated attendance with the scheduled deletion date
   await this.laborAttendanceRepository.save(attendance);
 
-  console.log(`Attendance with ID ${id} marked for deletion in 6 months.`);
   return true;
 }
 

@@ -1,4 +1,5 @@
 // src/utils/dateTransformer.ts
+import logger from "./logger";
 
 export const dateTransformer = {
     from: (value: string | Date | null) => {
@@ -6,12 +7,12 @@ export const dateTransformer = {
       try {
         const parsedDate = value instanceof Date ? value : new Date(value);
         if (isNaN(parsedDate.getTime())) {
-          console.error("Invalid date encountered:", value);
+          logger.error("Invalid date encountered: " + value);
           return null;
         }
         return parsedDate;
       } catch (error) {
-        console.error("Date transformation error:", error);
+        logger.error("Date transformation error: " + error);
         return null;
       }
     },

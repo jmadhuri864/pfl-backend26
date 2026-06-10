@@ -48,7 +48,6 @@ export class SecondSaleController {
       });
       const secondSaleData = req.body;
       const requestedBy= res.locals.user.id;
-      console.log(req.body);
       if (secondSaleData.deliveryChallanNo === '') {
         secondSaleData.deliveryChallanNo = null;
       }
@@ -56,7 +55,6 @@ export class SecondSaleController {
         secondSaleData,
         requestedBy
       );
-      console.log('after creating', secondSale);
       if (!secondSale) {
         logger.error('Failed to create second sale', { secondSaleData });
         ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
@@ -80,7 +78,6 @@ export class SecondSaleController {
         data: secondSale.id,
       });
     } catch (err) {
-      console.log(err);
       logger.error('Error occurred while creating second sale', { error: err });
       ControllerLogger.logError('Second Sale creation', err, req, res);
       if (err instanceof Error) {
@@ -276,7 +273,6 @@ export class SecondSaleController {
     try {
       logger.info('Updating second sale details', { secondSaleId: id });
       const updatedBy = res.locals.updatedBy;
-      console.log(req.body);
       const secondSale = await this.secondSaleService.updateSecondSale(
         id,
         req.body,

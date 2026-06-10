@@ -6,6 +6,7 @@ import { Product } from '../entities/product.entity';
 import { ProductVarient } from '../entities/productVarient.entity';
 import { AppDataSource } from '../utils/data-source';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
+import logger from '../utils/logger';
 
 @injectable()
 export class ProductVarientsService {
@@ -93,7 +94,7 @@ export class ProductVarientsService {
   
         return await buildQuery(queryBuilder, queryOptions, 'varient');
       } catch (error) {
-        console.error('Error fetching products:', error);
+        logger.error('Error fetching products:', error);
         throw new Error('Unable to fetch the products.');
       }
     }

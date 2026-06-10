@@ -36,7 +36,6 @@ export class DumpRegisterController {
       const dumpRegisterData = req.body;
       const requestedBy = res.locals.user.id;
       dumpRegisterData.requestedBy = requestedBy;
-     console.log(dumpRegisterData)
      
       const dumpRegister = await this.dumpRegisterService.createDumpRegister(dumpRegisterData);
       
@@ -57,7 +56,6 @@ export class DumpRegisterController {
         data: dumpRegister.id,
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Create Dump Register', error, req, res);
        if (error instanceof Error) {
          return next(new AppError(400, error.message)); // ← sends 400 with real message

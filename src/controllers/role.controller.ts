@@ -6,9 +6,9 @@ import { TYPES } from "../types";
 import { Role } from "../entities/role.entity";
 import AppError from "../utils/appError";
 import logger from "../utils/logger";
+import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 
-
-@controller("/roles")
+@controller("/roles", deserializeUser, requireUser)
 export class RoleController {
   constructor(
     @inject(TYPES.RoleService) private roleService: RoleService

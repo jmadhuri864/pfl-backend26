@@ -22,6 +22,5 @@ cron.schedule("0 0 * * *", async () => {
   if (usersToDelete.length > 0) {
     // Hard delete these users
     await userRepository.remove(usersToDelete);
-    console.log(`Deleted ${usersToDelete.length} users`);
   }
 });

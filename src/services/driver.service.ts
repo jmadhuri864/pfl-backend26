@@ -138,7 +138,7 @@ async deleteDriver(id: string): Promise<boolean> {
   sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
   // Log the scheduled deletion
-  console.log(`Driver with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+  //console.log(`Driver with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
 
   // Set the deletionScheduledAt field for the driver
   driver.deletionScheduledAt = sixMonthsFromNow;
@@ -146,7 +146,7 @@ async deleteDriver(id: string): Promise<boolean> {
   // Save the updated driver with the scheduled deletion date
   await this.driverRepository.save(driver);
 
-  console.log(`Driver with ID ${id} marked for deletion in 6 months.`);
+  //console.log(`Driver with ID ${id} marked for deletion in 6 months.`);
   return true;
 }
 

@@ -12,6 +12,7 @@ import { GrnProduct } from "../entities/grnProduct.entity";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { DocumentTypeEnum } from "../entities/docuemnt.entity";
 import { DitemRepository } from "../repositories/dItem.repository";
+import logger from "../utils/logger";
 
 
 @injectable()
@@ -73,7 +74,7 @@ export class UserReportService {
     whereBase.createdAt = LessThanOrEqual(end);
   }
 
-  console.log('whereBase', whereBase);
+ 
 
   const approved = await repository.count({
     where: { ...whereBase, status: Status.APPROVED },
@@ -558,7 +559,7 @@ async getCountOfAllDocumentsByStatus(startDate?: Date, endDate?: Date): Promise<
 
     return finalResult;
   } catch (error) {
-    console.error("Error fetching total count by status:", error);
+    logger.error("Error fetching total count by status:", error);
     throw new Error("Failed to fetch document status counts");
   }
 }

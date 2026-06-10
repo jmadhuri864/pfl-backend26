@@ -807,7 +807,7 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
   if (missingId) throw new AppError(404, `Deal Slip with ID ${missingId} not found`);
 
   const docIds = relatedDocuments.map(d => d.id);
-  console.log(`[deleteMultipleDealSlips] dealSlip ids: ${ids}, doc ids: ${docIds}`);
+ 
   if (docIds.length) {
     const docResult = await this.documentbRepository
       .createQueryBuilder()
@@ -815,7 +815,6 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
       .set({ isDeleted: true } as any)
       .whereInIds(docIds)
       .execute();
-    console.log(`[deleteMultipleDealSlips] docs updated: ${docResult.affected}`);
   }
 
   const dsResult = await this.dealSlipRepository
@@ -824,7 +823,7 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
     .set({ isDeleted: true } as any)
     .whereInIds(ids)
     .execute();
-  console.log(`[deleteMultipleDealSlips] dealSlips updated: ${dsResult.affected}`);
+ 
 
   await Promise.all([
     ...ids.flatMap(id => [

@@ -89,7 +89,7 @@ export class OfficesService {
 
       // Update the address using the address service
       const updatedAddress = await this.addressService.update(office.address.id, officeData.address);
-      console.log("Updated office data in update service", updatedAddress);
+      
 
       if (!updatedAddress) {
         throw new Error("Failed to update address");
@@ -176,7 +176,7 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    console.log(`Fetching offices with type: ${officeType}`);
+   
     const result = await this.officesRepository.find({
       where: { type: officeType },
       relations: ['address'],
@@ -256,7 +256,7 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
   
     // Log the scheduled deletion
-    console.log(`Office with ID ${id} and type ${officeType} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+    
   
     // Set the deletionScheduledAt field for the office
     office.deletionScheduledAt = sixMonthsFromNow;
@@ -264,7 +264,7 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
     // Save the updated office with the scheduled deletion date
     await this.officesRepository.save(office);
   
-    console.log(`Office with ID ${id} and type ${officeType} marked for deletion in 6 months.`);
+    
     await this.invalidateCache(id);
     return true;
   }

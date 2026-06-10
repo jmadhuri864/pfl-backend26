@@ -117,7 +117,6 @@ export class LaborAttendancesController {
     @next() next: NextFunction
   ) {
     try {
-       console.log(req.body)
        req.body.checkedBy = res.locals.user?.id;
       const attendanceData = req.body;
      // Check each labor detail for empty outTime and set it to null if needed
@@ -147,7 +146,6 @@ export class LaborAttendancesController {
         data: attendance,
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Labour Attendance creation', error, req, res);
       next(error);
     }

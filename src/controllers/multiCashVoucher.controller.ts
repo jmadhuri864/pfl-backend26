@@ -34,7 +34,6 @@ export class  MultiCashVoucherController {
     try {
       logger.info("Creating a new Multi Cash Voucher");
       const voucherData = req.body;
-    console.log(req.body);
     
     // Use helper function to handle file URL extraction
     setAttachmentUrls(voucherData, req.files as any[]);
@@ -46,7 +45,6 @@ export class  MultiCashVoucherController {
     voucherData.requestedBy = res.locals.user.id;
     voucherData.requestingDepartment = res.locals.user.selectDepartment;
       const newVoucher = await this.multicashVoucherService.createVoucher(voucherData);
-      console.log("after saving multicashVoucher",newVoucher);
       logger.info("Multi Cash Voucher created successfully", { voucherId: newVoucher.id });
       ControllerLogger.logSuccess('Multi Cash Voucher created', newVoucher.id, req, res);
 
@@ -65,7 +63,6 @@ export class  MultiCashVoucherController {
        
       });
     } catch (err) {
-      console.log(err)
       logger.error("Error while creating Multi Cash Voucher", { error: err });
       ControllerLogger.logError('Multi Cash Voucher creation', err, req, res);
       if (err instanceof Error) {
@@ -266,7 +263,6 @@ export class  MultiCashVoucherController {
       const updatedBy = res.locals.updatedBy;
       const { id } = req.params;
       const updatedData = req.body;
-      console.log(req.body)
       logger.info(`Updating Multi Cash Voucher with ID: ${id}`, { updatedBy });
       
       // Use helper function to handle file URL extraction

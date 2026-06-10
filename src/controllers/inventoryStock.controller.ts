@@ -166,7 +166,6 @@ export class InventoryStockController {
       @next() next: NextFunction
     ) {
       try {
-        console.log(req.query.companyName);
        
    
        
@@ -188,7 +187,6 @@ export class InventoryStockController {
         });
     
       } catch (error) {
-        console.log(error)
         ControllerLogger.logError('Inventory Stock filter', error, req, res);
         next(error);
       }
@@ -233,7 +231,6 @@ export class InventoryStockController {
         if (!stock) {
           return next(new AppError(404, "Inventory Stock not found with given filters"));
         }
-    console.log(stock)
        
         return res.status(200).json({
           status: "success",
@@ -361,7 +358,6 @@ public async gettingStocksaccessLocation(
         data: report,
       });
     } catch (error: any) {
-      console.log(error)
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to fetch stock report",

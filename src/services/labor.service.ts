@@ -70,7 +70,7 @@ export class LaborService {
   }
 
   async updateLabor(id: string, laborData: any, updatedBy: string): Promise<any> {
-    console.log(laborData);
+    
     const labor = await this.laborRepository.findOne({
       where: { id },
       relations: ["workExperience", "familyDetails", "bankDetails", "permanentAddress", "presentAddress"],
@@ -84,7 +84,7 @@ export class LaborService {
     Object.assign(labor, laborData);
 
     const updatedLabor = await this.laborRepository.save(labor);
-    console.log("after", updatedLabor);
+   
 
     await this.auditLogService.logChange("Labor", id, oldData, updatedLabor, updatedBy);
     await this.invalidateCache(id);
@@ -103,12 +103,11 @@ export class LaborService {
     sixMonthsFromNow.setMonth(now.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    console.log(`Labor with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
-
+    
     labor.deletionScheduledAt = sixMonthsFromNow;
     await this.laborRepository.save(labor);
 
-    console.log(`Labor with ID ${id} marked for deletion in 6 months.`);
+   
     await this.invalidateCache(id);
     return true;
   }

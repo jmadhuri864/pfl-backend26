@@ -27,9 +27,7 @@ export class  LevelsController {
         try {
           logger.info("Attempting to create a new level", { requestedBy: res.locals.user.id });
           const levelData = req.body;
-          console.log("levelData",levelData)
           const level = await this.levelsService.createLevel(levelData);
-          console.log("after saved data",level)
           // if (!level) {
           //   logger.error("Failed to create level", { levelData });
           //   return next(new AppError(400, "Level could not be created"));
@@ -53,7 +51,6 @@ export class  LevelsController {
             data: level,
           });
         } catch (err) {
-          console.log(err)
           logger.error("Error occurred while creating level", { error: err });
           ControllerLogger.logError('Level creation', err, req, res);
           next(err);

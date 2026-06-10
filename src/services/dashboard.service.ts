@@ -52,14 +52,13 @@ export class DashboardService {
 // const memberIds = [
 //   ...new Set(teamMembers.map(t => String(t.descendant.id)))
 // ];
-// console.log("Team Member IDs in DashboardService:", memberIds);
+
 // const totalTeamMembers = memberIds.length;
 
 // const currentMonth = new Date().getMonth();
 // const currentYear = new Date().getFullYear();
 
-// console.log("Current Month in DashboardService:", currentMonth);
-// console.log("Current year",currentYear);
+
 
 // const activeMembers = await this.procurementTargetRepo
 //   .createQueryBuilder("target")
@@ -72,9 +71,7 @@ export class DashboardService {
 //   const activeIds = activeMembers.map(a => a.employeeId);
 //   const activeMemberCount = activeIds.length;
 //   const inactiveMemberCount = memberIds.length - activeMemberCount;
-//   console.log("Active Member IDs in DashboardService:", activeIds);
-//   console.log("Active Member Count in DashboardService:", activeMemberCount);
-//   console.log("Inactive Member Count in DashboardService:", inactiveMemberCount);
+
 
 //    // 👉 Amount query (NO JOIN)
 //   const amountResult = await this.grnRepo
@@ -113,8 +110,7 @@ export class DashboardService {
 
 //  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
 //  const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-// console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
-// console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
+
 
 // const targets = await this.procurementTargetRepo
 //   .createQueryBuilder("target")
@@ -2386,11 +2382,9 @@ const teamMembers = await this.workflowHierarchyRepo.find({
   relations: ["descendant"]
 });
 
-console.log("Team Members in DashboardService:", teamMembers.length);
 const memberIds = [
   ...new Set(teamMembers.map(t => String(t.descendant.id)))
 ];
-console.log("Team Member IDs in DashboardService:", memberIds);
 const totalTeamMembers = memberIds.length;
 
 // Frontend sends month as 0-11 (JS convention). Fall back to current month/year if not provided.
@@ -2400,10 +2394,6 @@ const currentMonth = queryMonth !== undefined ? queryMonth : now.getMonth();
 const currentYear  = queryYear  !== undefined ? queryYear  : now.getFullYear();
 // sqlMonth: 1-12 (for EXTRACT(MONTH FROM ...) in SQL which is 1-based)
 const sqlMonth = currentMonth + 1;
-
-console.log("Current Month (0-based) in DashboardService:", currentMonth);
-console.log("Current Month (SQL 1-based) in DashboardService:", sqlMonth);
-console.log("Current year", currentYear);
 
 const activeMembers = await this.procurementTargetRepo
   .createQueryBuilder("target")
@@ -2416,9 +2406,6 @@ const activeMembers = await this.procurementTargetRepo
   const activeIds = activeMembers.map(a => a.employeeId);
   const activeMemberCount = activeIds.length;
   const inactiveMemberCount = memberIds.length - activeMemberCount;
-  console.log("Active Member IDs in DashboardService:", activeIds);
-  console.log("Active Member Count in DashboardService:", activeMemberCount);
-  console.log("Inactive Member Count in DashboardService:", inactiveMemberCount);
 
    // 👉 Amount query (NO JOIN)
   const amountResult = await this.grnRepo
@@ -2459,8 +2446,6 @@ const activeMembers = await this.procurementTargetRepo
 
  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
  const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
-console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
 
 const targets = await this.procurementTargetRepo
   .createQueryBuilder("target")
@@ -2723,8 +2708,6 @@ async getProcurementOverview(): Promise<any> {
 
  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
  const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
-console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
 
 return{
   procurementQuantity: totalProcurementQty,
@@ -3045,7 +3028,6 @@ async getVendorCategoryWiseProcurementOverview(): Promise<any> {
   .where("DATE(grn.createdAt) <= CURRENT_DATE")
   .getRawMany();
 
-console.log("RAW DATA:", result);
 //return result;
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
@@ -3108,7 +3090,6 @@ async getVendorSubcategoryWiseProcurementOverview(): Promise<any> {
   .where("DATE(grn.createdAt) <= CURRENT_DATE")
   .getRawMany();
 
-console.log("RAW DATA:", result);
 //return result;
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
@@ -3168,8 +3149,6 @@ async getLocationWiseSaleOverview(): Promise<any> {
   ])
   .getRawMany();
 
-console.log("RAW:", result);
-
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
     const key = row.locationid || "UNKNOWN";
@@ -3228,8 +3207,6 @@ async getLocationWiseProcurementOverview(): Promise<any> {
     "product.netWeight AS netWeight",
   ])
   .getRawMany();
-
-console.log("RAW:", result);
 
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {

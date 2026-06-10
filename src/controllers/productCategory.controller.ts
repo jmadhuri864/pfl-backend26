@@ -37,7 +37,6 @@ export class ProductCategoryController {
     @request() req:Request,
     @response() res: Response, @next() next: NextFunction) {
     try {
-      console.log("Fetching all product categories")
       logger.info("Fetching all product categories");
 
       const { page, limit, search, sort,name} = req.query;
@@ -51,7 +50,6 @@ export class ProductCategoryController {
                           sort: sort as string || undefined, // Adjust this line to match your sorting requirements
                           search: search as string|| '',
                         };
-      console.log(res.locals.id)
       const categories = await this.productCategoryService.getAll(queryOptions);
       if (!categories.data.length) {
         logger.warn("No product categories found");
@@ -78,7 +76,6 @@ export class ProductCategoryController {
         });
     } catch (err) {
       logger.error("Error fetching product categories", { error: err });
-      console.log(err)
       ControllerLogger.logError('Product Category list retrieval', err, req, res);
       next(err);
     }
@@ -128,7 +125,6 @@ export class ProductCategoryController {
     @next() next: NextFunction
   ) {  logger.info("Creating a new product category");
     try {
-      console.log(req.body)
       const category = await this.productCategoryService.create(req.body);
       logger.info("Product category created successfully", { category });
       ControllerLogger.logSuccess('Product Category created', category.id, req, res);
@@ -166,7 +162,6 @@ export class ProductCategoryController {
     logger.info("Updating product category");
     try {
       const updatedBy=res.locals.updatedBy
-      console.log(categoryData)
       const category = await this.productCategoryService.update(id, categoryData,updatedBy);
       if (!category) {
         logger.warn("Product category not found or update failed", { id });

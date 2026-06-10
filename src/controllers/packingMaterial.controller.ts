@@ -68,7 +68,6 @@ export class PackingMaterialController {
       });
     } catch (err) {
       logger.error('Error fetching packing materials', { error: err });
-      console.log(err);
       ControllerLogger.logError('Packing Material list retrieval', err, req, res);
       next(err);
     }
@@ -82,7 +81,6 @@ export class PackingMaterialController {
   ) {
     try {
       logger.info('getting data');
-      console.log(req.body);
       const data = req.body;
       const materials = await this.packingMaterialService.createPackingMaterial(
         data,
@@ -109,7 +107,6 @@ export class PackingMaterialController {
         status: 'success',
       });
     } catch (err) {
-      console.log(err);
       logger.error('Error occurred while fetching all materials', {
         error: err,
       });
@@ -167,10 +164,8 @@ export class PackingMaterialController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(req.body);
       logger.info('Updating packing Material', { id, body: req.body });
       const updatedBy = res.locals.user.id;
-      console.log(updatedBy);
       const updatedData = req.body;
 
       const packingMaterial =
@@ -208,7 +203,6 @@ export class PackingMaterialController {
       });
     } catch (err) {
       logger.error('Error updating Packing Material', { id, error: err });
-      console.log(err);
       ControllerLogger.logError('Packing Material update', err, req, res);
       next(err);
     }

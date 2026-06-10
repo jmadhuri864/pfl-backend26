@@ -19,7 +19,6 @@ export class WorkflowHierarchyController {
   @httpPost("/add")
   async addRelation(req: Request, res: Response) {
     try {
-      console.log(req.body)
       const { department: rawDepartment, managerId, newSubordinate } = req.body;
      
       const subordinateId = newSubordinate;
@@ -55,7 +54,6 @@ export class WorkflowHierarchyController {
         data: result.message
       });
     } catch (error: any) {
-        console.log(error)
         ControllerLogger.logError('Workflow relation addition', error, req, res);
       return res.status(500).json({
         status: "error",
@@ -320,7 +318,6 @@ const newSubordinateId=newSubordinate;
         data: result
       });
     } catch (error: any) {
-      console.log(error);
       ControllerLogger.logError('Workflow node deletion', error, req, res);
       return res.status(500).json({
         status: "error",

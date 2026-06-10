@@ -73,7 +73,6 @@ export class DriverController {
           );
         }
       } catch (notifError) {
-        console.log('Driver creation notification error:', notifError);
       }
       
       res.status(201).json({
@@ -131,7 +130,6 @@ export class DriverController {
     try {
       const driverData = req.body;
       const parsedData = driverSchema.parse(driverData);
-      console.log("Driver data:", driverData);
       const updatedBy = res.locals.user?.id
 
       const updatedDriver = await this.driversService.updateDriver(id, parsedData,updatedBy);
@@ -150,7 +148,6 @@ export class DriverController {
           );
         }
       } catch (notifError) {
-        console.log('Driver update notification error:', notifError);
       }
       
       res.status(200).json({

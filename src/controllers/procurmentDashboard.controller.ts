@@ -42,7 +42,6 @@ export class ProcurmentDashController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("in get grns ");
       // Convert query parameters properly
 
       const startDate = req.query.startDate
@@ -58,8 +57,6 @@ export class ProcurmentDashController {
       const filterType = req.query.filterType?.toString();
       const locationId = req.query.locationId?.toString();
       const companyName = req.query.companyName?.toString();
-      console.log(startDate);
-      console.log(endDate);
       const grns = await this.procurmentDashService.getProcurementDashboard(
         filterType,
         startDate,
@@ -77,7 +74,6 @@ export class ProcurmentDashController {
         data: grns,
       });
     } catch (error) {
-      console.log(error);
       next(error);
     }
   }
@@ -97,7 +93,6 @@ export class ProcurmentDashController {
         endObj
       );
       //  const grn = await this.grnService.getTotalQtyAndAmount(startObj,endObj)
-      console.log(grn);
       if (!grn) {
         return next(new AppError(404, "GRN not found"));
       }
@@ -106,7 +101,6 @@ export class ProcurmentDashController {
         data: grn,
       });
     } catch (error) {
-      console.log(error);
       next(error);
     }
   }
@@ -120,13 +114,11 @@ export class ProcurmentDashController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("in get grns ");
       const companyName = req.params.id;
       // console.log(vednorId);
       const grns = await this.procurmentDashService.getGrnByCompanyName(
         companyName
       );
-      console.log(grns);
       if (!grns) {
         return next(new AppError(404, "GRN not found"));
       }
@@ -153,7 +145,6 @@ export class ProcurmentDashController {
       );
 
       if (!grns) {
-        console.log("not grn");
       }
       const overallTotal = grns.reduce(
         (acc, row) => {
@@ -163,7 +154,6 @@ export class ProcurmentDashController {
         },
         { quantity: 0, amount: 0 }
       );
-      console.log(overallTotal);
       res.status(200).json({
         message: "GRN calculations fetched successfully.",
         data: {
@@ -173,7 +163,6 @@ export class ProcurmentDashController {
         },
       });
     } catch (error) {
-      console.log(error);
       next(error);
     }
   }
@@ -200,7 +189,6 @@ export class ProcurmentDashController {
         },
         { quantity: 0, amount: 0 }
       );
-      console.log(overallTotal);
       res.status(200).json({
         message: "GRN calculations fetched successfully.",
         data: overallTotal,
@@ -219,7 +207,6 @@ export class ProcurmentDashController {
   ) {
     try {
       logger.info("Fetching Drill-Down GRN Report...");
-      console.log(req.query.grnNo);
       // Extract filters from query params
       const filters: any = {
         source: req.query.source as string | undefined,
@@ -424,7 +411,6 @@ export class ProcurmentDashController {
           ? new Date(endDate as string).toISOString()
           : undefined,
       };
-      console.log(filters);
 
       const analytics = await this.procurmentDashService.getFarmerAnalytics(
         filters

@@ -2,6 +2,7 @@ import "@aws-sdk/crc64-nvme-crt";
 import 'reflect-metadata';
 import dotenv from 'dotenv';
 dotenv.config();
+import { authRateLimit, apiRateLimit } from './middleware/performance.middleware';
 
 import express, { Request, Response, NextFunction } from 'express';
 import { InversifyExpressServer } from 'inversify-express-utils';
@@ -30,51 +31,30 @@ import { TYPES } from './types';
 // Import LogCleanupController to ensure it's registered
 import './controllers/logCleanup.controller';
 
-dotenv.config();
 /* ───────────── Allowed Origins ───────────── */
 const allowedOrigins = [
-  "*",
   "http://192.168.1.60:5173",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://192.168.1.39:5173",
-  "http://192.168.1.36:5173/",
-   "http://192.168.1.36:5173",
-   "http://192.168.1.36:5173/",
+  "http://192.168.1.36:5173",
   "https://d721a561c2dc.ngrok-free.app",
   "http://localhost:3000",
   "http://localhost:8004",
   "http://192.168.1.82:3000",
-  "https://prime-fresh-erp.vercel.app/",
-  "http://192.168.1.60:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://192.168.1.36:5173/",
-   "http://192.168.1.36:5173",
-  "https://d721a561c2dc.ngrok-free.app",
-  "http://localhost:3000",
-  "http://localhost:8004",
-  "http://192.168.1.82:3000",
+  "https://prime-fresh-erp.vercel.app",
   "http://139.59.83.235:80",
-  
-  "http://139.59.83.235"
-
+  "http://139.59.83.235",
 ];
 
-// process.on('unhandledRejection', (reason, promise) => {
-//   logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-//   process.exit(1);
-// });
 process.on('unhandledRejection', (reason: any) => {
   logger.error('Unhandled Promise Rejection:', {
     reason,
     stack: reason?.stack || '',
     message: reason?.message || reason,
   });
-
-  // Optionally alert or retry logic here
-  // For critical errors, you could still exit:
-  // process.exit(1);
+  // Exit so the process manager (PM2/Docker) can restart cleanly
+  process.exit(1);
 });
 
 process.on('uncaughtException', (err) => {
@@ -113,11 +93,15 @@ const startServer = async () => {
       app.use(express.json());
       app.use(cookieParser());
       
-      // Configure helmet to not interfere with CORS
+      // Helmet security headers — CORP/COEP configured properly
       app.use(helmet({
-        crossOriginResourcePolicy: false, // Disable CORP
-        crossOriginEmbedderPolicy: false, // Disable COEP
+        crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow CDN/image loads
+        crossOriginEmbedderPolicy: false, // disable COEP — not needed for this API
       }));
+
+      // Rate limiting — apply before routes
+      app.use('/auth', authRateLimit);   // 5 requests / 15 min on auth endpoints
+      app.use(apiRateLimit);             // 1000 requests / 15 min on all other endpoints
       
       // Skip compression for SSE endpoints — compression buffers the stream and delays events
       app.use(compression({
@@ -137,8 +121,8 @@ const startServer = async () => {
         // console.log('🔍 CORS Handler - Path:', req.path);
         
         // Allow all origins if '*' is in allowedOrigins, otherwise check specific origins
-        if (allowedOrigins.includes("*") || (origin && allowedOrigins.includes(origin))) {
-          res.setHeader("Access-Control-Allow-Origin", origin || "*");
+        if ( (origin && allowedOrigins.includes(origin))) {
+          res.setHeader("Access-Control-Allow-Origin", origin );
           res.setHeader("Access-Control-Allow-Credentials", "true");
           res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
           res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
@@ -227,7 +211,6 @@ const startServer = async () => {
       process.exit(0);
     });
   } catch (error) {
-    console.log(error)
     logger.error('Error starting the server:', error);
     process.exit(1);
   }

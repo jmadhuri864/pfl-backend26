@@ -64,7 +64,6 @@ export class FarmerController {
         const files = req.files as {
           [fieldname: string]: any[];
         };
-console.log(files)
         // DigitalOcean Spaces URLs are automatically provided by multer-s3 in .location property
         farmerData.farmPhoto = files.farmPhoto
           ? files.farmPhoto[0].location
@@ -128,7 +127,6 @@ console.log(files)
     try {
       const files = req.files as { [fieldname: string]: any[] } | undefined;
       const body = req.body;
-console.log(body);
       const fileUpdates: Record<string, string | null> = {};
 
       const handleField = async (fieldName: string) => {
@@ -204,7 +202,6 @@ console.log(body);
           );
         }
       } catch (notifError) {
-        console.log('Farmer approval notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Farmer approved', farmerId, req, res);
@@ -719,7 +716,6 @@ console.log(body);
           );
         }
       } catch (notifError) {
-        console.log('Template access notification error:', notifError);
       }
       
       ControllerLogger.logList('Farmer Template URL Generated', req, res);

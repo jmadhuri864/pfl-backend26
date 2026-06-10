@@ -11,8 +11,9 @@ import {
   request,
   response,
 } from 'inversify-express-utils';
+import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 
-@controller('/approval')
+@controller('/approval', deserializeUser, requireUser)
 export class ApprovalLevelController {
   constructor(
     @inject(TYPES.ApprovalLevelService)
@@ -33,7 +34,6 @@ export class ApprovalLevelController {
         level,
       );
 
-      console.log(approval);
       res.status(200).json({
         message: 'approve sucessfully approved',
         data: approval,

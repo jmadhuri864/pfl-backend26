@@ -36,7 +36,7 @@ export class EodStockService {
     const count = await this.eodRepository.count({
       where: { eodNo: ILike(`${prefix}%`) },
     });
-    console.log(count);
+    
     // Generate the serial number in the format "PREFIX-001"
     const serialNo = `${prefix}-${(count + 1).toString().padStart(5, '0')}`;
     return serialNo;
@@ -624,17 +624,13 @@ const activeDocuments = typedDocuments;
     sixMonthsFromNow.setMonth(now.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    console.log(
-      `EOD Stock report with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
+   
 
     stock.deletionScheduledAt = sixMonthsFromNow;
 
     await this.eodRepository.save(stock);
 
-    console.log(
-      `EOD Stock report with ID ${id} marked for deletion in 6 months.`,
-    );
+    
     return true;
   }
 public async deleteMultipleEodStock(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {

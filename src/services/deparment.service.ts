@@ -77,7 +77,7 @@ async deleteDepartment(id: string): Promise<boolean> {
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
   
     // Log the scheduled deletion
-    console.log(`Department with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+    
   
     // Set the deletionScheduledAt field for the Department
     department.deletionScheduledAt = sixMonthsFromNow;
@@ -85,7 +85,7 @@ async deleteDepartment(id: string): Promise<boolean> {
     // Save the updated Department with the scheduled deletion date
     await this.departmentRepository.save(department);
   
-    console.log(`Department with ID ${id} marked for deletion in 6 months.`);
+   
     return true;
   }
   

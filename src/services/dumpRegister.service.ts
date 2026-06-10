@@ -99,15 +99,15 @@ export class DumpRegisterService{
       await queryRunner.startTransaction();
 
       try {
-        console.log(data)
-        console.log("Creating Dump Register with data:", JSON.stringify(data, null, 2));
+        // console.log(data)
+        // console.log("Creating Dump Register with data:", JSON.stringify(data, null, 2));
 
         // Expecting data.dumpProducts to be an array of { productId, variantId, uomId, quantity, unitPrice, amount }
         if (!data.dumpProducts || !Array.isArray(data.dumpProducts) || data.dumpProducts.length === 0) {
           throw new Error("dumpProducts array is required and must not be empty");
         }
 
-        console.log("Creating dump register header...");
+        
         // Create the dump register header
         // Handle both companyId/companyName field names
         const companyId = data.companyId || data.companyName;
@@ -134,11 +134,11 @@ const serialNo = await this.generateSerialNo();
           remark: data.remark,
         });
 
-        console.log("Saving dump register...");
+        
         const savedDumpRegister = await queryRunner.manager.save(dumpRegister);
-        console.log("Dump register saved with ID:", savedDumpRegister.id);
+        
 
-        console.log("Creating document...");
+       
         // Create document
         const document = await this.documentService.createDocument({
           type: DocumentTypeEnum.DUMP_REGISTER,
@@ -149,13 +149,12 @@ const serialNo = await this.generateSerialNo();
           document_type_id: savedDumpRegister.id,
         });
 
-        console.log("Document created with ID:", document.id);
-        console.log("Starting approval flow...");
+        
 
-        console.log("Creating dump products and updating inventory...");
+        
         // Create DumpProduct records and update inventory
         for (const productData of data.dumpProducts) {
-          console.log("Processing product:", productData);
+          
           // Handle both field name variations
           const productId = productData.productId || productData.productName;
           const variantId = productData.variantId || productData.variant;
@@ -233,7 +232,7 @@ const serialNo = await this.generateSerialNo();
 
           if (stock) {
             await queryRunner.manager.save(stock);
-            console.log(`Updated stock for variant ${variantId}: -${dumpQty} inwardQty, +${dumpQty} dumpQty`);
+            //console.log(`Updated stock for variant ${variantId}: -${dumpQty} inwardQty, +${dumpQty} dumpQty`);
           }
         }
 
@@ -248,7 +247,7 @@ const serialNo = await this.generateSerialNo();
       } catch (error) {
         // Rollback transaction - undo all changes
         await queryRunner.rollbackTransaction();
-        console.error('Error creating Dump Register:', error);
+    logger.error('Error creating Dump Register:', error);
         // Re-throw the original error with more context
         if (error instanceof Error) {
           throw new Error(`Failed to create Dump Register: ${error.message}`);
@@ -889,7 +888,7 @@ async deleteDumpRegister(id: string): Promise<boolean> {
   sixMonthsFromNow.setMonth(now.getMonth() + 6); 
   sixMonthsFromNow.setHours(0, 0, 0, 0); 
 
-  console.log(`Dump Register with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+  //console.log(`Dump Register with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
 
   
   dumpRegister.deletionScheduledAt = sixMonthsFromNow;
@@ -898,7 +897,7 @@ async deleteDumpRegister(id: string): Promise<boolean> {
   await this.dumpRegisterRepository.save(dumpRegister);
   await this.invalidateDumpCache(id);
 
-  console.log(`Dump Register with ID ${id} marked for deletion in 6 months.`);
+  //console.log(`Dump Register with ID ${id} marked for deletion in 6 months.`);
   return true;
 }
 
@@ -955,7 +954,7 @@ async totalqunatityandtotaldumpcostfromstartdatetoenddate(startdate: Date, endda
     .addSelect("SUM(dumpProduct.amount)", "totalCost")
     .where("dumpRegister.date BETWEEN :startdate AND :enddate", { startdate: startdate, enddate: enddate })
     .getRawOne();
-  console.log(total);
+ 
   await this.cacheService.set(key, total, CACHE_TTL);
   return total;
 }

@@ -46,7 +46,6 @@ export class SourceController {
       
     } catch (error) {
       logger.error("Error fetching all RFPAs", error);
-      console.log(error);
       next(error); // Pass the error to the global error handler
     }
   }

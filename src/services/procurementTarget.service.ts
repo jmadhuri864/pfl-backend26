@@ -415,7 +415,7 @@ async getMonthlyPlanUpdateStructured(
     monthlyTotal: number | null;
   };
 }> {
-  console.log("getMonthlyPlanUpdateStructured params:", { targetId });
+  //console.log("getMonthlyPlanUpdateStructured params:", { targetId });
 
   const target = await this.procurementTargetRepository
     .createQueryBuilder("target")

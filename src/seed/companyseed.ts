@@ -4,10 +4,11 @@ import * as path from 'path';
 import { AppDataSource } from '../utils/data-source';
 import { Company } from '../entities/company.entity';
 import { BankDetails } from '../entities/bankDetailsCompany.entity';
+import logger from '../utils/logger';
 
 export async function seedDatabase() {
     try {
-        console.log('Checking for existing company data...');
+        //console.log('Checking for existing company data...');
 
         const companyRepo = AppDataSource.getRepository(Company);
         const bankRepo = AppDataSource.getRepository(BankDetails);
@@ -15,11 +16,11 @@ export async function seedDatabase() {
         const existingCompany = await companyRepo.count();
         
         if (existingCompany > 0) {
-            console.log('Database already has company data. Skipping seeding.');
+            //console.log('Database already has company data. Skipping seeding.');
             return;
         }
 
-        console.log('No existing data found. Seeding database...');
+        logger.info('No existing data found. Seeding database...');
 
         // Read JSON file
         const filePath = path.join(__dirname, '..', 'data', 'company.json');
@@ -50,9 +51,10 @@ export async function seedDatabase() {
             }
         }
 
-        console.log('Seeding completed successfully!');
+        logger.info('Seeding completed successfully!');
     } catch (error) {
-        console.error('Error while seeding database:', error);
+       // console.error('Error while seeding database:', error);
+       logger.error('Error while seeding database:', error);
     }
 }
 

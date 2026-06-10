@@ -124,7 +124,6 @@ async getAllTargets(
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     
-    console.log("Controller - employeeId:", employeeId);
     const data = await this.procurementTargetService.getalltargets(employeeId, page, limit);
 
     return res.status(200).json({
@@ -149,7 +148,6 @@ async getAllTargetsSimple(
 ) {
   try {
     const employeeId = res.locals.user?.id; 
-    console.log("Controller - employeeId (simple):", employeeId);
     const data = await this.procurementTargetService.getAllTargetsSimple(employeeId);
 
     return res.status(200).json({
@@ -191,7 +189,6 @@ async getMonthlyPlanView(
 ) {
   try {
     const { employee, month, year } = req.query;
-    console.log(req.query);
 
     if (!employee || !month || !year) {
       return res.status(400).json({
@@ -212,7 +209,6 @@ async getMonthlyPlanView(
     });
 
   } catch (error: any) {
-    console.log(error);
     logger.error('Error fetching procurement monthly plan view', error);
     return res.status(500).json({
       success: false,
@@ -246,7 +242,6 @@ async getMonthlyPlanViewStructured(
     });
 
   } catch (error: any) {
-    console.log(error);
     return res.status(500).json({
       success: false,
       message: error.message
@@ -280,7 +275,6 @@ async getMonthlyPlanUpdateStructured(
     });
 
   } catch (error: any) {
-    console.log(error);
     return res.status(500).json({
       success: false,
       message: error.message
@@ -297,8 +291,6 @@ async updateSalesTargetStatus(
 ) {
   try {
   
-console.log("targetId", id);
-console.log("Request Body:", req.body);
     const result =
       await this.procurementTargetService.updateStatus(
         id,

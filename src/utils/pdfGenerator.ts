@@ -5,6 +5,7 @@ import { injectable } from 'inversify';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import { s3 } from '../middleware/spaces.config';
+import logger from './logger';
 
 @injectable()
 export class PdfGeneratorService {
@@ -12,8 +13,6 @@ export class PdfGeneratorService {
 
   constructor() {
     this.bucketName = process.env.DO_SPACES_BUCKET!;
-    console.log('✅ PDF Generator initialized with DigitalOcean Spaces');
-    console.log('🪣 Bucket:', this.bucketName);
   }
 
   /**
@@ -29,13 +28,9 @@ export class PdfGeneratorService {
     fileName: string
   ): Promise<string> {
     try {
-      console.log('📄 Generating PDF from template:', templateName);
-      console.log('📊 Data:', data);
-
       // Render HTML from EJS template
       const templatePath = path.join(__dirname, `../templates/${templateName}.ejs`);
       const html = await ejs.renderFile(templatePath, { data });
-      console.log('✅ HTML rendered successfully');
 
       // Generate PDF using Puppeteer
       const browser = await puppeteer.launch({
@@ -54,8 +49,6 @@ export class PdfGeneratorService {
       const pdfBuffer = await page.pdf({ format: 'A4' });
       await browser.close();
 
-      console.log('✅ PDF generated, size:', pdfBuffer.length, 'bytes');
-
       // Upload PDF to DigitalOcean Spaces
       const timestamp = Date.now();
       const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -70,13 +63,12 @@ export class PdfGeneratorService {
       };
 
       await s3.send(new PutObjectCommand(uploadParams));
-      console.log('💾 PDF uploaded to Spaces:', spacesKey);
 
       // Return public URL
       const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${spacesKey}`;
       return publicUrl;
     } catch (error) {
-      console.error('❌ PDF generation failed:', error);
+      logger.error('PDF generation failed: ' + error);
       throw new Error('Failed to generate PDF');
     }
   }
@@ -88,14 +80,10 @@ export class PdfGeneratorService {
    */
   async generateInvoicePdf(data: any): Promise<string> {
     try {
-      console.log('📄 Starting invoice PDF generation...');
-
       // Render HTML from EJS Template
       const templatePath = path.join(__dirname, '../templates/invoiceTemplate.ejs');
-      console.log('📂 Template path:', templatePath);
 
       const html = await ejs.renderFile(templatePath, { data });
-      console.log('✅ Invoice HTML rendered successfully');
 
       // Generate PDF using Puppeteer
       const browser = await puppeteer.launch({
@@ -114,8 +102,6 @@ export class PdfGeneratorService {
       const pdfBuffer = Buffer.from(await page.pdf({ format: 'A4' }));
       await browser.close();
 
-      console.log('✅ Invoice PDF generated, size:', pdfBuffer.length, 'bytes');
-
       // Upload PDF to DigitalOcean Spaces
       const timestamp = Date.now();
       const invoiceNo = data.invoiceNo || 'unknown';
@@ -131,14 +117,12 @@ export class PdfGeneratorService {
       };
 
       await s3.send(new PutObjectCommand(uploadParams));
-      console.log('💾 Invoice PDF uploaded to Spaces:', spacesKey);
 
       // Return public URL
       const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${spacesKey}`;
       return publicUrl;
     } catch (error) {
-      console.error('❌ Error generating invoice PDF:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      logger.error('Error generating invoice PDF: ' + error);
       throw error;
     }
   }
@@ -150,8 +134,6 @@ export class PdfGeneratorService {
    */
   async getExcelFromSpaces(key: string): Promise<Buffer> {
     try {
-      console.log('📂 Reading Excel file from Spaces:', key);
-
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
@@ -166,10 +148,9 @@ export class PdfGeneratorService {
       const bytes = await response.Body.transformToByteArray();
       const fileBuffer = Buffer.from(bytes);
 
-      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
       return fileBuffer;
     } catch (error) {
-      console.error('❌ Error reading Excel file from Spaces:', error);
+      logger.error('Error reading Excel file from Spaces: ' + error);
       throw new Error(`Failed to read Excel file: ${key}`);
     }
   }
@@ -178,7 +159,6 @@ export class PdfGeneratorService {
    * Alias for backward compatibility (if getExcelFromS3 is called)
    */
   async getExcelFromS3(key: string): Promise<Buffer> {
-    console.log('⚠️  getExcelFromS3 called - redirecting to Spaces');
     return this.getExcelFromSpaces(key);
   }
 
@@ -203,9 +183,8 @@ export class PdfGeneratorService {
       });
 
       await s3.send(deleteCommand);
-      console.log('🗑️  PDF deleted from Spaces:', key);
     } catch (error) {
-      console.error('❌ Error deleting PDF from Spaces:', error);
+      logger.error('Error deleting PDF from Spaces: ' + error);
       throw error;
     }
   }
@@ -237,7 +216,7 @@ export class PdfGeneratorService {
       if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
         return false;
       }
-      console.error('❌ Error checking PDF existence:', error);
+      logger.error('Error checking PDF existence: ' + error);
       throw error;
     }
   }
@@ -255,7 +234,7 @@ export class PdfGeneratorService {
       const publicUrl = `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${key}`;
       return publicUrl;
     } catch (error) {
-      console.error('❌ Error generating signed URL:', error);
+      logger.error('Error generating signed URL: ' + error);
       throw error;
     }
   }
@@ -275,10 +254,9 @@ export class PdfGeneratorService {
       const response = await s3.send(command);
       const files = response.Contents?.map(obj => obj.Key!).filter(key => key.endsWith('.pdf')) || [];
       
-      console.log(`📋 Found ${files.length} PDF files with prefix '${prefix}'`);
       return files;
     } catch (error) {
-      console.error('❌ Error listing PDFs:', error);
+      logger.error('Error listing PDFs: ' + error);
       throw error;
     }
   }
@@ -310,10 +288,10 @@ export class PdfGeneratorService {
         }
       }
       
-      console.log(`🧹 Cleaned up ${deletedCount} old PDF files`);
+      logger.info(`Cleaned up ${deletedCount} old PDF files`);
       return deletedCount;
     } catch (error) {
-      console.error('❌ Error cleaning up old PDFs:', error);
+      logger.error('Error cleaning up old PDFs: ' + error);
       throw error;
     }
   }

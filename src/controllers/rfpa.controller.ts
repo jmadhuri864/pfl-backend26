@@ -141,7 +141,6 @@ export class RfpaController {
         //message:"rfpa is created"
       });
     } catch (error) {
-      console.log(error);
       logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
       ControllerLogger.logError('RFPA view', error, req, res);
       next(error);
@@ -245,7 +244,6 @@ export class RfpaController {
         //message:"rfpa is created"
       });
     } catch (error) {
-      console.log(error);
       logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
       ControllerLogger.logError('RFPA retrieval for update', error, req, res);
       next(error);
@@ -262,7 +260,6 @@ export class RfpaController {
   ): Promise<void> {
     try {
       logger.info('Creating a new RFPA:', rfpaData);
-      console.log(req.body);
 
       const requestedBy = res.locals.user.id;
 
@@ -386,18 +383,15 @@ export class RfpaController {
     @next() next: NextFunction,
   ): Promise<void> {
     try {
-      console.log(rfpaData);
 
       logger.info(`Updating RFPA with ID`);
       const updatedBy = res.locals.user.id;
-      console.log(rfpaData);
       rfpaData.requestedBy = res.locals.user.id;
       const updatedRfpa = await this.rfpaService.updateRfpa(
         rfpaId,
         rfpaData,
         updatedBy,
       );
-      console.log(updatedRfpa);
       if (!updatedRfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
         ControllerLogger.logError(
@@ -426,7 +420,6 @@ export class RfpaController {
         message: 'RFPA updated successfully',
       });
     } catch (error) {
-      console.log(error);
       logger.error(`Error updating RFPA with ID ${rfpaId}:`, error);
       ControllerLogger.logError('RFPA update', error, req, res);
       next(error);
@@ -443,7 +436,6 @@ export class RfpaController {
     try {
       logger.info(`Approving RFPA with ID`);
       const userId = res.locals.user.id;
-      console.log(req.body);
       const { approvalStatus, note } = req.body;
       const result = 10;
       // await this.rfpaService.approveRFPA(
@@ -500,7 +492,6 @@ export class RfpaController {
   ) {
     try {
       logger.info('Fetching all RFPA numbers');
-      console.log('rfpanumbers');
       const isDealSlipCreated =
         req.query.isDealSlipCreated === 'true'
           ? true
@@ -508,7 +499,6 @@ export class RfpaController {
             ? false
             : undefined;
       const userId = res.locals.user?.id;
-      console.log('User ID:', userId);
       const rfpas = await this.rfpaService.getAllRFPANumbers(
         { ...req.query, isDealSlipCreated },
         userId,
@@ -853,12 +843,9 @@ export class RfpaController {
   ) {
     try {
       logger.info(`Fetching RFPA with Document ID`);
-      console.log('Shriiiiiiiiiii');
 
-      console.log(docid);
       const userId = res.locals.user.id;
       const rfpa = await this.rfpaService.getRfpaByIdForView(docid, userId);
-      console.log(rfpa);
       if (!rfpa) {
         ControllerLogger.logError(
           'RFPA view',
@@ -874,7 +861,6 @@ export class RfpaController {
       }
       logger.info(`rfpa with ID fetched successfully.`);
       const requestedBy = res.locals.user.id;
-      console.log('user is ', requestedBy);
       // Send a notification when the user logs in successfully
       // const message = Welcome back! You have successfully logged in.;
       // await this.notificationService.createNoti(message, requestedBy);
@@ -884,7 +870,6 @@ export class RfpaController {
         data: rfpa,
       });
     } catch (error) {
-      console.log(error);
       logger.error('Error fetching RFPA by ID:', error);
       ControllerLogger.logError('RFPA view', error, req, res);
       next(error);
@@ -934,7 +919,6 @@ export class RfpaController {
     @next() next: NextFunction,
   ): Promise<void> {
     try {
-      console.log(req.body);
       logger.info('Deleting multiple RFPAs ......', req.body);
       const { ids } = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {

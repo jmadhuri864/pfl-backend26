@@ -43,9 +43,9 @@ export class DeliveryChallanService {
   
 
   //   public async createDeliveryChallan(deliveryChallanData: any): Promise<any> {
-  //     console.log("in service", deliveryChallanData);
+  
   //     deliveryChallanData.challanNo = await this.generateVoucherNo();
-  //    console.log(deliveryChallanData.deliveryCType)
+ 
 
   //    if (deliveryChallanData.deliveryCType === "customer") {
 
@@ -59,7 +59,7 @@ export class DeliveryChallanService {
   //     deliveryChallanData.toLocationInput = customer2?.deliveryDetails?.deliveryAddress?.id || null;
   // }
 
-  //    console.log(deliveryChallanData.customer)
+  
 
   //     const deliveryChallan = this.deliveryChallanRepo.create(deliveryChallanData);
   //     return await this.deliveryChallanRepo.save(deliveryChallan);
@@ -116,12 +116,12 @@ export class DeliveryChallanService {
           },
           relations: ['productTemplate'],
         });
-console.log("in the service variant",variant)
+
         if (!variant)
           throw new Error(`Variant not found for product ${productName.name}`);
 
         const location = savedChallan.fromLocation?.id 
-console.log("in the service location",location)
+
         const existingStock = await this.inventoryStockRepository.findOne({
           where: {
             companyName: { id: deliveryChallanData.companyName },
@@ -562,9 +562,7 @@ console.log("in the service location",location)
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
     // Log the scheduled deletion
-    console.log(
-      `Delivery Challan with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
+   
 
     // Set the deletionScheduledAt field for the Delivery Challan
     deliveryChallan.deletionScheduledAt = sixMonthsFromNow;
@@ -572,9 +570,7 @@ console.log("in the service location",location)
     // Save the updated Delivery Challan with the scheduled deletion date
     await this.deliveryChallanRepo.save(deliveryChallan);
 
-    console.log(
-      `Delivery Challan with ID ${id} marked for deletion in 6 months.`,
-    );
+   
     return true;
   }
 
@@ -1110,7 +1106,7 @@ console.log("in the service location",location)
   public async generateDeliveryChallanPdf(id: string): Promise<Buffer> {
     const challanData = await this.getByIdDeliveryChallanForPdf(id);
     
-    console.log(challanData)
+    
   
     if (!challanData) {
       throw new Error('Delivery Challan not found');

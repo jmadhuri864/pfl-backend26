@@ -5,6 +5,7 @@ import AppError from '../utils/appError';
 import { verifyJwt } from '../utils/jwt';
 import { AppDataSource } from '../utils/data-source';
 import { User } from '../entities/user.entity';
+import logger from '../utils/logger';
 
 import { BlacklistedToken } from '../entities/blacklistedToken.entity';
 
@@ -65,7 +66,7 @@ export const deserializeUser = async (
 
     next();
   } catch (err: any) {
-    console.log(err);
+    logger.error('deserializeUser error:', { message: err?.message, stack: err?.stack });
     next(err);
   }
 };
@@ -139,7 +140,7 @@ export async function captureUser(
     // Continue to the next middleware or route handler
     next();
   } catch (error) {
-    console.error('Error capturing user info:', error);
-    next(error); // Pass the error to the error handler if something goes wrong
+    logger.error('Error capturing user info:', error);
+    next(error);
   }
 }

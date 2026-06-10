@@ -89,7 +89,7 @@ async delete(id: string): Promise<boolean> {
   sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
   // Log the scheduled deletion
-  console.log(`ProductSpecification with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+
 
   // Set the deletionScheduledAt field for the product
   product.deletionScheduledAt = sixMonthsFromNow;
@@ -100,8 +100,7 @@ async delete(id: string): Promise<boolean> {
   // Step 5: Soft delete the product (commented out to keep it scheduled)
   // await this.productRepository.softDelete(id);
 
-  // Step 6: Return true to indicate the deletion was scheduled and performed
-  console.log(`ProductSpecification with ID ${id} marked for deletion in 6 months.`);
+
   return true;
 }
 

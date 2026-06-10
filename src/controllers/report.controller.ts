@@ -352,7 +352,6 @@ export class ReportController {
         filters.customers = req.body.customer;
       }
       
-      console.log(req.body)
       // Validate required fields
       if (!filters.reportBased || !filters.units || !filters.period) {
         ControllerLogger.logValidationError('Export Sales Excel to Spaces', 'Missing required fields', req, res);
@@ -415,7 +414,6 @@ export class ReportController {
           );
         }
       } catch (notifError) {
-        console.log('Sales Excel export notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Sales Excel report stored in DigitalOcean Spaces', fileName, req, res);

@@ -186,7 +186,6 @@ export class AdminDashboardController {
           data: customers,
         });
       } catch (error) {
-        console.log(error)
       logger.error('Error fetching top 5 customers by net product weight', { error: error });
       next(error);
       }
@@ -199,7 +198,6 @@ export class AdminDashboardController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log('Inside getActiveUsers controller');
 
       const activeUsers = await this.adminDashboardService.getActiveUsers();
       //console.log("Active Users:", activeUsers);
@@ -256,7 +254,6 @@ export class AdminDashboardController {
           data: customers,
         });
       } catch (error) {
-        console.log(error)
       logger.error('Error fetching top 5 customers by net product weight', { error: error });
       next(error);
       }

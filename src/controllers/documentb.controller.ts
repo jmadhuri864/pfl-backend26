@@ -180,7 +180,6 @@ public async getDocumentByUserId(
     const userId = res.locals.user.id;
 
     // 🔒 Validate documentType
-    console.log("documentType", documentType);
     
     if (!Object.values(DocumentTypeEnum).includes(documentType as DocumentTypeEnum)) {
       return res.status(400).json({
@@ -245,7 +244,6 @@ public async getDocumentByUserId(
       'document',
     );
 
-    console.log("documents", documents);
     
 
     const typedDocuments = documents as DocumentWithRelatedData[];
@@ -340,15 +338,12 @@ public async getDocumentByUserId(
 
   @httpPatch('/update/:documentId')
   async approveDocument(req: Request, res: Response): Promise<void> {
-    console.log("approveDocument called");
     
     try {
       const userId = res.locals.user.id; // Auth middleware should attach the user
-      console.log("userId",userId);
       
       const { documentId } = req.params;
       const { status, reason } = req.body;
-      console.log();
       
 
       // ✅ Validate status
@@ -374,15 +369,12 @@ public async getDocumentByUserId(
   //TODO: Update double level approver document
   @httpPatch('/updatesecondlevel/:documentId')
   async approveDocumentForDoubleLevel(req: Request, res: Response): Promise<void> {
-    console.log("approveDocument called");
     
     try {
       const userId = res.locals.user.id; // Auth middleware should attach the user
-      console.log("userId",userId);
       
       const { documentId } = req.params;
       const { status, reason } = req.body;
-      console.log();
       
 
       // ✅ Validate status
@@ -409,7 +401,6 @@ public async getDocumentByUserId(
   async approveDocumentStepForSingleAndDoubleLevel(req: Request, res: Response): Promise<void> {
     try {
       const userId = res.locals.user.id; // Auth middleware should attach the user
-      console.log("userId",userId);
       
       const { documentId } = req.params;
       const { status, reason } = req.body;

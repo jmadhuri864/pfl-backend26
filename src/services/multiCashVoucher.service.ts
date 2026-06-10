@@ -605,12 +605,12 @@ public async getAllRecycleBinVouchers(
   async generateMultiCashVoucherPdf(id: string): Promise<string> {
     const voucher = await this.getVoucherByIdForView(id);
 
-    console.log('voucher is ', voucher);
+    //console.log('voucher is ', voucher);
     if (!voucher) throw new Error('Voucher not found');
 
     const s3Key = `multi-cash-vouchers/voucher-${voucher.voucherNo}.pdf`;
 
-    console.log('Voucher data passed to EJS:', voucher.companyName);
+    //console.log('Voucher data passed to EJS:', voucher.companyName);
 
     const pdfUrl = await this.pdfGeneratorService.generatePdfFromTemplate(
       'multiCashVoucher',

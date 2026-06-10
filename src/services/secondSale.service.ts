@@ -316,7 +316,7 @@ export class SecondSaleService {
       if (secondSale) await this.cacheService.set(cacheKey, secondSale, this.CACHE_TTL);
       return secondSale || null;
     } catch (error) {
-      console.error("Error fetching SecondSale by ID:", error);
+      logger.error("Error fetching SecondSale by ID:", error);
       throw error;
     }
   }
@@ -525,7 +525,7 @@ export class SecondSaleService {
     const secondSale = await this.secondSaleRepository.findOne({
       where: { id },
     });
-    console.log(secondSaleData);
+    
     if (!secondSale) {
       return null;
     }
@@ -567,10 +567,7 @@ export class SecondSaleService {
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
     // Log the scheduled deletion
-    console.log(
-      `Second Sale with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
-    );
-
+    
     secondSale.deletionScheduledAt = sixMonthsFromNow;
     await this.secondSaleRepository.save(secondSale);
     await this.invalidateCache(id);

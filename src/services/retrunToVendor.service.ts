@@ -3,7 +3,7 @@ import { TYPES } from "../types";
 import { GrnRepository } from "../repositories/grn.repository";
 import { ProductVarientRepository } from "../repositories/varients.repository";
 import { DataSource, In } from "typeorm";
-import { UserLogger } from "../utils/logger";
+import logger, { UserLogger } from "../utils/logger";
 import { ReturnToVendorRepository } from "../repositories/returnToVendor.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
 import { DocumentbService, DocumentWithRelatedData } from "./documentb.service";
@@ -129,7 +129,7 @@ export class ReturnToVendorService {
           try {
             await this.documentbService.startApprovalFlow(document.id);
           } catch (approvalError: any) {
-            console.warn('Approval flow not started (no flow configured):', approvalError?.message);
+            logger.warn('Approval flow not started (no flow configured):', approvalError?.message);
           }
 
           if (Array.isArray(savedreturn.rtvProducts)) {
@@ -179,7 +179,7 @@ export class ReturnToVendorService {
                 const isMultiVariant = variantCount > 1;
 
                 if (!itemProductId || !itemVariantId || !companyId || !locationId) {
-                    console.warn(`❌ Skipping item due to missing relation ids:`, {
+                    logger.warn(`❌ Skipping item due to missing relation ids:`, {
                         product: itemProductId,
                         variant: itemVariantId,
                         company: companyId,
@@ -229,7 +229,7 @@ export class ReturnToVendorService {
             }
 
         } catch (error) {
-            console.error('❌ Error processing inventory for return:', error);
+            logger.error('❌ Error processing inventory for return:', error);
             throw error;
         }
     }
@@ -359,7 +359,7 @@ export class ReturnToVendorService {
             await this.cacheService.set(cacheKey, returnRecord, this.CACHE_TTL);
             return returnRecord;
         } catch (error) {
-            console.error('Error fetching return to vendor by ID:', error);
+            logger.error('Error fetching return to vendor by ID:', error);
             throw error;
         }
     }
@@ -409,7 +409,7 @@ export class ReturnToVendorService {
             await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
             return result;
         } catch (error) {
-            console.error('Error fetching return to vendor by ID:', error);
+            logger.error('Error fetching return to vendor by ID:', error);
             throw error;
         }
     }
@@ -469,7 +469,7 @@ export class ReturnToVendorService {
             await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
             return result;
         } catch (error) {
-            console.error('Error fetching return to vendor by ID:', error);
+            logger.error('Error fetching return to vendor by ID:', error);
             throw error;
         }
     }
@@ -511,7 +511,7 @@ export class ReturnToVendorService {
             await this.invalidateCache(id);
             return updatedRecord;
         } catch (error) {
-            console.error('Error updating return to vendor:', error);
+            logger.error('Error updating return to vendor:', error);
             throw error;
         }
     }
@@ -522,7 +522,7 @@ export class ReturnToVendorService {
             const locationId = existingRecord?.location?.id ?? existingRecord?.location;
 
             if (!companyId || !locationId) {
-                console.warn('Cannot re-process inventory: missing company or location');
+                logger.warn('Cannot re-process inventory: missing company or location');
                 return;
             }
 
@@ -569,7 +569,7 @@ export class ReturnToVendorService {
                 const variantId = newEntry.variantId ?? oldEntry.variantId;
 
                 if (!productId || !variantId) {
-                    console.warn('Skipping key with missing ids', { key, oldEntry, newEntry });
+                    logger.warn('Skipping key with missing ids', { key, oldEntry, newEntry });
                     continue;
                 }
 
@@ -619,7 +619,7 @@ export class ReturnToVendorService {
             }
 
         } catch (error) {
-            console.error('❌ Error re-processing inventory:', error);
+        logger.error('❌ Error re-processing inventory:', error);
             throw error;
         }
     }

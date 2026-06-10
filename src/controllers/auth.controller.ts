@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, CookieOptions } from 'express';
 import config from 'config';
+import bcrypt from 'bcryptjs';
 import { UserService } from '../services/user.service';
 import AppError from '../utils/appError';
 import { signJwt, verifyJwt } from '../utils/jwt';
@@ -28,7 +29,7 @@ const cookiesOptions: CookieOptions = {
   httpOnly: true,
   sameSite: 'strict',
   path: '/',
-  secure: process.env.NODE_ENV === 'production',
+  secure: true, // Always use secure cookies — HTTP-only environments should use HTTPS
 };
 
 const accessTokenCookieOptions: CookieOptions = {
@@ -74,8 +75,8 @@ export class AuthController {
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private blacklistCacheKey(token: string): string {
-    // Use a short hash prefix to avoid huge keys
-    return `auth:blacklist:${token.slice(-32)}`;
+    // SHA256 hash of full token — avoids truncation collisions
+    return `auth:blacklist:${require('crypto').createHash('sha256').update(token).digest('hex')}`;
   }
 
   private userCacheKey(uid: string): string {
@@ -196,8 +197,9 @@ export class AuthController {
         throw new AppError(403, 'Your account is inactive. Please contact administrator.');
       }
 
-      const isPasswordMatch = user.tempPlainPassword === trimmedPassword;
-
+     // const isPasswordMatch = user.tempPlainPassword === trimmedPassword;
+// ✅ Fix
+const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
       // Mark online — invalidate cache so fresh data is fetched next time
       user.isOnline = true;
       await this.userRepository.save(user);
@@ -286,18 +288,17 @@ export class AuthController {
       ControllerLogger.logAuth('User login', req, res, true);
       logger.info('User logged in successfully', { userId: user.id });
 
+      // refresh_token is already in httpOnly cookie — do NOT send in body (XSS risk)
       res.status(200).json({
         status: 'success',
         access_token,
-        refresh_token,
         id: user.id,
         userName: name,
         roles: user.roles,
         currentWorkLocation: user.currentWorkLocation?.id,
         employeeId: user.employeeId,
         permissions,
-         hasChild,
-        //workflowTree,
+        hasChild,
       });
     } catch (err) {
       logger.error('Unexpected error during login', { error: err });

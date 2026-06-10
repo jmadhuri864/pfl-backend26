@@ -144,7 +144,6 @@ export class CustomerTypeController {
           );
         }
       } catch (notifError) {
-        console.log('Customer type creation notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Customer Type created', customerType.id, req, res);
@@ -190,7 +189,6 @@ export class CustomerTypeController {
           );
         }
       } catch (notifError) {
-        console.log('Customer type update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Customer Type updated', id, req, res);

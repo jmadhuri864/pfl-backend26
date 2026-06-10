@@ -111,11 +111,9 @@ export class GrnController {
     try {
       
       const grnData = req.body;
-      console.log(grnData, 'grnData');
 
       if (req.file) {
         const imageUrl = req.file.path;
-        console.log('imageurl is ', imageUrl);
         if (imageUrl) {
           grnData.billImage = imageUrl;
         }
@@ -126,7 +124,6 @@ export class GrnController {
       // });
 
       const requestedBy = res.locals.user.id;
-      console.log("requested user: ", requestedBy);
 
       //const baseLocation = res.locals.user.relocationPlace;
       grnData.createdBy = requestedBy;
@@ -264,7 +261,6 @@ export class GrnController {
         //data: newGrn,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN creation', error, req, res);
       if (error instanceof Error) {
                return next(new AppError(400, error.message)); // ← sends 400 with real message
@@ -284,7 +280,6 @@ export class GrnController {
      
       const { page, limit, search, sort, rfpaId, companyName, source, grnType, locationType } = req.query;
       const userId = res.locals.user.id;
-      console.log('userId is ', userId);
       // const userRole = res.locals.user.role;
       // if (userRole !== "SuperAdmin")
       //   return res.status(403).json({ message: "Access denied" });
@@ -336,7 +331,6 @@ export class GrnController {
         page: grns.meta.page,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN recycle bin retrieval', error, req, res);
       next(error);
     }
@@ -352,7 +346,6 @@ export class GrnController {
 
       const { page, limit, search, sort, rfpaId, companyName, source, grnType, locationType } = req.query;
       const userId = res.locals.user.id;
-      console.log('userId is ', userId);
 
       //TODO: Shri
       const filters: any = {};
@@ -409,7 +402,6 @@ export class GrnController {
         page: grns.meta.page,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN list retrieval', error, req, res);
       next(error);
     }
@@ -426,7 +418,6 @@ export class GrnController {
   ) {
     try {
       
-      console.log(id);
       
       const grn = await this.grnService.getGrnById(id);
       //console.log(grn);
@@ -435,7 +426,6 @@ export class GrnController {
       }
       
       const accessedBy = res.locals.user.id;
-      console.log('user is ', accessedBy);
 
       // 🔔 Send SSE notification when GRN is accessed
       try {
@@ -500,7 +490,6 @@ export class GrnController {
         data: grn,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN view', error, req, res);
       next(error);
     }
@@ -516,17 +505,13 @@ export class GrnController {
   ) {
     try {
       
-      console.log("Shriiiiiiiiiii");
 
-      console.log(docid);
       const grn = await this.grnService.getGrnByIdForView(docid);
-      console.log("grn for view", grn);
       if (!grn) {
         return next(new AppError(404, 'GRN not found'));
       }
       
       const viewedBy = res.locals.user.id;
-      console.log('user is ', viewedBy);
 
       // 🔔 Send SSE notification when GRN is viewed by approver
     
@@ -538,7 +523,6 @@ export class GrnController {
         data: grn,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN view', error, req, res);
       next(error);
     }
@@ -554,16 +538,13 @@ export class GrnController {
   ) {
     try {
       
-      console.log(id);
       const grn = await this.grnService.getGrnByIdForupdate(id);
       //console.log(grn);
       if (!grn) {
         return next(new AppError(404, 'GRN not found'));
       }
-      console.log(grn)
   
       const requestedBy = res.locals.user.id;
-      console.log('user is ', requestedBy);
 
      
 
@@ -578,7 +559,6 @@ export class GrnController {
         data: grn,
       });
     } catch (error) {
-      console.log(error);
       ControllerLogger.logError('GRN retrieval for update', error, req, res);
       next(error);
     }
@@ -718,7 +698,6 @@ export class GrnController {
 
       // 🔔 Send SSE notification to updater
       const user=res.locals.user?.id;
-      console.log(user)
         await this.notificationService.createNoti(
           `GRN ${updatedGrn.grnNo} updated successfully`,
           user

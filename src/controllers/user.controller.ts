@@ -62,7 +62,6 @@ async resolveLocation(id: string): Promise<{
     try {
       logger.info("Creating a new Employee");
       const result = req.body;
-      console.log(req.body);
      // Handle joining location
 if (result.joiningLocation) {
   try {
@@ -99,10 +98,6 @@ if (result.currentWorkLocation) {
   }
 }
 
-console.log("joining location",result.joiningLocation);
-console.log("current location",result.currentWorkLocation);
-console.log("current office",result.currentOfficeLocation);
-console.log("joining office",result.joiningOffice)
 
       
       const user = await this.userService.createUser(result);
@@ -131,7 +126,6 @@ console.log("joining office",result.joiningOffice)
       });
     } catch (err) {
       logger.error("Error in create Employee", { error: err });
-      console.log(err);
       ControllerLogger.logError('Employee creation', err, req, res);
       next(err);
     }
@@ -288,8 +282,6 @@ public async updateUser(
   @next() next: NextFunction
 ) {
   try {
-    console.log("Update user request - ID:", id);
-    console.log("Update user request - Body:", req.body);
 
     if (Object.keys(req.body).length === 0) {
       ControllerLogger.logError('Employee update', new AppError(400, "User Data is Empty"), req, res);
@@ -337,7 +329,6 @@ public async updateUser(
       }
     }
 
-    console.log("Processed request body before service call:", req.body);
 
     const updatedUser = await this.userService.updateUser(id, req.body, updateBy);
 
@@ -346,7 +337,6 @@ public async updateUser(
       return next(new AppError(404, "User not found or could not be updated"));
     }
 
-    console.log("User updated successfully:", updatedUser.id);
 
     ControllerLogger.logSuccess('Employee updated', id, req, res);
 
@@ -423,7 +413,6 @@ public async updateUser(
    
 
      const status = req.query.status as string;
-     console.log("status",status,id)
      const allowedStatuses = ['ACTIVE', 'INACTIVE', 'SUSPENDED'] as const;
      if (!allowedStatuses.includes(status as any)) {
        ControllerLogger.logError('Employee status update', new Error('Invalid status value'), req, res);
@@ -519,7 +508,6 @@ public async upload(req: Request, res: Response) {
         return res.status(400).json({ message: "No file uploaded." });
       }
       const rawData:any = parseExcel(req.file.path);
-      console.log("Parsed Data:", rawData);
       
       const user = [];
       for (const row of rawData) {

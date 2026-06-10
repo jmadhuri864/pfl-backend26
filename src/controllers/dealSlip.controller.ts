@@ -245,7 +245,6 @@ export class DealSlipController {
           );
         }
       } catch (notifError) {
-        console.log('Deal slip creation notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Deal Slip created', dealSlip.id, req, res);
@@ -295,7 +294,6 @@ export class DealSlipController {
           );
         }
       } catch (notifError) {
-        console.log('Deal slip update notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Deal Slip updated', dealSlipId, req, res);
@@ -386,7 +384,6 @@ export class DealSlipController {
       const isGrnCreated = req.query.isGrnCreated === "true" ? true : req.query.isGrnCreated === "false" ? false : undefined;
       const userId = res.locals.user.id;
 
-      console.log("User ID----------", userId);
       
 
       const dealSlips = await this.dealSlipService.getAllDealSlipsNo({...req.query, isGrnCreated},userId);

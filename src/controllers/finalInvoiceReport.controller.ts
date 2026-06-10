@@ -88,7 +88,6 @@ async exportReport(@request() req: Request,
         );
       }
     } catch (error) {
-      console.log('Final Invoice report notification error:', error);
     }
   }
 }

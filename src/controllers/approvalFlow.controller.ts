@@ -22,7 +22,6 @@ export class ApprovalFlowController {
         @next() next: NextFunction
       ) {
         try {
-          console.log("req",req.body)
          
           const category = await this.approvalFlowService.create(data);
           

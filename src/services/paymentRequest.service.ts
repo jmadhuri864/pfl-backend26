@@ -162,8 +162,7 @@ async deletePaymentRequest(id: string): Promise<boolean> {
   sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
   sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
-  // Log the scheduled deletion
-  console.log(`Payment Request with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
+
 
   // Set the deletionScheduledAt field for the payment request
   paymentRequest.deletionScheduledAt = sixMonthsFromNow;
@@ -171,7 +170,7 @@ async deletePaymentRequest(id: string): Promise<boolean> {
   // Save the updated payment request with the scheduled deletion date
   await this.paymentRequestRepository.save(paymentRequest);
 
-  console.log(`Payment Request with ID ${id} marked for deletion in 6 months.`);
+
   return true;
 }
 

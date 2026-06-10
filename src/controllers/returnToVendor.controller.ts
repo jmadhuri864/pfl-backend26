@@ -22,7 +22,6 @@ export class ReturnToVendorController {
     @response() res: Response,
     @next() next: NextFunction) {
     try {
-      console.log(postReturnData)
 
       const requestedBy = res.locals.user.id; // Pass full user object
       const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
@@ -46,7 +45,6 @@ export class ReturnToVendorController {
         message: "Return By Vendor created successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Post Return By Customer creation', error, req, res);
       next(error);
     }
@@ -77,7 +75,6 @@ export class ReturnToVendorController {
         message: "Return to vendor records fetched successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Get all return to vendor records', error, req, res);
       next(error);
     }
@@ -108,7 +105,6 @@ export class ReturnToVendorController {
         message: "Return to vendor record fetched successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Get return to vendor by ID', error, req, res);
       next(error);
     }
@@ -138,7 +134,6 @@ export class ReturnToVendorController {
         message: "Return to vendor record fetched successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Get return to vendor by ID', error, req, res);
       next(error);
     }
@@ -168,7 +163,6 @@ export class ReturnToVendorController {
         message: "Return to vendor record fetched successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Get return to vendor by ID', error, req, res);
       next(error);
     }
@@ -204,7 +198,6 @@ export class ReturnToVendorController {
           );
         }
       } catch (notifError) {
-        console.log('Return to vendor update notification error:', notifError);
       }
 
       res.status(200).json({
@@ -213,7 +206,6 @@ export class ReturnToVendorController {
         message: "Return to vendor updated successfully",
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Return to vendor update', error, req, res);
       next(error);
     }
@@ -234,7 +226,6 @@ export class ReturnToVendorController {
         data: result,
       });
     } catch (error) {
-      console.log(error)
       ControllerLogger.logError('Return to vendor delete', error, req, res);
       next(error);
     }

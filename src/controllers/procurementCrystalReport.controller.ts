@@ -70,7 +70,6 @@ export class ProcurementCrystalReportController {
                 },
             });
         } catch (error) {
-            console.log(error)
             logger.error('Error generating detailed procurement report:', error);
             next(new AppError(500, 'Failed to generate procurement report'));
         }

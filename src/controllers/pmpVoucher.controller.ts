@@ -65,7 +65,6 @@ export class PMPVoucherController {
       });
     } catch (err: any) {
       logger.error("Error fetching vouchers", { error: err });
-      console.log(err)
       ControllerLogger.logError('PMP Voucher list retrieval', err, req, res);
       next(err);
     }
@@ -89,7 +88,6 @@ export class PMPVoucherController {
         search: search as string|| '',
       };
       const vouchers = await this.pmpVoucherService.getAllRecycleBinVouchers(queryOptions, userId);
-      console.log("vouchers",vouchers.data);
       
       logger.info("Vouchers fetched successfully", { vouchers });
       
@@ -104,7 +102,6 @@ export class PMPVoucherController {
       });
     } catch (err: any) {
       logger.error("Error fetching vouchers", { error: err });
-      console.log(err)
       ControllerLogger.logError('PMP Voucher recycle bin retrieval', err, req, res);
       next(err);
     }
@@ -215,8 +212,6 @@ export class PMPVoucherController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("reqbody",req.body)
-      console.log("req.files:", req.files) // Debug log
       const voucherData = req.body;
       
       // Use helper function to handle file URL extraction
@@ -228,9 +223,7 @@ export class PMPVoucherController {
       
     voucherData.requestedBy= res.locals.user.id;
     voucherData.requestingDepartment = res.locals.user.selectDepartment;
-    console.log(voucherData)
       const newVoucher = await this.pmpVoucherService.createVoucher(voucherData);
-      console.log(newVoucher)
       logger.info("New voucher created successfully");
       
       ControllerLogger.logSuccess('PMP Voucher created', newVoucher.id, req, res);
@@ -251,7 +244,6 @@ export class PMPVoucherController {
       });
     } catch (err) {
       logger.error("Error creating voucher", { error: err });
-      console.log(err)
       ControllerLogger.logError('PMP Voucher creation', err, req, res);
       if (err instanceof Error) {
                return next(new AppError(400, err.message)); // ← sends 400 with real message
@@ -272,7 +264,6 @@ export class PMPVoucherController {
       const { id } = req.params;
       const updatedData = req.body;
       
-      console.log("req.files in update:", req.files); // Debug log
       
       // Use helper function to handle file URL extraction
       setAttachmentUrls(updatedData, req.files as any[]);

@@ -203,7 +203,6 @@ export class RegistrationReportsController {
           );
         }
       } catch (notifError) {
-        console.log('Registration report notification error:', notifError);
       }
 
       ControllerLogger.logSuccess(
@@ -311,7 +310,6 @@ export class RegistrationReportsController {
           );
         }
       } catch (notifError) {
-        console.log('Registration summary notification error:', notifError);
       }
 
       ControllerLogger.logSuccess(
@@ -361,7 +359,6 @@ export class RegistrationReportsController {
   ) {
     try {
       const filters: RegistrationReportFilters = req.body;
-console.log(req.body)
       // Validate required fields
       if (!filters.reportType || !filters.period) {
         ControllerLogger.logValidationError(
@@ -459,7 +456,6 @@ console.log(req.body)
           );
         }
       } catch (notifError) {
-        console.log('Registration Excel export notification error:', notifError);
       }
 
       ControllerLogger.logSuccess(
@@ -477,7 +473,6 @@ console.log(req.body)
         },
       });
     } catch (err) {
-      console.log(err)
       ControllerLogger.logError('Download Registration Report', err, req, res);
       next(err);
     }

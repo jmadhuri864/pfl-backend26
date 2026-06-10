@@ -33,7 +33,6 @@ export class ManagementDashController {
 
     ){
 try {
-  console.log("in get grns ");
   // Convert query parameters properly
   
   const startDate = req.query.startDate ? new Date(req.query.startDate.toString()) : new Date(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }).split(',')[0]);

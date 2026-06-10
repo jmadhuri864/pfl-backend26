@@ -286,7 +286,6 @@ export class UOMController {
         message: "Records deleted successfully",
       });
     } catch (err) {
-      console.log(err)
       ControllerLogger.logError('UOM multiple deletion', err, req, res);
       next(err);
     }

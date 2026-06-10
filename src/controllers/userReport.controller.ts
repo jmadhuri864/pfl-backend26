@@ -109,8 +109,6 @@ public async getCountOfAllDocumentsByStatus(
 
       // Fetch from query params instead of URL params
       let { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
-      console.log("Start Date:", startDate!);
-      console.log("End Date:", endDate!);
       let startDate1: Date | undefined;
       let endDate1: Date | undefined;
       if(startDate && endDate){

@@ -185,7 +185,6 @@ export class LabourPaymentVoucherController {
       voucherData.requestedBy = res.locals.user.id;
       voucherData.requestingDepartment = res.locals.user.selectDepartment; // Assuming the user id is available in res.locals
       const newVoucher = await this.lpVoucherService.createLPVoucher(voucherData);
-      console.log(newVoucher);
       logger.info("Labour Payment Voucher created successfully");
       ControllerLogger.logSuccess('Labour Payment Voucher created', Array.isArray(newVoucher) ? newVoucher[0]?.id : newVoucher?.id, req, res);
 
@@ -224,7 +223,6 @@ export class LabourPaymentVoucherController {
       const updatedBy = res.locals.updatedBy;
       const { id } = req.params;
       logger.info(`Updating Labour Payment Voucher with ID: ${id}`);
-      console.log(req.body)
       const updatedData= req.body;
       
       // Use helper function to handle file URL extraction

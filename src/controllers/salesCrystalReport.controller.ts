@@ -133,7 +133,6 @@ export class SalesCrystalReportController {
                 },
             });
         } catch (error) {
-            console.log(error)
             logger.error('Error generating detailed sales report:', error);
             next(new AppError(500, 'Failed to generate sales report'));
         }
@@ -214,7 +213,6 @@ export class SalesCrystalReportController {
                 },
             });
         } catch (error) {
-            console.log(error)
             logger.error('Error generating customer drill-down report:', error);
             next(new AppError(500, 'Failed to generate customer drill-down report'));
         }

@@ -82,17 +82,17 @@ export class CropService {
     sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
   
-    console.log(sixMonthsFromNow); // Log the calculated date
+   // console.log(sixMonthsFromNow); // Log the calculated date
   
     // Set the deletionScheduledAt field for the crop
     crop.deletionScheduledAt = sixMonthsFromNow;
   
-    console.log("In delete service for Crop", crop.deletionScheduledAt);
+    //console.log("In delete service for Crop", crop.deletionScheduledAt);
   
     // Save the updated crop with the scheduled deletion date
     await this.cropRepository.save(crop);
   
-    console.log(`Crop with ID ${id} marked for deletion in 6 months.`);
+    //console.log(`Crop with ID ${id} marked for deletion in 6 months.`);
   
     return true;
   }

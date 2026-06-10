@@ -23,7 +23,7 @@ export class BankDetailsvendService {
       data.branchAddress = await this.addressService.create(data.branchAddress);
       
     }
-    console.log(data.branchAddress)
+   
     // Create new BankDetailsVend entity
     const bankDetails = this.bankDetailsvendRepository.create(data);
   

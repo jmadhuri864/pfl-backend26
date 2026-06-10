@@ -160,7 +160,6 @@ export class CustomerCategoryController {
           );
         }
       } catch (notifError) {
-        console.log('Customer category creation notification error:', notifError);
       }
       
       // Log successful creation
@@ -210,7 +209,6 @@ export class CustomerCategoryController {
           );
         }
       } catch (notifError) {
-        console.log('Customer category update notification error:', notifError);
       }
       
       // Log successful update

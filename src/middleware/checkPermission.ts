@@ -54,7 +54,7 @@ export const checkPermission = (documentKey: string, action: ActionType) => {
 
       next();
     } catch (err) {
-      console.error('Permission check failed:', err);
+      //console.error('Permission check failed:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };

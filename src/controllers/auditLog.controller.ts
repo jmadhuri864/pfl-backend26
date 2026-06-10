@@ -4,8 +4,9 @@ import { controller, httpGet } from 'inversify-express-utils';
 import { AuditLogService } from '../services/auditLog.service';
 import { TYPES } from '../types';
 import { AuditLogRepository } from '../repositories/AuditLog.repository';
+import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 
-@controller('/audit-logs')
+@controller('/audit-logs', deserializeUser, requireUser)
 export class AuditLogController {
   constructor(
     @inject(TYPES.AuditLogService) private auditLogService: AuditLogService,

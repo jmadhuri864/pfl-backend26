@@ -22,7 +22,6 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user.id;
-        console.log("User ID in DashboardController:", userId);
         try {
             // Frontend sends month as 0-11 (JS convention), year as full year
             const month = req.query.month !== undefined ? Number(req.query.month) : undefined;
@@ -92,7 +91,6 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user.id;
-        console.log("User ID in DashboardController:", userId);
         try {
             const data = await this.dashboardService.getProcurementTeamMembersPerformance(userId);
             return res.status(200).json({
@@ -115,7 +113,6 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user.id;
-        console.log("User ID in DashboardController:", userId);
         try {
             const data = await this.dashboardService.getSaleTeamMembersPerformance(userId);
             return res.status(200).json({
@@ -278,7 +275,6 @@ export class DashboardController {
             const userId = res.locals.user?.id;
 
             const data = await this.dashboardService.getEmployeeCountByDept({ userId, department });
-console.log(data);
             return res.status(200).json({
                 success: true,
                 message: userId
@@ -287,7 +283,6 @@ console.log(data);
                 data,
             });
         } catch (error: any) {
-            console.log(error);
             return res.status(500).json({
                 success: false,
                 message: error.message || "Failed to fetch employee team stats",

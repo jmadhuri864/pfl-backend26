@@ -35,7 +35,6 @@ export class LaborController {
       logger.info("Attempting to create a new labor record");
       //console.log(req.body);
       const laborData = req.body;
-     console.log(laborData)
       const labor = await this.laborService.createLabor(laborData);
       if (!labor) {
         return next(new AppError(400, "Labor record could not be created"));

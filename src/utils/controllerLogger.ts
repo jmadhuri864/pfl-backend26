@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UserLogger } from './logger';
+import logger from './logger';
 import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import { container } from '../inversify.config';
@@ -38,8 +39,6 @@ export class ControllerLogger {
   private static getModuleFromPath(req: Request): ActivityModule {
     const path = req.path.toLowerCase();
     
-    console.log('path', path);
-
     if (path.includes('grn')) return ActivityModule.GRN;
     if (path.includes('rfpa')) return ActivityModule.RFPA;
     if (path.includes('customer-delivery-challan')) return ActivityModule.CUSTOMER_DELIVERY_CHALLAN;
@@ -108,7 +107,7 @@ export class ControllerLogger {
       });
     } catch (error) {
       // Don't throw - logging should not break the main operation
-      console.error('Failed to log to database:', error);
+      logger.error('Failed to log to database: ' + error);
     }
   }
 

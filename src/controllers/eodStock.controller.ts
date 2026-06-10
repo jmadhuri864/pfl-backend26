@@ -264,7 +264,6 @@ export class EodStockController {
           );
         }
       } catch (notifError) {
-        console.log('EOD stock update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('EOD Stock updated', id, req, res);

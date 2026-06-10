@@ -102,7 +102,6 @@ export class DeliveryChallanReportController {
           );
         }
       } catch (error) {
-        console.log('Customer Delivery Challan report notification error:', error);
       }
     }
 }

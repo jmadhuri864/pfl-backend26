@@ -38,12 +38,10 @@ export class VehicleDispatchController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("in the vehicle dispatch ")
       // logger.info("Attempting to create a new vehicle dispatch", {
       //   requestedBy: res.locals.user.id,
       // });
 //       const dispatchData = req.body;
-console.log(req.body)
 
 // // Convert empty strings to null for UUID fields
 // if (dispatchData. clientGRNNo === '') {
@@ -94,7 +92,6 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       logger.error("Error occurred while creating vehicle dispatch", {
         error: err,
       });
-      console.log(err)
       ControllerLogger.logError('Vehicle Dispatch creation', err, req, res);
       if (err instanceof Error) {
                return next(new AppError(400, err.message)); // ← sends 400 with real message
@@ -253,7 +250,6 @@ try {
         vehicleDispatchId: id,
       });
       const data = req.body;
-      console.log(data)
       const updateBy=res.locals.user.id
       const updatedDispatch = await this.vehicleDispatchService.update(
         id,
@@ -293,7 +289,6 @@ try {
         vehicleDispatchId: id,
         error: err,
       });
-      console.log(err)
       next(err);
     }
   }
@@ -421,12 +416,9 @@ try {
       ) {
         try {
        //   logger.info(Fetching Vehical Dispatch with Document ID);
-          console.log("Shriiiiiiiiiii");
           
-          console.log(docid);
           const userId = res.locals.user.id;
           const vehicalDispatch = await this.vehicleDispatchService.getVehicalDispatchByIdForView(docid,userId);
-          console.log(vehicalDispatch);
           if (!vehicalDispatch) {
             return res.status(403).json({
             status: 'fail',
@@ -436,7 +428,6 @@ try {
           }
           logger.info(`Vehical Dispatch with ID fetched successfully.`);
           const requestedBy = res.locals.user.id;
-          console.log('user is ', requestedBy);
           // Send a notification when the user logs in successfully
           // const message = Welcome back! You have successfully logged in.;
           // await this.notificationService.createNoti(message, requestedBy);
@@ -445,7 +436,6 @@ try {
             data: vehicalDispatch,
           });
         } catch (error) {
-          console.log(error);
           logger.error('Error fetching Vehical Dispatch by ID:', error);
           next(error);
         }

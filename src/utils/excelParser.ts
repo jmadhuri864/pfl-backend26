@@ -44,7 +44,6 @@ export function parseExcel(filePath: string) {
 
 
 export function parseExcelDate(dateValue: any): string | null {
-  console.log("Parsing date value:", dateValue);
   
   if (!dateValue) return null;
 

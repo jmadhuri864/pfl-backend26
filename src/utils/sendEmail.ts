@@ -1,6 +1,7 @@
 import config from 'config';
 
 import nodemailer from 'nodemailer';
+import logger from './logger';
 
 
 const smtp = config.get<{
@@ -22,19 +23,15 @@ const smtp = config.get<{
 //test Transporter
 transporter.verify((error,success)=>{
 if(error){
-    console.log(error);
+    logger.error('Email transporter verification failed: ' + error);
 }
-else
-console.log("Ready FOR Messages");
-console.log(success)
 });
 
 //send actual email
 export const sendEmail = async (mailOptions: nodemailer.SendMailOptions) => {
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log("Email sent: " + info.response);
     } catch (error) {
-        console.error("Error sending email:", error);
+        logger.error('Error sending email: ' + error);
     }
 };

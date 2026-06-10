@@ -64,13 +64,11 @@ export class CustomerController {
   ) {
     try {
       // Parse the customer data using Zod schema
-      console.log('inthe customer', req.body);
       
 
       const files = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
-console.log(req.body)
       const customerData = req.body;
 customerData.createdBy = res.locals.user.id;
       customerData.bankDetailsCust = customerData.bankDetailsCust || {};
@@ -128,7 +126,6 @@ customerData.createdBy = res.locals.user.id;
           (files.visitingCardCopy[0] as any).location;
 
       const customer = await this.customerService.create(customerData);
-      console.log('customer is ', customer);
 
       if (!customer) {
         ControllerLogger.logOperationFailed('Create', 'Customer', 'could not be created', req, res);
@@ -168,7 +165,6 @@ customerData.createdBy = res.locals.user.id;
         data: responseData,
       });
     } catch (err) {
-      console.log(err);
      
       ControllerLogger.logError('Customer creation', err, req, res);
       next(err);
@@ -363,7 +359,6 @@ async approveCustomer(
         );
       }
     } catch (notifError) {
-      console.log('Customer approval notification error:', notifError);
     }
     
     // Log successful approval
@@ -519,7 +514,6 @@ async approveCustomer(
     } catch (err) {
       ControllerLogger.logError('Customer partial view', err, req, res);
       next(err);
-      console.log(err);
     }
   }
 
@@ -562,7 +556,6 @@ async approveCustomer(
     } catch (err) {
       ControllerLogger.logError('Customer view', err, req, res);
       next(err);
-      console.log(err);
     }
   }
 
@@ -606,7 +599,6 @@ async approveCustomer(
     } catch (err) {
       ControllerLogger.logError('Customer view', err, req, res);
       next(err);
-      console.log(err);
     }
   }
 
@@ -651,7 +643,6 @@ async approveCustomer(
     } catch (err) {
       ControllerLogger.logError('Customer update view', err, req, res);
       next(err);
-      console.log(err);
     }
   }
 
@@ -687,8 +678,6 @@ async approveCustomer(
     try {
       
       const { id } = req.params;
-      console.log(id);
-      console.log(req.body);
       const updatedBy = res.locals.updatedBy;
       const customerData = req.body;
       const files = req.files as {
@@ -770,7 +759,6 @@ async approveCustomer(
       });
     } catch (error) {
       ControllerLogger.logError('Customer update', error, req, res);
-      console.log(error);
       next(error);
     }
   }
@@ -873,7 +861,6 @@ async approveCustomer(
           );
         }
       } catch (notifError) {
-        console.log('Template access notification error:', notifError);
       }
       
       ControllerLogger.logList('Farmer Template URL Generated', req, res);

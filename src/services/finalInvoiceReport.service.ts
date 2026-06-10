@@ -359,8 +359,7 @@ if (filter.status) {
 
   const invoices = entities;
 
-  console.log("map", docMap);
-  console.log("Invoice", invoices)
+  
 
     // const documentbMap: Record<string, any> = {};
     // for (const dc of invoices) {
@@ -715,7 +714,7 @@ ADD DATA
       const documentb = docMap[inv.id]
 
       const statusValue = documentb?.status || '';
-      console.log("status"+statusValue+"--------------------");
+      //console.log("status"+statusValue+"--------------------");
       
       const statusInfo = STATUS_MAP[statusValue] || {
         label: statusValue,

@@ -39,7 +39,6 @@ export class BillingDetailsCustController {
   ) {
     try {
       const billingDetailsData = req.body;
-      console.log(req.body);
       //console.log(req.body)
 
       // Handling file uploads

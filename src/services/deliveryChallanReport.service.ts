@@ -147,7 +147,7 @@ export class DeliveryChallanReportService {
         ? filter.company
         : String(filter.company).split(',');
 
-      console.log('Company IDs for filter: ', ids);
+      
       qb.andWhere('company.id IN (:...comp)', { comp: ids });
 
       //after getting the company names we will prepare the display value for filter summary
@@ -663,7 +663,7 @@ const to2Decimal = (val: any) =>
       const documentb = docMap[dc.id];
 
       const statusValue = documentb?.status || '';
-      console.log('status' + statusValue);
+      
 
       const statusInfo = STATUS_MAP[statusValue] || {
         label: statusValue,

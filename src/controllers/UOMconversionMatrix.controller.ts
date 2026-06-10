@@ -150,7 +150,6 @@ export class UOMConversionMatrixController {
     @next() next: NextFunction
   ) {
     try {
-      console.log(req.body)
       const conversion = await this.uomConversionMatrixService.create(
         conversionData
       );

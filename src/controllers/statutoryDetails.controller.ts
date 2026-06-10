@@ -28,8 +28,6 @@ export class StatutoryDetailsCustController {
   ) {
     try {
       const statutoryDetailsData = req.body;
- console.log(req.body);
- console.log(req.files)
       // Handling file uploads
       const files = req.files as {
         aadharCopy?: Express.Multer.File[];

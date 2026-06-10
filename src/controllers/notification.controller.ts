@@ -25,13 +25,10 @@ export class NotificationController {
 // const userId=res.locals.id;
 // console.log(userId)
     const {userId,message } = req.body;
-    console.log(req.body)
     if (!userId || !message) {
         res.status(400).json({ success: false, message: "userId and message are required" });
         return;
       }
-      console.log("userId",userId);
-      console.log("message",message);
     // Emit notification event to the specific user's room
     this.io.to(userId).emit("newNotification", { message, userId });
 

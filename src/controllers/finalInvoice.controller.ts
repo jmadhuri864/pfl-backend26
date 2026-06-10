@@ -68,7 +68,6 @@ export class FinalInvoiceController {
           );
         }
       } catch (notifError) {
-        console.log('Final invoice creation notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Final Invoice created', invoice.id, req, res);
@@ -212,7 +211,6 @@ export class FinalInvoiceController {
           );
         }
       } catch (notifError) {
-        console.log('Final invoice update notification error:', notifError);
       }
 
       ControllerLogger.logSuccess('Final Invoice updated', id, req, res);
@@ -235,7 +233,6 @@ export class FinalInvoiceController {
   ) {
     try {
       const invoiceId=req.body.id;
-      console.log(`📥 Downloading invoice PDF for ID: ${invoiceId}`);
 
       // Fetch invoice data with all relations
       const invoiceData = await this.finalInvoiceService.getByIdForPdf(invoiceId);
@@ -245,7 +242,6 @@ export class FinalInvoiceController {
         return next(new AppError(404, 'Final invoice not found'));
       }
 
-      console.log('📄 Generating invoice PDF...');
       // Generate invoice PDF
       const pdfUrl = await this.pdfGeneratorService.generateInvoicePdf(invoiceData);
 
@@ -265,10 +261,8 @@ export class FinalInvoiceController {
           );
         }
       } catch (notifError) {
-        console.log('Invoice PDF download notification error:', notifError);
       }
 
-      console.log('✅ Invoice PDF generated successfully:', pdfUrl);
       ControllerLogger.logSuccess('Invoice PDF generated', invoiceId, req, res);
       
       res.status(200).json({

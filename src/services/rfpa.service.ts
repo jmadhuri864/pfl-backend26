@@ -34,6 +34,7 @@ import { ProductVarientRepository } from '../repositories/varients.repository';
 import { RfpaPaymentInfoRepository } from '../repositories/rfpaPaymentInfo.repository';
 import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
 import { CacheService } from './cache.service';
+import logger from '../utils/logger';
 
 export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
@@ -138,7 +139,6 @@ export class RfpaService {
     })
 
     const saveRfpaPaymentInfo = await queryRunner.manager.save(rfpaPaymentInfo);
-    console.log("RFPA Data...........", saveRfpaPaymentInfo);
     
     const rfpaEntity = queryRunner.manager.create(this.rfpaRepository.target, {
       rfpaId,
@@ -184,7 +184,6 @@ export class RfpaService {
     const savedRfpaResult = await queryRunner.manager.save(rfpaEntity);
     
     const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
-console.log(rfpaData.createdBy)
     const document = await this.documentbService.createDocument({
       type: DocumentTypeEnum.RFPA,
       docDef: DocDefEnum.PROCUREMENT,
@@ -202,7 +201,7 @@ console.log(rfpaData.createdBy)
     return savedRfpa;
   } catch (error: any) {
     await queryRunner.rollbackTransaction();
-    console.error('Error creating RFPA:', error);
+    logger.error('Error creating RFPA:', error);
     throw error;
   } finally {
     await queryRunner.release();
@@ -1231,7 +1230,7 @@ public async getRfpaByIdForView(docid: string, userId:string): Promise<any> {
       return null;
     }
     const id = document.documentTypeId;
-    console.log('id in getRfpaByIdForView', id);
+    
     
     
   if (!id) {

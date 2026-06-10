@@ -40,7 +40,6 @@ export class GrnReportController {
   ) {
     try {
       const body: IGrnReportDownloadRequest = req.body;
-console.log(req.body)
       // Validate request
       this.validateRequest(body, req, res, next);
 
@@ -212,7 +211,6 @@ console.log(req.body)
         );
       }
     } catch (error) {
-      console.log('GRN report notification error:', error);
     }
   }
 }

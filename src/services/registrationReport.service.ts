@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { AppDataSource } from '../utils/data-source';
 import * as ExcelJS from 'exceljs';
+import logger from '../utils/logger';
 
 /**
  * REGISTRATION REPORT SERVICE
@@ -75,8 +76,7 @@ export class RegistrationReportService {
     filters: RegistrationReportFilters,
   ): Promise<RegistrationData[]> {
     try {
-      console.log('Generating registration report with filters:', filters);
-
+      
       // Build date range based on period
       const dateRange = this.buildDateRange(filters);
 
@@ -92,7 +92,7 @@ export class RegistrationReportService {
           throw new Error(`Unsupported report type: ${filters.reportType}`);
       }
     } catch (error) {
-      console.error('Error generating registration report:', error);
+      logger.error('Error generating registration report:', error);
       throw error;
     }
   }
@@ -492,8 +492,17 @@ export class RegistrationReportService {
 
     switch (filters.period) {
       case 'custom':
-        startDate = new Date(filters.startDate!);
-        endDate = new Date(filters.endDate!);
+        if (!filters.startDate || !filters.endDate) {
+          throw new Error('startDate and endDate are required for custom period');
+        }
+        startDate = new Date(filters.startDate);
+        endDate = new Date(filters.endDate);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          throw new Error('Invalid date format for startDate or endDate');
+        }
+        if (startDate > endDate) {
+          throw new Error('startDate must be before endDate');
+        }
         startDate.setHours(0, 0, 0, 0);
         break;
 

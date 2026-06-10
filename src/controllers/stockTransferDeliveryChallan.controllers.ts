@@ -29,7 +29,6 @@ export class StockTranferDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log('in controller',req.body);
 
       // Use helper function to handle file URL extraction
       setAttachmentUrls(req.body, req.files as any[]);

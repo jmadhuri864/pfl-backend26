@@ -23,9 +23,9 @@ export class RoleService {
   }
 
   async findRoleById(id: string): Promise<Role | null> {
-    console.log(id)
+  
     const role = await this.roleRepository.findOne({ where: { id } });
-    console.log(role?.name)
+    
   return role;
   }
 
@@ -98,7 +98,6 @@ async deleteRole(id: string): Promise<boolean> {
   sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
   // Log the scheduled deletion
-  console.log(`Role with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`);
 
   // Step 4: Set the deletionScheduledAt field for the Role
   role.deletionScheduledAt = sixMonthsFromNow;
@@ -107,7 +106,6 @@ async deleteRole(id: string): Promise<boolean> {
   await this.roleRepository.save(role);
 
   // Step 6: Return true to indicate the deletion was scheduled
-  console.log(`Role with ID ${id} marked for deletion in 6 months.`);
   return true;
 }
 

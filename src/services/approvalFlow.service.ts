@@ -9,6 +9,7 @@ import { FinalizerBlockRepository } from '../repositories/finalizerBlock.reposit
 import { AppDataSource } from '../utils/data-source';
 import { User } from '../entities/user.entity';
 import { ApprovalFlow } from '../entities/approvalFlow.entity';
+import logger from '../utils/logger';
 type ApproverBlockInput = {
   hierarchy: number;
   minAmtCanApprove: number;
@@ -48,9 +49,9 @@ export class ApprovalFlowService {
       secondFinalizers: string[];
     };
   }): Promise<any> {
-    console.log('Service data', data);
-    console.log('Creator ID:', data.approvers.firstApprover?.users);
-    console.log('Creator ID:', data.approvers.secondApprover?.users);
+    logger.info('Service data', data);
+    logger.info('Creator ID:', data.approvers.firstApprover?.users);
+    logger.info('Creator ID:', data.approvers.secondApprover?.users);
     
     
     
@@ -69,7 +70,7 @@ export class ApprovalFlowService {
         id: In(blockData.users || []),
       });
 
-      console.log("Users: ", users);
+      logger.info("Users: ", users);
       
       return this.approverBlockRepository.save({
         hierarchy: blockData.hierarchy,
@@ -94,9 +95,9 @@ export class ApprovalFlowService {
       createApproverBlock(data.approvers.fifthApprover),
       createApproverBlock(data.approvers.sixthApprover),
     ]);
-    console.log('Approval level', createApproverBlock);
-    console.log('First approver', firstApprover);
-    console.log('Second approver', secondApprover);
+    logger.log('Approval level', createApproverBlock);
+    logger.log('First approver', firstApprover);
+    logger.log('Second approver', secondApprover);
     
 
     // const approvalLevel: any = await this.approvalLevelRepository.save({
@@ -133,7 +134,7 @@ export class ApprovalFlowService {
       firstFinalizers,
       secondFinalizers,
     });
-    console.log("Finalizers: ",finalizerBlock);
+    logger.log("Finalizers: ",finalizerBlock);
     
     const approvalFlow = this.approvalFlowRepository.create();
     approvalFlow.creator = creator;
@@ -142,7 +143,7 @@ export class ApprovalFlowService {
     approvalFlow.approvers = savedApprovalLevel;
     approvalFlow.finalizers = finalizerBlock;
     
-    console.log('Approval flow', approvalFlow);
+    logger.log('Approval flow', approvalFlow);
 
     return await this.approvalFlowRepository.save(approvalFlow);
   }
@@ -169,7 +170,7 @@ export class ApprovalFlowService {
       .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
       .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers');
 
-    console.log(type);
+    //console.log(type);
     if (type) {
       query.where('approvalflows.type = :type', { type });
     }
@@ -536,7 +537,7 @@ export class ApprovalFlowService {
       const verifiers = await this.userRepository.findBy({
         id: In(data.verifiers),
       });
-      console.log(
+      logger.log(
         'Fetched verifiers:',
         verifiers.map((v) => v.id),
       );
@@ -764,7 +765,7 @@ export class ApprovalFlowService {
   //TODO: Here we check approval flow for logged user
   async findApprovalFlowForLoggedUser(userId: any, docDef: any){
     try {
-      console.log(userId, docDef);
+      //console.log(userId, docDef);
 
       const approvalFlow = await this.approvalFlowRepository.findOne({
         where: {
@@ -782,7 +783,7 @@ export class ApprovalFlowService {
           'approvers.sixthApprover',
         ],
       });
-        console.log("Approval flow: ", approvalFlow);
+        //console.log("Approval flow: ", approvalFlow);
 
       return approvalFlow;
 

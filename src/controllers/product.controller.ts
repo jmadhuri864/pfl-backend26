@@ -59,7 +59,6 @@ export class ProductController {
       };
       logger.info('Fetching all products');
       const products = await this.productService.getAll(queryOptions);
-      console.log("products...",products)
       logger.info(`Fetched ${products.length} products successfully`);
       ControllerLogger.logList('Product', req, res);
 
@@ -157,10 +156,8 @@ export class ProductController {
   @httpGet('/productname/')
   async searchProductByName(req: Request, res: Response): Promise<any> {
     try {
-      console.log('in serch controller');
       logger.info('searching  all products');
       const { search } = req.query; 
-      console.log(search);
       if (!search || typeof search !== 'string') {
         return res
           .status(400)
@@ -182,10 +179,8 @@ export class ProductController {
     @next() next: NextFunction,
   ): Promise<any> {
     try {
-      console.log('in serch controller');
       logger.info('searching  all products');
       const { id } = req.params;
-      console.log(id);
       if (!id || typeof id !== 'string') {
         return res
           .status(400)
@@ -291,18 +286,15 @@ export class ProductController {
     try {
       logger.info('Creating a new product');
       const productData = req.body;
-      console.log('req body', productData);
 
       if (req.file) {
         const imageUrl = (req.file as any).location;
-        console.log('imageurl is ', imageUrl);
         if (imageUrl) {
           productData.image = imageUrl;
         }
       }
 
       const product = await this.productService.create(productData);
-      console.log('successfully created');
       logger.info('Product created successfully');
       ControllerLogger.logSuccess('Product created', product.id, req, res);
 
@@ -323,7 +315,6 @@ export class ProductController {
       });
     } catch (err) {
       logger.error('Error creating product', { error: err });
-      console.log(err);
       ControllerLogger.logError('Product creation', err, req, res);
       next(err);
     }
@@ -382,8 +373,6 @@ export class ProductController {
   ) {
     try {
       // Log incoming data for debugging
-      console.log('Raw req.body from frontend:', req.body);
-      console.log('Parsed productData parameter:', productData);
 
       if (req.file) {
         const imageUrl = (req.file as any).location;
@@ -426,7 +415,6 @@ export class ProductController {
       });
     } catch (err) {
       logger.error(`Error updating product with ID: ${id}`, { error: err });
-      console.log(err);
       ControllerLogger.logError('Product update', err, req, res);
       next(err);
     }
@@ -488,7 +476,6 @@ public async softDeleteMultipleProducts(
     @next() next: NextFunction
   ) {
     try {
-      console.log('in upload excel controller');
       
       if (!req.file) {
         ControllerLogger.logValidationError('Product Excel upload', 'No file uploaded', req, res);
@@ -496,7 +483,6 @@ public async softDeleteMultipleProducts(
       }
       
       const fileUrl = (req.file as any).location;
-      console.log('File URL from Spaces:', fileUrl);
       
       if (!fileUrl) {
         return next(new AppError(400, 'File URL is required'));
@@ -514,7 +500,6 @@ public async softDeleteMultipleProducts(
           );
         }
       } catch (notifError) {
-        console.log('Product Excel upload notification error:', notifError);
       }
       
       ControllerLogger.logSuccess('Product Excel uploaded', 'bulk', req, res);
@@ -525,7 +510,6 @@ public async softDeleteMultipleProducts(
       });
     } catch (err) {
       ControllerLogger.logError('Product Excel upload', err, req, res);
-      console.log(err);
       next(err);
     }
   }
@@ -553,7 +537,6 @@ public async softDeleteMultipleProducts(
           );
         }
       } catch (notifError) {
-        console.log('product access notification error:', notifError);
       }
       
       ControllerLogger.logList('Product Template URL Generated', req, res);

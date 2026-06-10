@@ -9,13 +9,13 @@ import logger from '../utils/logger';
 const entitiesToCheck = [InwardRegister, Farmer, Product];
 
 cron.schedule('0 0 1 * *', async () => {
-  console.log('Starting overdue deletion checks...');
+  //console.log('Starting overdue deletion checks...');
   try {
     logger.info(`Cron job triggered at: ${new Date().toISOString()}`);
 
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
-      console.log('DataSource initialized');
+  //  console.log('DataSource initialized');
     }
 
     const overdueDeletionService = new OverdueDeletionService();
@@ -24,7 +24,7 @@ cron.schedule('0 0 1 * *', async () => {
       await overdueDeletionService.deleteOverdueRecordsForEntity(entity as any);
     }
   } catch (error) {
-    console.error('Error in cron job:', error);
+    //console.error('Error in cron job:', error);
     logger.error('Error in cron job:', error);
   }
 });

@@ -53,7 +53,6 @@ public async createDeliveryChallan(
     @next() next: NextFunction
   ) {
     try {
-      console.log(req.body)
       logger.info('Starting to create a new Delivery Challan');
       
       // Use helper function to handle file URL extraction
@@ -77,10 +76,8 @@ public async createDeliveryChallan(
           );
         }
       } catch (notifError) {
-        console.log('Delivery challan creation notification error:', notifError);
       }
       
-      console.log("saved delivery challan",deliveryChallan?.id);
       logger.info(`Delivery Challan created successfully`);
       res.status(201).json({
         status: 'success',
@@ -162,7 +159,6 @@ next(err); // Unhandled errors
       });
     } catch (err) {
       logger.error(`Failed to fetch Delivery Challans: ${err}`);
-      console.log(err)
       next(err);
     }
   }
@@ -174,7 +170,6 @@ next(err); // Unhandled errors
   ) {
     try {
       logger.info(`Fetching delivery challan with ID`);
-      console.log(id)
       const deliveryChallan = await this.deliveryChallanService.getByIdDeliveryChallan(id);
       if (!deliveryChallan) {
         logger.warn(`Delivery Challan with ID  not found`);
@@ -201,7 +196,6 @@ next(err); // Unhandled errors
       });
     } catch (err) {
       logger.error(`Error fetching delivery challan with ID ${id}: ${err}`);
-      console.log(err)
       next(err);
     }
   }
@@ -214,7 +208,6 @@ next(err); // Unhandled errors
     @next() next: NextFunction
   ) {
     try {
-      console.log(req.body)
       logger.info(`Starting update for Delivery Challan with ID`);
       const updatedBy = res.locals.updatedBy;
       
@@ -238,7 +231,6 @@ next(err); // Unhandled errors
           );
         }
       } catch (notifError) {
-        console.log('Delivery challan update notification error:', notifError);
       }
       
       logger.info(`Delivery Challan updated successfully`);
@@ -247,7 +239,6 @@ next(err); // Unhandled errors
         data: updatedChallan,
       });
     } catch (err) {
-      console.log(err)
       logger.error(`Error updating delivery challan with ID ${id}: ${err}`);
       next(err);
     }
@@ -356,7 +347,6 @@ const { filterType, filterValue } = req.query; // Get filter type and value from
     );
     
 if(!dchallan){
-console.log("not grn")
 }
 const overallTotal =  dchallan.reduce(
 (acc, row) => {
@@ -366,7 +356,6 @@ const overallTotal =  dchallan.reduce(
 },
 {  quantity: 0, amount: 0 }
 );
-console.log(overallTotal)
 res.status(200).json({
 message: "Delivery Challan calculations fetched successfully.",
 data:{
@@ -377,7 +366,6 @@ data:{
     })
     }
     catch(error){
-      console.log(error)
 next(error)
     }
 
@@ -407,7 +395,6 @@ const { filterType, startDate, endDate} = req.query;
       },
       {  quantity: 0, amount: 0 }
     );
-    console.log(overallTotal)
     res.status(200).json({
       message: "deliveryChallan calculations fetched successfully.",
       data:overallTotal,
@@ -551,7 +538,6 @@ worksheet.getRow(1).eachCell((cell) => {
   public async getFilteredSalesByCustomer(req: Request, res: Response): Promise<Response> {
     try {
       const filters = req.query;
-      console.log(filters)
       const salesData = await this.deliveryChallanService.getFilteredSalesbyCustomer(filters);
       return res.status(200).json({ success: true, data: salesData });
     } catch (error) {

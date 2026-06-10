@@ -39,7 +39,6 @@ export class InwardRegisterController {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(req.body);
       logger.info('Creating new inward register', { body: req.body });
       const data = req.body;
       //console.log(data);
@@ -83,7 +82,6 @@ export class InwardRegisterController {
       });
     } catch (err) {
       logger.error('Error creating inward register', { error: err });
-      console.log(err);
       ControllerLogger.logError('Inward Register creation', err, req, res);
       if (error instanceof Error) {
                return next(new AppError(400, error.message)); // ← sends 400 with real message
@@ -242,11 +240,9 @@ try {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(id);
       logger.info('Fetching inward register by ID', { id });
       const inwardRegister =
         await this.inwardRegisterService.getInwardRegisterById(id);
-      console.log(inwardRegister)
       if (!inwardRegister) {
         logger.warn('Inward register not found', { id });
         return next(
@@ -268,7 +264,6 @@ try {
         data: inwardRegister,
       });
     } catch (err) {
-      console.log(err);
       logger.error('Error fetching inward register', { id, error: err });
       next(err);
     }
@@ -282,12 +277,10 @@ try {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(id);
       const userId=res.locals.user.id;
       logger.info('Fetching inward register by ID', { id });
       const inwardRegister =
         await this.inwardRegisterService.getInwardidforupdate(id,userId);
-      console.log(inwardRegister)
       if (!inwardRegister) {
         logger.warn('Inward register not found', { id });
         return next(
@@ -300,7 +293,6 @@ try {
         data: inwardRegister,
       });
     } catch (err) {
-      console.log(err);
       logger.error('Error fetching inward register', { id, error: err });
       next(err);
     }
@@ -344,10 +336,8 @@ try {
     @next() next: NextFunction,
   ) {
     try {
-      console.log(req.body);
       logger.info('Updating inward register', { id, body: req.body });
       const updatedBy = res.locals.user.id;
-      console.log(updatedBy);
       const updatedData = req.body;
       if (updatedData.source === Source.VENDOR) {
         updatedData.selectedVendor = { id: updatedData.selectedParty };
@@ -388,7 +378,6 @@ try {
       });
     } catch (err) {
       logger.error('Error updating inward register', { id, error: err });
-      console.log(err);
       next(err);
     }
   }
@@ -523,12 +512,9 @@ try {
   ) {
     try {
      // logger.info(Fetching Inward register with Document ID);
-      console.log("Shriiiiiiiiiii");
       
-      console.log(docid);
       const userId = res.locals.user.id;
       const inwodRegister = await this.inwardRegisterService.getInwardregisterByIdForView(docid,userId);
-      console.log(inwodRegister);
       if (!inwodRegister) {
         return res.status(403).json({
         status: 'fail',
@@ -538,7 +524,6 @@ try {
       }
     //  logger.info(Inward Register with ID fetched successfully.);
       const requestedBy = res.locals.user.id;
-      console.log('user is ', requestedBy);
       // Send a notification when the user logs in successfully
       // const message = Welcome back! You have successfully logged in.;
       // await this.notificationService.createNoti(message, requestedBy);
@@ -550,7 +535,6 @@ try {
         data: inwodRegister,
       });
     } catch (error) {
-      console.log(error);
       logger.error('Error fetching Inward Register by ID:', error);
       next(error);
     }

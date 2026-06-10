@@ -82,7 +82,7 @@ const serialNo = await this.generateSerialNo();
       data.vehicleDispatchNo = serialNo;
     
     const vehicleDispatch = this.vehicleDispatchRepository.create(data);
-    console.log(vehicleDispatch);
+    
     const savedVehicalDispatch=await this.vehicleDispatchRepository.save(vehicleDispatch);
 
     //Todo:By Vaishali
@@ -374,11 +374,7 @@ const serialNo = await this.generateSerialNo();
     sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
-    // Log the scheduled deletion
-    console.log(
-      `Vehicle Dispatch with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
+   
     // Step 4: Set the deletionScheduledAt field for the vehicle dispatch
     dispatch.deletionScheduledAt = sixMonthsFromNow;
 
@@ -646,7 +642,7 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
       return null;
     }
     const id = document.documentTypeId;
-    console.log('id in getVehicalDispatchByIdForView', id);
+    
     
     if (id) {
       //console.log("Hiiiiiiiiiiiiiiiiiiiiiii");
@@ -661,7 +657,7 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
         ],
       });
 
-      console.log('Vehical Dispatch in getVehicalDispatchByIdForView', vehicalDispatch);
+      
       
 
       if (!vehicalDispatch) { 

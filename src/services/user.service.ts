@@ -35,6 +35,7 @@ import { DocumentDefinition, DocumentTypeEnum } from '../entities/documentdef.en
 import { DocumentPermission } from '../entities/permission.entity';
 import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
 import { CacheService } from './cache.service';
+import logger from '../utils/logger';
 
 const CACHE_PREFIX = 'user';
 const CACHE_TTL = 300; // 5 minutes
@@ -502,15 +503,12 @@ isAddressSame:user.isAddressSame,
     sixMonthsFromNow.setMonth(now.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
-    console.log(
-      `User with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
+    
 
     user.deletionScheduledAt = sixMonthsFromNow;
 
     await this.userRepository.save(user);
 
-    console.log(`User with ID ${id} marked for deletion in 6 months.`);
     await this.invalidateCache(id);
     return true;
   }
@@ -588,7 +586,6 @@ isAddressSame:user.isAddressSame,
   //   return updatedUser;
   // }
   async updateUser(id: string, userData: any, updatedBy: string): Promise<any> {
-    console.log("Updating user with data:", userData);
     
     const user = await this.userRepository.findOne({
       where: { id },
@@ -619,7 +616,7 @@ isAddressSame:user.isAddressSame,
         try {
           userData.accessLocation = JSON.parse(userData.accessLocation);
         } catch (e) {
-          console.warn("Failed to parse accessLocation string, treating as single ID");
+          logger.warn("Failed to parse accessLocation string, treating as single ID");
           userData.accessLocation = [userData.accessLocation];
         }
       }
@@ -629,10 +626,8 @@ isAddressSame:user.isAddressSame,
           id: In(userData.accessLocation),
         });
         user.accessLocation = accessLocationEntities;
-        console.log("Updated access locations:", accessLocationEntities.length);
       } else {
         user.accessLocation = [];
-        console.log("Cleared access locations");
       }
       delete userData.accessLocation;
     }
@@ -643,7 +638,7 @@ isAddressSame:user.isAddressSame,
         try {
           userData.companyName = JSON.parse(userData.companyName);
         } catch (e) {
-          console.warn("Failed to parse companyName string, treating as single ID");
+          logger.warn("Failed to parse companyName string, treating as single ID");
           userData.companyName = [userData.companyName];
         }
       }
@@ -653,10 +648,8 @@ isAddressSame:user.isAddressSame,
           id: In(userData.companyName),
         });
         user.companyName = companyEntities;
-        console.log("Updated company names:", companyEntities.length);
       } else {
         user.companyName = [];
-        console.log("Cleared company names");
       }
       delete userData.companyName;
     }
@@ -674,7 +667,6 @@ isAddressSame:user.isAddressSame,
         roles = Array.from(new Set([...roles, ...validRoles]));
       }
 
-      console.log("Setting user roles to:", roles);
       user.roles = roles;
       // Remove from userData to prevent overwriting
       delete userData.roles;
@@ -698,11 +690,7 @@ isAddressSame:user.isAddressSame,
     // Update user with remaining userData
     Object.assign(user, userData);
 
-    console.log("User before save:", user);
-
     const updatedUser = await this.userRepository.save(user);
-
-    console.log("User after save:", updatedUser);
 
     await this.auditLogService.logChange(
       "User",
@@ -844,7 +832,7 @@ isAddressSame:user.isAddressSame,
 
       return `PF${companyCode}${formattedSerialNumber}`;
     } catch (error) {
-      console.error('Error generating employee ID:', error);
+      logger.error('Error generating employee ID:', error);
       throw error;
     }
   }
@@ -861,11 +849,9 @@ isAddressSame:user.isAddressSame,
       }
       const user = await this.userRepository.findOneBy({ workEmail: email });
       if (user) {
-        console.log('Old Password', user.password);
         user.password = await bcrypt.hash(newPassword, 10);
-        user.tempPlainPassword = '';
-        const updatedUser = await this.userRepository.save(user);
-        console.log('New Password', user.password);
+        user.tempPlainPassword = newPassword; // keep plain for admin visibility
+        await this.userRepository.save(user);
         return { status: 200, message: 'Password Reset Successfully' };
       }
       return { status: 404, message: 'User Not Found' };

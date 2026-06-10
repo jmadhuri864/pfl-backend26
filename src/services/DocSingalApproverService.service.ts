@@ -12,6 +12,7 @@ import { buildQueryFromArray } from "../utils/pagination";
 import { DocumentbService } from "./documentb.service";
 import { CacheService } from "./cache.service";
 import { getReadableDocumentType } from "../utils/documentTypeLabel";
+import logger from "../utils/logger";
 
 
 @injectable()
@@ -127,10 +128,10 @@ export class DocSingalApproverService {
     const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
     const { approvalFlow, approvalInfo, type } = document;
 
-    console.log("Document Type",type);
+   
     //TODO  : 1) Single approval documents
     if (this.isSingleApprovalBasedDocument(type)) {
-      console.log("Inside isSingleApprovalBasedDocument block");
+      logger.info("Inside isSingleApprovalBasedDocument block");
       
        // 🛡 ensure approvalInfo exists
   if (!document.approvalInfo) {

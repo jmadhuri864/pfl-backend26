@@ -37,7 +37,6 @@ public async createSubcategory(
 ) {
   try {
     const subcategoryData = req.body; // Ensure subcategoryData is extracted
-    console.log("to create the category ", subcategoryData);
 
     const subcategory = await this.subcategoryService.create(subcategoryData);
 if(!subcategory) {
@@ -126,7 +125,6 @@ public async getAllSubcategories1(
      const categoryId = req.query.search as string; // Get categoryId from query
     // console.log("category id",categoryId)
     const subcategories = await this.subcategoryService.getSubcategories(categoryId);
-    console.log("subcategories",subcategories)
     // if (!subcategories || subcategories.length === 0) {
     //   return next(new AppError(404, "Subcategories not found"));
     // }
@@ -185,7 +183,6 @@ public async getAllSubcategories1(
   ) {
     try {
       //console.log(id)
-      console.log(body)
       const updateBy=res.locals.user.id;
       //console.log(updateBy)
 
@@ -259,7 +256,6 @@ public async softDeleteMultipleVendorSubcategory(
   try {
     const {  ids } = req.body;
     const subCategoryIds =  ids;
-    console.log(req.body)
 
     
 

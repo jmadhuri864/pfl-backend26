@@ -40,7 +40,6 @@ export class VendorCategoryController {
   ) {
     try {
       const { name } = req.body; // `name` should now be correctly set
-      console.log("In the controller:", name);
   
       if (!name) {
         return next(new AppError(400, "Category name is required"));
@@ -69,7 +68,6 @@ export class VendorCategoryController {
         data: category,
       });
     } catch (err) {
-      console.log(err);
       ControllerLogger.logError('Vendor category creation', err, req, res);
       next(err);
     }
@@ -166,7 +164,6 @@ public async updateCategory(
   try {
     const updateBy = res.locals.user?.id; // Ensure you extract the user ID from the locals
 
-    console.log("Update Request Body:", req.body); // Log request body
 
     const updatedCategory = await this.vendorCategoryService.update(
       id,
@@ -245,7 +242,6 @@ public async softDeleteMultipleVendorCategory(
 
     const {  ids } = req.body;
     const resolvedIds =  ids;
-    console.log(req.body)
 
     if (!Array.isArray(resolvedIds) || resolvedIds.length === 0) {
       ControllerLogger.logError(

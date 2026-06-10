@@ -1,36 +1,37 @@
 
 import { Role } from "./entities/user.entity";
-
 import { container } from "./inversify.config";
-
 import { UserService } from "./services/user.service";
 import { TYPES } from "./types";
 import { seedDocumentDefDatabase } from "./seed/documentSeed";
 
 export async function seedAdmin() {
   const userService = container.get<UserService>(TYPES.UserService);
-  //const roleService = container.get<RoleService>(TYPES.RoleService);
- 
-  
-  try {
-   
 
-    const existingAdmin = await userService.findUserByEmail("admin@example.com");
+  try {
+    const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@example.com";
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+    const adminPhone = process.env.SEED_ADMIN_PHONE || "0000000000";
+
+    if (!adminPassword) {
+      console.warn("[Seed] SEED_ADMIN_PASSWORD not set in .env — skipping admin seed.");
+      return;
+    }
+
+    const existingAdmin = await userService.findUserByEmail(adminEmail);
     if (!existingAdmin) {
-      const employeeId = await userService.generateEmployeeId(); // Use role ID
-      console.log("Generated employee ID:", employeeId);
+      const employeeId = await userService.generateEmployeeId();
 
       const adminData = {
         firstName: "Admin",
         lastName: "Admin",
         username: "Admin",
-        workEmail: "admin@example.com",
-        password: "Admin@1234",
+        workEmail: adminEmail,
+        password: adminPassword,
         status: "ACTIVE",
-        primaryMobNo: "7030639160",
-        roles:[Role.EMPLOYEE,Role.ADMIN],
-        //selectDepartment: adminDept,
-        department:["admin"],
+        primaryMobNo: adminPhone,
+        roles: [Role.EMPLOYEE, Role.ADMIN],
+        department: ["admin"],
         joiningDate: new Date("2022-01-12"),
         employeeId: employeeId,
         permanentAddress: {
@@ -44,9 +45,8 @@ export async function seedAdmin() {
       };
 
       try {
-        //reateUserSchema.parse(adminData);
         const admin = await userService.createUser(adminData);
-        console.log("Admin user created:", admin);
+        console.log("Admin user created:", admin.id);
       } catch (validationError) {
         console.error("Validation failed:", validationError);
       }

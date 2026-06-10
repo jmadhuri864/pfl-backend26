@@ -33,7 +33,6 @@ export class TPVoucherController {
     @next() next: NextFunction
   ) {
     try {
-      console.log("in create transport payment voucher",tpVoucherData)
       logger.info('Received request to create TPVoucher');
       
       // Use helper function to handle file URL extraction
@@ -68,7 +67,6 @@ export class TPVoucherController {
       });
     } catch (error) {
       logger.error('Error creating TPVoucher', { error });
-      console.log(error);
       ControllerLogger.logError('Transport Payment Voucher creation', error, req, res);
       if (error instanceof Error) {
                return next(new AppError(400, error.message)); // ← sends 400 with real message
@@ -271,7 +269,6 @@ export class TPVoucherController {
       if (updateData[key] === "null") updateData[key] = null;
     });
       const updatedBy=res.locals.updatedBy
-      console.log("in update transport payment voucher",updateData)
       const updatedVoucher = await this.tpVoucherService.updateTPVoucher(id, updateData,updatedBy);
       if (!updatedVoucher) {
         logger.warn(`TPVoucher with id ${id} not found for update`);

@@ -64,7 +64,7 @@ export class FinalInvoiceService {
     await queryRunner.startTransaction();
 
     try {
-      console.log("requested by id in the create service",requestedBy)
+      //console.log("requested by id in the create service",requestedBy)
       // Fetch delivery challan with all related data
       const deliveryChallan = await queryRunner.manager.findOne(this.challanRepository.target, {
         where: { id: deliveryChallanId },
@@ -199,7 +199,7 @@ export class FinalInvoiceService {
       deliveryChallan.isInvoiceCreated = true;
       await queryRunner.manager.save(deliveryChallan);
 
-      console.log("Creating document for final invoice...");
+      //console.log("Creating document for final invoice...");
       // Create document
       const document = await this.documentService.createDocument({
         type: DocumentTypeEnum.FINAL_INVOICE,
@@ -210,8 +210,8 @@ export class FinalInvoiceService {
         document_type_id: savedInvoice.id,
       });
 
-      console.log("Document created with ID:", document.id);
-      console.log("Starting approval flow for final invoice...");
+      // console.log("Document created with ID:", document.id);
+      // console.log("Starting approval flow for final invoice...");
       await queryRunner.commitTransaction();
 
       // Start approval flow after commit so invoice is visible to other DB connections
@@ -235,7 +235,7 @@ export class FinalInvoiceService {
       return completeInvoice;
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
-      console.error('Error creating Final Invoice:', error);
+      //console.error('Error creating Final Invoice:', error);
       if (error instanceof AppError) {
         throw error;
       }
@@ -763,7 +763,7 @@ export class FinalInvoiceService {
         const totalAmt = items.reduce((sum, item) => sum + item.amt, 0);
         const amountInWords = toWords(totalAmt).toUpperCase();
         
-console.log(items)
+
         // Format date safely
         let invoiceDate = '';
         if (invoice.invoiceDate) {

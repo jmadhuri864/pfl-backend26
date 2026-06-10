@@ -143,7 +143,7 @@ export class UOMService {
       await this.invalidateCache();
       return result.affected !== 0;
     } catch (err) {
-      console.log(err);
+      
       return false;
     }
   }

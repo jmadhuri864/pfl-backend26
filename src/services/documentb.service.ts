@@ -34,6 +34,7 @@ import { CacheService } from './cache.service';
 import { ParsedQs } from 'qs';
 import { Brackets } from 'typeorm';
 import e from 'express';
+import logger from '../utils/logger';
 
 export interface DocumentWithRelatedData extends Documentb {
   relatedData?: any;
@@ -152,7 +153,7 @@ export class DocumentbService {
         );
       }
 
-      console.log("Document Data:", documentData);
+  
 
       const approvalFlow = await this.approvalFlowRepo.findOne({
         where: {
@@ -171,7 +172,7 @@ export class DocumentbService {
         ],
       });
 
-      console.log("Approval flow: ", approvalFlow);
+      
 
       const document = this.documentbRepository.create({
         ...documentData,
@@ -210,7 +211,7 @@ export class DocumentbService {
       if (!document) {
         throw new Error(`Document with ID ${id} not found`);
       }
-      console.log("Document: ", document);
+     
 
       const approvalInfo = document.approvalInfo;
       const approvalInfoSummary = approvalInfo
@@ -259,7 +260,7 @@ export class DocumentbService {
             : null,
         }
         : null;
-console.log("Approval Info Summary: ", approvalInfoSummary);
+//console.log("Approval Info Summary: ", approvalInfoSummary);
       const result = {
         documentId: document.id,
         documentTypeId: document.document_type_id,
@@ -299,7 +300,7 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
   }
 
   async startApprovalFlow(documentId: string): Promise<void> {
-    console.log("Starting approval flow for document ID:", documentId);
+   // console.log("Starting approval flow for document ID:", documentId);
     const document = await this.documentbRepository.findOne({
       where: { id: documentId },
       relations: [
@@ -315,13 +316,13 @@ console.log("Approval Info Summary: ", approvalInfoSummary);
       ],
     });
   
-console.log("Document for starting approval flow: ", document?.type);
+//console.log("Document for starting approval flow: ", document?.type);
     if (!document) {
       throw new Error('Document not found');
     }
 
     if (!document.approvalFlow) {
-      console.log('No approval flow configured for document:', documentId);
+      //console.log('No approval flow configured for document:', documentId);
       return;
     }
 
@@ -350,7 +351,7 @@ console.log("Document for starting approval flow: ", document?.type);
     } else if (this.isSingleApprovalBasedDocument(type) /*&& approvers*/) {
       const FirstLevelApprovers =
         document.approvalFlow.approvers.firstApprover.users;
-      console.log('FirstLevelApprovers', FirstLevelApprovers);
+      //console.log('FirstLevelApprovers', FirstLevelApprovers);
       await this.assignToUsers(documentId, FirstLevelApprovers, 'approver');
       return;
     } else if (this.isDoubleApprovalBasedDocument(type) /*&& approvers*/) {
@@ -358,8 +359,7 @@ console.log("Document for starting approval flow: ", document?.type);
         document.approvalFlow.approvers.firstApprover.users;
       const secondLevelApprovers =
         document.approvalFlow.approvers.secondApprover.users;
-      console.log('FirstLevelApprovers', firstLevelApprovers);
-      console.log('secondLevelApprovers', secondLevelApprovers);
+    
       await this.assignToUsers(documentId, firstLevelApprovers, 'approver');
       await this.assignToUsers(documentId, secondLevelApprovers, 'approver');
       return;
@@ -581,9 +581,7 @@ console.log("Document for starting approval flow: ", document?.type);
       const secondBlock = flow.approvers.secondApprover;
       const thirdBlock = flow.approvers.thirdApprover;
 
-      console.log('firstBlock:', firstBlock);
-      console.log('secondBlock:', secondBlock);
-      console.log('thirdBlock:', thirdBlock);
+     
       
       
 
@@ -603,12 +601,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
       const requiresThird = thirdBlock?.users?.length > 0 &&
         isWithinRange(thirdBlock.minAmtCanApprove, thirdBlock.maxAmtCanApprove, document.totalAmt);
 
-      console.log('first:', requiresFirst);
-      console.log('second:', requiresSecond);
-      console.log('third:', requiresThird);
+      // console.log('first:', requiresFirst);
+      // console.log('second:', requiresSecond);
+      // console.log('third:', requiresThird);
 
       if (requiresFirst && !info.firstApproved && firstBlock.users.some(u => u.id === userId)) {
-        console.log('in first block amount:', totalAmt);
+        //console.log('in first block amount:', totalAmt);
 
         if (!info.firstApproved) {
           const stage = await this.approvalStageInfoRepository.save({
@@ -637,7 +635,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
           const a3 = info.thirdApproved?.status === ApproverStatus.APPROVED;
 
           if (a1) {
-            console.log("Shri in service");
+            //console.log("Shri in service");
             document.status = DocumentStatus.APPROVED;
             document.remarks = `${document.type} Approved by Required Approvers`;
             await this.documentbRepository.save(document);
@@ -659,7 +657,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
       }
 
       if (requiresSecond && (!info.firstApproved || !info.secondApproved) && (firstBlock.users.some(u => u.id === userId) || secondBlock.users.some(u => u.id === userId))) {
-        console.log("helloo");
+        //console.log("helloo");
 
         if (firstBlock.users.some(u => u.id === userId)) {
           if (!info.firstApproved) {
@@ -748,7 +746,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             if (
               (a1 && a2)
             ) {
-              console.log("Hey i am in second block amount, ", totalAmt);
+              //console.log("Hey i am in second block amount, ", totalAmt);
 
               document.status = DocumentStatus.APPROVED;
               document.remarks = `${document.type} Approved by Required Approvers`;
@@ -958,12 +956,12 @@ function isWithinRange(min: number | string | null, max: number | string | null,
             (!requiresFirst || a1) &&
             (!requiresSecond || (a1 && a2)) &&
             (!requiresThird || (a1 && a2 && a3));
-          console.log('status: ', document.status);
+          //console.log('status: ', document.status);
 
           if (document.status !== 'approved') {
             throw new Error('Required approver levels have not approved yet for Finalizer 1 to act.');
           }
-          console.log("REqui: ", requiredApprovalsPassed);
+          //console.log("REqui: ", requiredApprovalsPassed);
 
           const stage = await this.approvalStageInfoRepository.save({
             userId,
@@ -1080,7 +1078,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     try {
       await this.notificationService.createNoti(message, creatorId);
     } catch (err) {
-      console.error(`Failed to notify creator ${creatorId}:`, err);
+      logger.error(`Failed to notify creator ${creatorId}:`, err);
     }
   }
 
@@ -1101,7 +1099,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
       try {
         await this.notificationService.createBatchNoti(message, otherUserIds);
       } catch (err) {
-        console.error(`Failed to notify stage participants:`, err);
+        logger.error(`Failed to notify stage participants:`, err);
       }
     }
   }
@@ -1180,11 +1178,11 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     role: 'verifier' | 'approver' | 'finalizer',
   ): Promise<void> {
     if (!users || users.length === 0) {
-      console.warn(`No users provided to assign for document ${documentId} as ${role}`);
+      logger.warn(`No users provided to assign for document ${documentId} as ${role}`);
       return;
     }
 
-    console.log(`Assigning document ${documentId} to ${role}s:`, users.map((u) => u.id));
+    logger.log(`Assigning document ${documentId} to ${role}s:`, users.map((u) => u.id));
 
     const document = await this.documentbRepository.findOne({ where: { id: documentId } });
 
@@ -1195,7 +1193,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
 
     users.forEach((user) => {
       this.notificationService.createNoti(richMessage, user.id).catch((err) =>
-        console.error(`Failed to send notification to user ${user.id}:`, err)
+        logger.error(`Failed to send notification to user ${user.id}:`, err)
       );
     });
   }
