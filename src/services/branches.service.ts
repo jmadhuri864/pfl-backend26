@@ -8,6 +8,14 @@ import { CacheService } from './cache.service';
 import AppError from '../utils/appError';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { In } from 'typeorm';
+import {
+  CreateBranchDto,
+  UpdateBranchDto,
+  BranchDetailDto,
+  BranchListResponseDto,
+  BranchFilterItemDto,
+  BulkDeleteBranchResultDto,
+} from '../dtos/branch.dto';
 
 const CACHE_TTL = 300; // 5 minutes
 const CACHE_PREFIX = 'branches';
@@ -37,25 +45,25 @@ export class BranchessService {
 
   // ─── Create ───────────────────────────────────────────────────────────────
 
-  async createBranch(branchData: any): Promise<any> {
+  async createBranch(branchData: CreateBranchDto & Record<string, any>): Promise<Branches> {
     const { address, totalCapacity, ...data } = branchData;
 
-    const newAddress = await this.addressService.create(address);
+    const newAddress = await this.addressService.create(address as any);
 
     const branch = this.branchesRepository.create({
       ...data,
       address: newAddress,
       totalCapacity,
-    });
+    } as any) as unknown as Branches;
 
-    const saved = await this.branchesRepository.save(branch);
+    const saved = await this.branchesRepository.save(branch) as unknown as Branches;
     await this.invalidateBranchCache();
     return saved;
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
 
-  async updateBranch(id: string, branchData: any, updatedBy: string): Promise<Branches | null> {
+  async updateBranch(id: string, branchData: UpdateBranchDto & Record<string, any>, updatedBy: string): Promise<Branches | null> {
     const branch = await this.branchesRepository.findOne({
       where: { id },
       relations: ['address'],
@@ -74,7 +82,7 @@ export class BranchessService {
 
     if (branchData.address) {
       const originalAddress = { ...branch.address };
-      const updatedAddress = await this.addressService.update(branch.address.id, branchData.address);
+      const updatedAddress = await this.addressService.update(branch.address.id, branchData.address as any);
       if (!updatedAddress) throw new Error('Failed to update address');
 
       await this.auditLogService.logChange('Address', branch.address.id, originalAddress, updatedAddress, updatedBy);
@@ -92,7 +100,7 @@ export class BranchessService {
 
   // ─── Soft Delete Multiple ─────────────────────────────────────────────────
 
-  async softDeleteBranches(ids: string[], branchType: BranchType) {
+  async softDeleteBranches(ids: string[], branchType: BranchType): Promise<BulkDeleteBranchResultDto> {
     const result = await this.branchesRepository.softDelete({
       id: In(ids),
       type: branchType,
@@ -103,7 +111,7 @@ export class BranchessService {
 
   // ─── Get By ID ────────────────────────────────────────────────────────────
 
-  async getBranchByIdAndType(id: string): Promise<any> {
+  async getBranchByIdAndType(id: string): Promise<BranchDetailDto | null> {
     const key = this.cacheKey('id', id);
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -136,12 +144,12 @@ export class BranchessService {
       .getOne();
 
     if (branch) await this.cacheService.set(key, branch, CACHE_TTL);
-    return branch;
+    return branch as BranchDetailDto | null;
   }
 
   // ─── Get All By Type (paginated) ──────────────────────────────────────────
 
-  async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<any> {
+  async getAllByBranchType(branchType: BranchType, queryOptions: PaginationOptions): Promise<BranchListResponseDto> {
     const key = this.cacheKey('list', branchType, JSON.stringify(queryOptions));
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -187,12 +195,12 @@ export class BranchessService {
     };
 
     await this.cacheService.set(key, response, CACHE_TTL);
-    return response;
+    return response as BranchListResponseDto;
   }
 
   // ─── Get Filter Data ──────────────────────────────────────────────────────
 
-  async getAllByFilterDataBranchType(): Promise<Pick<Branches, 'id' | 'name' | 'type'>[]> {
+  async getAllByFilterDataBranchType(): Promise<BranchFilterItemDto[]> {
     const key = this.cacheKey('filter');
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -202,7 +210,7 @@ export class BranchessService {
     });
 
     await this.cacheService.set(key, branches, CACHE_TTL);
-    return branches;
+    return branches as BranchFilterItemDto[];
   }
 
   // ─── Delete (schedule) ────────────────────────────────────────────────────

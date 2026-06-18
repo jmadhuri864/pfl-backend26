@@ -22,6 +22,14 @@ import { DocumentbRepository } from '../repositories/documentb.repository';
 import { DataSource, In } from 'typeorm';
 import { CustomerDeliveryChallanService } from './customerDeliveryChallan.service';
 import { CacheService } from './cache.service';
+import {
+  CreateSTDeliveryChallanDto,
+  UpdateSTDeliveryChallanDto,
+  STDeliveryChallanUpdateFormDto,
+  STDeliveryChallanViewDto,
+  STDeliveryChallanListResponseDto,
+  BulkDeleteSTChallanResultDto,
+} from '../dtos/stockTransferDeliveryChallan.dto';
 
 
 @injectable()
@@ -74,7 +82,7 @@ export class StockTransferDeliveryChallanService {
     await Promise.all(tasks);
   }
 
- async create(data: any, requestedBy: any): Promise<any> {
+ async create(data: CreateSTDeliveryChallanDto & Record<string, any>, requestedBy: string): Promise<StockTransferDeliveryChallan> {
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -94,7 +102,7 @@ export class StockTransferDeliveryChallanService {
     data.challanNo = await this.customerDeliveryChallanService.generateVoucherNo(data.type || 'S');
 
     // 3. Save challan
-    const challan = queryRunner.manager.create(this.challanRepository.target, data);
+    const challan = queryRunner.manager.create(this.challanRepository.target, data as any) as unknown as StockTransferDeliveryChallan;
     const savedChallanArr = await queryRunner.manager.save(challan);
     const savedChallan = Array.isArray(savedChallanArr)
       ? savedChallanArr[0]
@@ -121,7 +129,7 @@ export class StockTransferDeliveryChallanService {
       ],
     });
 
-    if (!challanFull) return null;
+    if (!challanFull) throw new Error(`Challan not found after save: ${savedChallan.id}`);
 
     // -------------------------------------------------------------------
     // 6. STOCK OUT (ONLY FROM LOCATION)
@@ -207,7 +215,7 @@ export class StockTransferDeliveryChallanService {
   }
 }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<StockTransferDeliveryChallan | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -237,7 +245,7 @@ export class StockTransferDeliveryChallanService {
   }
 
 
-  async getByIdChallanforUpdate(id: string): Promise<any> {
+  async getByIdChallanforUpdate(id: string): Promise<STDeliveryChallanUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -341,7 +349,7 @@ export class StockTransferDeliveryChallanService {
   }
 
   
-public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDeleteSTChallanResultDto> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
@@ -376,7 +384,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
 }
 
 
-  async getByIdChallanforView(docId: string): Promise<any> {
+  async getByIdChallanforView(docId: string): Promise<STDeliveryChallanViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -484,7 +492,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
     }
   }
 
-  async getAll(queryOptions: PaginationOptions, userId: any): Promise<any> {
+  async getAll(queryOptions: PaginationOptions, userId: string): Promise<STDeliveryChallanListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -596,7 +604,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<{ success:
     return result;
   }
 
-  async update(id: string, data: any): Promise<any> {
+  async update(id: string, data: UpdateSTDeliveryChallanDto & Record<string, any>): Promise<StockTransferDeliveryChallan | null> {
     try {
       const challan = await this.challanRepository.findOne({ where: { id } });
       if (!challan) return null;

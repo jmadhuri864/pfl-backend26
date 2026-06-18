@@ -36,6 +36,15 @@ import { DocumentPermission } from '../entities/permission.entity';
 import { WorkflowHierarchyRepository } from '../repositories/WorkflowHierarchy.repository';
 import { CacheService } from './cache.service';
 import logger from '../utils/logger';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UserListResponseDto,
+  UserViewResponseDto,
+  UserUpdateFormDto,
+  UserPartialResponseDto,
+  UserExcelRowDto,
+} from '../dtos/user.dto';
 
 const CACHE_PREFIX = 'user';
 const CACHE_TTL = 300; // 5 minutes
@@ -100,7 +109,7 @@ export class UserService {
     return password;
   }
 
-  async createUser(input: any): Promise<any> {
+  async createUser(input: CreateUserDto & Record<string, any>): Promise<User> {
     let employeeId = await this.generateEmployeeId();
 
     input.tempPlainPassword = this.generateRandomPassword();
@@ -145,10 +154,10 @@ if (input.departments && input.departments.length > 0) {
       accessLocation: accessLocationEntities,
       companyName: companyEntities,
       roles: roles,
-      departments: departments,
-    });
+      department: departments,
+    } as any);
 
-    const saved = await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user as any) as User;
     await this.invalidateCache();
     return saved;
   }
@@ -162,7 +171,7 @@ if (input.departments && input.departments.length > 0) {
     await this.invalidateCache(id);
     return saved;
   }
-  async getAllUsers(queryOptions: PaginationOptions): Promise<any> {
+  async getAllUsers(queryOptions: PaginationOptions): Promise<UserListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -246,7 +255,7 @@ if (input.departments && input.departments.length > 0) {
   }
 
 
-  async findUserById(userId: string): Promise<any> {
+  async findUserById(userId: string): Promise<UserViewResponseDto> {
     const key = `${CACHE_PREFIX}:id:${userId}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -274,7 +283,7 @@ if (input.departments && input.departments.length > 0) {
     return formatted;
   }
 
-  async findUserByIdForUpdate(userId: string): Promise<any> {
+  async findUserByIdForUpdate(userId: string): Promise<UserUpdateFormDto> {
     const key = `${CACHE_PREFIX}:update:${userId}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -302,7 +311,7 @@ if (input.departments && input.departments.length > 0) {
     return formatted;
   }
 
-  private mapToUser(user: User): any {
+  private mapToUser(user: User): UserUpdateFormDto {
     const mapAddress = (address: any): any =>
       address
         ? {
@@ -375,7 +384,7 @@ isAddressSame: user.isAddressSame,
       })),
     };
   }
-  async findUserByIdForView(userId: string): Promise<any> {
+  async findUserByIdForView(userId: string): Promise<UserViewResponseDto> {
     const key = `${CACHE_PREFIX}:view:${userId}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -403,7 +412,7 @@ isAddressSame: user.isAddressSame,
     return formatted;
   }
 
-  private mapToUserDTO(user: User): any {
+  private mapToUserDTO(user: User): UserViewResponseDto {
     const mapAddress = (address: Address): any => ({
       id: address?.id,
       address1: address?.address1,
@@ -585,7 +594,7 @@ isAddressSame:user.isAddressSame,
 
   //   return updatedUser;
   // }
-  async updateUser(id: string, userData: any, updatedBy: string): Promise<any> {
+  async updateUser(id: string, userData: UpdateUserDto & Record<string, any>, updatedBy: string): Promise<User | null> {
     
     const user = await this.userRepository.findOne({
       where: { id },
@@ -612,12 +621,12 @@ isAddressSame:user.isAddressSame,
 
     // Handle access locations
     if (userData.accessLocation !== undefined) {
-      if (typeof userData.accessLocation === 'string') {
+      if (typeof (userData as any).accessLocation === 'string') {
         try {
-          userData.accessLocation = JSON.parse(userData.accessLocation);
+          (userData as any).accessLocation = JSON.parse((userData as any).accessLocation);
         } catch (e) {
           logger.warn("Failed to parse accessLocation string, treating as single ID");
-          userData.accessLocation = [userData.accessLocation];
+          (userData as any).accessLocation = [(userData as any).accessLocation];
         }
       }
       
@@ -634,12 +643,12 @@ isAddressSame:user.isAddressSame,
 
     // Handle company names
     if (userData.companyName !== undefined) {
-      if (typeof userData.companyName === 'string') {
+      if (typeof (userData as any).companyName === 'string') {
         try {
-          userData.companyName = JSON.parse(userData.companyName);
+          (userData as any).companyName = JSON.parse((userData as any).companyName);
         } catch (e) {
           logger.warn("Failed to parse companyName string, treating as single ID");
-          userData.companyName = [userData.companyName];
+          (userData as any).companyName = [(userData as any).companyName];
         }
       }
       
@@ -725,7 +734,7 @@ isAddressSame:user.isAddressSame,
   //   return formattedUsers;
   // }
 
-  async filterUser(options: PaginationOptions): Promise<any> {
+  async filterUser(options: PaginationOptions): Promise<UserPartialResponseDto> {
     const key = `${CACHE_PREFIX}:filter:${JSON.stringify(options)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;

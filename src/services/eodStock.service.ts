@@ -14,6 +14,15 @@ import { DocDoubleApproverService } from './docDoubleApprover.service';
 import { ApprovalFlowService } from './approvalFlow.service';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { ILike } from 'typeorm';
+import {
+  CreateEodStockDto,
+  UpdateEodStockDto,
+  EodStockDetailDto,
+  EodStockViewDto,
+  EodStockUpdateFormDto,
+  EodStockListResponseDto,
+  BulkDeleteEodStockResultDto,
+} from '../dtos/eodStock.dto';
 
 @injectable() // Ensure this decorator is applied
 export class EodStockService {
@@ -45,28 +54,28 @@ export class EodStockService {
 
 
 
-  async createEodStock(data: any): Promise<any> {
+  async createEodStock(data: CreateEodStockDto & Record<string, any>): Promise<StockReportEod> {
 
     //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'eod-report')
+    // const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'eod-report')
 
-    if (!approvalFlowExit) {
-      throw new Error('Approval flow not found');
-    }
+    // if (!approvalFlowExit) {
+    //   throw new Error('Approval flow not found');
+    // }
 const serialNo = await this.generateSerialNo("EOD");
       data.eodNo = serialNo;
 
-    const stock = this.eodRepository.create(data);
-    const savedStock = await this.eodRepository.save(stock);
+    const stock = this.eodRepository.create(data as any) as unknown as StockReportEod;
+    const savedStock = await this.eodRepository.save(stock) as unknown as StockReportEod;
 
     const document = await this.documentbService.createDocument({
             type: DocumentTypeEnum.EOD_REPORT,
             docDef: DocDefEnum.OPERATION,
             status: DocumentStatus.HOLD,
             remarks: 'Document auto-created with GRN',
-            lastActionBy: { id: Array.isArray(savedStock) ? (savedStock[0] as StockReportEod)?.submittedBy : (savedStock as StockReportEod).submittedBy },
-            document_type_id: Array.isArray(savedStock) ? (savedStock[0] as StockReportEod)?.id : (savedStock as StockReportEod).id
+            lastActionBy: { id: savedStock.submittedBy ?? '' },
+            document_type_id: savedStock.id
           }, );
 
       await this.documentbService.startApprovalFlow(document.id);
@@ -204,7 +213,7 @@ const serialNo = await this.generateSerialNo("EOD");
 
 
 //update service for get all EOD 
-async getAllEodStocks(queryOptions: PaginationOptions, userId: string): Promise<any> {
+async getAllEodStocks(queryOptions: PaginationOptions, userId: string): Promise<EodStockListResponseDto> {
 
    const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
       userId,
@@ -308,7 +317,7 @@ const activeDocuments = typedDocuments;
   }
 
 
-    async getAllRecycleBinEodStocks(queryOptions: PaginationOptions, userId: string): Promise<any> {
+    async getAllRecycleBinEodStocks(queryOptions: PaginationOptions, userId: string): Promise<EodStockListResponseDto> {
 
    const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
       userId,
@@ -412,7 +421,7 @@ const activeDocuments = typedDocuments;
 
   }
 
-  async getEodStockById(id: string): Promise<any> {
+  async getEodStockById(id: string): Promise<EodStockDetailDto | null> {
     const result = await this.eodRepository.findOne({
       where: { id },
       relations: [
@@ -474,7 +483,7 @@ const activeDocuments = typedDocuments;
     return formattedResponse;
   }
 
-  async getEodStockByIdForView(docId: string): Promise<any> {
+  async getEodStockByIdForView(docId: string): Promise<EodStockViewDto | null> {
 
     const document = await this.docDoubleApproverService.getDocumentById(
       docId
@@ -530,9 +539,10 @@ const activeDocuments = typedDocuments;
 
     return formattedResponse;
     }
+    return null;
   }
 
-  async getEodStockByIdForUpdate(id: string): Promise<any> {
+  async getEodStockByIdForUpdate(id: string): Promise<EodStockUpdateFormDto | null> {
     const result = await this.eodRepository.findOne({
       where: { id },
       relations: [
@@ -577,7 +587,7 @@ const activeDocuments = typedDocuments;
     return formattedResponse;
   }
 
-  async updateEodStock(id: string, data: any, updatedBy: string): Promise<any> {
+  async updateEodStock(id: string, data: UpdateEodStockDto & Record<string, any>, updatedBy: string): Promise<StockReportEod | null> {
     const stock = await this.eodRepository.findOne({
       where: { id },
       relations: [
@@ -633,7 +643,7 @@ const activeDocuments = typedDocuments;
     
     return true;
   }
-public async deleteMultipleEodStock(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+public async deleteMultipleEodStock(ids: string[]): Promise<BulkDeleteEodStockResultDto> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {

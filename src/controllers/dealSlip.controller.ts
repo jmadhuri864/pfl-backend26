@@ -8,6 +8,20 @@ import { captureUser, deserializeUser, requireUser} from "../middleware/deserial
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import {
+  CreateDealSlipDto,
+  UpdateDealSlipDto,
+  ApproveDealSlipDto,
+  ApproveDealSlipResultDto,
+  DealSlipDetailDto,
+  DealSlipListResponseDto,
+  DealSlipRecycleBinResponseDto,
+  DealSlipDocumentViewDto,
+  DealSlipNumbersResponseDto,
+  BulkDeleteDealSlipDto,
+  BulkDeleteDealSlipResultDto,
+} from "../dtos/dealSlip.dto";
+
 
 @controller('/dealSlip', deserializeUser, requireUser)
 export class DealSlipController {
@@ -53,7 +67,7 @@ export class DealSlipController {
         search: (search as string) || '',
       };
 
-      const dealSlips = await this.dealSlipService.getRecycleBinDealSlips(queryOptions, userId);
+      const dealSlips: DealSlipRecycleBinResponseDto = await this.dealSlipService.getRecycleBinDealSlips(queryOptions, userId);
 
       if (!dealSlips || dealSlips.data.length === 0) {
         return res.status(200).json({
@@ -113,7 +127,7 @@ export class DealSlipController {
         search: (search as string) || '',
       };
 
-      const dealSlips = await this.dealSlipService.getAllDealSlips(queryOptions, userId);
+      const dealSlips: DealSlipListResponseDto = await this.dealSlipService.getAllDealSlips(queryOptions, userId);
 
       if (!dealSlips || dealSlips.data.length === 0) {
         return res.status(200).json({
@@ -160,7 +174,7 @@ export class DealSlipController {
     @next() next: NextFunction
   ): Promise<void> {
     try {
-      const dealSlip = await this.dealSlipService.findDealSlipById(id);
+      const dealSlip: DealSlipDetailDto | null = await this.dealSlipService.findDealSlipById(id);
       
       if (!dealSlip) {
         ControllerLogger.logNotFound('Deal Slip', id, req, res);
@@ -199,7 +213,7 @@ export class DealSlipController {
     @next() next: NextFunction
   ): Promise<void> {
     try {
-      const dealSlip = await this.dealSlipService.findDealSlipByIdforUpdate(id);
+      const dealSlip: DealSlipDetailDto | null = await this.dealSlipService.findDealSlipByIdforUpdate(id);
       
       if (!dealSlip) {
         ControllerLogger.logNotFound('Deal Slip', id, req, res);
@@ -219,8 +233,8 @@ export class DealSlipController {
 
   @httpPost("/")
   public async createDealSlip(
-    @requestBody() dealData: any,
-    @request() req:Request,
+    @requestBody() dealData: CreateDealSlipDto & Record<string, any>,
+    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ): Promise<void> {
@@ -266,7 +280,7 @@ export class DealSlipController {
   @httpPatch("/:id",captureUser)
   public async updateDealSlip(
     @requestParam("id") dealSlipId: string,
-    @requestBody() dealSlipData: any,
+    @requestBody() dealSlipData: UpdateDealSlipDto & Record<string, any>,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -316,9 +330,9 @@ export class DealSlipController {
   ): Promise<void> {
     try {
       const userId = res.locals.user.id;
-      const { approvalStatus, approvalNote } = req.body;
+      const { approvalStatus, approvalNote }: ApproveDealSlipDto = req.body;
       
-      const result = await this.dealSlipService.approveDealSlip(dealSlipId, userId, { approvalStatus, approvalNote });
+      const result: ApproveDealSlipResultDto = await this.dealSlipService.approveDealSlip(dealSlipId, userId, { approvalStatus, approvalNote: approvalNote ?? undefined });
 
       if (!result) {
         ControllerLogger.logOperationFailed('Approve', 'Deal Slip', 'Cannot be approved', req, res);
@@ -386,9 +400,9 @@ export class DealSlipController {
 
       
 
-      const dealSlips = await this.dealSlipService.getAllDealSlipsNo({...req.query, isGrnCreated},userId);
+      const dealSlips: DealSlipNumbersResponseDto = await this.dealSlipService.getAllDealSlipsNo({...req.query, isGrnCreated},userId);
       
-      if (!dealSlips || dealSlips.total === 0) {
+      if (!dealSlips || dealSlips.pagination.total === 0) {
         ControllerLogger.logOperationFailed('Get All', 'Deal Slip Numbers', 'No records found', req, res);
         return next(new AppError(404, "No Deal Slips found"));
       }
@@ -456,7 +470,7 @@ export class DealSlipController {
   ) {
     try {
       const userId = res.locals.user.id;
-      const dealSlip = await this.dealSlipService.getDealSlipByIdForView(docid, userId);
+      const dealSlip: DealSlipDocumentViewDto | null = await this.dealSlipService.getDealSlipByIdForView(docid, userId);
       
       if (!dealSlip) {
         ControllerLogger.logOperationFailed('View', 'Deal Slip', 'Permission denied', req, res);
@@ -511,13 +525,13 @@ export class DealSlipController {
 
   @httpDelete("/delete/multiple")
   public async deleteMultipleDealSlips(
-    @requestBody() ids: { ids: string[] },
+    @requestBody() body: BulkDeleteDealSlipDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      const result = await this.dealSlipService.deleteMultipleDealSlips(ids.ids);
+      const result: BulkDeleteDealSlipResultDto = await this.dealSlipService.deleteMultipleDealSlips(body.ids);
 
       // 🔔 Send notification for multiple deal slips deletion
       // try {
@@ -532,7 +546,7 @@ export class DealSlipController {
       //   console.log('Delete multiple deal slips notification error:', notifError);
       // }
 
-      ControllerLogger.logSuccess('Multiple Deal Slips deleted', `${ids.ids.length} items`, req, res);
+      ControllerLogger.logSuccess('Multiple Deal Slips deleted', `${body.ids.length} items`, req, res);
       res.status(200).json({
         message: result.message,
       });

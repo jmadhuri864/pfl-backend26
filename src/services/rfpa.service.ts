@@ -35,6 +35,17 @@ import { RfpaPaymentInfoRepository } from '../repositories/rfpaPaymentInfo.repos
 import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository';
 import { CacheService } from './cache.service';
 import logger from '../utils/logger';
+import {
+  CreateRfpaDto,
+  UpdateRfpaDto,
+  RfpaListResponseDto,
+  RfpaViewResponseDto,
+  RfpaUpdateFormDto,
+  RfpaNumbersResponseDto,
+  RfpaRecycleBinResponseDto,
+  BulkDeleteRfpaResultDto,
+  RfpaDocumentViewResponseDto,
+} from '../dtos/rfpa.dto';
 
 export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
@@ -108,7 +119,7 @@ export class RfpaService {
     await Promise.all(tasks);
   }
 
-  async createRfpa(rfpaData: any): Promise<any> {
+  async createRfpa(rfpaData: CreateRfpaDto & Record<string, any>): Promise<RFPA> {
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -136,7 +147,7 @@ export class RfpaService {
       dueDate: rfpaData.paymentInfo.dueDate,
       advancePaidAmt: rfpaData.paymentInfo.advancePaidAmt,
       validityOfQuote: rfpaData.paymentInfo.validityOfQuote
-    })
+    } as any) as unknown as PaymentInfoForRFPA;
 
     const saveRfpaPaymentInfo = await queryRunner.manager.save(rfpaPaymentInfo);
     
@@ -391,7 +402,7 @@ export class RfpaService {
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
-async getRFQByIdForUpdate(id: string) {
+  async getRFQByIdForUpdate(id: string): Promise<RfpaUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -468,7 +479,7 @@ async getRFQByIdForUpdate(id: string) {
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
-  async getRFQByIdByView(id: string) {
+  async getRFQByIdByView(id: string): Promise<RfpaViewResponseDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -589,7 +600,7 @@ async getRFQByIdForUpdate(id: string) {
 
       
 
-  async updateRfpa(id: string, rfpaData: any, updatedBy: string): Promise<any> {
+  async updateRfpa(id: string, rfpaData: UpdateRfpaDto & Record<string, any>, updatedBy: string): Promise<RFPA | null> {
     return await this.dataSource.transaction(async (manager) => {
       const existingRfpa = await manager.findOne(RFPA, {
         where: { id },
@@ -610,15 +621,15 @@ async getRFQByIdForUpdate(id: string) {
 
       const originalRfpa = { ...existingRfpa };
 
-      if (rfpaData.rfpaId !== undefined) existingRfpa.rfpaId = rfpaData.rfpaId;
-      if (rfpaData.requestingDepartment !== undefined) existingRfpa.requestingDepartment = rfpaData.requestingDepartment;
-      if (rfpaData.otherPurchaseLoc !== undefined) existingRfpa.otherPurchaseLoc = rfpaData.otherPurchaseLoc;
-      if (rfpaData.otherPurchaseForSalesLoc !== undefined) existingRfpa.otherPurchaseForSalesLoc = rfpaData.otherPurchaseForSalesLoc;
-      if (rfpaData.deliveryReceivingPerson !== undefined) existingRfpa.deliveryReceivingPerson = rfpaData.deliveryReceivingPerson;
-      if (rfpaData.packingInstruction !== undefined) existingRfpa.packingInstruction = rfpaData.packingInstruction;
-      if (rfpaData.specialReq !== undefined) existingRfpa.specialReq = rfpaData.specialReq;
-      if (rfpaData.source !== undefined) existingRfpa.source = rfpaData.source;
-      if (rfpaData.remark !== undefined) existingRfpa.remark = rfpaData.remark;
+      if (rfpaData.rfpaId !== undefined) existingRfpa.rfpaId = rfpaData.rfpaId as any;
+      if (rfpaData.requestingDepartment !== undefined) existingRfpa.requestingDepartment = rfpaData.requestingDepartment as any;
+      if (rfpaData.otherPurchaseLoc !== undefined) existingRfpa.otherPurchaseLoc = rfpaData.otherPurchaseLoc as any;
+      if (rfpaData.otherPurchaseForSalesLoc !== undefined) existingRfpa.otherPurchaseForSalesLoc = rfpaData.otherPurchaseForSalesLoc as any;
+      if (rfpaData.deliveryReceivingPerson !== undefined) existingRfpa.deliveryReceivingPerson = rfpaData.deliveryReceivingPerson as any;
+      if (rfpaData.packingInstruction !== undefined) existingRfpa.packingInstruction = rfpaData.packingInstruction as any;
+      if (rfpaData.specialReq !== undefined) existingRfpa.specialReq = rfpaData.specialReq as any;
+      if (rfpaData.source !== undefined) existingRfpa.source = rfpaData.source as any;
+      if (rfpaData.remark !== undefined) existingRfpa.remark = rfpaData.remark as any;
 
       const extractId = (value: any): string | null => {
         if (!value) return null;
@@ -684,17 +695,19 @@ async getRFQByIdForUpdate(id: string) {
       }
 
       if (rfpaData.paymentInfo) {
+        const toStr = (v: string | Date | null | undefined) =>
+          v instanceof Date ? v.toISOString() : v;
         const normalizedPaymentInfo = {
           ...rfpaData.paymentInfo,
-          paymentDate: normalizeDateFormat(rfpaData.paymentInfo.paymentDate),
-          dueDate: normalizeDateFormat(rfpaData.paymentInfo.dueDate),
-          validityOfQuote: normalizeDateFormat(rfpaData.paymentInfo.validityOfQuote),
+          paymentDate: normalizeDateFormat(toStr(rfpaData.paymentInfo.paymentDate)),
+          dueDate: normalizeDateFormat(toStr(rfpaData.paymentInfo.dueDate)),
+          validityOfQuote: normalizeDateFormat(toStr(rfpaData.paymentInfo.validityOfQuote)),
         };
         if (existingRfpa.paymentInfo) {
           Object.assign(existingRfpa.paymentInfo, normalizedPaymentInfo);
           await manager.save(PaymentInfoForRFPA, existingRfpa.paymentInfo);
         } else {
-          const paymentInfo = manager.create(PaymentInfoForRFPA, normalizedPaymentInfo);
+          const paymentInfo = manager.create(PaymentInfoForRFPA, normalizedPaymentInfo as any) as unknown as PaymentInfoForRFPA;
           const savedPaymentInfo = await manager.save(PaymentInfoForRFPA, paymentInfo);
           existingRfpa.paymentInfo = savedPaymentInfo;
         }
@@ -788,10 +801,7 @@ async getRFQByIdForUpdate(id: string) {
 
   
 
-   public async getRecycleBinRfpa(queryOptions: PaginationOptions, userId: string): Promise<{
-    data: any[];
-    meta: { total: number; page: number; pages: number };
-  }> {
+   public async getRecycleBinRfpa(queryOptions: PaginationOptions, userId: string): Promise<RfpaRecycleBinResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -950,7 +960,7 @@ async getRFQByIdForUpdate(id: string) {
     return result;
   }
 
-public async getAllRFPANumbers(
+  public async getAllRFPANumbers(
   filter: {
     overAllStatus?: string;
     isDealSlipCreated?: boolean;
@@ -960,7 +970,7 @@ public async getAllRFPANumbers(
     search?: string;
   },
   loginUserId: string
-): Promise<any> {
+): Promise<RfpaNumbersResponseDto> {
   const hash = createHash('md5').update(JSON.stringify({ filter, loginUserId })).digest('hex');
   const cacheKey = `${this.CACHE_PREFIX}:rfpanumbers:${hash}`;
   const cached = await this.cacheService.get<any>(cacheKey);
@@ -1100,10 +1110,7 @@ public async getAllRFPANumbers(
   
         
 
-  public async getAllRfpa(queryOptions: PaginationOptions, userId: string): Promise<{
-    data: any[];
-    meta: { total: number; page: number; pages: number };
-  }> {
+  public async getAllRfpa(queryOptions: PaginationOptions, userId: string): Promise<RfpaListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -1223,7 +1230,7 @@ public async getAllRFPANumbers(
     
     
 
-public async getRfpaByIdForView(docid: string, userId:string): Promise<any> {
+public async getRfpaByIdForView(docid: string, userId: string): Promise<RfpaDocumentViewResponseDto | null> {
     const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid,userId)
     if(!document)
     {
@@ -1416,7 +1423,7 @@ const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA 
     };
   }
 
-  async deleteMultipleRFPA(ids: string[]) {
+  async deleteMultipleRFPA(ids: string[]): Promise<BulkDeleteRfpaResultDto> {
     if (!ids.length) return { message: 'No IDs provided' };
 
     const [rfpas, relatedDocuments] = await Promise.all([

@@ -22,6 +22,16 @@ import {
   requireUser,
 } from '../middleware/deserializeUser';
 import { PaginationOptions } from '../utils/pagination';
+import {
+  CreateEodStockDto,
+  UpdateEodStockDto,
+  EodStockDetailDto,
+  EodStockViewDto,
+  EodStockUpdateFormDto,
+  EodStockListResponseDto,
+  BulkDeleteEodStockDto,
+  BulkDeleteEodStockResultDto,
+} from '../dtos/eodStock.dto';
 
 @controller('/eodStock', deserializeUser, requireUser)
 export class EodStockController {
@@ -34,12 +44,12 @@ export class EodStockController {
 
   @httpPost('/')
   public async createEodStockReport(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateEodStockDto & Record<string, any>>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      const stockData = req.body;
+      const stockData: CreateEodStockDto & Record<string, any> = req.body;
       stockData.submittedBy = res.locals.user.id;
 
       const stock = await this.eodStockService.createEodStock(stockData);
@@ -77,7 +87,7 @@ export class EodStockController {
     @next() next: NextFunction,
   ) {
     try {
-      const stock = await this.eodStockService.getEodStockByIdForView(docId);
+      const stock: EodStockViewDto | null = await this.eodStockService.getEodStockByIdForView(docId);
 
       if (!stock) {
         ControllerLogger.logNotFound('EOD Stock', docId, req, res);

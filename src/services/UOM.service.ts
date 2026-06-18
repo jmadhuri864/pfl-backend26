@@ -6,6 +6,13 @@ import { UOMRepository } from "../repositories/uom.repository";
 import { AuditLogService } from "./auditLog.service";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import {
+  CreateUOMDto,
+  UpdateUOMDto,
+  UOMListResponseDto,
+  UOMPartialDto,
+  UOMDetailDto,
+} from "../dtos/uom.dto";
 
 const CACHE_PREFIX = "uom";
 const CACHE_TTL = 300; // 5 minutes
@@ -37,7 +44,7 @@ export class UOMService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+  public async getAll(queryOptions: PaginationOptions): Promise<UOMListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -62,7 +69,7 @@ export class UOMService {
     return formatted;
   }
 
-  public async getAllPartial(): Promise<any> {
+  public async getAllPartial(): Promise<UOMPartialDto[]> {
     const key = `${CACHE_PREFIX}:partial`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -76,7 +83,7 @@ export class UOMService {
     return uoms;
   }
 
-  public async getById(id: string): Promise<any> {
+  public async getById(id: string): Promise<UOMDetailDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -92,18 +99,18 @@ export class UOMService {
     return uom;
   }
 
-  public async create(uomData: Partial<UOM>): Promise<UOM> {
-    const uom = this.UOMRepository.create(uomData);
-    const saved = await this.UOMRepository.save(uom);
+  public async create(uomData: CreateUOMDto): Promise<UOM> {
+    const uom = this.UOMRepository.create(uomData as any) as unknown as UOM;
+    const saved = await this.UOMRepository.save(uom) as unknown as UOM;
     await this.invalidateCache();
     return saved;
   }
 
   public async update(
     id: string,
-    uomData: Partial<UOM>,
+    uomData: UpdateUOMDto,
     updatedBy: string,
-  ): Promise<UOM | null> {
+  ): Promise<UOMDetailDto | null> {
     const existingUOM = await this.UOMRepository.findOne({ where: { id } });
 
     if (!existingUOM) {

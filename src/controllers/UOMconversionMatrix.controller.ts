@@ -4,12 +4,11 @@ import {
   httpDelete,
   httpGet,
   httpPost,
-  httpPut,
+  httpPatch,
   requestBody,
   requestParam,
   response,
   next,
-  httpPatch,
   request,
 } from "inversify-express-utils";
 
@@ -19,12 +18,19 @@ import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/appError";
 import { UOMConversionMatrixService } from "../services/UOMconversionMatrix.service";
 import { NotificationService } from "../services/notification.service";
-import { UOMConversionMatrix } from "../entities/uom_matrix.entity";
 
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
+import {
+  CreateUOMConversionMatrixDto,
+  UpdateUOMConversionMatrixDto,
+  UOMConversionMatrixListResponseDto,
+  UOMConversionMatrixDetailDto,
+  UOMConversionMatrixUpdateFormDto,
+  BulkDeleteUOMConversionMatrixDto,
+} from "../dtos/uomConversionMatrix.dto";
 
 @controller("/uom-conversion-matrix",deserializeUser,requireUser)
 export class UOMConversionMatrixController {
@@ -38,8 +44,7 @@ export class UOMConversionMatrixController {
  @httpGet("/")
   public async getAll(@response() res: Response, @next() next: NextFunction,@request() req : Request) {
     try {
-      const { page, limit, search, sort,uomConversionMatrixId} = req.query;
-          
+      const { page, limit, search, sort } = req.query;
       
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,  
@@ -49,7 +54,7 @@ export class UOMConversionMatrixController {
         sort: sort as string || undefined, // Adjust this line to match your sorting requirements
         search: search as string|| '',
       };
-      const conversions = await this.uomConversionMatrixService.getAll(queryOptions);
+      const conversions: UOMConversionMatrixListResponseDto = await this.uomConversionMatrixService.getAll(queryOptions);
       if (!conversions.data.length) {
         ControllerLogger.logError('UOM Conversion Matrix list retrieval', new AppError(404, "No UOM conversion data found"), req, res);
         return next(new AppError(404, "No UOM conversion data found"));
@@ -88,7 +93,7 @@ export class UOMConversionMatrixController {
     @next() next: NextFunction
   ) {
     try {
-      const conversion = await this.uomConversionMatrixService.getById(id);
+      const conversion: UOMConversionMatrixDetailDto | null = await this.uomConversionMatrixService.getById(id);
       if (!conversion) {
         ControllerLogger.logError('UOM Conversion Matrix view', new AppError(404, "UOM conversion data not found"), req, res);
         return next(new AppError(404, "UOM conversion data not found"));
@@ -124,7 +129,7 @@ export class UOMConversionMatrixController {
     @next() next: NextFunction
   ) {
     try {
-      const conversion = await this.uomConversionMatrixService.getByIdForUpdate(id);
+      const conversion: UOMConversionMatrixUpdateFormDto | null = await this.uomConversionMatrixService.getByIdForUpdate(id);
       if (!conversion) {
         ControllerLogger.logError('UOM Conversion Matrix retrieval for update', new AppError(404, "UOM conversion data not found"), req, res);
         return next(new AppError(404, "UOM conversion data not found"));
@@ -144,7 +149,7 @@ export class UOMConversionMatrixController {
 
   @httpPost("/")
   public async create(
-    @requestBody() conversionData: any,
+    @requestBody() conversionData: CreateUOMConversionMatrixDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -178,7 +183,7 @@ export class UOMConversionMatrixController {
   @httpPatch("/:id")
   public async update(
     @requestParam("id") id: string,
-    @requestBody() conversionData: Partial<UOMConversionMatrix>,
+    @requestBody() conversionData: UpdateUOMConversionMatrixDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -266,7 +271,7 @@ export class UOMConversionMatrixController {
   ) {
     try {
   
-      const { uomConversionIds } = req.body;
+      const { uomConversionIds }: BulkDeleteUOMConversionMatrixDto = req.body;
   
       if (!Array.isArray(uomConversionIds) || uomConversionIds.length === 0) {
         ControllerLogger.logError(

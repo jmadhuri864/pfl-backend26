@@ -9,6 +9,17 @@ import logger, { UserLogger } from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import {
+  CreateRBCDto,
+  UpdateRBCDto,
+  RBCListResponseDto,
+  RBCDetailDto,
+  RBCViewDto,
+  RBCUpdateFormDto,
+  RBCNumbersResponseDto,
+  BulkDeleteRBCDto,
+  BulkDeleteRBCResultDto,
+} from "../dtos/postReturnByCustomer.dto";
 
 
 @controller("/returns",deserializeUser,requireUser)

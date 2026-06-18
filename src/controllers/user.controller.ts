@@ -26,6 +26,17 @@ import { Branches } from "../entities/branches.entity";
 import { OfficesData } from "../entities/offices.entity";
 import { parseExcel } from "../utils/excelParser";
 import { uploadSingle } from "../middleware/uploadsingle.middleware";
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UserListResponseDto,
+  UserViewResponseDto,
+  UserUpdateFormDto,
+  UserPartialResponseDto,
+  UpdateUserStatusDto,
+  BulkDeleteUsersDto,
+  UserExcelRowDto,
+} from "../dtos/user.dto";
 
 
  @controller("/employee" , deserializeUser, requireUser)
@@ -55,13 +66,13 @@ async resolveLocation(id: string): Promise<{
 
   @httpPost("/")
   public async createUser(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateUserDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       logger.info("Creating a new Employee");
-      const result = req.body;
+      const result: CreateUserDto & Record<string, any> = req.body;
      // Handle joining location
 if (result.joiningLocation) {
   try {
@@ -139,7 +150,7 @@ if (result.currentWorkLocation) {
   ) {
     try {
       logger.info("Getting All Employee");
-      const { page, limit, search, sort,firstName} = req.query;
+      const { page, limit, search, sort } = req.query;
     
 
       const queryOptions: PaginationOptions = {
@@ -150,8 +161,8 @@ if (result.currentWorkLocation) {
         sort: sort as string || undefined, // Adjust this line to match your sorting requirements
         search: search as string|| '',
       };
-      const users = await this.userService.getAllUsers(queryOptions);
-      if (!users || users.length === 0) {
+      const users: UserListResponseDto = await this.userService.getAllUsers(queryOptions);
+      if (!users || users.data.length === 0) {
         logger.error("Employee Not Found");
         ControllerLogger.logError('Employee list retrieval', new AppError(404, "Employee Not Found"), req, res);
         return next(new AppError(404, "Employee Not Found"));
@@ -191,7 +202,7 @@ if (result.currentWorkLocation) {
     @next() next: NextFunction
   ) {
     try {
-      const user = await this.userService.findUserById(id);
+      const user: UserViewResponseDto = await this.userService.findUserById(id);
 
       if (!user) {
         ControllerLogger.logError('Employee view', new AppError(404, "User not found"), req, res);
@@ -229,7 +240,7 @@ if (result.currentWorkLocation) {
     @next() next: NextFunction
   ) {
     try {
-      const user = await this.userService.findUserByIdForView(id);
+      const user: UserViewResponseDto = await this.userService.findUserByIdForView(id);
 
       if (!user) {
         ControllerLogger.logError('Employee view', new AppError(404, "User not found"), req, res);
@@ -256,7 +267,7 @@ if (result.currentWorkLocation) {
     @next() next: NextFunction
   ) {
     try {
-      const user = await this.userService.findUserByIdForUpdate(id);
+      const user: UserUpdateFormDto = await this.userService.findUserByIdForUpdate(id);
 
       if (!user) {
         ControllerLogger.logError('Employee retrieval for update', new AppError(404, "User not found"), req, res);
@@ -277,7 +288,7 @@ if (result.currentWorkLocation) {
     @httpPut("/:id")
 public async updateUser(
   @requestParam("id") id: string,
-  @request() req: Request,
+  @request() req: Request<{}, {}, UpdateUserDto>,
   @response() res: Response,
   @next() next: NextFunction
 ) {
@@ -296,7 +307,7 @@ public async updateUser(
     // Handle joining location
     if (joiningLocationId !== undefined) {
       try {
-        const resolved = await this.resolveLocation(joiningLocationId);
+        const resolved = await this.resolveLocation(joiningLocationId as string);
         if (resolved.type === "BRANCH") {
           req.body.joiningLocation = resolved.entity.id;
           req.body.joiningOffice = null;
@@ -314,7 +325,7 @@ public async updateUser(
     // Handle current work location
     if (currentLocationId !== undefined) {
       try {
-        const resolved = await this.resolveLocation(currentLocationId);
+        const resolved = await this.resolveLocation(currentLocationId as string);
         if (resolved.type === "BRANCH") {
           req.body.currentWorkLocation = resolved.entity.id;
           req.body.currentOfficeLocation = null;
@@ -477,8 +488,8 @@ public async partialAllUser(
       search: search as string|| '',
     };
     
-    const users = await this.userService.filterUser(queryOptions);
-    if(!users || users.length === 0){
+    const users: UserPartialResponseDto = await this.userService.filterUser(queryOptions);
+    if(!users || users.data.length === 0){
       logger.error("Employee Not Found");
       ControllerLogger.logError('Employee partial list retrieval', new AppError(404, "Employee Not Found"), req, res);
       return next(new AppError(404, "Employee Not Found"));
@@ -538,7 +549,7 @@ public async upload(req: Request, res: Response) {
           return permissions;
         };
 
-        const mappedRow = {
+        const mappedRow: UserExcelRowDto = {
           firstName: row["First Name"],
           lastName: row["Last Name"],
           username: row["Username"],
@@ -622,7 +633,7 @@ public async softDeleteMultipleEmployees(
 ) {
   try {
 
-    const { userIds } = req.body;
+    const { userIds }: BulkDeleteUsersDto = req.body;
 
     if (!Array.isArray(userIds) || userIds.length === 0) {
       ControllerLogger.logError(

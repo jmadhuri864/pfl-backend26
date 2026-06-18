@@ -25,6 +25,14 @@ import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { format } from 'date-fns';
 import { CacheService } from './cache.service';
+import {
+  CreateCustomerDeliveryChallanDto,
+  UpdateCustomerDeliveryChallanDto,
+  CustomerDeliveryChallanUpdateFormDto,
+  CustomerDeliveryChallanViewDto,
+  CustomerDeliveryChallanListResponseDto,
+  BulkDeleteCustomerDCResultDto,
+} from '../dtos/customerDeliveryChallan.dto';
 
 const CACHE_PREFIX = 'cdc';
 const CACHE_TTL = 180;
@@ -98,7 +106,7 @@ export class CustomerDeliveryChallanService {
     const serialStr = (count + 1).toString().padStart(5, '0');
     return `CN${formattedDate}${typeCode}${serialStr}`;
   }
-  async create(data: any, requestedBy: any): Promise<any> {
+  async create(data: CreateCustomerDeliveryChallanDto & Record<string, any>, requestedBy: string): Promise<CustomerDeliveryChallan> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -113,7 +121,7 @@ export class CustomerDeliveryChallanService {
 
       // 2. Fetch Customer
       const cus = await queryRunner.manager.findOne(this.customerRepo.target, {
-        where: { id: data.partyName },
+        where: { id: data.partyName ?? undefined },
         relations: [
           'billingDetails.billingAddress',
           'deliveryDetails.deliveryAddress',
@@ -148,14 +156,14 @@ export class CustomerDeliveryChallanService {
       });
 
       // 6. Extract product IDs
-      const productIds = variants.map(v => v.product?.id).filter(Boolean);
+      const productIds = variants.map(v => v.product?.id).filter((id): id is string => Boolean(id));
 
       // 7. VALIDATE STOCK BEFORE CREATING CHALLAN
       if (data.deliveryChallanProducts && data.deliveryChallanProducts.length > 0) {
         for (const item of data.deliveryChallanProducts) {
           const deliveredQty = Number(item.netWeight ?? 0);
-          const variantId = typeof item.variant === 'object' ? item.variant.id : item.variant;
-          const productId = typeof item.productName === 'object' ? item.productName.id : item.productName;
+          const variantId = typeof item.variant === 'object' && item.variant ? item.variant.id : (item.variant ?? null);
+          const productId = typeof item.productName === 'object' && item.productName ? item.productName.id : (item.productName ?? null);
 
           if (!productId) {
             throw new AppError(400, `Product missing`);
@@ -200,8 +208,8 @@ export class CustomerDeliveryChallanService {
 
           // Check existing inventory stock
           const stockWhere: any = {
-            company: { id: typeof data.companyName === 'string' ? data.companyName : data.companyName?.id },
-            location: { id: typeof data.fromLocation === 'string' ? data.fromLocation : data.fromLocation?.id },
+            company: { id: typeof data.companyName === 'string' ? data.companyName : (data.companyName as any)?.id },
+            location: { id: typeof data.fromLocation === 'string' ? data.fromLocation : (data.fromLocation as any)?.id },
             product: { id: productInfo.productId },
           };
 
@@ -240,7 +248,7 @@ export class CustomerDeliveryChallanService {
         ...data,
         variants: variants.map(v => ({ id: v.id })),
         products: productIds.map(id => ({ id })),
-      });
+      } as any) as unknown as CustomerDeliveryChallan;
 
       const savedChallan = await queryRunner.manager.save(challan);
 
@@ -346,7 +354,7 @@ export class CustomerDeliveryChallanService {
 
   public async getByIdCustomerDeliveryChallanforUpdate(
     id: string,
-  ): Promise<any> {
+  ): Promise<{ data: CustomerDeliveryChallanUpdateFormDto } | null> {
     const key = `${CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -465,7 +473,7 @@ export class CustomerDeliveryChallanService {
   
   public async getByIdCustomerDeliveryChallanForView(
     docId: string,
-  ): Promise<any> {
+  ): Promise<{ data: CustomerDeliveryChallanViewDto } | null> {
     const key = `${CACHE_PREFIX}:view:${docId}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -592,7 +600,7 @@ export class CustomerDeliveryChallanService {
   public async getAllCustomerDeliveryChallans(
     queryOptions: PaginationOptions,
     userId: string,
-  ): Promise<any> {
+  ): Promise<CustomerDeliveryChallanListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -711,7 +719,7 @@ export class CustomerDeliveryChallanService {
       .filter(Boolean);
 
     const listResponse = {
-      data: relatedDataOnly,
+      data: relatedDataOnly as CustomerDeliveryChallanListResponseDto['data'],
       meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(key, listResponse, CACHE_TTL);
@@ -719,7 +727,7 @@ export class CustomerDeliveryChallanService {
   }
 
 
-  async update(id: string, data: any): Promise<any> {
+  async update(id: string, data: UpdateCustomerDeliveryChallanDto & Record<string, any>): Promise<CustomerDeliveryChallan | null> {
     try {
       const challan = await this.challanRepository.findOne({ where: { id } });
 
@@ -750,7 +758,7 @@ export class CustomerDeliveryChallanService {
       return false;
     }
   }
-  public async deleteMultipleCustomerDC(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  public async deleteMultipleCustomerDC(ids: string[]): Promise<BulkDeleteCustomerDCResultDto> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {

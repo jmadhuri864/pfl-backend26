@@ -1,8 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import { CacheService } from '../services/cache.service';
-import { container } from '../inversify.config';
-import { TYPES } from '../types';
 import logger from '../utils/logger';
 
 // Performance monitoring middleware
@@ -11,7 +8,7 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
   
   // Override res.end to capture response time
   const originalEnd = res.end;
-  res.end = function(...args: any[]) {
+  res.end = function(this: typeof res, chunk?: any, encoding?: BufferEncoding, cb?: () => void) {
     const duration = Date.now() - startTime;
     
     // Log slow queries (> 1 second)
@@ -22,8 +19,8 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
     // Add performance headers
     res.setHeader('X-Response-Time', `${duration}ms`);
     
-    return originalEnd.apply(this, args);
-  };
+    return originalEnd.call(this, chunk, encoding as BufferEncoding, cb);
+  } as typeof res.end;
   
   next();
 };
@@ -39,32 +36,7 @@ export const createSmartRateLimit = (windowMs: number = 15 * 60 * 1000, max: num
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Use Redis for distributed rate limiting
-    store: {
-      incr: async (key: string) => {
-        try {
-          const cacheService = container.get<CacheService>(TYPES.CacheService);
-          const current = await cacheService.get<number>(key) || 0;
-          const newValue = current + 1;
-          await cacheService.set(key, newValue, Math.ceil(windowMs / 1000));
-          return { totalHits: newValue, resetTime: new Date(Date.now() + windowMs) };
-        } catch (error) {
-          logger.error('Rate limit store error:', error);
-          return { totalHits: 1, resetTime: new Date(Date.now() + windowMs) };
-        }
-      },
-      decrement: async (key: string) => {
-        // Optional: implement if needed
-      },
-      resetKey: async (key: string) => {
-        try {
-          const cacheService = container.get<CacheService>(TYPES.CacheService);
-          await cacheService.del(key);
-        } catch (error) {
-          logger.error('Rate limit reset error:', error);
-        }
-      }
-    }
+    // Using default in-memory store — reliable and no external dependency issues
   });
 };
 

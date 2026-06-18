@@ -23,8 +23,17 @@ import {
 import { PaginationOptions } from '../utils/pagination';
 
 import { NotificationService } from '../services/notification.service';
-import { upload, uploadAttachments } from '../middleware/upload.middleware';
+import { uploadAttachments } from '../middleware/upload.middleware';
 import { setAttachmentUrls } from '../utils/fileUploadHelper';
+import {
+  CreateCustomerDeliveryChallanDto,
+  UpdateCustomerDeliveryChallanDto,
+  CustomerDeliveryChallanUpdateFormDto,
+  CustomerDeliveryChallanViewDto,
+  CustomerDeliveryChallanListResponseDto,
+  BulkDeleteCustomerDCDto,
+  BulkDeleteCustomerDCResultDto,
+} from '../dtos/customerDeliveryChallan.dto';
 
 @controller('/customer-delivery-challan', deserializeUser, requireUser)
 export class CustomerDeliveryChallanController {
@@ -48,7 +57,7 @@ export class CustomerDeliveryChallanController {
       req.body.createdBy = res.locals.user.id;
 
       const challan = await this.customerDeliveryChallanService.create(
-        req.body,
+        req.body as CreateCustomerDeliveryChallanDto & Record<string, any>,
         req.body.createdBy
       );
       
@@ -91,7 +100,7 @@ export class CustomerDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      const challan = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanforUpdate(id);
+      const challan: { data: CustomerDeliveryChallanUpdateFormDto } | null = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanforUpdate(id);
 
       if (!challan) {
         ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
@@ -136,7 +145,7 @@ export class CustomerDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      const challan = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanForView(id);
+      const challan: { data: CustomerDeliveryChallanViewDto } | null = await this.customerDeliveryChallanService.getByIdCustomerDeliveryChallanForView(id);
 
       if (!challan) {
         ControllerLogger.logNotFound('Customer Delivery Challan', id, req, res);
@@ -188,13 +197,13 @@ export class CustomerDeliveryChallanController {
 
       const userId = res.locals.user.id;
 
-      const challans =
+      const challans: CustomerDeliveryChallanListResponseDto =
         await this.customerDeliveryChallanService.getAllCustomerDeliveryChallans(
           queryOptions,
           userId
         );
 
-      if (!challans || challans.length === 0) {
+      if (!challans || challans.data.length === 0) {
         ControllerLogger.logOperationFailed('Get All', 'Customer Delivery Challans', 'No records found', req, res);
         return next(new AppError(404, 'No customer delivery challans found'));
       }

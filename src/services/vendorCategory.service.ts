@@ -7,6 +7,12 @@ import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { In } from "typeorm";
 import { CacheService } from "./cache.service";
+import {
+  CreateVendorCategoryDto,
+  UpdateVendorCategoryDto,
+  VendorCategoryResponseDto,
+  VendorCategoryListResponseDto,
+} from "../dtos/vendorCategory.dto";
 
 const CACHE_PREFIX = "vendorCategory";
 const CACHE_TTL = 300;
@@ -36,16 +42,16 @@ export class VendorCategoryService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  public async create(categoryData: Partial<VendorCategory>): Promise<VendorCategory | null> {
+  public async create(categoryData: CreateVendorCategoryDto): Promise<VendorCategory | null> {
     const category = this.vendorCategoryRepository.create(categoryData);
     const saved = await this.vendorCategoryRepository.save(category);
     await this.invalidateCache();
     return saved;
   }
 
-  public async getCategories(queryOptions: PaginationOptions): Promise<any> {
+  public async getCategories(queryOptions: PaginationOptions): Promise<VendorCategoryListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<VendorCategoryListResponseDto>(key);
     if (cached) return cached;
 
     const baseQuery = this.vendorCategoryRepository
@@ -55,8 +61,8 @@ export class VendorCategoryService {
 
     const result = await buildQuery(baseQuery, queryOptions, "vendorCategory");
 
-    const formatted = {
-      data: result.data.map((category) => ({
+    const formatted: VendorCategoryListResponseDto = {
+      data: result.data.map((category): VendorCategoryResponseDto => ({
         id: category.id,
         name: category.name,
       })),
@@ -84,9 +90,9 @@ export class VendorCategoryService {
 
   public async update(
     id: string,
-    categoryData: Partial<VendorCategory>,
+    categoryData: UpdateVendorCategoryDto,
     updatedBy: string,
-  ): Promise<VendorCategory | null> {
+  ): Promise<VendorCategoryResponseDto | null> {
     const existingCategory = await this.vendorCategoryRepository.findOne({ where: { id } });
 
     if (!existingCategory) {

@@ -16,6 +16,15 @@ import { In, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import {
+  CreateLPVoucherDto,
+  UpdateLPVoucherDto,
+  LPVoucherListResponseDto,
+  LPVoucherDetailDto,
+  LPVoucherViewDto,
+  LPVoucherUpdateFormDto,
+  BulkDeleteLPVoucherResultDto,
+} from '../dtos/labourPaymentVoucher.dto';
 
 @injectable()
 export class LabourPaymentVoucherService {
@@ -52,7 +61,7 @@ export class LabourPaymentVoucherService {
     await Promise.all(tasks);
   }
 
-  async createLPVoucher(data: any): Promise<any> {
+  async createLPVoucher(data: CreateLPVoucherDto & Record<string, any>): Promise<LPVoucher> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -62,20 +71,20 @@ export class LabourPaymentVoucherService {
       const voucherNo = await this.generateVoucherNo();
       data.voucherNo = voucherNo;
 
-      const newLPVoucher = queryRunner.manager.create(this.lpVoucherRepository.target, data);
+      const newLPVoucher = queryRunner.manager.create(this.lpVoucherRepository.target, data as any) as unknown as LPVoucher;
 
-      const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) as LPVoucher | LPVoucher[];
+      const saveLPVoucher = await queryRunner.manager.save(newLPVoucher) as unknown as LPVoucher;
 
       await queryRunner.commitTransaction();
 
       const document = await this.documentbService.createDocument({
               type: DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
               docDef: DocDefEnum.PROCUREMENT,
-              totalAmt: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.totalAmt : (saveLPVoucher as LPVoucher).totalAmt,
+              totalAmt: saveLPVoucher.totalAmt,
               status: DocumentStatus.HOLD,
               remarks: 'Document auto-created with LP Voucher',
               lastActionBy: { id: data.requestedBy },
-              document_type_id: Array.isArray(saveLPVoucher) ? (saveLPVoucher[0] as LPVoucher)?.id : (saveLPVoucher as LPVoucher).id
+              document_type_id: saveLPVoucher.id
             });
 
       await this.documentbService.startApprovalFlow(document.id);
@@ -97,7 +106,7 @@ export class LabourPaymentVoucherService {
 
     
 
-  public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  public async getLPVouchers(queryOptions: PaginationOptions, userId: string): Promise<LPVoucherListResponseDto> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -184,7 +193,7 @@ export class LabourPaymentVoucherService {
     return listResult;
   }
 
-  public async getLPVoucherById(id: string): Promise<any> {
+  public async getLPVoucherById(id: string): Promise<LPVoucherDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -252,10 +261,10 @@ export class LabourPaymentVoucherService {
       return idResult;
     }
 
-    return voucher;
+    return voucher as unknown as LPVoucherDetailDto;
   }
 
-  public async getLPVoucherByIdForView(docid: string): Promise<any> {
+  public async getLPVoucherByIdForView(docid: string): Promise<LPVoucherViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -296,7 +305,6 @@ export class LabourPaymentVoucherService {
       paymentMode: voucher.paymentMode,
       ratePerLabour: voucher.ratePerLabour,
       totalAmt: voucher.totalAmt,
-      createdAt: voucher.createdAt,
 
       amtWords: voucher.amtWords,
       anyAttachment: voucher.anyAttachment,
@@ -316,7 +324,7 @@ remark:voucher.remark || null,
     return formatResponse;
   }
 
-  public async getLPRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  public async getLPRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<LPVoucherListResponseDto> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -404,7 +412,7 @@ remark:voucher.remark || null,
     return recycleResult;
   }
 
-   public async getLPVoucherByIdForUpdate(id: string): Promise<any> {
+   public async getLPVoucherByIdForUpdate(id: string): Promise<LPVoucherUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -441,7 +449,6 @@ remark : voucher.remark || null,
       paymentMode: voucher.paymentMode,
       ratePerLabour: voucher.ratePerLabour,
       totalAmt: voucher.totalAmt,
-      createdAt: voucher.createdAt,
 
       amtWords: voucher.amtWords,
       anyAttachment: voucher.anyAttachment,
@@ -459,7 +466,7 @@ remark : voucher.remark || null,
 
   public async updateLPVoucher(
     id: string,
-    updatedData: any,
+    updatedData: UpdateLPVoucherDto & Record<string, any>,
     updatedBy: string,
   ): Promise<LPVoucher | null> {
     const voucher = await this.lpVoucherRepository.findOne({ where: { id } });
@@ -467,8 +474,11 @@ remark : voucher.remark || null,
 
     const originalVoucher = { ...voucher };
 
-    const grn = await this.grnRepository.findOne({ where: { grnNo: updatedData.grnNo } });
-    if (grn) updatedData.grnNo = grn;
+    if (updatedData.grnNo) {
+      const grn = await this.grnRepository.findOne({ where: { grnNo: updatedData.grnNo as string } });
+      if (grn) voucher.grnNo = grn;
+      delete updatedData.grnNo;
+    }
 
     Object.assign(voucher, updatedData);
     const updatedVoucher = await this.lpVoucherRepository.save(voucher);
@@ -510,7 +520,7 @@ remark : voucher.remark || null,
     return `LV-${formattedDate}`;
   }
 
-  public async deleteMultipleLPVoucher(ids: string[]): Promise<{ message: string }> {
+  public async deleteMultipleLPVoucher(ids: string[]): Promise<BulkDeleteLPVoucherResultDto> {
     if (!ids.length) return { message: 'No IDs provided' };
 
     const [lpVouchers, relatedDocuments] = await Promise.all([
