@@ -21,6 +21,11 @@ import { ControllerLogger } from "../utils/controllerLogger";
 import { validate } from "../middleware/validate";
 import { createVendorCategorySchema, deleteVendorCategorySchema, getAllVendorCategoriesSchema, getVendorCategoryByIdSchema, updateVendorCategorySchema } from "../schemas/vendorCategory.schema";
 import { PaginationOptions } from "../utils/pagination";
+import {
+  CreateVendorCategoryDto,
+  UpdateVendorCategoryDto,
+  BulkDeleteVendorCategoryDto,
+} from "../dtos/vendorCategory.dto";
 
 
 @controller("/vendor-categories", deserializeUser, requireUser)
@@ -34,7 +39,7 @@ export class VendorCategoryController {
 
   @httpPost("/", validate(createVendorCategorySchema))
   public async createCategory(
-    @request() req: Request,
+    @request() req: Request<{}, {}, CreateVendorCategoryDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -155,12 +160,12 @@ export class VendorCategoryController {
   }
 
   @httpPatch("/:id", validate(updateVendorCategorySchema))
-public async updateCategory(
-  @requestParam("id") id: string,
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
+  public async updateCategory(
+    @requestParam("id") id: string,
+    @request() req: Request<{ id: string }, {}, UpdateVendorCategoryDto>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
   try {
     const updateBy = res.locals.user?.id; // Ensure you extract the user ID from the locals
 
@@ -232,18 +237,16 @@ public async updateCategory(
       next(err);
     }
   }
-    @httpDelete("/delete/multiple")
-public async softDeleteMultipleVendorCategory(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
+  @httpDelete("/delete/multiple")
+  public async softDeleteMultipleVendorCategory(
+    @request() req: Request<{}, {}, BulkDeleteVendorCategoryDto>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const { ids } = req.body;
 
-    const {  ids } = req.body;
-    const resolvedIds =  ids;
-
-    if (!Array.isArray(resolvedIds) || resolvedIds.length === 0) {
+    if (!Array.isArray(ids) || ids.length === 0) {
       ControllerLogger.logError(
         "VendorCategory bulk deletion",
         new AppError(400, "categoryIds must be a non-empty array"),
@@ -253,11 +256,11 @@ public async softDeleteMultipleVendorCategory(
       return next(new AppError(400, "categoryIds must be a non-empty array"));
     }
 
-    const result = await this.vendorCategoryService.softDeleteCategory(resolvedIds);
+    const result = await this.vendorCategoryService.softDeleteCategory(ids);
 
     ControllerLogger.logSuccess(
       "VendorCategory bulk soft deleted",
-      resolvedIds.join(","),
+      ids.join(","),
       req,
       res
     );

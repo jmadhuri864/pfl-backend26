@@ -19,6 +19,14 @@ import AppError from '../utils/appError';
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
+import {
+  CreatePackingMaterialDto,
+  UpdatePackingMaterialDto,
+  PackingMaterialListResponseDto,
+  PackingMaterialDetailDto,
+  PackingMaterialPartialDto,
+  BulkDeletePackingMaterialDto,
+} from '../dtos/packingMaterial.dto';
 
 @controller('/packingMaterial', deserializeUser, requireUser)
 export class PackingMaterialController {
@@ -36,7 +44,7 @@ export class PackingMaterialController {
   ) {
     try {
       logger.info('Fetching all packing materials');
-      const { page, limit, search, sort, inwardId } = req.query;
+      const { page, limit, search, sort } = req.query;
 
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
@@ -46,7 +54,7 @@ export class PackingMaterialController {
         sort: (sort as string) || undefined, // Adjust this line to match your sorting requirements
         search: (search as string) || '',
       };
-      const materials = await this.packingMaterialService.getAll(queryOptions);
+      const materials: PackingMaterialListResponseDto = await this.packingMaterialService.getAll(queryOptions);
 
       ControllerLogger.logList("Packing Material", req, res);
 
@@ -75,13 +83,13 @@ export class PackingMaterialController {
 
   @httpPost('/')
   public async createPackingMaterial(
-    @request() req: Request,
+    @request() req: Request<{}, {}, CreatePackingMaterialDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       logger.info('getting data');
-      const data = req.body;
+      const data: CreatePackingMaterialDto = req.body;
       const materials = await this.packingMaterialService.createPackingMaterial(
         data,
       );
@@ -124,7 +132,7 @@ export class PackingMaterialController {
   ) {
     try {
       logger.info('Fetching material details by ID', { materialId: id });
-      const material = await this.packingMaterialService.getMaterialById(id);
+      const material: PackingMaterialDetailDto = await this.packingMaterialService.getMaterialById(id);
       if (!material) {
         logger.warn('Material not found', { farmerId: id });
         return next(new AppError(404, 'Material not found'));
@@ -159,14 +167,14 @@ export class PackingMaterialController {
   @httpPatch('/:id')
   public async updatePackingMaterial(
     @requestParam('id') id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdatePackingMaterialDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      logger.info('Updating packing Material', { id, body: req.body });
+      logger.info('Updating packing Material', { id });
       const updatedBy = res.locals.user.id;
-      const updatedData = req.body;
+      const updatedData: UpdatePackingMaterialDto = req.body;
 
       const packingMaterial =
         await this.packingMaterialService.updatePackingMaterial(
@@ -214,7 +222,7 @@ export class PackingMaterialController {
     @next() next: NextFunction,
   ) {
     try {
-      const packingMaterial = await this.packingMaterialService.getAllPartial();
+      const packingMaterial = await this.packingMaterialService.getAllPartial() as PackingMaterialPartialDto[];
 
       if (!packingMaterial || packingMaterial.length === 0) {
         logger.warn('Packing Material not found');
@@ -246,12 +254,12 @@ export class PackingMaterialController {
 
   @httpDelete('/delete/multiple')
   public async deleteMultiplePackingMaterials(
-    @request() req: Request<{}, {}, { ids: string[] }>,
+    @request() req: Request<{}, {}, BulkDeletePackingMaterialDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      const { ids } = req.body;
+      const { ids }: BulkDeletePackingMaterialDto = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return next(new AppError(400, 'An array of packing material IDs is required'));
       }

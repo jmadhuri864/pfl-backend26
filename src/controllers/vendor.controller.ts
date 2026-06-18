@@ -8,7 +8,6 @@ import {
   httpDelete,
   request,
   response,
-  requestBody,
   requestParam,
   next,
   httpPatch,
@@ -17,17 +16,19 @@ import {
 import { inject } from "inversify";
 import { TYPES } from "../types";
 import AppError from "../utils/appError";
-import { UpdateVendor } from "../schemas/vendor.schema";
-
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
-//import { upload, uploadNone } from "../middleware/multerConfig";
-
 import { PaginationOptions } from "../utils/pagination";
-//import { uploads } from "../middleware/muterConfigCSV";
 import { Status } from "../utils/status.enum";
 import { upload } from "../middleware/upload.middleware";
 import { uploadSingle } from "../middleware/uploadsingle.middleware";
+import { s3 } from "../middleware/spaces.config";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorFilterDto,
+} from "../dtos/vendor.dto";
 
 
 @controller("/vendors", deserializeUser, requireUser)
@@ -177,7 +178,6 @@ public async getAllVendors(
               };
     //const subcategoryId = req.query.search as string; // Extract subcategoryId from query
     const vendors = await this.vendorService.getAllVendors1(queryOptions); // Correct method name
-    console .log(vendors);
 
     // Send notification for vendor list access
     // const userId = res.locals.user?.id;
@@ -281,14 +281,13 @@ public async getVendorsWithId(
 
   //TODO: Create vendor
   public async createVendor(
-    @request() req: Request,
+    @request() req: Request<{}, {}, CreateVendorDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
-    //console.log("Request body:", req.body); // Log the body
     try {
       
-      const vendorData = req.body;
+      const vendorData: CreateVendorDto & Record<string, any> = req.body;
       vendorData.createdBy = res.locals.user.id;
       vendorData.registeredDate = new Date();
 
@@ -327,18 +326,17 @@ public async getVendorsWithId(
     
 
   if (files.cancelledChequeCopy) {
-      vendorData.vendorBankDetails.cancelledChequeCopy = (files.cancelledChequeCopy[0] as any).location;
+    if (!vendorData.vendorBankDetails) vendorData.vendorBankDetails = {};
+    (vendorData.vendorBankDetails as Record<string, any>).cancelledChequeCopy = (files.cancelledChequeCopy[0] as any).location;
   }
     if (vendorData.dateOfIncorporation === 'null' || vendorData.dateOfIncorporation === '') {
       vendorData.dateOfIncorporation = null;
     }
-      //console.log("vendor sale info",vendorData);
       const newVendor = await this.vendorService.createVendor(vendorData);
       if( !newVendor){
         return next(new AppError(400, "Vendor not created"));
       }
       
-      //console.log(newVendor)
       ControllerLogger.logSuccess('Vendor created', newVendor.id, req, res);
 
       // Send notification for vendor creation
@@ -410,14 +408,14 @@ public async getVendorsWithId(
   )
   public async updateVendor(
     @requestParam("id") id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdateVendorDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       const updateBy = res.locals.user.id;
 
-      const vendorUpdateData: any = { ...req.body };
+      const vendorUpdateData: UpdateVendorDto & Record<string, any> = { ...req.body };
 
       // Parse JSON strings for nested objects (sent as strings in multipart/form-data)
       const jsonFields = [
@@ -648,8 +646,6 @@ public async getVendorsWithId(
 public async filterVendors(req: Request, res: Response, next: NextFunction) {
     try {
 
-      
-
       const {
         classification,
         category,
@@ -662,7 +658,7 @@ public async filterVendors(req: Request, res: Response, next: NextFunction) {
         limit,
       } = req.query;
 
-      const filters = {
+      const filters: VendorFilterDto = {
         classification: classification as string,
         categoryId: category as string,
         subcategoryId: subcategory as string,

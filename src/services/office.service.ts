@@ -8,6 +8,15 @@ import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { In } from "typeorm";
 import { CacheService } from "./cache.service";
+import {
+  CreateOfficeDto,
+  UpdateOfficeDto,
+  OfficeDetailDto,
+  OfficeListResponseDto,
+  OfficeFilterItemDto,
+  OfficeSearchItemDto,
+  BulkDeleteOfficeResultDto,
+} from "../dtos/office.dto";
 
 @injectable()
 export class OfficesService {
@@ -39,30 +48,28 @@ export class OfficesService {
     }
     await Promise.all(tasks);
   }
-  async createOffice(officeData: any): Promise<any> {
+
+  async createOffice(officeData: CreateOfficeDto & Record<string, any>): Promise<OfficesData> {
     const { address, capacity, ...data } = officeData;
 
-    // Create the address
-    const newAddress = await this.addressService.create(address);
+    const newAddress = await this.addressService.create(address as any);
 
-    // Create the office with provided data
     const office = this.officesRepository.create({
       ...data,
       address: newAddress,
       capacity,
-    });
+    } as any) as unknown as OfficesData;
 
-    const saved = await this.officesRepository.save(office);
+    const saved = await this.officesRepository.save(office) as unknown as OfficesData;
     await this.invalidateCache();
     return saved;
   }
 
   public async updateOffice(
     id: string,
-    officeData: any,
-    updatedBy: string
+    officeData: UpdateOfficeDto & Record<string, any>,
+    updatedBy: string,
   ): Promise<OfficesData | null> {
-    // Step 1: Find the office with relations to its address
     const office = await this.officesRepository.findOne({
       where: { id },
       relations: ['address'],
@@ -70,61 +77,41 @@ export class OfficesService {
 
     if (!office) return null;
 
-    // Step 2: Prepare the previous data for audit logging
-    const previousOfficeData = { ...office }; // Copy the current state of the office
-    
-    // Log the changes for the office entity
-    await this.auditLogService.logChange(
-      'Office',
-      id,
-      previousOfficeData,
-      officeData,
-      updatedBy
-    );
+    const previousOfficeData = { ...office };
 
-    // Step 3: If address is provided in the update, update it
+    await this.auditLogService.logChange('Office', id, previousOfficeData, officeData, updatedBy);
+
     if (officeData.address) {
-      // Log the previous address data before updating
       const previousAddressData = { ...office.address };
 
-      // Update the address using the address service
-      const updatedAddress = await this.addressService.update(office.address.id, officeData.address);
-      
+      const updatedAddress = await this.addressService.update(office.address.id, officeData.address as any);
 
       if (!updatedAddress) {
         throw new Error("Failed to update address");
       }
 
-      // Log the changes to the address
-      await this.auditLogService.logChange(
-        'Address',
-        office.address.id,
-        previousAddressData,
-        officeData.address,
-        updatedBy
-      );
+      await this.auditLogService.logChange('Address', office.address.id, previousAddressData, officeData.address, updatedBy);
 
-      // Update the office's address field with the new address
       office.address = updatedAddress;
     }
 
-    // Step 4: Update the office fields with the new office data
     Object.assign(office, officeData);
 
-    // Step 5: Save the updated office
     const saved = await this.officesRepository.save(office);
     await this.invalidateCache(id);
     return saved;
   }
-async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
-  const result = await this.officesRepository.softDelete({
-    id: In(userIds),
-    type: officeType,
-  });
-  await this.invalidateCache();
-  return result;
-}
-  async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<any> {
+
+  async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE): Promise<BulkDeleteOfficeResultDto> {
+    const result = await this.officesRepository.softDelete({
+      id: In(userIds),
+      type: officeType,
+    });
+    await this.invalidateCache();
+    return result;
+  }
+
+  async getOfficeByIdAndType(id: string, officeType: OFFICE_TYPE): Promise<OfficeDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:idtype:${id}:${officeType}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -154,8 +141,9 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
       .getOne();
 
     if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+    return result as unknown as OfficeDetailDto | null;
   }
+
   async getOfficeById(id: string): Promise<OfficesData | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -169,23 +157,20 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
     return result;
   }
 
-
-
-  async getOfficesByType(officeType: OFFICE_TYPE): Promise<OfficesData[]> {
+  async getOfficesByType(officeType: OFFICE_TYPE): Promise<OfficeSearchItemDto[]> {
     const cacheKey = `${this.CACHE_PREFIX}:type:${officeType}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-   
     const result = await this.officesRepository.find({
       where: { type: officeType },
       relations: ['address'],
     });
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+    return result as unknown as OfficeSearchItemDto[];
   }
 
-  async getAllByFilterDataOffice(): Promise<Pick<OfficesData, 'id' | 'name' | 'type'>[]> {
+  async getAllByFilterDataOffice(): Promise<OfficeFilterItemDto[]> {
     const cacheKey = `${this.CACHE_PREFIX}:filter`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -194,15 +179,15 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
       select: ['id', 'name', 'type'],
     });
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+    return result as OfficeFilterItemDto[];
   }
-    
-  async getOfficesByType1(officeType: OFFICE_TYPE, queryOptions: PaginationOptions): Promise<any> {
+
+  async getOfficesByType1(officeType: OFFICE_TYPE, queryOptions: PaginationOptions): Promise<OfficeListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:list:${officeType}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    let queryBuilder = this.officesRepository
+    const queryBuilder = this.officesRepository
       .createQueryBuilder('offices')
       .leftJoin('offices.address', 'address')
       .select([
@@ -226,9 +211,10 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
 
     const result = await buildQuery(queryBuilder, queryOptions, 'offices');
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+    return result as unknown as OfficeListResponseDto;
   }
-  async getAllOffice(): Promise<OfficesData[]> {
+
+  async getAllOffice(): Promise<OfficeSearchItemDto[]> {
     const cacheKey = `${this.CACHE_PREFIX}:all`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -237,36 +223,27 @@ async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE) {
       relations: ['address'],
     });
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+    return result as unknown as OfficeSearchItemDto[];
   }
+
   async deleteOffice(id: string, officeType: OFFICE_TYPE): Promise<boolean> {
-    // Find the office by ID and type
     const office = await this.officesRepository.findOne({
       where: { id, type: officeType },
     });
-  
+
     if (!office) {
       throw new AppError(404, `Office with ID ${id} and type ${officeType} not found`);
     }
-  
-    // Calculate the date 6 months ahead
+
     const now = new Date();
     const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-  
-    // Log the scheduled deletion
-    
-  
-    // Set the deletionScheduledAt field for the office
+    sixMonthsFromNow.setMonth(now.getMonth() + 6);
+    sixMonthsFromNow.setHours(0, 0, 0, 0);
+
     office.deletionScheduledAt = sixMonthsFromNow;
-  
-    // Save the updated office with the scheduled deletion date
+
     await this.officesRepository.save(office);
-  
-    
     await this.invalidateCache(id);
     return true;
   }
-  
 }

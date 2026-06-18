@@ -4,7 +4,6 @@ import {
   httpDelete,
   httpGet,
   httpPost,
-  httpPut,
   requestBody,
   requestParam,
   request,
@@ -15,15 +14,21 @@ import {
 
 import { TYPES } from "../types";
 import { Request, Response, NextFunction } from "express";
-import { UOM } from "../entities/uom.entity";
 import AppError from "../utils/appError";
 import { UOMService } from "../services/UOM.service";
 import { NotificationService } from "../services/notification.service";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
-
 import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
+import {
+  CreateUOMDto,
+  UpdateUOMDto,
+  UOMListResponseDto,
+  UOMPartialDto,
+  UOMDetailDto,
+  BulkDeleteUOMDto,
+} from "../dtos/uom.dto";
 
 
 
@@ -52,7 +57,7 @@ export class UOMController {
         sort: sort as string || undefined, // Adjust this line to match your sorting requirements
         search: search as string|| '',
       };
-      const uoms = await this.uomService.getAll(queryOptions);
+      const uoms: UOMListResponseDto = await this.uomService.getAll(queryOptions);
       if (!uoms.data.length) {
         ControllerLogger.logError('UOM list retrieval', new AppError(404, "No UOMs found"), req, res);
         return next(new AppError(404, "No UOMs found"));
@@ -88,7 +93,7 @@ export class UOMController {
   @request() req: Request,
   @next() next: NextFunction) {
     try {
-      const uoms = await this.uomService.getAllPartial();
+      const uoms: UOMPartialDto[] = await this.uomService.getAllPartial();
       if (!uoms.length) {
         ControllerLogger.logError('UOM partial list retrieval', new AppError(404, "No UOMs found"), req, res);
         return next(new AppError(404, "No UOMs found"));
@@ -112,7 +117,7 @@ export class UOMController {
     @next() next: NextFunction
   ) {
     try {
-      const uom = await this.uomService.getById(id);
+      const uom: UOMDetailDto | null = await this.uomService.getById(id);
       if (!uom) {
         ControllerLogger.logError('UOM view', new AppError(404, "UOM not found"), req, res);
         return next(new AppError(404, "UOM not found"));
@@ -141,7 +146,7 @@ export class UOMController {
 
   @httpPost("/")
   public async create(
-    @requestBody() uomData: Partial<UOM>,
+    @requestBody() uomData: CreateUOMDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -173,7 +178,7 @@ export class UOMController {
   @httpPatch("/:id",captureUser)
   public async update(
     @requestParam("id") id: string,
-    @requestBody() uomData: Partial<UOM>,
+    @requestBody() uomData: UpdateUOMDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -250,13 +255,13 @@ export class UOMController {
 
   @httpDelete("/multiple-delete/delete")
   public async multipleDelete(
-    @requestBody() body: { ids: string[] },
+    @requestBody() body: BulkDeleteUOMDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      const { ids } = body;
+      const { ids }: BulkDeleteUOMDto = body;
 
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         ControllerLogger.logError('UOM multiple deletion', new AppError(400, "Please provide an array of IDs"), req, res);

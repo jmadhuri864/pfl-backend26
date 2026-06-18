@@ -22,6 +22,18 @@ import { PaginationOptions } from '../utils/pagination';
 import { checkPermission } from '../middleware/checkPermission';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
+import {
+  CreateRfpaDto,
+  UpdateRfpaDto,
+  RfpaViewResponseDto,
+  RfpaUpdateFormDto,
+  RfpaListResponseDto,
+  RfpaNumbersResponseDto,
+  RfpaRecycleBinResponseDto,
+  BulkDeleteRfpaDto,
+  BulkDeleteRfpaResultDto,
+  RfpaDocumentViewResponseDto,
+} from '../dtos/rfpa.dto';
 
 @controller('/rfpa', deserializeUser, requireUser)
 export class RfpaController {
@@ -111,7 +123,7 @@ export class RfpaController {
   ): Promise<void> {
     try {
       logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-      const rfpa = await this.rfpaService.getRFQByIdByView(rfpaId);
+      const rfpa: RfpaViewResponseDto | null = await this.rfpaService.getRFQByIdByView(rfpaId);
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
@@ -185,10 +197,7 @@ export class RfpaController {
         search: (search as string) || '',
       };
 
-      const rfpas = await this.rfpaService.getRecycleBinRfpa(
-        queryOptions,
-        userId,
-      );
+      const rfpas: RfpaRecycleBinResponseDto = await this.rfpaService.getRecycleBinRfpa(queryOptions, userId);
 
       if (!rfpas || rfpas.data.length === 0) {
         logger.warn('No RFPAS found for this user.');
@@ -224,7 +233,7 @@ export class RfpaController {
   ): Promise<void> {
     try {
       logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-      const rfpa = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
+      const rfpa: RfpaUpdateFormDto | null = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
 
       if (!rfpa) {
         logger.warn(`RFPA with ID ${rfpaId} not found`);
@@ -253,7 +262,7 @@ export class RfpaController {
   //TODO: Create RFPA
   @httpPost('/', checkPermission('rfpa', 'create'))
   public async createRfpa(
-    @requestBody() rfpaData: any,
+    @requestBody() rfpaData: CreateRfpaDto & Record<string, any>,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
@@ -377,7 +386,7 @@ export class RfpaController {
   @httpPatch('/:id', checkPermission('rfpa', 'edit'))
   public async updateRfpa(
     @requestParam('id') rfpaId: string,
-    @requestBody() rfpaData: any,
+    @requestBody() rfpaData: UpdateRfpaDto & Record<string, any>,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,
@@ -499,7 +508,7 @@ export class RfpaController {
             ? false
             : undefined;
       const userId = res.locals.user?.id;
-      const rfpas = await this.rfpaService.getAllRFPANumbers(
+      const rfpas: RfpaNumbersResponseDto = await this.rfpaService.getAllRFPANumbers(
         { ...req.query, isDealSlipCreated },
         userId,
       );
@@ -797,7 +806,7 @@ export class RfpaController {
         search: (search as string) || '',
       };
 
-      const rfpas = await this.rfpaService.getAllRfpa(queryOptions, userId);
+      const rfpas: RfpaListResponseDto = await this.rfpaService.getAllRfpa(queryOptions, userId);
 
       if (!rfpas || rfpas.data.length === 0) {
         logger.warn('No RFPAS found for this user.');
@@ -845,7 +854,7 @@ export class RfpaController {
       logger.info(`Fetching RFPA with Document ID`);
 
       const userId = res.locals.user.id;
-      const rfpa = await this.rfpaService.getRfpaByIdForView(docid, userId);
+      const rfpa: RfpaDocumentViewResponseDto | null = await this.rfpaService.getRfpaByIdForView(docid, userId);
       if (!rfpa) {
         ControllerLogger.logError(
           'RFPA view',
@@ -920,7 +929,7 @@ export class RfpaController {
   ): Promise<void> {
     try {
       logger.info('Deleting multiple RFPAs ......', req.body);
-      const { ids } = req.body;
+      const { ids }: BulkDeleteRfpaDto = req.body;
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         logger.warn('RFPA IDs not provided or invalid');
         ControllerLogger.logError(
@@ -931,7 +940,7 @@ export class RfpaController {
         );
         return next(new AppError(400, 'An array of RFPA IDs is required'));
       }
-      const result = await this.rfpaService.deleteMultipleRFPA(ids);
+      const result: BulkDeleteRfpaResultDto = await this.rfpaService.deleteMultipleRFPA(ids);
 
       ControllerLogger.logSuccess(
         'RFPA multiple deletion',

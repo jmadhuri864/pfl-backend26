@@ -20,6 +20,17 @@ import { ApprovalFlowService } from "./approvalFlow.service";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { ApprovalFlowRepository } from "../repositories/approvalFlow.repository";
 import { CacheService } from "./cache.service";
+import {
+  CreateDealSlipDto,
+  UpdateDealSlipDto,
+  DealSlipDetailDto,
+  DealSlipListResponseDto,
+  DealSlipRecycleBinResponseDto,
+  DealSlipDocumentViewDto,
+  DealSlipNumbersResponseDto,
+  ApproveDealSlipResultDto,
+  BulkDeleteDealSlipResultDto,
+} from "../dtos/dealSlip.dto";
 
 const CACHE_PREFIX = 'dealslip';
 const CACHE_TTL = 180;
@@ -125,7 +136,7 @@ export class DealSlipService {
 
   
 
-   async findDealSlipByIdforView(id: string): Promise<any> {
+  async findDealSlipByIdforView(id: string): Promise<DealSlipDetailDto | null> {
       const key = `${CACHE_PREFIX}:view:${id}`;
       const cached = await this.cacheService.get<any>(key);
       if (cached) return cached;
@@ -156,7 +167,7 @@ export class DealSlipService {
       return response;
   }
 
-  async findDealSlipByIdforUpdate(id: string): Promise<any> {
+  async findDealSlipByIdforUpdate(id: string): Promise<DealSlipDetailDto | null> {
       const key = `${CACHE_PREFIX}:update:${id}`;
       const cached = await this.cacheService.get<any>(key);
       if (cached) return cached;
@@ -187,7 +198,7 @@ export class DealSlipService {
       return response;
   }
     
-    async findDealSlipById(id: string): Promise<any> {
+  async findDealSlipById(id: string): Promise<DealSlipDetailDto | null> {
       const key = `${CACHE_PREFIX}:id:${id}`;
       const cached = await this.cacheService.get<any>(key);
       if (cached) return cached;
@@ -219,7 +230,7 @@ export class DealSlipService {
   }
   
 
-      async createDealSlip(dealSlipData: any): Promise<any> {
+  async createDealSlip(dealSlipData: CreateDealSlipDto & Record<string, any>): Promise<DealSlip> {
 
       const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(dealSlipData.requestedBy, DocDefEnum.PROCUREMENT);
 
@@ -254,7 +265,7 @@ export class DealSlipService {
               const dealSlip = queryRunner.manager.create(this.dealSlipRepository.target, {
                   ...dealSlipData,
                   rfpa
-              });
+              } as any) as unknown as DealSlip;
 
               const savedDealSlip= await queryRunner.manager.save(dealSlip);
 
@@ -310,7 +321,7 @@ export class DealSlipService {
   }
 
   
-public async approveDealSlip(dealSlipId: string, userId: string, data: { approvalStatus: string, approvalNote?: string }) {
+  public async approveDealSlip(dealSlipId: string, userId: string, data: { approvalStatus: string; approvalNote?: string }): Promise<ApproveDealSlipResultDto> {
   const dealSlip = await this.dealSlipRepository.findOne({ where: { id: dealSlipId } });
 
   if (!dealSlip) {
@@ -328,7 +339,7 @@ public async approveDealSlip(dealSlipId: string, userId: string, data: { approva
   await this.dealSlipRepository.save(dealSlip);
   await this.invalidateDealSlipCache(dealSlipId);
 
-  const user = await this.userService.findUserById(userId);
+  const user = await this.userService.findUserById(userId) as any;
   if (!user) throw new Error('User not found');
 
   return {
@@ -342,7 +353,7 @@ public async approveDealSlip(dealSlipId: string, userId: string, data: { approva
   };
 }
 
-    public async updateDealSlip(id: string, dealSlipData: DeepPartial<DealSlip>, updatedBy: string): Promise<DealSlip | null> {
+    public async updateDealSlip(id: string, dealSlipData: UpdateDealSlipDto & Record<string, any>, updatedBy: string): Promise<DealSlip | null> {
       const existingDealSlip = await this.dealSlipRepository.findOneBy({ id });
       if (!existingDealSlip) {
         return null;
@@ -379,7 +390,7 @@ public async getAllDealSlipsNo(
     search?: string;
   },
   loginUserId: string
-): Promise<any> {
+): Promise<DealSlipNumbersResponseDto> {
   const key = `${CACHE_PREFIX}:nos:${loginUserId}:${JSON.stringify(filter)}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
@@ -508,10 +519,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
   return true;
 }
 
- public async getAllDealSlips(queryOptions: PaginationOptions, userId: string): Promise<{
-  data: any[];
-  meta: { total: number; page: number; pages: number };
-}> {
+ public async getAllDealSlips(queryOptions: PaginationOptions, userId: string): Promise<DealSlipListResponseDto> {
   const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
@@ -600,10 +608,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
   return listResponse;
 }
 
-public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: string): Promise<{
-  data: any[];
-  meta: { total: number; page: number; pages: number };
-}> {
+public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: string): Promise<DealSlipRecycleBinResponseDto> {
   const recycleKey = `${CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
   const recycleCached = await this.cacheService.get<any>(recycleKey);
   if (recycleCached) return recycleCached;
@@ -694,7 +699,7 @@ public async getRecycleBinDealSlips(queryOptions: PaginationOptions, userId: str
   await this.cacheService.set(recycleKey, recycleResponse, CACHE_TTL);
   return recycleResponse;
 }
-public async getDealSlipByIdForView(docid: string, userId: string): Promise<any> {
+public async getDealSlipByIdForView(docid: string, userId: string): Promise<DealSlipDocumentViewDto | null> {
     const key = `${CACHE_PREFIX}:docview:${docid}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -790,7 +795,7 @@ public async getDealSlipByIdForView(docid: string, userId: string): Promise<any>
   return filterResult;
 }
 
-public async deleteMultipleDealSlips(ids: string[]): Promise<any> {
+public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipResultDto> {
   if (!ids.length) return { message: 'No IDs provided' };
 
   const [dealSlips, relatedDocuments] = await Promise.all([

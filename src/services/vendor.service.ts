@@ -5,7 +5,6 @@ import { VendorRepository } from "../repositories/vendor.repository";
 import { TYPES } from "../types";
 import AppError from "../utils/appError";
 import * as XLSX from "xlsx";
-import { UpdateVendor } from "../schemas/vendor.schema";
 import { AddressService } from "./address.service";
 import { VendorCategoryService } from "./vendorCategory.service";
 import { VendorSubcategoryService } from "./vendorSubcategory.service";
@@ -34,6 +33,15 @@ import { PackingMaterial } from "../entities/packingMaterial.entity";
 import { formatAddress } from "../utils/addressFormate.utils";
 import { CacheService } from "./cache.service";
 import { createHash } from "crypto";
+import {
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorListResponseDto,
+  VendorViewResponseDto,
+  VendorUpdateFormDto,
+  VendorDropdownDto,
+  VendorFilterDto,
+} from "../dtos/vendor.dto";
 
 const CACHE_PREFIX = "vendor";
 const CACHE_TTL = 180;
@@ -89,20 +97,17 @@ export class VendorService {
     }
     await Promise.all(tasks);
   }
-async createVendor(vendorDto: any): Promise<any> {
+async createVendor(vendorDto: CreateVendorDto & Record<string, any>): Promise<Vendor> {
     // Create the new Vendor entity
-    console.log("in the service", vendorDto);
 
     const user = await this.userRepository.findOneBy({id: vendorDto.createdBy});
 
     // Always set status to draft - must go through submit → pending → approve flow
-    vendorDto.status = 'draft';
+    vendorDto.status = Status.DRAFT;
     if(vendorDto.listOfAllProducts && Array.isArray(vendorDto.listOfAllProducts)){
       const productIds = vendorDto.listOfAllProducts.map((p: any) => p.id || p);
-      console.log("Product IDs to find:", productIds);
       
       const foundProducts = await this.productRepository.findBy({id: In(productIds)});
-      console.log("Found products:", foundProducts.length);
       
       vendorDto.listOfAllProducts = foundProducts;
     }
@@ -135,7 +140,7 @@ async createVendor(vendorDto: any): Promise<any> {
     const prefix = `VENDOR${year}`;
 
     // Retry loop to handle race conditions where two requests generate the same code simultaneously
-    let saved;
+    let saved: Vendor | undefined;
     let attempts = 0;
     while (true) {
       attempts++;
@@ -157,8 +162,7 @@ async createVendor(vendorDto: any): Promise<any> {
 
       const vendorCode = `${prefix}${String(nextNumber).padStart(4, '0')}`;
       vendorDto.vendorCode = vendorCode;
-      const newVendor = this.vendorRepository.create(vendorDto);
-      console.log("new vendor is", newVendor);
+      const newVendor = this.vendorRepository.create(vendorDto as any) as unknown as Vendor;
 
       try {
         saved = await this.vendorRepository.save(newVendor);
@@ -166,7 +170,6 @@ async createVendor(vendorDto: any): Promise<any> {
       } catch (err: any) {
         // Postgres unique violation code
         if (err?.driverError?.code === '23505' || err?.code === '23505') {
-          console.warn(`Vendor code ${vendorCode} collision, retrying... (attempt ${attempts})`);
           continue; // retry with next number
         }
         throw err; // unrelated error, rethrow
@@ -174,8 +177,9 @@ async createVendor(vendorDto: any): Promise<any> {
     }
 
     await this.invalidateVendorCache();
-    return saved;
+    return saved!;
   }
+
   async submitVendor(
     vendorId: string,
     fileUpdates: Record<string, string | null> = {},
@@ -186,7 +190,6 @@ async createVendor(vendorDto: any): Promise<any> {
       relations: ['officeAddress', 'ref1Address', 'ref2Address', 'vendorSaleInfo', 'vendorBankDetails'],
     });
     if (!vendor) throw new AppError(404, 'Vendor not found');
-    console.log(`[submitVendor] before save - id: ${vendorId}, current status: ${vendor.status}`);
 
     vendor.status = Status.PENDING;
 
@@ -250,7 +253,6 @@ async createVendor(vendorDto: any): Promise<any> {
 
     // Fresh fetch to ensure returned status reflects DB state
     const updated = await this.vendorRepository.findOne({ where: { id: vendorId } });
-    console.log(`[submitVendor] after save - id: ${vendorId}, new status: ${updated?.status}`);
     return updated!;
   }
 
@@ -323,7 +325,7 @@ async approveVendor(vendorId: string, approverId: string, status: Status) {
 
 //service
 
-async getVendorByIdforview(id: string): Promise<any> {
+async getVendorByIdforview(id: string): Promise<VendorViewResponseDto> {
   const key = `${CACHE_PREFIX}:view:${id}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
@@ -549,7 +551,7 @@ async getVendorByIdforview(id: string): Promise<any> {
 }
 
 
-async getVendorByIdforupdate(id: string): Promise<any> {
+async getVendorByIdforupdate(id: string): Promise<VendorUpdateFormDto> {
   const key = `${CACHE_PREFIX}:update:${id}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
@@ -684,7 +686,6 @@ async getVendorByIdforupdate(id: string): Promise<any> {
 }
 async createVendorWithExcel(fileUrl: string): Promise<any> {
   try {
-    console.log("in create vendor with Excel, fileUrl:", fileUrl);
     
     // First, download the file from DigitalOcean Spaces
     let fileBuffer: Buffer;
@@ -693,7 +694,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
       // Extract the key from the URL
       const urlParts = fileUrl.split('/');
       const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
-      console.log('Downloading file from Spaces with key:', key);
       
       // Download file from Spaces
       fileBuffer = await this.getExcelFromSpaces(key);
@@ -705,25 +705,21 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
     // Read the Excel file from buffer instead of file path
     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
     const sheetNames = workbook.SheetNames;
-    console.log("Sheet names found:", sheetNames);
 
     // const vendorRepository = AppDataSource.getRepository(Vendor);
 
     for (const sheetName of sheetNames) {
       const worksheet = workbook.Sheets[sheetName];
-      console.log("Processing sheet:", sheetName);
 
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
 
       if (jsonData.length < 2) {
-        console.warn("Sheet does not have enough rows:", sheetName);
         continue;
       }
 
       const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
         h ? String(h).trim() : `UNKNOWN`
       );
-      console.log("Headers found:", headers);
 
       const dataRows = jsonData.slice(1); // Skip header row
 
@@ -735,10 +731,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
           rowData[header] = rowUntyped[index];
         });
 
-        console.log("Mapped Row:", rowData);
-
         if (!rowData["Company Name"] || !rowData["Vendor Category"]) {
-          console.warn("Skipping incomplete row:", rowData);
           continue;
         }
 
@@ -748,7 +741,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
         let subCategoryEntity: any = null;
         
         const categoryName = rowData["Vendor Category"];
-        console.log("Category name:", categoryName);
         
         const subCategoryName = rowData["Vendor Subcategory"];
         const isCategoryPresent = await this.vendorCategoryRepository.findOne({
@@ -760,7 +752,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
             name: rowData["Vendor Category"],
           });
           const saveCategory = await this.vendorCategoryRepository.save(createNewCategory);
-          console.log("Created new category:", createNewCategory);
           categoryEntity = saveCategory;
 
           const createSubCategory = await this.vendorSubcategoryRepository.create({
@@ -772,7 +763,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 
         } else {
           categoryEntity = isCategoryPresent;
-          console.log("Existing category:", categoryEntity.name);
           
           const isSubCategoryPresent = await this.vendorSubcategoryRepository.findOne({
             where: { name: subCategoryName, category: { id: categoryEntity.id } },
@@ -787,7 +777,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
             subCategoryEntity = saveSubCategory;
           } else {
             subCategoryEntity = isSubCategoryPresent;
-            console.log("Existing subcategory:", subCategoryEntity.name);
           }
         }
 
@@ -819,7 +808,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
         
         // Handle Main Product lookup
         if (rowData["Main Product"]) {
-          console.log(`Looking up main product: ${rowData["Main Product"]}`);
           const mainProductName = rowData["Main Product"].trim();
           const mainProduct = await this.productRepository
             .createQueryBuilder('product')
@@ -828,16 +816,13 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
           
           if (mainProduct) {
             vendor.mainProduct = mainProduct;
-            console.log(`✅ Found main product: ${mainProduct.name} (ID: ${mainProduct.id})`);
           } else {
-            console.warn(`⚠️  Main product not found: ${mainProductName}`);
             // Continue without setting mainProduct - it's nullable
           }
         }
         
         // Handle List of All Products (comma-separated string)
         if (rowData["List Of All Products"]) {
-          console.log(`Looking up products list: ${rowData["List Of All Products"]}`);
           const productNames = rowData["List Of All Products"].split(',').map((name: string) => name.trim());
           const products = [];
           
@@ -850,9 +835,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
               
               if (product) {
                 products.push(product);
-                console.log(`✅ Found product: ${product.name} (ID: ${product.id})`);
               } else {
-                console.warn(`⚠️  Product not found in list: ${productName}`);
               }
             }
           }
@@ -862,7 +845,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
         
         // Handle createdBy field if provided in Excel
         if (rowData['Created By']) {
-          console.log(`Looking up user for createdBy: ${rowData['Created By']}`);
           
           // Find user by name (case-insensitive search)
           const createdByName = rowData['Created By'].trim();
@@ -873,9 +855,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
           
           if (user) {
             vendor.createdBy = user;
-            console.log(`✅ Found user: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
           } else {
-            console.warn(`⚠️  User not found for createdBy: ${createdByName}`);
             // Continue without setting createdBy - it's nullable
           }
         }
@@ -981,10 +961,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
         vendor.ref2Address = ref2Address;
 
       //  vendor.references = [ref1, ref2];
-
-        console.log("Saving vendor:", vendor.companyName);
         const result = await this.vendorRepository.save(vendor);
-        console.log("Saved vendor with ID:", result.id);
       }
     }
 
@@ -992,13 +969,11 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
     await this.deleteFileFromSpaces(fileUrl);
     
   } catch (error) {
-    console.error('Error processing vendor upload:', error);
     
     // 🗑️ Still attempt to delete the file even if processing failed
     try {
       await this.deleteFileFromSpaces(fileUrl);
     } catch (deleteError) {
-      console.error('Error deleting file after failed processing:', deleteError);
     }
     
     throw error;
@@ -1012,7 +987,6 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
    */
   private async getExcelFromSpaces(key: string): Promise<Buffer> {
     try {
-      console.log('📂 Reading Excel file from Spaces:', key);
 
       const { GetObjectCommand } = await import('@aws-sdk/client-s3');
       const { s3 } = await import('../middleware/spaces.config');
@@ -1029,11 +1003,8 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 
       const bytes = await response.Body.transformToByteArray();
       const fileBuffer = Buffer.from(bytes);
-
-      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
       return fileBuffer;
     } catch (error) {
-      console.error('❌ Error reading Excel file from Spaces:', error);
       throw new Error(`Failed to read Excel file: ${key}`);
     }
   }
@@ -1057,9 +1028,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
       });
 
       await s3.send(deleteCommand);
-      console.log(`Successfully deleted file: ${key}`);
     } catch (error) {
-      console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
       // Don't throw error here to avoid breaking the main flow
     }
   }
@@ -1186,7 +1155,7 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 //   };
 // }
 
-public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
+public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorListResponseDto> {
   const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
   const key = `${CACHE_PREFIX}:list:${hash}`;
   const cached = await this.cacheService.get<any>(key);
@@ -1262,7 +1231,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
 
   
-  public async getAllVendor(subcategoryId?: string): Promise<any> {
+  public async getAllVendor(subcategoryId?: string): Promise<VendorDropdownDto[]> {
     const key = `${CACHE_PREFIX}:dropdown:${subcategoryId || 'all'}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -1444,11 +1413,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
   // async createVendor(vendorDto: any): Promise<any> {
   //   // Create the new Vendor entity
-  //   console.log("in the service", vendorDto);
   //   //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
   //   const newVendor = this.vendorRepository.create(vendorDto);
   //   // Save the new Vendor to the database
-  //   console.log("new vendor is", newVendor);
   //   return await this.vendorRepository.save(newVendor);
   // }
 
@@ -1486,7 +1453,6 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
   //         vendor.officeAddress.id,
   //         vendorData.address
   //       );
-  //       console.log("updated address is ", updatedAddress);
   //     }
   //   }
 
@@ -1512,10 +1478,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
 
   public async updateVendor(
     id: string,
-    vendorData: Partial<Vendor>,
+    vendorData: UpdateVendorDto & Record<string, any>,
     updateBy: string
   ): Promise<Vendor | null> {
-    console.log(vendorData)
     const vendor = await this.vendorRepository
       .createQueryBuilder("vendor")
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
@@ -1659,9 +1624,6 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
 
     // Log the scheduled deletion
-    console.log(
-      `Vendor with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`
-    );
 
     // Step 4: Set the deletionScheduledAt field and null out vendorCode
     // to free the unique constraint slot so the code is never re-blocked.
@@ -1669,8 +1631,6 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
     vendor.vendorCode = null as any;
     await this.vendorRepository.save(vendor);
     await this.invalidateVendorCache(id);
-
-    console.log(`Vendor with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
 
@@ -1907,7 +1867,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
       subcategory: vendor.subcategory?.name || null,
     }));
   }
-  async filterVendors(filters: any) {
+  async filterVendors(filters: VendorFilterDto) {
   const {
     classification,
     categoryId,

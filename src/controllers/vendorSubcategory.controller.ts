@@ -19,6 +19,11 @@ import { TYPES } from "../types";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { PaginationOptions } from "../utils/pagination";
+import {
+  CreateVendorSubcategoryDto,
+  UpdateVendorSubcategoryDto,
+  BulkDeleteVendorSubcategoryDto,
+} from "../dtos/vendorSubcategory.dto";
 
 @controller("/vendor-subcategories", deserializeUser, requireUser)
 export class VendorSubcategoryController {
@@ -30,11 +35,11 @@ export class VendorSubcategoryController {
   ) {}
 
   @httpPost("/")
-public async createSubcategory(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
+  public async createSubcategory(
+    @request() req: Request<{}, {}, CreateVendorSubcategoryDto>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
   try {
     const subcategoryData = req.body; // Ensure subcategoryData is extracted
 
@@ -123,7 +128,6 @@ public async getAllSubcategories1(
   try {
     
      const categoryId = req.query.search as string; // Get categoryId from query
-    // console.log("category id",categoryId)
     const subcategories = await this.subcategoryService.getSubcategories(categoryId);
     // if (!subcategories || subcategories.length === 0) {
     //   return next(new AppError(404, "Subcategories not found"));
@@ -176,15 +180,13 @@ public async getAllSubcategories1(
   @httpPatch("/:id")
   public async updateSubcategory(
     @requestParam("id") id: string,
-    @requestBody() body: { name?: string; category?: string },
+    @requestBody() body: UpdateVendorSubcategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      //console.log(id)
       const updateBy=res.locals.user.id;
-      //console.log(updateBy)
 
       const updatedSubcategory = await this.subcategoryService.update(id, body,updateBy);
       if (!updatedSubcategory) {
@@ -247,19 +249,16 @@ public async getAllSubcategories1(
       next(err);
     }
   }
-   @httpDelete("/delete/multiple")
-public async softDeleteMultipleVendorSubcategory(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    const {  ids } = req.body;
-    const subCategoryIds =  ids;
+  @httpDelete("/delete/multiple")
+  public async softDeleteMultipleVendorSubcategory(
+    @request() req: Request<{}, {}, BulkDeleteVendorSubcategoryDto>,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
+      const { ids } = req.body;
 
-    
-
-    if (!Array.isArray(subCategoryIds) || subCategoryIds.length === 0) {
+    if (!Array.isArray(ids) || ids.length === 0) {
       ControllerLogger.logError(
         "VendorSubcategory bulk deletion",
         new AppError(400, "subCategoryIds must be a non-empty array"),
@@ -269,11 +268,11 @@ public async softDeleteMultipleVendorSubcategory(
       return next(new AppError(400, "subCategoryIds must be a non-empty array"));
     }
 
-    const result = await this.subcategoryService.softDeleteSubcategory(subCategoryIds);
+    const result = await this.subcategoryService.softDeleteSubcategory(ids);
 
     ControllerLogger.logSuccess(
       "VendorSubcategory bulk soft deleted",
-      subCategoryIds.join(","),
+      ids.join(","),
       req,
       res
     );

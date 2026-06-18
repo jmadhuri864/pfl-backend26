@@ -23,7 +23,7 @@ import { Role } from '../entities/user.entity';
 import { User } from '../entities/user.entity';
 import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
-import { CreateBranchBodySchema } from '../schemas/branch.schema';
+import { CreateFarmerDto, FarmerListResponseDto, FarmerListItemDto, FarmerResponseDto, AddressDto, CropDto, LandHoldingStatusType, LandStatusType, UpdateFarmerDto } from '../dtos/farmer.dto';
 import { In } from 'typeorm';
 import { CacheService } from './cache.service';
 
@@ -87,9 +87,9 @@ export class FarmerService {
   //     // return await paginate(queryBuilder, options);
   //   }
 
-async getAllFarmers(options: PaginationOptions): Promise<any> {
+async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
   const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
-  const cached = await this.cacheService.get<any>(key);
+  const cached = await this.cacheService.get<FarmerListResponseDto>(key);
   if (cached) return cached;
 
   const queryBuilder = this.farmerRepository
@@ -113,13 +113,13 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
   const farmers = await buildQuery(queryBuilder, options, 'farmer');
 
-  const formatAddr = (addr: any) => addr
+  const formatAddr = (addr: any): string => addr
     ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
         .filter(Boolean).join(' ')
     : '';
 
-  const response = {
-    data: farmers.data.map((farmer: any) => {
+  const response: FarmerListResponseDto = {
+    data: farmers.data.map((farmer: any): FarmerListItemDto => {
       const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
       return {
         id: farmer.id,
@@ -145,6 +145,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
           : null,
         createdDate,
         createdTime,
+        
       };
     }),
     meta: farmers.meta,
@@ -246,9 +247,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     applyNumericFilter(queryBuilder, 'farmer', 'cultivationArea', cultivationArea);
 
     const [sql, params] = queryBuilder.getQueryAndParameters();
-    console.log('SQL:', sql);
-    console.log('Params:', params);
-
+    
    
     const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'farmer');
 
@@ -423,9 +422,9 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     return result;
   }
 
-  public async getfarmerbyidforview(id: string): Promise<any> {
+  public async getfarmerbyidforview(id: string): Promise<FarmerResponseDto | null> {
     const key = `${CACHE_PREFIX}:view:${id}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<FarmerResponseDto>(key);
     if (cached) return cached;
 
     const farmer = await this.farmerRepository
@@ -441,7 +440,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
         'farmer.howDoYouSell', 'farmer.landHoldingStatus', 'farmer.landStatus',
         'farmer.totalLandArea', 'farmer.cultivationArea', 'farmer.sevenTwelveNo',
         'farmer.sevenTwelveCopy', 'farmer.primaryMobileNo', 'farmer.secondaryMobileNo',
-        'farmer.email', 'farmer.farmerCode', 'farmer.createdAt',
+        'farmer.email', 'farmer.farmerCode', 'farmer.farmerPhoto', 'farmer.farmPhoto',
+        'farmer.createdAt',
         'createdBy.firstName', 'createdBy.lastName',
         'residensialAddress.id', 'residensialAddress.address1', 'residensialAddress.address2',
         'residensialAddress.location', 'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
@@ -457,27 +457,34 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     if (!farmer) return null;
 
     const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-    const mapAddress = (addr: any) => addr?.id ? {
-      id: addr.id, address1: addr.address1, address2: addr.address2,
-      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
+    const mapAddress = (addr: any): AddressDto | null => addr?.id ? {
+      id: addr.id,
+      address1: addr.address1,
+      address2: addr.address2,
+      location: addr.location,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
     } : null;
 
-    const result = {
+    const result: FarmerResponseDto = {
       id: farmer.id,
       farmerfName: farmer.farmerfName ?? null,
       farmermName: farmer.farmermName ?? null,
       farmerlName: farmer.farmerlName ?? null,
       gender: farmer.gender,
-      dob: farmer.dob,
+      dob: farmer.dob ? String(farmer.dob) : null,
       idProofNo: farmer.idProofNo,
       idProofCopy: farmer.idProofCopy,
       howDoYouSell: farmer.howDoYouSell,
-      landHoldingStatus: farmer.landHoldingStatus,
-      landStatus: farmer.landStatus,
+      landHoldingStatus: farmer.landHoldingStatus as LandHoldingStatusType | null,
+      landStatus: farmer.landStatus as LandStatusType | null,
       totalLandArea: farmer.totalLandArea,
       cultivationArea: farmer.cultivationArea,
       sevenTwelveNo: farmer.sevenTwelveNo,
       sevenTwelveCopy: farmer.sevenTwelveCopy,
+      farmerPhoto: farmer.farmerPhoto ?? null,
+      farmPhoto: farmer.farmPhoto ?? null,
       primaryMobileNo: farmer.primaryMobileNo,
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
@@ -487,15 +494,15 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
         : null,
       createdDate,
       createdTime,
-      residensialAddress: mapAddress(farmer.residensialAddress),
-      farmAddress: mapAddress(farmer.farmAddress),
-      crops: farmer.crops?.map((crop: Crop) => ({
+      residensialAddress: mapAddress(farmer.residensialAddress) ?? {},
+      farmAddress: mapAddress(farmer.farmAddress) ?? {},
+      crops: farmer.crops?.map((crop: Crop): CropDto => ({
         id: crop.id,
         crop: crop.crop?.name ?? null,
         variety: crop.variety,
         noOfPlants: crop.noOfPlants,
-        pruningDate: crop.pruningDate,
-        expectedHarvestDate: crop.expectedHarvestDate,
+        pruningDate: crop.pruningDate ? String(crop.pruningDate) : null,
+        expectedHarvestDate: crop.expectedHarvestDate ? String(crop.expectedHarvestDate) : null,
         expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
       })) ?? [],
     };
@@ -504,9 +511,9 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     return result;
   }
 
-  public async getfarmerbyidforupdate(id: string): Promise<any> {
+  public async getfarmerbyidforupdate(id: string): Promise<FarmerResponseDto | null> {
     const key = `${CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<FarmerResponseDto>(key);
     if (cached) return cached;
 
     const farmer = await this.farmerRepository
@@ -540,24 +547,24 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     if (!farmer) return null;
 
     const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-    const mapAddress = (addr: any) => addr?.id ? {
+    const mapAddress = (addr: any): AddressDto | null => addr?.id ? {
       id: addr.id, address1: addr.address1, address2: addr.address2,
       location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
     } : null;
 
-    const updateResult = {
+    const result: FarmerResponseDto = {
       id: farmer.id,
       farmerfName: farmer.farmerfName ?? null,
       farmermName: farmer.farmermName ?? null,
       farmerlName: farmer.farmerlName ?? null,
       gender: farmer.gender,
-      status:farmer.status,
-      dob: farmer.dob,
+      status: farmer.status,
+      dob: farmer.dob ? String(farmer.dob) : null,
       idProofNo: farmer.idProofNo,
       idProofCopy: farmer.idProofCopy,
       howDoYouSell: farmer.howDoYouSell,
-      landHoldingStatus: farmer.landHoldingStatus,
-      landStatus: farmer.landStatus,
+      landHoldingStatus: farmer.landHoldingStatus as LandHoldingStatusType | null,
+      landStatus: farmer.landStatus as LandStatusType | null,
       totalLandArea: farmer.totalLandArea,
       cultivationArea: farmer.cultivationArea,
       sevenTwelveNo: farmer.sevenTwelveNo,
@@ -566,26 +573,27 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       secondaryMobileNo: farmer.secondaryMobileNo,
       email: farmer.email,
       farmerCode: farmer.farmerCode,
-      farmerPhoto: farmer.farmerPhoto,
-      farmPhoto: farmer.farmPhoto,
+      farmerPhoto: farmer.farmerPhoto ?? null,
+      farmPhoto: farmer.farmPhoto ?? null,
+      /** createdBy returns the user id for update forms (frontend needs it to pre-select) */
       createdBy: farmer.createdBy?.id ?? null,
       createdDate,
       createdTime,
-      residensialAddress: mapAddress(farmer.residensialAddress),
-      farmAddress: mapAddress(farmer.farmAddress),
-      crops: farmer.crops?.map((crop: Crop) => ({
+      residensialAddress: mapAddress(farmer.residensialAddress) ?? {},
+      farmAddress: mapAddress(farmer.farmAddress) ?? {},
+      crops: farmer.crops?.map((crop: Crop): CropDto => ({
         id: crop.id,
-        crop: crop.crop?.id ?? null,
+        crop: crop.crop?.id ?? null,       // product id for update form (not name)
         variety: crop.variety,
         noOfPlants: crop.noOfPlants,
-        pruningDate: crop.pruningDate,
-        expectedHarvestDate: crop.expectedHarvestDate,
+        pruningDate: crop.pruningDate ? String(crop.pruningDate) : null,
+        expectedHarvestDate: crop.expectedHarvestDate ? String(crop.expectedHarvestDate) : null,
         expectedQuantityInTonnes: crop.expectedQuantityInTonnes,
       })) ?? [],
     };
 
-    await this.cacheService.set(key, updateResult, CACHE_TTL_DETAIL);
-    return updateResult;
+    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+    return result;
   }
 
  public async getAllFarmerWithFilter(filter: string): Promise<any[]> {
@@ -685,7 +693,6 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       relations: ['residensialAddress', 'farmAddress', 'crops'],
     });
     if (!farmer) throw new AppError(404, 'Farmer not found');
-    console.log(`[submitFarmer] before save - id: ${farmerId}, current status: ${farmer.status}`);
 
     farmer.status = Status.PENDING;
 
@@ -741,12 +748,10 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     // Fresh fetch to ensure returned status reflects DB state
     const updated = await this.farmerRepository.findOne({ where: { id: farmerId } });
-    console.log(`[submitFarmer] after save - id: ${farmerId}, new status: ${updated?.status}`);
     return updated!;
   }
 
   async approveFarmer(farmerId: string, approverId: string,status:Status) {
-    console.log('Approver ID:', approverId);
     const approver = await this.userRepository.findOne({
       where: { id: approverId },
      
@@ -819,16 +824,10 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     return result;
   }
 
-  public async createFarmer(farmerData: any): Promise<any> {
+  public async createFarmer(farmerData: CreateFarmerDto): Promise<Farmer> {
     const user = await this.userRepository.findOneBy({
       id: farmerData.createdBy,
     });
-    console.log("in user service",user);
-
-    // Always set status to draft - must go through submit → pending → approve flow
-    farmerData.status = 'draft';
-
-    console.log('in create farmer');
 
     // Use raw SQL to find the highest farmer code, bypassing soft-delete filter
     const farmYear = new Date().getFullYear();
@@ -842,10 +841,15 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
       const lastNum = parseInt(lastFarmCode[0].farmerCode.slice(farmPrefix.length), 10);
       if (!isNaN(lastNum)) farmNext = lastNum + 1;
     }
-    farmerData.farmerCode = `${farmPrefix}${String(farmNext).padStart(4, '0')}`;
 
-    const farmer = this.farmerRepository.create(farmerData);
-    console.log('it will create farmer');
+    // status and farmerCode are set internally — not from client input
+    const entityData = {
+      ...farmerData,
+      status: Status.DRAFT,
+      farmerCode: `${farmPrefix}${String(farmNext).padStart(4, '0')}`,
+    };
+
+    const farmer = this.farmerRepository.create(entityData as unknown as Farmer);
     const saved = await this.farmerRepository.save(farmer);
     await this.invalidateFarmerCache();
     return saved;
@@ -1009,7 +1013,7 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
   public async updateFarmer(
     farmerId: string,
-    updateData: any,
+    updateData: UpdateFarmerDto,
     updatedBy: string,
     requestedBy: string | { id?: string }
   ): Promise<Farmer | null> {
@@ -1023,7 +1027,6 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     if (!farmer) return null;
 
     const { crops: updatedCrops, ...outerFields } = updateData;
- console.log('Approver ID:', updatedBy);
  
   const requesterId =
     typeof requestedBy === 'object' && requestedBy !== null && 'id' in requestedBy && requestedBy.id
@@ -1043,10 +1046,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
   // ✅ Check if user has admin role
   if (Array.isArray(requester.roles) && requester.roles.includes('admin' as Role)) {
-    console.log('✅ Requester is Admin — setting farmer status to "approved"');
     farmer.status =Status.APPROVED;
   } else {
-    console.log('Requester is not Admin — keeping existing status');
   }
     // Audit farmer outer fields
     await this.auditLogService.logChange(
@@ -1062,8 +1063,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
 
     if (updatedCrops) {
       const updatedCropIds = updatedCrops
-        .filter((c: { id: any }) => c.id)
-        .map((c: { id: any }) => c.id);
+        .filter((c: CropDto) => c.id)
+        .map((c: CropDto) => c.id);
 
       // Keep only crops that still exist in request (others will be deleted by orphanedRowAction)
       farmer.crops = farmer.crops.filter((c) => updatedCropIds.includes(c.id));
@@ -1085,8 +1086,8 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
             Object.assign(existingCrop, updatedCrop);
           }
         } else {
-          // Add new crop
-          const newCrop = this.cropRepository.create(updatedCrop);
+          // Add new crop — map CropDto to DeepPartial<Crop> for the repository
+          const newCrop = this.cropRepository.create(updatedCrop as unknown as Crop);
           if (Array.isArray(newCrop)) {
             farmer.crops.push(...newCrop);
           } else {
@@ -1127,13 +1128,11 @@ async getAllFarmers(options: PaginationOptions): Promise<any> {
     await this.farmerRepository.save(farmer);
     await this.invalidateFarmerCache(id);
 
-    console.log(`Farmer with ID ${id} marked for deletion in 6 months.`);
     return true;
   }
  
 async createFarmerwithExcel(fileUrl: string): Promise<any> {
   try {
-    console.log('📂 File URL:', fileUrl);
 
     if (!fileUrl) {
       throw new Error('No file URL or path provided');
@@ -1159,7 +1158,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     const userRepository = AppDataSource.getRepository(User);
 
     for (const sheetName of sheetNames) {
-      console.log('📄 Sheet:', sheetName);
 
       const worksheet = workbook.Sheets[sheetName];
 
@@ -1174,7 +1172,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
         h ? String(h).trim() : '',
       );
 
-      console.log('🧾 Headers:', headers);
 
       const rows = jsonData.slice(1);
 
@@ -1186,7 +1183,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
           rowData[header] = rowUntyped[index];
         });
 
-        console.log('➡️ Row:', rowData);
 
         // ✅ Required check
         if (!rowData['First Name'] || !rowData['Primary Mobile No']) {
@@ -1281,7 +1277,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
             continue;
           }
 
-          console.log('🌾 Crop:', cropName);
 
           const product = await productRepository
             .createQueryBuilder('product')
@@ -1308,9 +1303,7 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
 
         // 💾 SAVE
         try {
-          console.log('💾 Saving farmer:', farmer.farmerfName);
           const saved = await farmerRepository.save(farmer);
-          console.log('✅ Saved ID:', saved.id);
         } catch (err) {
           console.error('❌ SAVE ERROR:', err);
         }
@@ -1320,7 +1313,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     await this.deleteFileFromSpaces(fileUrl);
     await this.invalidateFarmerCache();
 
-    console.log('🎉 Upload completed');
   } catch (error) {
     console.error('🔥 ERROR:', error);
 
@@ -1338,7 +1330,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
    */
   private async getExcelFromSpaces(key: string): Promise<Buffer> {
     try {
-      console.log('📂 Reading Excel file from Spaces:', key);
 
       const { GetObjectCommand } = await import('@aws-sdk/client-s3');
       const command = new GetObjectCommand({
@@ -1355,7 +1346,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
       const bytes = await response.Body.transformToByteArray();
       const fileBuffer = Buffer.from(bytes);
 
-      console.log('✅ Excel file read successfully, size:', fileBuffer.length, 'bytes');
       return fileBuffer;
     } catch (error) {
       console.error('❌ Error reading Excel file from Spaces:', error);
@@ -1380,7 +1370,6 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
       });
 
       await s3.send(deleteCommand);
-      console.log(`Successfully deleted file: ${key}`);
     } catch (error) {
       console.error(`Failed to delete file from spaces: ${fileUrl}`, error);
       // Don't throw error here to avoid breaking the main flow

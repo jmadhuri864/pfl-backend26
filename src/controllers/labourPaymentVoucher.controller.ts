@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { LabourPaymentVoucherService } from "../services/labourPaymentVoucher.service";
 import { inject } from "inversify";
-import { controller, httpGet, httpPost, httpPut, httpDelete, request, response, next, httpPatch } from "inversify-express-utils";
+import { controller, httpGet, httpPost, httpDelete, request, response, next, httpPatch } from "inversify-express-utils";
 import { TYPES } from "../types";
-import { LPVoucher } from "../entities/labourPaymentVoucher.entity";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 
 import logger from "../utils/logger";
@@ -12,8 +11,18 @@ import { PaginationOptions } from "../utils/pagination";
 import AppError from "../utils/appError";
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from "../services/notification.service";
-import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
+import {
+  CreateLPVoucherDto,
+  UpdateLPVoucherDto,
+  LPVoucherListResponseDto,
+  LPVoucherDetailDto,
+  LPVoucherViewDto,
+  LPVoucherUpdateFormDto,
+  BulkDeleteLPVoucherDto,
+  BulkDeleteLPVoucherResultDto,
+} from "../dtos/labourPaymentVoucher.dto";
 
 @controller("/lpvoucher", deserializeUser, requireUser)
 export class LabourPaymentVoucherController {
@@ -41,8 +50,8 @@ export class LabourPaymentVoucherController {
         sort: sort as string || undefined, // Adjust this line to match your sorting requirements
         search: search as string|| '',
       };
-      const vouchers = await this.lpVoucherService.getLPVouchers(queryOptions, userId);
-      logger.info(`Fetched ${vouchers.length} vouchers successfully`);
+      const vouchers: LPVoucherListResponseDto = await this.lpVoucherService.getLPVouchers(queryOptions, userId);
+      logger.info(`Fetched ${vouchers.meta.total} vouchers successfully`);
       ControllerLogger.logList('Labour Payment Voucher', req, res);
 
       // Send notification for labour payment voucher list access
@@ -77,7 +86,7 @@ export class LabourPaymentVoucherController {
     try {
       logger.info(`Fetching Labour Payment Voucher with ID`);
       const { id } = req.params;
-      const voucher = await this.lpVoucherService.getLPVoucherById(id);
+      const voucher: LPVoucherDetailDto | null = await this.lpVoucherService.getLPVoucherById(id);
 
       if (!voucher) {
         logger.warn(`Voucher with ID: ${id} not found`);
@@ -117,7 +126,7 @@ export class LabourPaymentVoucherController {
     try {
       logger.info(`Fetching Labour Payment Voucher with ID`);
       const { id } = req.params;
-      const voucher = await this.lpVoucherService.getLPVoucherByIdForView(id);
+      const voucher: LPVoucherViewDto | null = await this.lpVoucherService.getLPVoucherByIdForView(id);
 
       if (!voucher) {
         logger.warn(`Voucher with ID: ${id} not found`);
@@ -146,7 +155,7 @@ export class LabourPaymentVoucherController {
     try {
       logger.info(`Fetching Labour Payment Voucher with ID`);
       const { id } = req.params;
-      const voucher = await this.lpVoucherService.getLPVoucherByIdForUpdate(id);
+      const voucher: LPVoucherUpdateFormDto | null = await this.lpVoucherService.getLPVoucherByIdForUpdate(id);
 
       if (!voucher) {
         logger.warn(`Voucher with ID: ${id} not found`);
@@ -175,7 +184,7 @@ export class LabourPaymentVoucherController {
   ) {
     try {
       logger.info("Creating new Labour Payment Voucher");
-      const voucherData = req.body;
+      const voucherData: CreateLPVoucherDto & Record<string, any> = req.body;
       
       // Use helper function to handle file URL extraction
       setAttachmentUrls(voucherData, req.files as any[]);
@@ -313,8 +322,8 @@ export class LabourPaymentVoucherController {
         sort: sort as string || undefined, // Adjust this line to match your sorting requirements
         search: search as string|| '',
       };
-      const vouchers = await this.lpVoucherService.getLPRecycleBinVouchers(queryOptions, userId);
-      logger.info(`Fetched ${vouchers.length} vouchers successfully`);
+      const vouchers: LPVoucherListResponseDto = await this.lpVoucherService.getLPRecycleBinVouchers(queryOptions, userId);
+      logger.info(`Fetched ${vouchers.data.length} vouchers successfully`);
       ControllerLogger.logList('Labour Payment Voucher Recycle Bin', req, res);
 
       res.status(200).json({
@@ -343,13 +352,11 @@ export class LabourPaymentVoucherController {
           if (!Array.isArray(ids) || ids.length === 0) {
             return next(new AppError(400, 'An array of AQR IDs is required'));
           }
-          const result = await this.lpVoucherService.deleteMultipleLPVoucher(ids);
+          const result: BulkDeleteLPVoucherResultDto = await this.lpVoucherService.deleteMultipleLPVoucher(ids);
           ControllerLogger.logSuccess(`${ids.length} Labour Payment Vouchers deleted`, ids.join(', '), req, res);
 
           res.status(200).json({
             message: result.message,
-            success: result.success,
-            failed: result.failed,
           });
         }
           catch (error) {

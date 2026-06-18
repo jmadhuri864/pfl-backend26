@@ -9,6 +9,14 @@ import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import {
+  CreateVendorSubcategoryDto,
+  UpdateVendorSubcategoryDto,
+  VendorSubcategoryResponseDto,
+  VendorSubcategoryListResponseDto,
+  VendorSubcategoryListItemDto,
+  VendorSubcategoryDropdownDto,
+} from "../dtos/vendorSubcategory.dto";
 
 const CACHE_PREFIX = "vendorSubcategory";
 const CACHE_TTL = 300;
@@ -41,7 +49,7 @@ export class VendorSubcategoryService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  public async create(subcategoryData: { name: string; category: string }): Promise<VendorSubcategory | null> {
+  public async create(subcategoryData: CreateVendorSubcategoryDto): Promise<VendorSubcategory | null> {
     const vendorCategory = await this.vendorCategoryRepository.findOne({
       where: { id: subcategoryData.category },
     });
@@ -60,9 +68,9 @@ export class VendorSubcategoryService {
     return saved;
   }
 
-  public async getSubcategories(categoryIdOrName?: string): Promise<Partial<VendorSubcategory>[]> {
+  public async getSubcategories(categoryIdOrName?: string): Promise<VendorSubcategoryDropdownDto[]> {
     const cacheKey = `${CACHE_PREFIX}:bycategory:${categoryIdOrName ?? "all"}`;
-    const cached = await this.cacheService.get<Partial<VendorSubcategory>[]>(cacheKey);
+    const cached = await this.cacheService.get<VendorSubcategoryDropdownDto[]>(cacheKey);
     if (cached) return cached;
 
     const queryBuilder = this.vendorSubcategoryRepository
@@ -81,13 +89,17 @@ export class VendorSubcategoryService {
     }
 
     const result = await queryBuilder.getMany();
-    await this.cacheService.set(cacheKey, result, CACHE_TTL);
-    return result;
+    const formatted: VendorSubcategoryDropdownDto[] = result.map((s) => ({
+      id: s.id,
+      name: s.name,
+    }));
+    await this.cacheService.set(cacheKey, formatted, CACHE_TTL);
+    return formatted;
   }
 
-  public async getByall(queryOptions: PaginationOptions): Promise<any> {
+  public async getByall(queryOptions: PaginationOptions): Promise<VendorSubcategoryListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<VendorSubcategoryListResponseDto>(key);
     if (cached) return cached;
 
     const baseQuery = this.vendorSubcategoryRepository
@@ -98,20 +110,22 @@ export class VendorSubcategoryService {
 
     const result = await buildQuery(baseQuery, queryOptions, "vendorSubcategory");
 
-    if (result?.data) {
-      result.data = result.data.map((item: any) => ({
-        ...item,
+    const formatted: VendorSubcategoryListResponseDto = {
+      data: result.data.map((item: any): VendorSubcategoryListItemDto => ({
+        id: item.id,
+        name: item.name,
         category: item.category?.name ?? null,
-      }));
-    }
+      })),
+      meta: result.meta,
+    };
 
-    await this.cacheService.set(key, result, CACHE_TTL);
-    return result;
+    await this.cacheService.set(key, formatted, CACHE_TTL);
+    return formatted;
   }
 
-  public async getById(id: string): Promise<any> {
+  public async getById(id: string): Promise<VendorSubcategoryResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<VendorSubcategoryResponseDto>(key);
     if (cached) return cached;
 
     const result = await this.vendorSubcategoryRepository
@@ -123,14 +137,18 @@ export class VendorSubcategoryService {
 
     if (!result) return null;
 
-    const formatted = { ...result, category: result.category?.id ?? null };
+    const formatted: VendorSubcategoryResponseDto = {
+      id: result.id,
+      name: result.name,
+      category: result.category?.id ?? null,
+    };
     await this.cacheService.set(key, formatted, CACHE_TTL);
     return formatted;
   }
 
   public async update(
     id: string,
-    subcategoryData: { name?: string; category?: string },
+    subcategoryData: UpdateVendorSubcategoryDto,
     updatedBy: string,
   ): Promise<VendorSubcategory | null> {
     const existingSubcategory = await this.vendorSubcategoryRepository.findOne({ where: { id } });

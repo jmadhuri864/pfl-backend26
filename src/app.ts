@@ -38,6 +38,7 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
   "http://192.168.1.39:5173",
   "http://192.168.1.36:5173",
+  "http://192.168.1.79:5173",
   "https://d721a561c2dc.ngrok-free.app",
   "http://localhost:3000",
   "http://localhost:8004",
@@ -45,6 +46,7 @@ const allowedOrigins = [
   "https://prime-fresh-erp.vercel.app",
   "http://139.59.83.235:80",
   "http://139.59.83.235",
+  "http://localhost:5173/","*"
 ];
 
 process.on('unhandledRejection', (reason: any) => {
@@ -100,8 +102,8 @@ const startServer = async () => {
       }));
 
       // Rate limiting — apply before routes
-      app.use('/auth', authRateLimit);   // 5 requests / 15 min on auth endpoints
-      app.use(apiRateLimit);             // 1000 requests / 15 min on all other endpoints
+      //app.use('/auth', authRateLimit);   // 5 requests / 15 min on auth endpoints
+      //app.use(apiRateLimit);             // 1000 requests / 15 min on all other endpoints
       
       // Skip compression for SSE endpoints — compression buffers the stream and delays events
       app.use(compression({
@@ -115,29 +117,19 @@ const startServer = async () => {
 
       // Main CORS handler - MUST be before any other middleware that might set headers
       app.use((req, res, next) => {
-        const origin = req.headers.origin as string|| '*';
-        // console.log('🔍 CORS Handler - Origin:', origin);
-        // console.log('🔍 CORS Handler - Method:', req.method);
-        // console.log('🔍 CORS Handler - Path:', req.path);
-        
-        // Allow all origins if '*' is in allowedOrigins, otherwise check specific origins
-        if ( (origin && allowedOrigins.includes(origin))) {
-          res.setHeader("Access-Control-Allow-Origin", origin );
-          res.setHeader("Access-Control-Allow-Credentials", "true");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
-          res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
-          // console.log('✅ CORS - Set origin to:', origin || "*");
-        } else {
-          // console.log('❌ CORS - Origin not in allowed list:', origin);
-          // console.log('🔍 CORS - Allowed origins:', allowedOrigins);
-        }
+        const origin = req.headers.origin as string;
+
+        // Development: allow all origins
+        res.setHeader("Access-Control-Allow-Origin", origin || "*");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
 
         // Handle preflight requests
         if (req.method === "OPTIONS") {
-        //  console.log('🔍 Handling OPTIONS preflight for:', req.path);
           return res.status(204).end();
         }
-        
+
         next();
       });
 
@@ -198,7 +190,7 @@ const startServer = async () => {
 
     const app = inversifyServer.build();
 
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || 4000;
     app.listen(port, () => {
 
       // console.log(`🚀 Server started on port ${port}`);

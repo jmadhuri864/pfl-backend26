@@ -19,8 +19,19 @@ import { ProductRepository } from '../repositories/product.repository';
 import { CompanyRepository } from '../repositories/company.repository';
 import { BranchessRepository } from '../repositories/branches.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import { PostReturnByCustomer } from '../entities/postReturnByCustomer.entity';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import {
+  CreateRBCDto,
+  UpdateRBCDto,
+  RBCListResponseDto,
+  RBCDetailDto,
+  RBCViewDto,
+  RBCUpdateFormDto,
+  RBCNumbersResponseDto,
+  BulkDeleteRBCResultDto,
+} from '../dtos/postReturnByCustomer.dto';
 export interface ReturnByCustomerReportFilter {
   startDate?: string;
   endDate?: string;
@@ -139,7 +150,7 @@ export class PostReturnByCustomerService {
 
 
 
-  async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any> {
+  async createReturn(returnData: CreateRBCDto & Record<string, any>, requestedBy: string, clientIp?: string): Promise<PostReturnByCustomer> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -171,9 +182,9 @@ export class PostReturnByCustomerService {
       // 4️⃣ Validate that returned products match delivery challan products
       if (returnData.returnedProducts && returnData.returnedProducts.length > 0) {
         for (const returnProduct of returnData.returnedProducts) {
-          const productId = typeof returnProduct.productName === 'object' 
+          const productId = typeof returnProduct.productName === 'object' && returnProduct.productName
             ? returnProduct.productName.id 
-            : returnProduct.productName;
+            : (returnProduct.productName ?? null);
           const variantId = returnProduct.variant 
             ? (typeof returnProduct.variant === 'object' ? returnProduct.variant.id : returnProduct.variant)
             : null;
@@ -370,8 +381,8 @@ export class PostReturnByCustomerService {
 
   async getAllPostReturnByCustomer(
     queryOptions: PaginationOptions,
-    userId: any,
-  ): Promise<any> {
+    userId: string,
+  ): Promise<RBCListResponseDto> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -463,7 +474,7 @@ export class PostReturnByCustomerService {
     return result;
   }
 
-  async getByIdPostReturnByCustomerforView(docid: string): Promise<any> {
+  async getByIdPostReturnByCustomerforView(docid: string): Promise<RBCViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -538,7 +549,7 @@ export class PostReturnByCustomerService {
     return viewResult;
   }
 
-  async getByIdPostReturnByCustomerforupdate(docid: string): Promise<any> {
+  async getByIdPostReturnByCustomerforupdate(docid: string): Promise<RBCUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -623,7 +634,7 @@ export class PostReturnByCustomerService {
     return updateResult;
   }
 
-  async getByIdPostReturnByCustomer(id: string): Promise<any> {
+  async getByIdPostReturnByCustomer(id: string): Promise<RBCDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -666,10 +677,10 @@ export class PostReturnByCustomerService {
     const rawDate = result.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     const date = formatDateTime(result.date);
-    const idResult = {
+    const idResult: RBCDetailDto = {
       id: result.id,
-
-      companyName: result.companyName?.name,
+      rbcNo: result.rbcNo ?? null,
+      companyName: result.companyName?.name ?? null,
       //  ? {
       //   id: result.companyName.id,
       //   companyName: result.companyName.name,
@@ -706,7 +717,7 @@ export class PostReturnByCustomerService {
     await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
     return idResult;
   }
-  async getAllRBCNumbers(page?: number, limit?: number): Promise<any> {
+  async getAllRBCNumbers(page?: number, limit?: number): Promise<RBCNumbersResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:numbers:${page ?? 'all'}:${limit ?? 'all'}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -739,7 +750,7 @@ export class PostReturnByCustomerService {
   }
 
    //TODO:Delte Multiple
-public async deleteMultipleRBC(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+public async deleteMultipleRBC(ids: string[]): Promise<BulkDeleteRBCResultDto> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {

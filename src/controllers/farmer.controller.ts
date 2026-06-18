@@ -27,6 +27,7 @@ import { upload } from '../middleware/upload.middleware';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { s3 } from '../middleware/spaces.config';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
+import { CreateFarmerDto } from '../dtos/farmer.dto';
 import { Status } from '../utils/status.enum';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
@@ -52,7 +53,7 @@ export class FarmerController {
     ]),
   )
   public async createFarmer(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateFarmerDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -387,7 +388,6 @@ export class FarmerController {
       //     );
       //   }
       // } catch (notifError) {
-      //   console.log('Get all farmers notification error:', notifError);
       // }
       
       ControllerLogger.logGetAllRecords('Farmers', req, res);
@@ -600,7 +600,6 @@ export class FarmerController {
       //     );
       //   }
       // } catch (notifError) {
-      //   console.log('Farmer deletion notification error:', notifError);
       // }
 
       ControllerLogger.logSuccess('Farmer deleted', id, req, res);
