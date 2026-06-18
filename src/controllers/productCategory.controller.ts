@@ -21,6 +21,7 @@ import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import { CreateProductCategoryDto } from "../dtos/product.dto";
 
 @controller("/productCategory", deserializeUser, requireUser)
 export class ProductCategoryController {
@@ -56,7 +57,7 @@ export class ProductCategoryController {
         ControllerLogger.logError('Product Category list retrieval', new AppError(404, "No product categories found"), req, res);
         return next(new AppError(404, "No product categories found"));
       }
-      logger.info("Successfully fetched product categories", { count: categories.length });
+      logger.info("Successfully fetched product categories", { count: categories.data.length });
       ControllerLogger.logList('Product Category', req, res);
 
       // Send notification for product category list access
@@ -120,12 +121,13 @@ export class ProductCategoryController {
   // Create a new product category
   @httpPost("/")
   public async create(
+    @requestBody() categoryData: CreateProductCategoryDto,
    @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {  logger.info("Creating a new product category");
     try {
-      const category = await this.productCategoryService.create(req.body);
+      const category = await this.productCategoryService.create(categoryData);
       logger.info("Product category created successfully", { category });
       ControllerLogger.logSuccess('Product Category created', category.id, req, res);
 
@@ -154,7 +156,7 @@ export class ProductCategoryController {
   @httpPatch("/:id",captureUser)
   public async update(
     @requestParam("id") id: string,
-    @requestBody() categoryData: any,
+    @requestBody() categoryData: CreateProductCategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction

@@ -18,6 +18,10 @@ import { NotificationService } from "../services/notification.service";
 import { deserializeUser, requireUser, captureUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { PaginationOptions } from "../utils/pagination";
+import {
+  CreateDumpRegisterDto,
+  UpdateDumpRegisterDto,
+} from "../dtos/dumpRegister.dto";
 
 @controller("/dumpRegister", deserializeUser, requireUser)
 export class DumpRegisterController {
@@ -28,7 +32,7 @@ export class DumpRegisterController {
 
   @httpPost("/")
   public async createDumpRegister(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateDumpRegisterDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -261,7 +265,7 @@ export class DumpRegisterController {
   @httpPatch("/:id", captureUser)
   public async updateDumpRegister(
     @requestParam("id") id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{ id: string }, {}, UpdateDumpRegisterDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {

@@ -7,6 +7,7 @@ import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { CacheService } from './cache.service';
+import { CreateCustomerTypeDto, CustomerTypeResponseDto, PaginatedResponse } from '../dtos/createCustomer.dto';
 
 const CACHE_PREFIX = 'customerType';
 const CACHE_TTL = 300;        // 5 min for lists
@@ -42,7 +43,7 @@ export class CustomerTypeService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<any> {
+  async getAllCustomerTypes(queryOptions: PaginationOptions): Promise<PaginatedResponse<CustomerTypeResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -54,7 +55,7 @@ export class CustomerTypeService {
 
     const result = await buildQuery(queryBuilder, queryOptions, 'customerType');
 
-    const formatted = {
+    const formatted: PaginatedResponse<CustomerTypeResponseDto> = {
       ...result,
       data: result.data.map((cust: any) => ({
         id: cust.id,
@@ -66,7 +67,7 @@ export class CustomerTypeService {
     return formatted;
   }
 
-  async getCustomerTypeById(id: string): Promise<CustomerType | null> {
+  async getCustomerTypeById(id: string): Promise<CustomerTypeResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<CustomerType>(key);
     if (cached) return cached;
@@ -77,12 +78,21 @@ export class CustomerTypeService {
       .where('customerType.id = :id', { id })
       .getOne();
 
-    if (customerType) await this.cacheService.set(key, customerType, CACHE_TTL_DETAIL);
-    return customerType;
+       if (!customerType) {
+    return null;
   }
 
-  async createCustomerType(name: string): Promise<CustomerType> {
-    const customerType = this.customerTypeRepository.create({ name });
+    const response: CustomerTypeResponseDto = {
+    id: customerType.id,
+    name: customerType.name,
+  };
+
+    if (customerType) await this.cacheService.set(key, customerType, CACHE_TTL_DETAIL);
+    return response;
+  }
+
+  async createCustomerType(dto: CreateCustomerTypeDto): Promise<CustomerType> {
+    const customerType = this.customerTypeRepository.create({ name: dto.name });
     const saved = await this.customerTypeRepository.save(customerType);
     await this.invalidateCache();
     return saved;
@@ -90,7 +100,7 @@ export class CustomerTypeService {
 
   public async updateCustomerType(
     id: string,
-    name: string,
+    dto: CreateCustomerTypeDto,
     updatedBy: string,
   ): Promise<CustomerType | null> {
     const customerType = await this.customerTypeRepository.findOneBy({ id });
@@ -103,11 +113,11 @@ export class CustomerTypeService {
       'CustomerType',
       id,
       customerType,
-      { name },
+      { name: dto.name },
       updatedBy,
     );
 
-    customerType.name = name;
+    customerType.name = dto.name;
     const saved = await this.customerTypeRepository.save(customerType);
     await this.invalidateCache(id);
     return saved;

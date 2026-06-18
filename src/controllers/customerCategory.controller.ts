@@ -23,6 +23,7 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import { CreateCustomerCategoryDto } from "../dtos/createCustomer.dto";
 
 @controller("/customerCategory",deserializeUser,requireUser)
 export class CustomerCategoryController {
@@ -133,7 +134,7 @@ export class CustomerCategoryController {
 
   @httpPost("/")
   public async create(
-    @requestBody() categoryData: Partial<CustomerCategory>,
+    @requestBody() categoryData: CreateCustomerCategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -178,7 +179,7 @@ export class CustomerCategoryController {
   @httpPatch("/:id",captureUser)
   public async update(
     @requestParam("id") id: string,
-    @requestBody() categoryData: Partial<CustomerCategory>,
+    @requestBody() categoryData:CreateCustomerCategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction

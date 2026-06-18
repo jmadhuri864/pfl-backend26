@@ -21,6 +21,8 @@ import { DocumentPermission } from "./permission.entity";
     DC_TYPE_CUSTOMER = "DC_TYPE_CUSTOMER",
     DC_TYPE_STOCK_TRANSFER = "DC_TYPE_STOCK_TRANSFER",
     DC_TYPE_OTHER = "DC_TYPE_OTHER",
+    SECOND_SALE = 'second-sale',
+    PACKAGING_MATERIAL_VOUCHER = 'packaging-material-voucher',
     // REPORT = "REPORT",
     // INVENTORY = "INVENTORY",
   }

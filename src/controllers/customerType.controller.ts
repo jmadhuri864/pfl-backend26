@@ -18,6 +18,7 @@ import { ControllerLogger } from "../utils/controllerLogger";
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { PaginationOptions } from "../utils/pagination";
 import { NotificationService } from "../services/notification.service";
+import { CreateCustomerTypeDto } from "../dtos/createCustomer.dto";
 
 @controller("/customerType",deserializeUser,requireUser)
 export class CustomerTypeController {
@@ -126,13 +127,15 @@ export class CustomerTypeController {
   ) {
     try {
       const { name } = req.body;
+
+      const dto: CreateCustomerTypeDto = req.body;
      
       if (!name || typeof name !== 'string' || name.trim() === '') {
         ControllerLogger.logValidationError('Create Customer Type', 'Name is required and must be a non-empty string', req, res);
         return next(new AppError(400, "Customer type 'name' is required and must be a non-empty string"));
       }
       
-      const customerType = await this.customerTypeService.createCustomerType(name);
+      const customerType = await this.customerTypeService.createCustomerType(dto);
 
       // 🔔 Send notification for customer type creation
       try {
@@ -168,9 +171,9 @@ export class CustomerTypeController {
     try {
       const updatedBy=res.locals.updatedBy;
       const { name } = req.body;
-     
+     const dto: CreateCustomerTypeDto = req.body;
       const updatedCustomerType =
-        await this.customerTypeService.updateCustomerType(id, name, updatedBy);
+        await this.customerTypeService.updateCustomerType(id, dto, updatedBy);
       
       if (!updatedCustomerType) {
         ControllerLogger.logNotFound('Customer Type', id, req, res);

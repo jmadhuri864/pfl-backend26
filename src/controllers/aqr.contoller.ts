@@ -11,6 +11,7 @@ import AppError from "../utils/appError";
 import { PaginationOptions } from "../utils/pagination";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
+import { CreateAqrDto, UpdateAqrDto } from "../dtos/aqr.dto";
 
 @controller("/aqr", deserializeUser, requireUser)
 export class AqrController {
@@ -20,34 +21,33 @@ export class AqrController {
   ) {}
 
   // ─── Create ───────────────────────────────────────────────────────────────
+@httpPost("/")
+public async createAqr(
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction,
+): Promise<Response | void> {
+  try {
+    const aqrData: CreateAqrDto = { ...req.body, requestedBy: res.locals.user.id };
+    const createdAqr = await this.aqrService.createAqr(aqrData);
 
-  @httpPost("/")
-  public async createAqr(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<Response | void> {
-    try {
-      const aqrData = { ...req.body, requestedBy: res.locals.user.id };
-      const createdAqr = await this.aqrService.createAqr(aqrData);
-
-      if (!createdAqr) {
-        ControllerLogger.logOperationFailed("Create", "AQR", "not created", req, res);
-        return next(new AppError(400, "AQR not created"));
-      }
-
-      this.notificationService
-        .createNoti("AQR created successfully and submitted for approval", res.locals.user.id)
-        .catch(() => {});
-
-      ControllerLogger.logSuccess("AQR created", createdAqr.id, req, res);
-      return res.status(201).json({ status: "success", message: "AQR created successfully" });
-    } catch (error) {
-      ControllerLogger.logError("AQR creation", error, req, res);
-      if (error instanceof Error) return next(new AppError(400, error.message));
-      next(error);
+    if (!createdAqr) {
+      ControllerLogger.logOperationFailed("Create", "AQR", "not created", req, res);
+      return next(new AppError(400, "AQR not created"));
     }
+
+    this.notificationService
+      .createNoti("AQR created successfully and submitted for approval", res.locals.user.id)
+      .catch(() => {});
+
+    ControllerLogger.logSuccess("AQR created", createdAqr.id, req, res);
+    return res.status(201).json({ status: "success", message: "AQR created successfully" });
+  } catch (error) {
+    ControllerLogger.logError("AQR creation", error, req, res);
+    if (error instanceof Error) return next(new AppError(400, error.message));
+    next(error);
   }
+}
 
   // ─── Get All ──────────────────────────────────────────────────────────────
 
@@ -268,7 +268,7 @@ export class AqrController {
 
   @httpPatch("/:id")
   public async updateAqr(
-    @request() req: Request,
+    @request() req: Request<{ id: string }, {}, UpdateAqrDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ): Promise<Response | void> {
@@ -292,7 +292,36 @@ export class AqrController {
       next(error);
     }
   }
+  
+  
+//   @httpPatch("/:id")
+// public async updateAqr(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ): Promise<Response | void> {
+//   try {
+//     const { id } = req.params;
+//     const updateData: UpdateAqrDto = req.body;
+//     console.log("updatedData",updateData);
+//     const updatedAqr = await this.aqrService.updateAqr(id, updateData, res.locals.updatedBy);
 
+//     if (!updatedAqr) {
+//       ControllerLogger.logOperationFailed("Update", "AQR", "not found or could not be updated", req, res);
+//       throw new AppError(404, "AQR not found or could not be updated");
+//     }
+
+//     this.notificationService
+//       .createNoti("AQR updated successfully", res.locals.user.id)
+//       .catch(() => {});
+
+//     ControllerLogger.logSuccess("AQR updated", id, req, res);
+//     return res.status(200).json({ status: "success", message: "AQR updated successfully" });
+//   } catch (error) {
+//     ControllerLogger.logError("AQR update", error, req, res);
+//     next(error);
+//   }
+// }
   // ─── Delete ───────────────────────────────────────────────────────────────
 
   @httpDelete("/:id")

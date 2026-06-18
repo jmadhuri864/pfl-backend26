@@ -12,7 +12,7 @@ export class ProductCategory extends Model {
 
   @ManyToOne(() => ProductClassification, (classification) => classification.categories,{ onDelete: "SET NULL"})
   @JoinColumn({ name: "classification_id" })  // Foreign key column name
-  productClassification: ProductClassification;
+  productClassification: ProductClassification | null;
 
   @OneToMany(() => ProductSubcategory, (subcategory) => subcategory.category,{ onDelete: "SET NULL"})
   subcategories: ProductSubcategory[];

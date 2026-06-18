@@ -23,6 +23,7 @@ import {
 import { PaginationOptions } from '../utils/pagination';
 import { NotificationService } from '../services/notification.service';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
+import { CreateInvoiceDto } from '../dtos/invoice.dto';
 
 @controller('/final-invoice', deserializeUser, requireUser)
 export class FinalInvoiceController {
@@ -44,10 +45,11 @@ export class FinalInvoiceController {
   ) {
     try {
       const createdBy = res.locals.user.id;
+      const invoiceData: CreateInvoiceDto = req.body;
 
       const invoice = await this.finalInvoiceService.create(
         deliveryChallanId,
-        req.body,
+        invoiceData,
         createdBy
       );
 
@@ -147,7 +149,7 @@ export class FinalInvoiceController {
         userId
       );
 
-      if (!invoices || invoices.length === 0) {
+      if (!invoices || invoices.data.length === 0) {
         ControllerLogger.logOperationFailed('Get All', 'Final Invoices', 'No records found', req, res);
         return next(new AppError(404, 'No final invoices found'));
       }

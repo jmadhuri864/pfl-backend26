@@ -42,7 +42,7 @@ export class Product extends Model {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'category_id' })
-  category: ProductCategory;
+  category: ProductCategory | null;
 
   @ManyToOne(() => ProductSubcategory, (subcategory) => subcategory.products, {
     nullable: true,
@@ -50,11 +50,11 @@ export class Product extends Model {
     cascade: true,
   })
   @JoinColumn({ name: 'subcategory_id' })
-  subcategory: ProductSubcategory;
+  subcategory: ProductSubcategory | null;
 
   @ManyToOne(() => UOM, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'uom_id' })
-  uom: UOM;
+  uom: UOM | null;
 
   @OneToMany(() => ProductVarient, (variant) => variant.product, {
     cascade: true,
@@ -75,12 +75,12 @@ export class Product extends Model {
   prefix: string;
 
   @Column({ name: 'shelf_life', type: 'int', nullable: true })
-  shelfLife: number;
+  shelfLife: number| null;
 
   @Column({ name: 'storage_temp', type: 'int', nullable: true })
-  storageTemp: number;
+  storageTemp: number | null;
 
-  // @OneToMany(() => ProductVarients, (variant) => variant.productTemplate, {
+  // @OneToMany(() =>  ProductVarients, (variant) => variant.productTemplate, {
   //   cascade: true,
   //   onDelete: 'CASCADE',
   // })

@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
 import { CashVoucher } from '../entities/mCashVoucher.entity';
 import { MultiCashVoucherRepository } from '../repositories/multicashVoucher.repository';
+import { CreateMultiCashVoucherDto, UpdateMultiCashVoucherDto, MultiCashVoucherListItemDto, MultiCashVoucherDetailDto } from '../dtos/multiCashVoucher.dto';
 import { GrnRepository } from '../repositories/grn.repository';
 import { DeliveryChallanRepository } from '../repositories/deliveryChallan.repository';
 import { AuditLogService } from './auditLog.service';
@@ -21,6 +22,7 @@ import { format } from 'date-fns';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+// DTOs imported earlier
 
 @injectable()
 export class MultiCashVoucherService {
@@ -63,9 +65,9 @@ export class MultiCashVoucherService {
     }
     await Promise.all(tasks);
   }
-public async getAllVouchers(
+  public async getAllVouchers(
     queryOptions: PaginationOptions, userId: string
-  ): Promise<{ data: any[]; meta: any }> {
+  ): Promise<{ data: MultiCashVoucherListItemDto[]; meta: any }> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -156,7 +158,7 @@ public async getAllVouchers(
     }
 
     const result = {
-      data: relatedDataOnly,
+      data: relatedDataOnly as MultiCashVoucherListItemDto[],
       meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
@@ -238,7 +240,7 @@ public async getAllVouchers(
     return idResult;
   }
 
-  public async getVoucherByIdForUpdate(id: string): Promise<any> {
+  public async getVoucherByIdForUpdate(id: string): Promise<UpdateMultiCashVoucherDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -291,21 +293,32 @@ public async getAllVouchers(
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    const updateResult = {
-      ...voucher,
-      grnNo: voucher.grnNo?.id,
+    const updateResult: UpdateMultiCashVoucherDto = {
+      requestingDepartment: voucher.requestingDepartment,
+      companyName: voucher.companyName?.id ?? undefined,
+      grnNo: voucher.grnNo?.id || null,
+      debitCreditTo: voucher.debitCreditTo,
+      voucherNo: voucher.voucherNo,
+      payReceivedFrom: voucher.payReceivedFrom,
+      location: voucher.location,
+      particulars: voucher.particulars?.map(p => ({ id: p.id, description: p.description, amt: p.amt })) || [],
       challanNo: voucher.challanNo?.id || null,
-      requestedBy: voucher.requestedBy?.id || null,
-      companyName: voucher.companyName?.id || null,
-
-      createdTime: createdTime,
-      createdDate: createdDate,
+      totalAmt: voucher.totalAmt,
+      amtWords: voucher.amtWords,
+      paymentMode: voucher.paymentMode,
+      receiverName: voucher.receiverName,
+      anyAttachment: (voucher as any).anyAttachment || null,
+      approvalStatus: voucher.approvalStatus,
+      requestedBy: voucher.requestedBy?.id ?? undefined,
+      passBy: voucher.passBy?.id ?? undefined,
+      approveBy: voucher.approveBy?.id ?? undefined,
+      remark: voucher.remark,
     };
     await this.cacheService.set(cacheKey, updateResult, this.CACHE_TTL);
     return updateResult;
   }
 
-  public async getVoucherByIdForView(docid: string): Promise<any> {
+  public async getVoucherByIdForView(docid: string): Promise<MultiCashVoucherDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -362,26 +375,25 @@ public async getAllVouchers(
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    const viewResult = {
+    const viewResult: MultiCashVoucherDetailDto = {
       ...voucher,
-      grnNo: voucher.grnNo?.grnNo || null,
-      challanNo: voucher.challanNo?.challanNo || null,
+      grnNo: voucher.grnNo ? { id: voucher.grnNo.id || null, grnNo: voucher.grnNo.grnNo || null } : null,
+      challanNo: voucher.challanNo ? { id: voucher.challanNo.id || null, challanNo: voucher.challanNo.challanNo || null } : null,
       requestedBy: voucher.requestedBy
-        ? `${voucher.requestedBy.firstName || ''} ${(voucher.requestedBy as any).middleName || ''} ${voucher.requestedBy.lastName || ''}`.trim() || null
+        ? { id: voucher.requestedBy.id || null, firstName: voucher.requestedBy.firstName || null, lastName: voucher.requestedBy.lastName || null }
         : null,
-      companyName: voucher.companyName?.name || null,
+      companyName: voucher.companyName ? { id: voucher.companyName.id || null, companyName: voucher.companyName.name || null } : null,
       createdTime,
       createdDate,
       overAllStatus: document.overAllStatus,
       createdBy: document.createdBy,
-      approvalSummary: document.approvalSummary,
       documentId: document.id,
     };
     await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
     return viewResult;
   }
 
-  public async createVoucher(voucherData: any): Promise<any> {
+  public async createVoucher(voucherData: CreateMultiCashVoucherDto): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -421,7 +433,7 @@ public async getAllVouchers(
         voucherData.challanNo = null;
       }
 
-      const cashVoucher = queryRunner.manager.create(this.cashVoucherRepository.target, voucherData);
+      const cashVoucher = queryRunner.manager.create(this.cashVoucherRepository.target, voucherData as any);
 
       const voucher = await queryRunner.manager.save(cashVoucher) as CashVoucher | CashVoucher[];
 
@@ -544,7 +556,7 @@ public async getAllRecycleBinVouchers(
 
   public async updateVoucher(
     id: string,
-    updatedData: any,
+    updatedData: UpdateMultiCashVoucherDto,
     updatedBy: string,
   ): Promise<CashVoucher | null> {
     const voucher = await this.cashVoucherRepository.findOne({ where: { id } });

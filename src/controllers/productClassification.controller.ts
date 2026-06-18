@@ -10,6 +10,7 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import { CreateProductClassificationDto } from "../dtos/product.dto";
 
 @controller("/productClassification", deserializeUser, requireUser)
 export class ProductClassificationController {
@@ -104,7 +105,7 @@ export class ProductClassificationController {
 
   @httpPost("/")
   public async create(
-    @requestBody() classificationData: Partial<ProductClassification>,
+    @requestBody() classificationData: CreateProductClassificationDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -136,7 +137,7 @@ export class ProductClassificationController {
   @httpPatch("/:id",captureUser)
   public async update(
     @requestParam("id") id: string,
-    @requestBody() classificationData: Partial<ProductClassification>,
+    @requestBody() classificationData: CreateProductClassificationDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction

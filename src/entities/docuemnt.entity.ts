@@ -87,6 +87,6 @@ export class Documentb extends Model {
 
 
    @Column({ type: 'varchar', nullable: true })
-   document_type_id: string
+   document_type_id: string | null;
   
 }

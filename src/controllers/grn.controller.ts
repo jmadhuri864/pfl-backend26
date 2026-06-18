@@ -37,6 +37,7 @@ import { UserActivityLogService } from '../services/userActivityLog.service';
 import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
+import { CreateGrnDto, UpdateGrnDto } from '../dtos/grn.dto';
 
 @controller('/grns', deserializeUser, requireUser)
 export class GrnController {
@@ -104,13 +105,13 @@ export class GrnController {
   //TODO: Create GRN
   @httpPost('/', uploadSingle.single('billImage'))
   public async createGrn(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateGrnDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       
-      const grnData = req.body;
+      const grnData:CreateGrnDto = req.body;
 
       if (req.file) {
         const imageUrl = req.file.path;
@@ -130,7 +131,7 @@ export class GrnController {
       grnData.requestedBy = requestedBy;
       // grnData.baseLocation = baseLocation;
       grnData.requestingDepartment = res.locals.user.selectDepartment;
-      if (grnData === '')
+      //if (grnData === '')
         if (grnData.source === Source.VENDOR && !grnData.selectedParty) {
           
           return next(
@@ -459,16 +460,16 @@ export class GrnController {
           }
 
           // If accessor is an approver, notify the creator
-          if (isApprover && grn.createdBy?.id && grn.createdBy.id !== accessedBy) {
-            const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
-            const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
+          // if (isApprover && grn.createdBy?.id && grn.createdBy.id !== accessedBy) {
+          //   const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
+          //   const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
 
             // await this.notificationService.createNoti(
             //   `${accessorName} viewed GRN ${grn.grnNo}`,
             //   grn.createdBy.id
             // );
             
-          }
+          //}
         }
       } catch (notifError) {
         
@@ -663,18 +664,19 @@ export class GrnController {
   @httpPut('/:id', uploadSingle.single('billImage'), captureUser)
   public async updateGrn(
     @requestParam('id') id: string,
-    @request() req: Request,
+    @request() req: Request<{}, {}, UpdateGrnDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
      
 
-      let grnData = req.body;
+      let grnData: UpdateGrnDto = req.body;
+      const requestBody = req.body as UpdateGrnDto & { grn?: string };
 
       // ✅ Handle multipart form-data JSON body
-      if (req.body.grn) {
-        grnData = JSON.parse(req.body.grn);
+      if (requestBody.grn) {
+        grnData = JSON.parse(requestBody.grn) as UpdateGrnDto;
       }
 
       // ✅ Handle uploaded image
@@ -684,8 +686,10 @@ export class GrnController {
       }
 
       // ✅ Clean 'null' strings
-      Object.keys(grnData).forEach((key) => {
-        if (grnData[key] === 'null') grnData[key] = null;
+      (Object.keys(grnData) as Array<keyof UpdateGrnDto>).forEach((key) => {
+        if (grnData[key] === 'null') {
+          grnData[key] = null as any;
+        }
       });
 
       const updatedBy = res.locals.updatedBy;
