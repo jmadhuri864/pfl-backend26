@@ -17,6 +17,7 @@ import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository'
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { BranchessRepository } from '../repositories/branches.repository';
+import { CreateGrnDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
 
 interface SourceMetrics {
   totalPurchases: number;
@@ -184,7 +185,7 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
   await this.cacheService.set(cacheKey, recycleResult, this.CACHE_TTL);
   return recycleResult;
   }
-  public async createGrn(grnData: any): Promise<any> {
+  public async createGrn(grnData: CreateGrnDto): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -199,7 +200,7 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
         });
 
         if (!branch) {
-          throw new Error(`Branch not found for id: ${grnData.purchaseForWhich}`);
+          throw new Error(`Branch not found for id: ${grnData.purchaseLocation}`);
         }
 
         const serialNo = await this.generateSerialNo(branch.prefix);
@@ -218,11 +219,19 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
       });
       const productIds = variants.map(v => v.product?.id).filter(Boolean);
 
-        const grn = queryRunner.manager.create(this.grnRepository.target, {...grnData,
-           variants: variants.map(v => ({ id: v.id })),
-        products: productIds.map(id => ({ id })),
-      });
-        const savedGrn = await queryRunner.manager.save(grn) as GRN | GRN[];
+      const { variants: _discardVariants, ...grnPayload } = grnData as any;
+      const createPayload = {
+        ...grnPayload,
+        grnProducts: grnPayload.grnProducts?.map((product: any) => ({
+          ...product,
+          productName: product.productName ? { id: product.productName } : undefined,
+          variant: product.variant ? { id: product.variant } : undefined,
+          uom: product.uom ? { id: product.uom } : undefined,
+        })),
+      };
+
+      const grn = queryRunner.manager.create(this.grnRepository.target, createPayload as any);
+      const savedGrn = await queryRunner.manager.save(grn) as GRN | GRN[];
         console.log('totalAmt ', grnData.requestedBy);
 
         const document = await this.documentbService.createDocument({
@@ -251,7 +260,7 @@ public async getAllRecycleBinGrns(queryOptions: PaginationOptions, userId: strin
     }
 
 public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promise<{
-    data: any[];
+    data: GrnListItemDto[];
     meta: { total: number; page: number; pages: number };
   }> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
@@ -388,7 +397,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
           
          
 
-  public async getGrnById(id: string): Promise<any> {
+  public async getGrnById(id: string): Promise<GrnDetailDto> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -423,7 +432,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     const rawDate = grn.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
-    const result = {
+    const result: GrnDetailDto = {
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy,
@@ -506,19 +515,16 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     return result;
   }
 
-  public async getGrnByIdForView(docid: string): Promise<any> {
+  public async getGrnByIdForView(docid: string): Promise<GrnDetailDto> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const document = await this.documentbService.getDocumentById(docid)
+    const document = await this.documentbService.getDocumentById(docid);
     const id = document.documentTypeId;
     console.log('id in getGrnByIdForView', id);
 
     if (id) {
-      console.log("Hiiiiiiiiiiiiiiiiiiiiiii");
-      console.log('Document type ID not found for document:', id);
-
       const grn = await this.grnRepository.findOne({
         where: { id },
         relations: [
@@ -539,8 +545,6 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         ],
       });
 
-      console.log('grn in getGrnByIdForView', grn);
-
       if (!grn) {
         throw new Error('GRN not found');
       }
@@ -558,15 +562,17 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       }
       const rawDate = grn.createdAt;
       const { createdDate, createdTime } = formatDateTime(rawDate);
-      console.log(grn.timeIn);
-      const viewResult = {
+
+      const viewResult: GrnDetailDto = {
         id: grn.id,
         companyName: grn.companyName?.name ?? null,
         purchaseInstructionsBy: grn.purchaseInstructionsBy
-          ? `${grn.purchaseInstructionsBy.firstName || ''} ${grn.purchaseInstructionsBy.lastName || ''}`.trim() || null
+          ? `${grn.purchaseInstructionsBy.firstName || ''} ${grn.purchaseInstructionsBy.lastName || ''}`.trim()
           : null,
-        dealSlipId: grn.dealSlipId?.dealSlipNo || null,
-
+        dealSlipId: {
+          id: grn.dealSlipId?.id || null,
+          dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
+        },
         purchaseType: grn.purchaseType,
         otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
         otherPurchaseLoc: grn.otherPurchaseLoc || null,
@@ -576,6 +582,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         rmn: grn.rmn,
         createdDate: createdDate,
         createdTime: createdTime,
+        createdBy:`${grn.createdBy.firstName} ${grn.createdBy.lastName}`.trim() || null,
         requestingDepartment: grn.requestingDepartment,
         purchaseLocation: grn.purchaseLocation?.name ?? null,
         purchaseForSalesLocation: grn.purchaseForSalesLocation?.name ?? null,
@@ -599,22 +606,23 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         securityPerson: grn.securityPerson,
         approvalNote: grn.approvalNote,
         remark: grn.remark,
-
         purchaseBy: grn.purchaseBy
-          ? `${grn.purchaseBy.firstName} ${grn.purchaseBy.lastName}`
+          ? {
+              firstName: grn.purchaseBy.firstName || '',
+              lastName: grn.purchaseBy.lastName || '',
+            }
           : null,
-
         paymentInfo: grn.paymentInfo
           ? {
-            id: grn.paymentInfo.id,
-            paymentMode: grn.paymentInfo.paymentMode,
-            paymentDate: grn.paymentInfo.paymentDate,
-            advancePaidAmt: grn.paymentInfo.advancePaidAmt,
-            remainingAmt: grn.paymentInfo.remainingAmt,
-            paymentTerms: grn.paymentInfo.paymentTerms,
-            dueDate: grn.paymentInfo.dueDate,
-            creditPeriod: grn.paymentInfo.creditPeriod,
-          }
+              id: grn.paymentInfo.id,
+              paymentMode: grn.paymentInfo.paymentMode,
+              paymentDate: grn.paymentInfo.paymentDate,
+              advancePaidAmt: grn.paymentInfo.advancePaidAmt,
+              remainingAmt: grn.paymentInfo.remainingAmt,
+              paymentTerms: grn.paymentInfo.paymentTerms,
+              dueDate: grn.paymentInfo.dueDate,
+              creditPeriod: grn.paymentInfo.creditPeriod,
+            }
           : null,
         grnProducts: grn.grnProducts.map((product) => ({
           id: product.id,
@@ -623,7 +631,6 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
           productName: product.productName?.name ?? null,
           variant: product.variant?.variantName || null,
           uom: product.uom?.unit ?? null,
-         
           amount: product.amount,
           rtv: product.rtv,
           netWeight: product.netWeight,
@@ -637,23 +644,25 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
           deliveryLocation: product.deliveryLocation,
           expectedHarvestDate: product.expectedHarvestDate,
         })),
-        overAllStatus: document.overAllStatus,
-        createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
-        documentId: document.id,
       };
       await this.cacheService.set(cacheKey, viewResult, this.CACHE_TTL);
       return viewResult;
     }
+
+    throw new Error('Document type ID not found for document');
   }
 
-  public async getGrnByIdForupdate(id: string): Promise<any> {
+  public async getGrnByIdForupdate(id: string): Promise<GrnDetailDto> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
+     const document = await this.documentbService.getDocumentById(id)
+    const id1 = document.documentTypeId;
+    console.log('id in getGrnByIdForView', id);
+
     const grn = await this.grnRepository.findOne({
-      where: { id: id },
+      where: { id: id1 },
       relations: [
         'companyName',
         'grnProducts',
@@ -686,11 +695,14 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     const rawDate = grn.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
-    const updateResult = {
+    const updateResult: GrnDetailDto = {
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy?.id || null,
-      dealSlipId: grn.dealSlipId?.id || null,
+      dealSlipId: {
+        id: grn.dealSlipId?.id || null,
+        dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
+      },
 
       purchaseType: grn.purchaseType,
       otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
@@ -725,7 +737,12 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       approvalNote: grn.approvalNote,
       remark: grn.remark,
 
-      purchaseBy: grn.purchaseBy?.id || null,
+      purchaseBy: grn.purchaseBy
+        ? {
+            firstName: grn.purchaseBy.firstName || '',
+            lastName: grn.purchaseBy.lastName || '',
+          }
+        : null,
 
       paymentInfo: grn.paymentInfo
         ? {
@@ -767,22 +784,123 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
 
   public async updateGrn(
   id: string,
-  grnData: any,
+  grnData: UpdateGrnDto,
   updatedBy: string,
 ): Promise<any> {
-  const grn = await this.grnRepository.findOne({ where: { id } });
-  console.log("Fetched GRN:", grn);
-  
+  const grn = await this.grnRepository.findOne({
+    where: { id },
+    relations: [
+      'companyName',
+      'purchaseInstructionsBy',
+      'purchaseLocation',
+      'purchaseForSalesLocation',
+      'dealSlipId',
+      'selectedVendor',
+      'selectedFarmer',
+      'purchaseBy',
+      'paymentInfo',
+      'grnProducts',
+      'grnProducts.productName',
+      'grnProducts.uom',
+      'grnProducts.variant',
+    ],
+  });
+  console.log('Fetched GRN:', grn);
+
   if (!grn) return null;
 
   const originalGrn = { ...grn };
 
-  
-  if ('id' in grnData) delete grnData.id;
+  const payload = { ...grnData } as any;
+  delete payload.id;
+  delete payload.variants;
 
-  Object.assign(grn, grnData);
+  const relatedFields: any = {};
 
-  console.log("Saving updated GRN:", grn);
+  if (payload.companyName) {
+    relatedFields.companyName = { id: payload.companyName };
+  }
+  if (payload.purchaseInstructionsBy) {
+    relatedFields.purchaseInstructionsBy = { id: payload.purchaseInstructionsBy };
+  }
+  if (payload.purchaseLocation) {
+    relatedFields.purchaseLocation = { id: payload.purchaseLocation };
+  }
+  if (payload.purchaseForSalesLocation) {
+    relatedFields.purchaseForSalesLocation = { id: payload.purchaseForSalesLocation };
+  }
+  if (payload.dealSlipId) {
+    relatedFields.dealSlipId = { id: payload.dealSlipId };
+  }
+  if (payload.selectedVendor) {
+    relatedFields.selectedVendor =
+      typeof payload.selectedVendor === 'string'
+        ? { id: payload.selectedVendor }
+        : payload.selectedVendor;
+  }
+  if (payload.selectedFarmer) {
+    relatedFields.selectedFarmer =
+      typeof payload.selectedFarmer === 'string'
+        ? { id: payload.selectedFarmer }
+        : payload.selectedFarmer;
+  }
+  if (payload.purchaseBy) {
+    relatedFields.purchaseBy = { id: payload.purchaseBy };
+  }
+  if ('paymentInfo' in payload) {
+    relatedFields.paymentInfo = payload.paymentInfo
+      ? {
+          id: payload.paymentInfo.id,
+          paymentMode: payload.paymentInfo.paymentMode,
+          paymentDate: payload.paymentInfo.paymentDate,
+          advancePaidAmt: payload.paymentInfo.advancePaidAmt,
+          remainingAmt: payload.paymentInfo.remainingAmt,
+          paymentTerms: payload.paymentInfo.paymentTerms,
+          dueDate: payload.paymentInfo.dueDate,
+          creditPeriod: payload.paymentInfo.creditPeriod,
+        }
+      : null;
+  }
+  if (payload.grnProducts) {
+    relatedFields.grnProducts = payload.grnProducts.map((product: any) => ({
+      id: product.id,
+      quantity: product.quantity,
+      unitPrice: product.unitPrice,
+      productName: product.productName ? { id: product.productName } : undefined,
+      variant: product.variant ? { id: product.variant } : undefined,
+      uom: product.uom ? { id: product.uom } : undefined,
+      amount: product.amount,
+      rtv: product.rtv,
+      netWeight: product.netWeight,
+      grossWeight: product.grossWeight,
+      packingMaterialWeight: product.packingMaterialWeight,
+      revisedRate: product.revisedRate,
+      revisedQuantity: product.revisedQuantity,
+      purchaseDate: product.purchaseDate,
+      dispatchDate: product.dispatchDate,
+      deliveryDate: product.deliveryDate,
+      deliveryLocation: product.deliveryLocation,
+      expectedHarvestDate: product.expectedHarvestDate,
+    }));
+  }
+
+  const scalarPayload = { ...payload };
+  [
+    'companyName',
+    'purchaseInstructionsBy',
+    'purchaseLocation',
+    'purchaseForSalesLocation',
+    'dealSlipId',
+    'selectedVendor',
+    'selectedFarmer',
+    'purchaseBy',
+    'paymentInfo',
+    'grnProducts',
+  ].forEach((key) => delete scalarPayload[key]);
+
+  Object.assign(grn, scalarPayload, relatedFields);
+
+  console.log('Saving updated GRN:', grn);
 
   const updatedGrn = await this.grnRepository.save(grn);
 

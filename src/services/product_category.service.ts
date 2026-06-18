@@ -8,6 +8,8 @@ import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import { CreateProductCategoryDto, ProductCategoryResponseDto } from "../dtos/product.dto";
+import { PaginatedResponse } from "../dtos/createCustomer.dto";
 
 const CACHE_PREFIX = "productCategory";
 const CACHE_TTL = 300;
@@ -39,7 +41,7 @@ export class ProductCategoryService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  async getAll(queryOptions: PaginationOptions): Promise<any> {
+  async getAll(queryOptions: PaginationOptions): Promise<PaginatedResponse<ProductCategoryResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -57,7 +59,7 @@ export class ProductCategoryService {
 
     const result = await buildQuery(queryBuilder, queryOptions, "productCategory");
 
-    const formatted = {
+    const formatted: PaginatedResponse<ProductCategoryResponseDto> = {
       data: result.data.map((pro) => ({
         id: pro.id,
         name: pro.name,
@@ -70,7 +72,7 @@ export class ProductCategoryService {
     return formatted;
   }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<ProductCategoryResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -88,7 +90,7 @@ export class ProductCategoryService {
 
     if (!result) return null;
 
-    const formatted = {
+    const formatted: ProductCategoryResponseDto = {
       id: result.id,
       name: result.name,
       productClassification: result.productClassification?.id ?? null,
@@ -98,7 +100,7 @@ export class ProductCategoryService {
     return formatted;
   }
 
-  async create(data: any): Promise<any> {
+  async create(data: CreateProductCategoryDto): Promise<ProductCategory> {
     const productClassification = await this.productClassificationRepository.findOneBy({
       id: data.productClassification,
     });
@@ -107,15 +109,23 @@ export class ProductCategoryService {
       throw new Error("Product Classification not found");
     }
 
-    const productCategory = this.productCategoryRepository.create({ ...data });
-    const saved = await this.productCategoryRepository.save(productCategory);
+    const productCategory =
+    this.productCategoryRepository.create({
+      name: data.name,
+      productClassification,
+    });
+
+    //const productCategory = this.productCategoryRepository.create({ ...data });
+    const saved =
+    await this.productCategoryRepository.save(productCategory);
+    //const saved = await this.productCategoryRepository.save(productCategory);
     await this.invalidateCache();
     return saved;
   }
 
   public async update(
     id: string,
-    categoryData: any,
+    categoryData: CreateProductCategoryDto,
     updatedBy: string,
   ): Promise<ProductCategory | null> {
     const category = await this.productCategoryRepository.findOne({

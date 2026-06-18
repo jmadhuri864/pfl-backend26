@@ -33,6 +33,7 @@ import './controllers/logCleanup.controller';
 
 /* ───────────── Allowed Origins ───────────── */
 const allowedOrigins = [
+  "http://192.168.1.59:5173/",
   "http://192.168.1.60:5173",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -102,8 +103,8 @@ const startServer = async () => {
       }));
 
       // Rate limiting — apply before routes
-      //app.use('/auth', authRateLimit);   // 5 requests / 15 min on auth endpoints
-      //app.use(apiRateLimit);             // 1000 requests / 15 min on all other endpoints
+      // app.use('/auth', authRateLimit);   // 5 requests / 15 min on auth endpoints
+      // app.use(apiRateLimit);             // 1000 requests / 15 min on all other endpoints
       
       // Skip compression for SSE endpoints — compression buffers the stream and delays events
       app.use(compression({

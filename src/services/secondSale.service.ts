@@ -5,7 +5,7 @@ import { SecondSaleRepository } from "../repositories/secondSale.repository";
 import { SecondSale } from "../entities/secondSale.entity";
 import AppError from "../utils/appError";
 import { AuditLogService } from "./auditLog.service";
-import { DataSource, ILike, In } from "typeorm";
+import { DataSource, DeepPartial, ILike, In } from "typeorm";
 import { SecondSaleProduct } from "../entities/secondSaleProduct.entity";
 
 import logger from "../utils/logger";
@@ -22,6 +22,7 @@ import { ApprovalFlowService } from "./approvalFlow.service";
 import { ProductVarientRepository } from "../repositories/varients.repository";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { CacheService } from "./cache.service";
+import { CreateSecondSaleDto, SecondSaleDetailDto, SecondSaleListItemDto, SecondSaleListResponseDto, UpdateSecondSaleDto } from "../dtos/secondSale.dto";
 
 
 @injectable()
@@ -78,28 +79,26 @@ export class SecondSaleService {
   }
 
 
-
-
-
-  public async createSecondSale(secondSaleData: any, requestedBy: any): Promise<any> {
+  public async createSecondSale(secondSaleData: CreateSecondSaleDto, requestedBy: string): Promise<any> {
     const queryRunner = this.AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      //TODO: Check approval flow is exit or not for logged user
+      // Check approval flow exists for logged user
+      //const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, DocumentTypeEnum.SECOND_SALE);
 
-      const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
-
-      if (!approvalFlowExit) {
-        throw new Error('Approval flow not found');
-      }
+      // if (!approvalFlowExit) {
+      //   throw new Error('Approval flow not found');
+      // }
+//console.log(secondSaleData)
       // 1. Normalize variant IDs
       let variantIds: string[] = [];
-      if (Array.isArray(secondSaleData.variants)) {
-        variantIds = secondSaleData.variants;
-      } else if (secondSaleData.variants) {
-        variantIds = [secondSaleData.variants];
+      const variants_raw = (secondSaleData as any).variants;
+      if (Array.isArray(variants_raw)) {
+        variantIds = variants_raw;
+      } else if (variants_raw) {
+        variantIds = [variants_raw];
       }
 
       // 2. Fetch variants with product relation
@@ -110,51 +109,253 @@ export class SecondSaleService {
 
       // 3. Extract product IDs from variants
       const productIds = variants.map(v => v.product?.id).filter(Boolean);
-      const serialNo = await this.generateSerialNo();
-      secondSaleData.secondSaleNo = serialNo;
-      const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
-        ...secondSaleData,
-        variants: variants.map(v => ({ id: v.id })), // only IDs
-        products: productIds.map(id => ({ id })),   // only IDs
-      });
-      const savedSecondSale = await queryRunner.manager.save(secondSale);
 
+      // 4. Generate serial number and assign
+      const serialNo = await this.generateSerialNo();
+
+      // 5. Create second sale entity
+      
+      // 5. Create second sale entity
+const secondSale = this.secondSaleRepository.create({
+  secondSaleNo:       serialNo,
+  saleDate:           secondSaleData.saleDate as string,
+  customerName:       secondSaleData.customerName,
+  customerContactNo:  secondSaleData.customerContactNo,
+  customerEmail:      secondSaleData.customerEmail,
+  reasonForSale:      secondSaleData.reasonForSale,
+  totalNetWeight:     secondSaleData.totalNetWeight,
+  totalGrossWeight:   secondSaleData.totalGrossWeight,
+  totalAmt:           secondSaleData.totalAmt,
+  totalAmtInWords:    secondSaleData.totalAmtInWords,
+  paidAmount:         secondSaleData.paidAmount,
+  paymentMode:        secondSaleData.paymentMode,
+  pendingAmt:         secondSaleData.pendingAmt,
+  remarks:            secondSaleData.remarks,
+  companyName:        secondSaleData.companyName       ? { id: secondSaleData.companyName }       : null,
+  location:           secondSaleData.location          ? { id: secondSaleData.location }          : null,
+  deliveryChallanNo:  secondSaleData.deliveryChallanNo ? { id: secondSaleData.deliveryChallanNo } : null,
+  customerAddress:    secondSaleData.customerAddress  ,
+  secondSaleProducts: secondSaleData.secondSaleProducts ?? [],
+} as DeepPartial<SecondSale>);
+
+// Save through queryRunner so it's part of the transaction
+const savedSecondSale = await queryRunner.manager.save(SecondSale, secondSale);
+
+      // 6. Create associated document
       const document = await this.documentbService.createDocument({
         type: DocumentTypeEnum.SECOND_SALE,
         docDef: DocDefEnum.SALE,
-        // totalAmt: rfpaData.totalAmt,
         status: DocumentStatus.HOLD,
         remarks: 'Document auto-created with SecondSale',
         lastActionBy: { id: requestedBy },
-        document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
-      },);
+        document_type_id: Array.isArray(savedSecondSale)
+          ? (savedSecondSale[0] as SecondSale)?.id
+          : (savedSecondSale as SecondSale).id,
+      });
 
-      // Commit transaction - all operations succeeded
+      // 7. Commit transaction
       await queryRunner.commitTransaction();
-
-      // Start approval flow after commit so second sale is visible to other DB connections
+console.log(document.id)
+      // 8. Start approval flow after commit
       await this.documentbService.startApprovalFlow(document.id);
 
       await this.invalidateCache();
       return savedSecondSale;
+
     } catch (error: any) {
-      // Rollback transaction - undo all changes
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Release query runner
       await queryRunner.release();
     }
   }
 
 
+  // public async createSecondSale(secondSaleData: any, requestedBy: any): Promise<any> {
+  //   const queryRunner = this.AppDataSource.createQueryRunner();
+  //   await queryRunner.connect();
+  //   await queryRunner.startTransaction();
 
+  //   try {
+  //     //TODO: Check approval flow is exit or not for logged user
 
+  //     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(requestedBy, 'second-sale')
 
-  public async getAllSecondSales(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  //     if (!approvalFlowExit) {
+  //       throw new Error('Approval flow not found');
+  //     }
+  //     // 1. Normalize variant IDs
+  //     let variantIds: string[] = [];
+  //     if (Array.isArray(secondSaleData.variants)) {
+  //       variantIds = secondSaleData.variants;
+  //     } else if (secondSaleData.variants) {
+  //       variantIds = [secondSaleData.variants];
+  //     }
+
+  //     // 2. Fetch variants with product relation
+  //     const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
+  //       where: { id: In(variantIds) },
+  //       relations: ['product'],
+  //     });
+
+  //     // 3. Extract product IDs from variants
+  //     const productIds = variants.map(v => v.product?.id).filter(Boolean);
+  //     const serialNo = await this.generateSerialNo();
+  //     secondSaleData.secondSaleNo = serialNo;
+  //     const secondSale = queryRunner.manager.create(this.secondSaleRepository.target, {
+  //       ...secondSaleData,
+  //       variants: variants.map(v => ({ id: v.id })), // only IDs
+  //       products: productIds.map(id => ({ id })),   // only IDs
+  //     });
+  //     const savedSecondSale = await queryRunner.manager.save(secondSale);
+
+  //     const document = await this.documentbService.createDocument({
+  //       type: DocumentTypeEnum.SECOND_SALE,
+  //       docDef: DocDefEnum.SALE,
+  //       // totalAmt: rfpaData.totalAmt,
+  //       status: DocumentStatus.HOLD,
+  //       remarks: 'Document auto-created with SecondSale',
+  //       lastActionBy: { id: requestedBy },
+  //       document_type_id: Array.isArray(savedSecondSale) ? (savedSecondSale[0] as SecondSale)?.id : (savedSecondSale as SecondSale).id
+  //     },);
+
+  //     // Commit transaction - all operations succeeded
+  //     await queryRunner.commitTransaction();
+
+  //     // Start approval flow after commit so second sale is visible to other DB connections
+  //     await this.documentbService.startApprovalFlow(document.id);
+
+  //     await this.invalidateCache();
+  //     return savedSecondSale;
+  //   } catch (error: any) {
+  //     // Rollback transaction - undo all changes
+  //     await queryRunner.rollbackTransaction();
+  //     throw error;
+  //   } finally {
+  //     // Release query runner
+  //     await queryRunner.release();
+  //   }
+  // }
+
+  // public async getAllSecondSales(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  //   try {
+  //     const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
+  //     const cached = await this.cacheService.get<any>(cacheKey);
+  //     if (cached) return cached;
+
+  //     const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+  //       userId,
+  //       DocumentTypeEnum.SECOND_SALE,
+  //       queryOptions,
+  //     );
+  //     const { search } = queryOptions;
+  //     const typedDocuments = data as DocumentWithRelatedData[];
+
+  //     const saleIds = typedDocuments
+  //       .map((doc) => doc.document_type_id)
+  //       .filter(Boolean) as string[];
+
+  //     let saleMap = new Map<string, any>();
+  //     if (saleIds.length > 0) {
+  //       const sales = await this.secondSaleRepository
+  //         .createQueryBuilder('ss')
+  //         .leftJoin('ss.companyName', 'companyName')
+  //         .leftJoin('ss.location', 'location')
+  //         .select([
+  //           'ss.id', 'ss.secondSaleNo', 'ss.saleDate', 'ss.customerName',
+  //           'ss.customerContactNo', 'ss.customerEmail', 'ss.reasonForSale',
+  //           'ss.totalNetWeight', 'ss.totalGrossWeight', 'ss.totalAmt',
+  //           'ss.totalAmtInWords', 'ss.paidAmount', 'ss.paymentMode',
+  //           'ss.pendingAmt', 'ss.remarks',
+  //           'companyName.name', 'location.name',
+  //         ])
+  //         .where('ss.id IN (:...ids)', { ids: saleIds })
+  //         .andWhere('ss.isDeleted = false')
+  //         .andWhere('ss.deletedAt IS NULL')
+  //         .getMany();
+
+  //       saleMap = new Map(sales.map((s) => [s.id, s]));
+  //     }
+
+  //     let relatedDataOnly = typedDocuments
+  //       .filter((doc) => doc.document_type_id && saleMap.has(doc.document_type_id))
+  //       .map((doc) => {
+  //         const rd = saleMap.get(doc.document_type_id!);
+  //         if (!rd) return null;
+  //         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+  //         return {
+  //           documentId: doc.id,
+  //           overAllStatus: doc.status,
+  //           createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+  //           createdDate,
+  //           createdTime,
+  //           id: rd.id,
+  //           secondSaleNo: rd.secondSaleNo ?? null,
+  //           saleDate: rd.saleDate ?? null,
+  //           customerName: rd.customerName ?? null,
+  //           customerContactNo: rd.customerContactNo ?? null,
+  //           customerEmail: rd.customerEmail ?? null,
+  //           reasonForSale: rd.reasonForSale ?? null,
+  //           totalNetWeight: rd.totalNetWeight ?? null,
+  //           totalGrossWeight: rd.totalGrossWeight ?? null,
+  //           totalAmt: rd.totalAmt ?? null,
+  //           totalAmtInWords: rd.totalAmtInWords ?? null,
+  //           paidAmount: rd.paidAmount ?? null,
+  //           paymentMode: rd.paymentMode ?? null,
+  //           pendingAmt: rd.pendingAmt ?? null,
+  //           remarks: rd.remarks ?? null,
+  //           companyName: rd.companyName?.name ?? null,
+  //           location: rd.location?.name ?? null,
+  //         };
+  //       })
+  //       .filter(Boolean);
+
+  //     const objectToString = (obj: any): string => {
+  //       if (obj == null) return '';
+  //       if (typeof obj === 'object') return Object.values(obj).map((v) => objectToString(v)).join(' ');
+  //       return String(obj);
+  //     };
+
+  //     if (search && search.trim()) {
+  //       const term = search.toLowerCase();
+  //       relatedDataOnly = relatedDataOnly.filter((item) =>
+  //         objectToString(item).toLowerCase().includes(term),
+  //       );
+  //     }
+
+  //     if (queryOptions.sort) {
+  //       const [field, direction] = queryOptions.sort.split(':');
+  //       const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+  //       const getNestedValue = (obj: any, path: string) =>
+  //         path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+  //       relatedDataOnly.sort((a, b) => {
+  //         const valA = getNestedValue(a, field);
+  //         const valB = getNestedValue(b, field);
+  //         if (valA == null && valB == null) return 0;
+  //         if (valA == null) return -1 * sortOrder;
+  //         if (valB == null) return 1 * sortOrder;
+  //         if (!isNaN(valA) && !isNaN(valB)) return (Number(valA) - Number(valB)) * sortOrder;
+  //         return String(valA).localeCompare(String(valB)) * sortOrder;
+  //       });
+  //     }
+
+  //     const result = {
+  //       data: relatedDataOnly,
+  //       meta: { total: meta.total, page: meta.page, pages: meta.pages },
+  //     };
+
+  //     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //     return result;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  public async getAllSecondSales(queryOptions: PaginationOptions, userId: string): Promise<SecondSaleListResponseDto> {
     try {
       const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
-      const cached = await this.cacheService.get<any>(cacheKey);
+      const cached = await this.cacheService.get<SecondSaleListResponseDto>(cacheKey);
       if (cached) return cached;
 
       const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
@@ -191,38 +392,40 @@ export class SecondSaleService {
         saleMap = new Map(sales.map((s) => [s.id, s]));
       }
 
-      let relatedDataOnly = typedDocuments
+      let relatedDataOnly: SecondSaleListItemDto[] = typedDocuments
         .filter((doc) => doc.document_type_id && saleMap.has(doc.document_type_id))
-        .map((doc) => {
+        .map((doc): SecondSaleListItemDto | null => {
           const rd = saleMap.get(doc.document_type_id!);
           if (!rd) return null;
+
           const { createdDate, createdTime } = formatDateTime(doc.createdAt);
+
           return {
-            documentId: doc.id,
-            overAllStatus: doc.status,
-            createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
-            createdDate,
-            createdTime,
-            id: rd.id,
-            secondSaleNo: rd.secondSaleNo ?? null,
-            saleDate: rd.saleDate ?? null,
-            customerName: rd.customerName ?? null,
+            id:               rd.id,
+            documentId:       doc.id,
+            overAllStatus:    doc.status,
+            createdBy:        `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
+            createdDate:      createdDate ?? null,
+            createdTime:      createdTime ?? null,
+            secondSaleNo:     rd.secondSaleNo ?? null,
+            saleDate:         rd.saleDate ?? null,
+            customerName:     rd.customerName ?? null,
             customerContactNo: rd.customerContactNo ?? null,
-            customerEmail: rd.customerEmail ?? null,
-            reasonForSale: rd.reasonForSale ?? null,
-            totalNetWeight: rd.totalNetWeight ?? null,
+            customerEmail:    rd.customerEmail ?? null,
+            reasonForSale:    rd.reasonForSale ?? null,
+            totalNetWeight:   rd.totalNetWeight ?? null,
             totalGrossWeight: rd.totalGrossWeight ?? null,
-            totalAmt: rd.totalAmt ?? null,
-            totalAmtInWords: rd.totalAmtInWords ?? null,
-            paidAmount: rd.paidAmount ?? null,
-            paymentMode: rd.paymentMode ?? null,
-            pendingAmt: rd.pendingAmt ?? null,
-            remarks: rd.remarks ?? null,
-            companyName: rd.companyName?.name ?? null,
-            location: rd.location?.name ?? null,
+            totalAmt:         rd.totalAmt ?? null,
+            totalAmtInWords:  rd.totalAmtInWords ?? null,
+            paidAmount:       rd.paidAmount ?? null,
+            paymentMode:      rd.paymentMode ?? null,
+            pendingAmt:       rd.pendingAmt ?? null,
+            remarks:          rd.remarks ?? null,
+            companyName:      rd.companyName?.name ?? null,
+            location:         rd.location?.name ?? null,
           };
         })
-        .filter(Boolean);
+        .filter((item): item is SecondSaleListItemDto => item !== null);
 
       const objectToString = (obj: any): string => {
         if (obj == null) return '';
@@ -254,7 +457,7 @@ export class SecondSaleService {
         });
       }
 
-      const result = {
+      const result: SecondSaleListResponseDto = {
         data: relatedDataOnly,
         meta: { total: meta.total, page: meta.page, pages: meta.pages },
       };
@@ -321,7 +524,7 @@ export class SecondSaleService {
     }
   }
 
-  public async getSecondSaleByIdForView(docId: string): Promise<any> {
+  public async getSecondSaleByIdForView(docId: string): Promise<SecondSaleDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -368,7 +571,7 @@ export class SecondSaleService {
     const { createdDate, createdTime } = formatDateTime(secondSale.createdAt);
     const addr = secondSale.customerAddress;
 
-    const result = {
+    const result:SecondSaleDetailDto = {
       id: secondSale.id,
       documentId: document.id,
       overAllStatus: document.overAllStatus,
@@ -378,8 +581,8 @@ export class SecondSaleService {
       location: secondSale.location?.name ?? null,
       deliveryChallanNo: secondSale.deliveryChallanNo?.challanNo ?? null,
       saleDate: secondSale.saleDate ?? null,
-      createdDate,
-      createdTime,
+      // createdDate,
+      // createdTime,
       customerName: secondSale.customerName ?? null,
       customerContactNo: secondSale.customerContactNo ?? null,
       customerEmail: secondSale.customerEmail ?? null,
@@ -424,9 +627,9 @@ export class SecondSaleService {
 
 
 
-  public async getSecondSaleByIdForUpdate(id: string): Promise<any> {
+  public async getSecondSaleByIdForUpdate(id: string): Promise<SecondSaleDetailDto> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<SecondSaleDetailDto>(cacheKey);
     if (cached) return cached;
 
     const secondSale = await this.secondSaleRepository
@@ -466,14 +669,14 @@ export class SecondSaleService {
     const { createdDate, createdTime } = formatDateTime(secondSale.createdAt);
     const addr = secondSale.customerAddress;
 
-    const formatResponse = {
+    const formatResponse:SecondSaleDetailDto = {
       id: secondSale.id,
       companyName: secondSale.companyName?.id ?? null,
       location: secondSale.location?.id ?? null,
       deliveryChallanNo: secondSale.deliveryChallanNo?.id ?? null,
       saleDate: secondSale.saleDate ?? null,
-      createdDate,
-      createdTime,
+      // createdDate,
+      // createdTime,
       customerName: secondSale.customerName ?? null,
       customerContactNo: secondSale.customerContactNo ?? null,
       customerEmail: secondSale.customerEmail ?? null,
@@ -491,7 +694,7 @@ export class SecondSaleService {
       paymentMode: secondSale.paymentMode ?? null,
       pendingAmt: secondSale.pendingAmt ?? null,
       remarks: secondSale.remarks ?? null,
-      secondSaleProducts: (secondSale.secondSaleProducts ?? []).map((p: any) => ({
+      secondSaleProducts: (secondSale.secondSaleProducts ?? []).map((p: SecondSaleProduct) => ({
         id: p.id,
         quantity: p.quantity,
         unitPrice: p.unitPrice,
@@ -518,7 +721,7 @@ export class SecondSaleService {
 
   public async updateSecondSale(
     id: string,
-    secondSaleData: any,
+    secondSaleData: UpdateSecondSaleDto,
     updatedBy: string
   ): Promise<any> {
 

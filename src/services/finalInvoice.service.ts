@@ -17,6 +17,7 @@ import { toWords } from 'number-to-words';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import { CreateInvoiceDto, InvoiceDetailDto, InvoiceListItemDto } from '../dtos/invoice.dto';
 
 @injectable()
 export class FinalInvoiceService {
@@ -58,7 +59,7 @@ export class FinalInvoiceService {
     await Promise.all(tasks);
   }
 
-  async create(deliveryChallanId: string, additionalData: any, requestedBy: any): Promise<any> {
+  async create(deliveryChallanId: string, additionalData: CreateInvoiceDto, requestedBy: any): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -127,7 +128,7 @@ export class FinalInvoiceService {
           amount:       acceptedAmt,
           grossWeight:  acceptedGross,
           netWeight:    acceptedNet,
-          hsnCode:      additionalData.hsnCode || '',
+          //hsnCode:      additionalData.hsnCode || '',
           description:  dcProduct.productName?.description || '',
         };
       });
@@ -231,7 +232,7 @@ export class FinalInvoiceService {
           'deliveryAddress',
         ],
       });
-
+      console.log("invoice generated",completeInvoice);
       return completeInvoice;
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
@@ -373,9 +374,9 @@ export class FinalInvoiceService {
     return { data: formattedInvoice };
   }
 
-  public async getByIdForView(id: string): Promise<any> {
+  public async getByIdForView(id: string): Promise<InvoiceDetailDto> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<InvoiceDetailDto>(cacheKey);
     if (cached) return cached;
 
     const document = await this.docDoubleApproverService.getDocumentById(id);
@@ -511,7 +512,7 @@ export class FinalInvoiceService {
   public async getAll(
     queryOptions: PaginationOptions,
     userId: string,
-  ): Promise<any> {
+  ): Promise<{ data: InvoiceListItemDto[]; meta: { total: number; page: number; pages: number } }> {
     const cacheKey = `${this.CACHE_PREFIX}:all:${userId}:${createHash('md5').update(JSON.stringify(queryOptions)).digest('hex')}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -589,7 +590,7 @@ export class FinalInvoiceService {
           .filter(Boolean).join(' ')
       : null;
 
-    const data = raw.entities.map((invoice, i) => {
+    const data: InvoiceListItemDto[] = raw.entities.map((invoice, i) => {
       const r = raw.raw[i];
       const { createdDate, createdTime } = formatDateTime(r.docCreatedAt ?? invoice.createdAt);
       const firstName = r.lastActionByFirstName ?? '';

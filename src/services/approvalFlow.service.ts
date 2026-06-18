@@ -765,7 +765,7 @@ export class ApprovalFlowService {
   //TODO: Here we check approval flow for logged user
   async findApprovalFlowForLoggedUser(userId: any, docDef: any){
     try {
-      //console.log(userId, docDef);
+      console.log(userId, docDef);
 
       const approvalFlow = await this.approvalFlowRepository.findOne({
         where: {
@@ -787,9 +787,10 @@ export class ApprovalFlowService {
 
       return approvalFlow;
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Approval flow service error:', { userId, docDef, originalError: error?.message });
       throw new Error(
-          `Something went wrong In Approval flow service`,
+          `Something went wrong In Approval flow service: ${error?.message || 'Unknown error'}`,
         );
     }
   }

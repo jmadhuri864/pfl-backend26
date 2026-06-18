@@ -5,6 +5,19 @@ import { TYPES } from "../types";
 import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { CacheService } from "./cache.service";
+import {
+  CreateDumpRegisterDto,
+  UpdateDumpRegisterDto,
+  DumpRegisterByIdDto,
+  DumpRegisterForUpdateDto,
+  DumpProductForUpdateDto,
+  DumpRegisterViewDto,
+  DumpProductViewDto,
+  DumpRegisterListItemDto,
+  DumpRegisterListResultDto,
+  DumpRegisterRecycleItemDto,
+  DumpRegisterRecycleResultDto,
+} from '../dtos/dumpRegister.dto';
 
 const CACHE_PREFIX = 'dump';
 const CACHE_TTL = 180;
@@ -87,7 +100,7 @@ export class DumpRegisterService{
 
 
 
-    async createDumpRegister(data: any): Promise<any> {
+    async createDumpRegister(data: CreateDumpRegisterDto): Promise<any> {
        // 1. Validate approval flow exists before doing anything else
       const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, DocDefEnum.OPERATION);
 
@@ -117,22 +130,25 @@ export class DumpRegisterService{
         const rbcId = data.rbcNo || data.rbc;
 const serialNo = await this.generateSerialNo();
 
-        const dumpRegister = queryRunner.manager.create(this.dumpRegisterRepository.target, {
-          dumpNo: serialNo,
-          companyName: companyId ? { id: companyId } : undefined,
-          location: locationId ? { id: locationId } : undefined,
-          grn: grnId ? { id: grnId } : undefined,
-          deliveryChallanNo: deliveryChallanId ? { id: deliveryChallanId } : undefined,
-          rbcNo: rbcId ? { id: rbcId } : undefined,
-          requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
-          date: data.date,
-          dumpType: data.dumpType || undefined,
-          batchNo: data.batchNo,
-          totalQty: data.totalQty,
-          totalDumpCost: data.totalDumpCost,
-          totalCostInWords: data.totalCostInWords,
-          remark: data.remark,
-        });
+        const dumpRegister = queryRunner.manager.create(
+          this.dumpRegisterRepository.target,
+          {
+            dumpNo: serialNo,
+            companyName: companyId ? { id: companyId } : undefined,
+            location: locationId ? { id: locationId } : undefined,
+            grn: grnId ? { id: grnId } : undefined,
+            deliveryChallanNo: deliveryChallanId ? { id: deliveryChallanId } : undefined,
+            rbcNo: rbcId ? { id: rbcId } : undefined,
+            requestedBy: data.requestedBy ? { id: data.requestedBy } : undefined,
+            date: data.date,
+            dumpType: data.dumpType || undefined,
+            batchNo: data.batchNo,
+            totalQty: data.totalQty,
+            totalDumpCost: data.totalDumpCost,
+            totalCostInWords: data.totalCostInWords,
+            remark: data.remark,
+          } as any,
+        );
 
         
         const savedDumpRegister = await queryRunner.manager.save(dumpRegister);
@@ -198,8 +214,8 @@ const serialNo = await this.generateSerialNo();
 
           let stock = await queryRunner.manager.findOne(this.inventoryStockRepository.target, {
             where: {
-              company: { id: companyId },
-              location: { id: locationId },
+              company: { id: companyId! },
+              location: { id: locationId! },
               product: { id: productId },
               variant: variantId ? { id: variantId } : IsNull(),
             },
@@ -259,9 +275,9 @@ const serialNo = await this.generateSerialNo();
       }
     }
 
-  async getAllRecycleBinDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
+  async getAllRecycleBinDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<DumpRegisterRecycleResultDto> {
     const key = `${CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<DumpRegisterRecycleResultDto>(key);
     if (cached) return cached;
 
       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
@@ -288,28 +304,28 @@ const serialNo = await this.generateSerialNo();
             }
           }
       
-          let relatedDataOnly = activeDocuments
+          let relatedDataOnly: DumpRegisterRecycleItemDto[] = activeDocuments
             .filter((doc) => doc.relatedData)
-            .map((doc) => ({
+            .map((doc): DumpRegisterRecycleItemDto => ({
               documentId: doc.id,
               overAllStatus: doc.status,
-              createdBy: doc.lastActionBy?.firstName + ' ' + doc.lastActionBy?.lastName,
+              createdBy: `${doc.lastActionBy?.firstName ?? ''} ${doc.lastActionBy?.lastName ?? ''}`.trim(),
               createdDate: formatDateTime(doc.createdAt).createdDate,
               createdTime: formatDateTime(doc.createdAt).createdTime,
               id: doc.relatedData.id,
               dumpNo: doc.relatedData.dumpNo,
-              companyName: doc.relatedData?.companyName?.name || null,
-              location: doc.relatedData?.location?.name || null,
-              grn: doc.relatedData?.grn?.grnNo || null,
-              deliveryChallanNo: doc.relatedData?.deliveryChallanNo?.challanNo || null,
-              rbcNo: doc.relatedData?.rbcNo?.rbcNo || null,
+              companyName: doc.relatedData?.companyName?.name ?? null,
+              location: doc.relatedData?.location?.name ?? null,
+              grn: doc.relatedData?.grn?.grnNo ?? null,
+              deliveryChallanNo: doc.relatedData?.deliveryChallanNo?.challanNo ?? null,
+              rbcNo: doc.relatedData?.rbcNo?.rbcNo ?? null,
               date: doc.relatedData.date,
               batchNo: doc.relatedData.batchNo,
               totalQty: doc.relatedData.totalQty,
               totalDumpCost: doc.relatedData.totalDumpCost,
               totalCostInWords: doc.relatedData.totalCostInWords,
               remark: doc.relatedData.remark,
-              dumpType: doc.relatedData.dumpType || null,
+              dumpType: doc.relatedData.dumpType ?? null,
             }));
 
              // 🔍 Deep search helper
@@ -351,22 +367,22 @@ const serialNo = await this.generateSerialNo();
     });
   }
       
-      const recycleResponse = {
+      const recycleResponse: DumpRegisterRecycleResultDto = {
         data: relatedDataOnly,
         meta: {
           total: meta.total,
           page: meta.page,
-          pages: meta.pages
-        }
+          pages: meta.pages,
+        },
       };
       await this.cacheService.set(key, recycleResponse, CACHE_TTL);
       return recycleResponse;
     }
   
   //TODO: Document for view
-      async getDumpRegisterById(id: string): Promise<any> {
+      async getDumpRegisterById(id: string): Promise<DumpRegisterByIdDto | null> {
         const key = `${CACHE_PREFIX}:id:${id}`;
-        const cached = await this.cacheService.get<any>(key);
+        const cached = await this.cacheService.get<DumpRegisterByIdDto>(key);
         if (cached) return cached;
 
         const dumpRegister = await this.dumpRegisterRepository.findOne({
@@ -381,11 +397,11 @@ const serialNo = await this.generateSerialNo();
         const rawDate = dumpRegister.createdAt;
         const { createdDate, createdTime } = formatDateTime(rawDate);
       
-        const result = {
+        const result: DumpRegisterByIdDto = {
           id: dumpRegister.id,
-          companyName: dumpRegister.companyName?.id,
-          createdDate: createdDate, 
-          createdTime: createdTime,   
+          companyName: dumpRegister.companyName?.id ?? null,
+          createdDate,
+          createdTime,
           location: dumpRegister.location ? dumpRegister.location.id : null,
           date: dumpRegister.date,
           totalDumpCost: dumpRegister.totalDumpCost,
@@ -393,7 +409,6 @@ const serialNo = await this.generateSerialNo();
           batchNo: dumpRegister.batchNo,
           remark: dumpRegister.remark,
           grn: dumpRegister.grn ? dumpRegister.grn.id : null,
-            
           requestedBy: dumpRegister.requestedBy
             ? {
                 id: dumpRegister.requestedBy.id,
@@ -404,29 +419,26 @@ const serialNo = await this.generateSerialNo();
           dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
             id: dumpProduct.id,
             productName: dumpProduct.productName ? {
-              id:dumpProduct.productName.id ,
-              productName:dumpProduct.productName.name
-            }: null,
-
-              varient: dumpProduct.variant ? {
-              id:dumpProduct.variant.id ,
-              productName:dumpProduct.variant.variantName
-            }: null,
-            uom: dumpProduct.uom ?{ id:dumpProduct.uom.id,unit:dumpProduct.uom.unit }: null,
-           
+              id: dumpProduct.productName.id,
+              productName: dumpProduct.productName.name,
+            } : null,
+            varient: dumpProduct.variant ? {
+              id: dumpProduct.variant.id,
+              productName: dumpProduct.variant.variantName ?? null,
+            } : null,
+            uom: dumpProduct.uom ? { id: dumpProduct.uom.id, unit: dumpProduct.uom.unit } : null,
             quantity: dumpProduct.quantity,
-            amount:dumpProduct.amount,
-            unitPrice:dumpProduct.unitPrice
-           
+            amount: dumpProduct.amount,
+            unitPrice: dumpProduct.unitPrice,
           })),
         };
         await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
         return result;
       }
 
-       async getDumpRegisterByIdforUpdate(id: string): Promise<any> {
+       async getDumpRegisterByIdforUpdate(id: string): Promise<DumpRegisterForUpdateDto | null> {
     const key = `${CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<DumpRegisterForUpdateDto>(key);
     if (cached) return cached;
 
     const dumpRegister = await this.dumpRegisterRepository
@@ -456,7 +468,7 @@ const serialNo = await this.generateSerialNo();
 
     const { createdDate, createdTime } = formatDateTime(dumpRegister.createdAt);
 
-    const updateResult = {
+    const updateResult: DumpRegisterForUpdateDto = {
       createdDate,
       createdTime,
       dumpType: dumpRegister.dumpType ?? null,
@@ -472,7 +484,7 @@ const serialNo = await this.generateSerialNo();
       deliveryChallanNo: dumpRegister.deliveryChallanNo?.id ?? null,
       rbcNo: dumpRegister.rbcNo?.id ?? null,
       requestedBy: dumpRegister.requestedBy?.id ?? null,
-      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p) => ({
+      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p): DumpProductForUpdateDto => ({
         id: p.id,
         productName: p.productName?.id ?? null,
         variant: p.variant?.id ?? null,
@@ -488,9 +500,9 @@ const serialNo = await this.generateSerialNo();
   }
 
       //TODO: Get DumpRegister for View
-       async getDumpRegisterByIdforView(docId: string): Promise<any> {
+       async getDumpRegisterByIdforView(docId: string): Promise<DumpRegisterViewDto | null> {
     const key = `${CACHE_PREFIX}:view:${docId}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<DumpRegisterViewDto>(key);
     if (cached) return cached;
 
     const document = await this.docDoubleApproverService.getDocumentById(docId);
@@ -525,7 +537,7 @@ const serialNo = await this.generateSerialNo();
 
     const { createdDate, createdTime } = formatDateTime(dumpRegister.createdAt);
 
-    const viewResult = {
+    const viewResult: DumpRegisterViewDto = {
       id: dumpRegister.id,
       documentId: document.documentId,
       overAllStatus: document.overAllStatus,
@@ -549,7 +561,7 @@ const serialNo = await this.generateSerialNo();
         : null,
       createdDate,
       createdTime,
-      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p) => ({
+      dumpProducts: (dumpRegister.dumpProducts ?? []).map((p): DumpProductViewDto => ({
         id: p.id,
         productName: p.productName?.name ?? null,
         variant: p.variant?.variantName ?? null,
@@ -704,9 +716,9 @@ const serialNo = await this.generateSerialNo();
 //     // meta,
 //     //     }
 // }
-async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Promise<any> {
+async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Promise<DumpRegisterListResultDto> {
     const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(key);
+    const cached = await this.cacheService.get<DumpRegisterListResultDto>(key);
     if (cached) return cached;
 
     const { data, meta } = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
@@ -744,10 +756,10 @@ async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Prom
       dumpMap = new Map(dumps.map((d) => [d.id, d]));
     }
 
-    let relatedDataOnly = typedDocuments
+    let relatedDataOnly: (DumpRegisterListItemDto | null)[] = typedDocuments
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .filter((doc) => doc.document_type_id && dumpMap.has(doc.document_type_id))
-      .map((doc) => {
+      .map((doc): DumpRegisterListItemDto | null => {
         const rd = dumpMap.get(doc.document_type_id!);
         if (!rd) return null;
         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
@@ -805,8 +817,8 @@ async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Prom
       });
     }
 
-    const listResponse = {
-      data: relatedDataOnly,
+    const listResponse: DumpRegisterListResultDto = {
+      data: relatedDataOnly.filter((x): x is DumpRegisterListItemDto => x !== null),
       meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(key, listResponse, CACHE_TTL);
@@ -815,8 +827,8 @@ async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Prom
     
 public async updateDumpRegister(
   id: string,
-  data: Partial<DumpRegister>,
-  updatedBy: string
+  data: UpdateDumpRegisterDto,
+  updatedBy: string,
 ): Promise<DumpRegister | null> {
   
   const existingDumpRegister = await this.dumpRegisterRepository.findOne({
@@ -842,14 +854,19 @@ public async updateDumpRegister(
     
     await this.dumpProductRepository.delete({ dumpRegister: { id } });
 
-    const newDumpProducts = dumpProducts.map(product => {
-      return this.dumpProductRepository.create({
-        ...product,
-        dumpRegister: existingDumpRegister, 
-      });
-    });
+    const newDumpProducts = dumpProducts.map(product =>
+      this.dumpProductRepository.create({
+        dumpRegister: existingDumpRegister,
+        productName: product.productName ? ({ id: product.productName } as any) : undefined,
+        variant: product.variant ? ({ id: product.variant } as any) : undefined,
+        uom: product.uom ? ({ id: product.uom } as any) : undefined,
+        quantity: product.quantity ?? undefined,
+        unitPrice: product.unitPrice ?? undefined,
+        amount: product.amount ?? undefined,
+      }),
+    );
 
-    await this.dumpProductRepository.save(newDumpProducts);
+    await this.dumpProductRepository.save(newDumpProducts as any);
     existingDumpRegister.dumpProducts = newDumpProducts;
   }
 

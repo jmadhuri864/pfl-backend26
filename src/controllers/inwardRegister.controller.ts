@@ -22,6 +22,7 @@ import { Source } from '../utils/status.enum';
 import { error } from 'console';
 import { PaginationOptions } from '../utils/pagination';
 import { NotificationService } from '../services/notification.service';
+import { CreateInwardRegisterDto, CreateInwardRegisterInput, UpdateInwardRegisterDto } from '../dtos/inwardRegister.dto';
 
 @controller('/inwardRegister', deserializeUser, requireUser)
 export class InwardRegisterController {
@@ -40,7 +41,7 @@ export class InwardRegisterController {
   ) {
     try {
       logger.info('Creating new inward register', { body: req.body });
-      const data = req.body;
+      const data:CreateInwardRegisterInput = req.body;
       //console.log(data);
       const requestedBy = res.locals.user.id;
        data.requestedBy = requestedBy;
@@ -54,9 +55,9 @@ export class InwardRegisterController {
       //console.log(data)
       // Set vendor or farmer based on the source
       if (data.source === Source.VENDOR) {
-        data.selectedVendor = { id: data.selectedParty };
+        data.selectedVendor = { id: data.selectedParty! };
       } else if (data.source === Source.FARMER) {
-        data.selectedFarmer = { id: data.selectedParty };
+        data.selectedFarmer = { id: data.selectedParty! };
       }
       const inwardRegister =
         await this.inwardRegisterService.createInwardRegister(data);
@@ -331,7 +332,7 @@ try {
   @httpPatch('/:id')
   public async updateInwardRegister(
     @requestParam('id') id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdateInwardRegisterDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
@@ -340,9 +341,9 @@ try {
       const updatedBy = res.locals.user.id;
       const updatedData = req.body;
       if (updatedData.source === Source.VENDOR) {
-        updatedData.selectedVendor = { id: updatedData.selectedParty };
+        updatedData.selectedVendor = { id: updatedData.selectedParty! };
       } else if (updatedData.source === Source.FARMER) {
-        updatedData.selectedFarmer = { id: updatedData.selectedParty };
+        updatedData.selectedFarmer = { id: updatedData.selectedParty! };
       }
       //console.log(updatedData)
       const updatedInwardRegister =

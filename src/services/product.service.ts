@@ -26,6 +26,8 @@ import { AppDataSource } from '../utils/data-source';
 import { ProductVarient } from '../entities/productVarient.entity';
 import { QualityParameter } from '../entities/quantityParameter.entity';
 import { CacheService } from './cache.service';
+import { CreateProductDto, ProductDetailResponseDto, ProductListResponseDto } from '../dtos/product.dto';
+import { PaginatedResponse } from '../dtos/createCustomer.dto';
 
 const CACHE_PREFIX = 'product';
 const CACHE_TTL = 180;
@@ -85,7 +87,7 @@ export class ProductService {
     await Promise.all(tasks);
   }
 
-  public generateCombinations(    counts: string[] = [],
+  public generateCombinations(counts: string[] = [],
     sizes: string[] = [],
     varieties: string[] = [],
     origins: string[] = [],
@@ -137,7 +139,7 @@ export class ProductService {
     return `${prefix}${padded}`;
   }
 
-  async create(dto: any): Promise<any> {
+  async create(dto: CreateProductDto): Promise<Product> {
     const prefix = dto.prefix?.toUpperCase();
     if (!prefix) {
       throw new Error('Prefix is required for generating product code');
@@ -146,8 +148,8 @@ export class ProductService {
     const productCode = await this.generateProductCode(prefix);
     dto.productCode = productCode;
 
-    const varientData = dto.varient ?? dto.variant;
-    const { varient, variant, ...productDto } = dto;
+    const varientData = dto.variant ?? dto.variant;
+    const { variant, ...productDto } = dto;
 
     const product = this.productRepository.create(productDto);
     const savedProduct = await this.productRepository.save(product);
@@ -163,45 +165,44 @@ export class ProductService {
       for (const item of variants) {
         const variantName = await getVariantIdentifier(
           savedProduct1.name,
-          item.count,
-          item.size,
-          item.variety,
-          item.origin,
-          item.brand,
+          item.count ?? '',
+          item.size ?? '',
+          item.variety ?? '',
+          item.origin ?? '',
+          item.brand ?? '',
         );
 
-        console.log("Variant name ",variantName)
+        console.log("Variant name ", variantName)
 
         const variantCode = await generateVariantCode(
           savedProduct1.id,
           savedProduct1.prefix,
-          item.count,
-          item.size,
-          item.variety,
-          item.origin,
-          item.brand,
+          item.count ?? '',
+          item.size ?? '',
+          item.variety ?? '',
+          item.origin ?? '',
+          item.brand ?? '',
         );
 
         console.log("Variant code ", variantCode);
-        
+
 
         const variantEntity = this.productVarientsRepository.create({
           ...item,
           product: savedProduct,
           productName: savedProduct1.name,
-          variantName:variantName,
-          variantCode:variantCode,
+          variantName: variantName,
+          variantCode: variantCode,
         });
 
         await this.productVarientsRepository.save(variantEntity);
       }
     }
-
     await this.invalidateProductCache();
     return savedProduct1;
   }
 
-  async getAll(options: PaginationOptions): Promise<any> {
+  async getAll(options: PaginationOptions): Promise<PaginatedResponse<ProductListResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -223,7 +224,7 @@ export class ProductService {
       .orderBy('product.createdAt', 'DESC');
 
     const data1 = await buildQuery(queryBuilder, options, 'product');
-    const result = {
+    const result:PaginatedResponse<ProductListResponseDto> = {
       data: data1.data.map((pro: any) => ({
         id: pro.id,
         name: pro.name,
@@ -233,7 +234,7 @@ export class ProductService {
         storageTemp: pro.storageTemp,
         category: { id: pro.category?.id, name: pro.category?.name },
         classification: { id: pro.classification?.id, name: pro.classification?.name },
-        uom: { id: pro.uom?.id, unit: pro.uom?.unit },
+        uom: { id: pro.uom?.id, unit: pro.uom?.name },
         subcategory: { id: pro.subcategory?.id, name: pro.subcategory?.name },
       })),
       meta: data1.meta,
@@ -271,7 +272,7 @@ export class ProductService {
     return result;
   }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<ProductDetailResponseDto> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -298,7 +299,7 @@ export class ProductService {
 
       if (!product) throw new Error('Product not found');
 
-      const response = {
+      const response: ProductDetailResponseDto = {
         id: product.id,
         name: product.name,
         image: product.image,
@@ -341,11 +342,11 @@ export class ProductService {
     try {
       const queryBuilder = this.productRepository
         .createQueryBuilder('product')
-        
+
         .select([
           'product.id',
           'product.name',
-          
+
           'product.productCode',
         ]);
 
@@ -369,7 +370,10 @@ export class ProductService {
       .where('product.id = :id', { id })
       .getOne();
 
+      console.log("product data",product);
+
     if (!product) throw new Error('Product not found');
+
 
     const result = {
       variants: product.variant?.map((v) => ({
@@ -429,177 +433,177 @@ export class ProductService {
   async createProductWithExcel(fileUrl: string): Promise<any> {
     try {
       console.log("In create product with Excel, fileUrl:", fileUrl);
-      
+
       // First, download the file from DigitalOcean Spaces
       let fileBuffer: Buffer;
-      
+
       if (fileUrl.startsWith('https://')) {
         // Extract the key from the URL
         const urlParts = fileUrl.split('/');
         const key = urlParts.slice(-2).join('/'); // Gets "single/filename"
         console.log('Downloading file from Spaces with key:', key);
-        
+
         // Download file from Spaces
         fileBuffer = await this.getExcelFromSpaces(key);
       } else {
         // If it's already a local path or key, try to get it from Spaces
         fileBuffer = await this.getExcelFromSpaces(fileUrl);
       }
-      
+
       // Read the Excel file from buffer instead of file path
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetNames = workbook.SheetNames;
       console.log("Sheet names found:", sheetNames);
 
-  const productRepository = AppDataSource.getRepository(Product);
-  const uomRepository = AppDataSource.getRepository(UOM);
-  const categoryRepository = AppDataSource.getRepository(ProductCategory);
-  const subcategoryRepository = AppDataSource.getRepository(ProductSubcategory);
+      const productRepository = AppDataSource.getRepository(Product);
+      const uomRepository = AppDataSource.getRepository(UOM);
+      const categoryRepository = AppDataSource.getRepository(ProductCategory);
+      const subcategoryRepository = AppDataSource.getRepository(ProductSubcategory);
 
-  for (const sheetName of sheetNames) {
-    const worksheet = workbook.Sheets[sheetName];
-    console.log("Processing sheet:", sheetName);
+      for (const sheetName of sheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        console.log("Processing sheet:", sheetName);
 
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
 
-    if (jsonData.length < 2) {
-      console.warn("Sheet does not have enough rows:", sheetName);
-      continue;
-    }
-
-    const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
-      h ? String(h).trim() : `UNKNOWN`
-    );
-    console.log("Headers found:", headers);
-
-    const dataRows = jsonData.slice(1); // Skip header row
-    console.log("Number of data rows:", dataRows.length);
-
-    for (const rowUntyped of dataRows) {
-      if (!Array.isArray(rowUntyped) || rowUntyped.length === 0) continue;
-
-      const rowData: Record<string, any> = {};
-      headers.forEach((header, index) => {
-        rowData[header] = rowUntyped[index];
-      });
-
-      console.log("Mapped Row:", rowData);
-
-      if (!rowData["Product Name"]) {
-        console.warn("Skipping incomplete row:", rowData);
-        continue;
-      }
-
-      const productCode = await this.generateProductCode(rowData["Product Code Prefix"]);
-
-      // --- Product Base ---
-      const product = new Product();
-      product.name = rowData["Product Name"];
-      product.productCode = productCode;
-      product.description = rowData["Description"];
-      product.image = rowData["Product Image"];
-      product.prefix = rowData["Product Code Prefix"];
-      product.packingType = rowData["Packing Type"];
-      product.shelfLife = rowData["Shelf Life (Days)"];
-      product.storageTemp = rowData["Storage Temp (°C)"];
-
-      // --- Classification ---
-      if (rowData["Classification"]) {
-        let classification = await this.classificationRepository.findOne({ where: { name: rowData["Classification"] } });
-        if (!classification) {
-          classification = this.classificationRepository.create({ name: rowData["Classification"] });
-          classification = await this.classificationRepository.save(classification);
+        if (jsonData.length < 2) {
+          console.warn("Sheet does not have enough rows:", sheetName);
+          continue;
         }
-        product.classification = classification;
-      }
 
-      // --- UOM ---
-      if (rowData["UOM"]) {
-        let uom = await uomRepository.findOne({ where: { unit: rowData["UOM"] } });
-        if (!uom) {
-          uom = uomRepository.create({
-            unit: rowData["UOM"],
-            abbreviation: rowData["UOM Abbreviation"] || null,
-            description: rowData["UOM Description"] || null,
+        const headers: string[] = (jsonData[0] as any[]).map((h: any) =>
+          h ? String(h).trim() : `UNKNOWN`
+        );
+        console.log("Headers found:", headers);
+
+        const dataRows = jsonData.slice(1); // Skip header row
+        console.log("Number of data rows:", dataRows.length);
+
+        for (const rowUntyped of dataRows) {
+          if (!Array.isArray(rowUntyped) || rowUntyped.length === 0) continue;
+
+          const rowData: Record<string, any> = {};
+          headers.forEach((header, index) => {
+            rowData[header] = rowUntyped[index];
           });
-          uom = await uomRepository.save(uom);
-        }
-        product.uom = uom;
-      }
 
-      // --- Category & Subcategory ---
-      const categoryName = rowData["Category"];
-      const subcategoryName = rowData["Subcategory"];
+          console.log("Mapped Row:", rowData);
 
-      if (categoryName) {
-        let category = await categoryRepository.findOne({ where: { name: categoryName } });
-        if (!category) {
-          category = categoryRepository.create({ name: categoryName });
-          category = await categoryRepository.save(category);
-        }
-        product.category = category;
-
-        if (subcategoryName) {
-          let subcategory = await subcategoryRepository.findOne({
-            where: { name: subcategoryName, category: { id: category.id } },
-          });
-          if (!subcategory) {
-            subcategory = subcategoryRepository.create({ name: subcategoryName, category });
-            subcategory = await subcategoryRepository.save(subcategory);
+          if (!rowData["Product Name"]) {
+            console.warn("Skipping incomplete row:", rowData);
+            continue;
           }
-          product.subcategory = subcategory;
+
+          const productCode = await this.generateProductCode(rowData["Product Code Prefix"]);
+
+          // --- Product Base ---
+          const product = new Product();
+          product.name = rowData["Product Name"];
+          product.productCode = productCode;
+          product.description = rowData["Description"];
+          product.image = rowData["Product Image"];
+          product.prefix = rowData["Product Code Prefix"];
+          product.packingType = rowData["Packing Type"];
+          product.shelfLife = rowData["Shelf Life (Days)"];
+          product.storageTemp = rowData["Storage Temp (°C)"];
+
+          // --- Classification ---
+          if (rowData["Classification"]) {
+            let classification = await this.classificationRepository.findOne({ where: { name: rowData["Classification"] } });
+            if (!classification) {
+              classification = this.classificationRepository.create({ name: rowData["Classification"] });
+              classification = await this.classificationRepository.save(classification);
+            }
+            product.classification = classification;
+          }
+
+          // --- UOM ---
+          if (rowData["UOM"]) {
+            let uom = await uomRepository.findOne({ where: { unit: rowData["UOM"] } });
+            if (!uom) {
+              uom = uomRepository.create({
+                unit: rowData["UOM"],
+                abbreviation: rowData["UOM Abbreviation"] || null,
+                description: rowData["UOM Description"] || null,
+              });
+              uom = await uomRepository.save(uom);
+            }
+            product.uom = uom;
+          }
+
+          // --- Category & Subcategory ---
+          const categoryName = rowData["Category"];
+          const subcategoryName = rowData["Subcategory"];
+
+          if (categoryName) {
+            let category = await categoryRepository.findOne({ where: { name: categoryName } });
+            if (!category) {
+              category = categoryRepository.create({ name: categoryName });
+              category = await categoryRepository.save(category);
+            }
+            product.category = category;
+
+            if (subcategoryName) {
+              let subcategory = await subcategoryRepository.findOne({
+                where: { name: subcategoryName, category: { id: category.id } },
+              });
+              if (!subcategory) {
+                subcategory = subcategoryRepository.create({ name: subcategoryName, category });
+                subcategory = await subcategoryRepository.save(subcategory);
+              }
+              product.subcategory = subcategory;
+            }
+          }
+
+          // --- Variants ---
+          product.variant = [];
+          let i = 1;
+          while (rowData[`Variant${i}.Count`]) {
+            const pv = new ProductVarient();
+            pv.count = rowData[`Variant${i}.Count`] || null;
+            pv.size = rowData[`Variant${i}.Size`] || null;
+            pv.variety = rowData[`Variant${i}.Variety`] || null;
+            pv.origin = rowData[`Variant${i}.Origin`] || null;
+            pv.brand = rowData[`Variant${i}.Brand`] || null;
+            pv.thresholdStock = rowData[`Variant${i}.Threshold Stock`] || null;
+            product.variant.push(pv);
+            i++;
+          }
+
+          // --- Quality Parameters ---
+          product.qualityParameters = [];
+          let j = 1;
+          while (rowData[`Parameter${j}.Name`]) {
+            const qp = new QualityParameter();
+            qp.name = rowData[`Parameter${j}.Name`] || null;
+            qp.type = rowData[`Parameter${j}.Type`] || "good";
+            product.qualityParameters.push(qp);
+            j++;
+          }
+
+          // --- Save Product ---
+          console.log("Saving product:", product.name);
+          const result = await productRepository.save(product);
+          console.log("Saved product with ID:", result.id);
         }
       }
 
-      // --- Variants ---
-      product.variant = [];
-      let i = 1;
-      while (rowData[`Variant${i}.Count`]) {
-        const pv = new ProductVarient();
-        pv.count = rowData[`Variant${i}.Count`] || null;
-        pv.size = rowData[`Variant${i}.Size`] || null;
-        pv.variety = rowData[`Variant${i}.Variety`] || null;
-        pv.origin = rowData[`Variant${i}.Origin`] || null;
-        pv.brand = rowData[`Variant${i}.Brand`] || null;
-        pv.thresholdStock = rowData[`Variant${i}.Threshold Stock`] || null;
-        product.variant.push(pv);
-        i++;
+      // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
+      await this.deleteFileFromSpaces(fileUrl);
+
+    } catch (error) {
+      console.error('Error processing product upload:', error);
+
+      // 🗑️ Still attempt to delete the file even if processing failed
+      try {
+        await this.deleteFileFromSpaces(fileUrl);
+      } catch (deleteError) {
+        console.error('Error deleting file after failed processing:', deleteError);
       }
 
-      // --- Quality Parameters ---
-      product.qualityParameters = [];
-      let j = 1;
-      while (rowData[`Parameter${j}.Name`]) {
-        const qp = new QualityParameter();
-        qp.name = rowData[`Parameter${j}.Name`] || null;
-        qp.type = rowData[`Parameter${j}.Type`] || "good";
-        product.qualityParameters.push(qp);
-        j++;
-      }
-
-      // --- Save Product ---
-      console.log("Saving product:", product.name);
-      const result = await productRepository.save(product);
-      console.log("Saved product with ID:", result.id);
+      throw error;
     }
   }
-
-  // 🗑️ Delete the file from DigitalOcean Spaces after successful processing
-  await this.deleteFileFromSpaces(fileUrl);
-  
-} catch (error) {
-  console.error('Error processing product upload:', error);
-  
-  // 🗑️ Still attempt to delete the file even if processing failed
-  try {
-    await this.deleteFileFromSpaces(fileUrl);
-  } catch (deleteError) {
-    console.error('Error deleting file after failed processing:', deleteError);
-  }
-  
-  throw error;
-}
-}
 
   /**
    * Get Excel file from DigitalOcean Spaces
@@ -644,7 +648,7 @@ export class ProductService {
       // URL format: https://bucket-name.sgp1.digitaloceanspaces.com/documents/filename
       const urlParts = fileUrl.split('/');
       const key = urlParts.slice(-2).join('/'); // Gets "documents/filename"
-      
+
       const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
       const { s3 } = await import('../middleware/spaces.config');
       const deleteCommand = new DeleteObjectCommand({
@@ -977,7 +981,7 @@ export class ProductService {
 
   //   return updatedProduct;
   // }
-  async update(id: string, productData: any, updatedBy: string): Promise<any> {
+  async update(id: string, productData: CreateProductDto, updatedBy: string): Promise<any> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: [
@@ -1008,21 +1012,28 @@ export class ProductService {
     console.log('existing product variants are:', product.variant);
 
 
-    console.log("product data received for update is ",productData.prefix);
-    
+    console.log("product data received for update is ", productData.prefix);
 
 
-    if(productData.prefix !== product.prefix){
-    const productCode = await this.generateProductCode(productData.prefix);
-      productCode.toUpperCase();
-      product.productCode = productCode;
-    }
+    const prefix = productData.prefix;
 
+if (prefix && prefix !== product.prefix) {
+  const productCode = await this.generateProductCode(prefix);
+  productCode.toUpperCase();
+  product.productCode = productCode;
+}
 
-    oldData.productCode = productData.productCode;
+    // if (productData.prefix !== product.prefix) {
+    //   const productCode = await this.generateProductCode(productData.prefix);
+    //   productCode.toUpperCase();
+    //   product.productCode = productCode;
+    // }
 
+  oldData.productCode =
+  productData.productCode ?? oldData.productCode;
+    //oldData.productCode = productData.productCode;
     // strip variant to prevent TypeORM cascade re-inserting them
-    const { variant, varient, ...cleanProductData } = productData;
+    const { variant, ...cleanProductData } = productData;
     product.variant = [];
 
     const updatedProduct = await this.productRepository.save({
@@ -1031,19 +1042,19 @@ export class ProductService {
     });
     console.log('product id is ', updatedProduct.id);
 
-    const incomingVariants: any[] = variant ?? varient ?? [];
+    const incomingVariants: any[] = variant ?? variant ?? [];
 
     for (const variantData of incomingVariants) {
       // match by id if present, otherwise fall back to field values
       const existingVariant = variantData.id
         ? (existingVariants).find((v: any) => v.id === variantData.id)
         : (existingVariants).find((v: any) =>
-            v.count === variantData.count &&
-            v.size === variantData.size &&
-            v.variety === variantData.variety &&
-            v.origin === variantData.origin &&
-            v.brand === variantData.brand
-          );
+          v.count === variantData.count &&
+          v.size === variantData.size &&
+          v.variety === variantData.variety &&
+          v.origin === variantData.origin &&
+          v.brand === variantData.brand
+        );
 
       if (existingVariant) {
         await this.productVarientsRepository.save({
@@ -1194,7 +1205,7 @@ export class ProductService {
   //     fs.unlinkSync(filePath);
   //   }
 
- 
+
   async getVarientsByProductId(id: string): Promise<any> {
     const key = `${CACHE_PREFIX}:variants:full:${id}`;
     const cached = await this.cacheService.get<any>(key);

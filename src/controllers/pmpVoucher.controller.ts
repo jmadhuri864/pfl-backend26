@@ -15,6 +15,7 @@ import { NotificationService } from "../services/notification.service";
 import { uploadSingle } from "../middleware/uploadsingle.middleware";
 import { upload, uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
+import { CreatePMPVoucherDto, UpdatePMPVoucherDto } from "../dtos/pmpVoucher.dto";
 //,deserializeUser, requireUser
 @controller("/pmpvoucher",deserializeUser, requireUser)
 export class PMPVoucherController {
@@ -212,12 +213,13 @@ export class PMPVoucherController {
     @next() next: NextFunction
   ) {
     try {
-      const voucherData = req.body;
+      const voucherData: CreatePMPVoucherDto = req.body;
+      const voucherDataAny = voucherData as any;
       
       // Use helper function to handle file URL extraction
-      setAttachmentUrls(voucherData, req.files as any[]);
-      Object.keys(voucherData).forEach((key) => {
-        if (voucherData[key] === "null") voucherData[key] = null;
+      setAttachmentUrls(voucherDataAny, req.files as any[]);
+      Object.keys(voucherDataAny).forEach((key: string) => {
+        if (voucherDataAny[key] === "null") voucherDataAny[key] = null;
       });
       logger.info("Creating a new voucher");
       
@@ -262,18 +264,17 @@ export class PMPVoucherController {
     try {
       const updatedBy=res.locals.updatedBy
       const { id } = req.params;
-      const updatedData = req.body;
-      
-      
-      // Use helper function to handle file URL extraction
-      setAttachmentUrls(updatedData, req.files as any[]);
+      const updatedData: UpdatePMPVoucherDto = req.body;
+      const updateAny = updatedData as any;
 
-     Object.keys(updatedData).forEach((key) => {
-      if (updatedData[key] === "null") updatedData[key] = null;
-    });
-      logger.info(`Updating voucher with ID`);
-      //console.log(req.body)
-      const updatedVoucher = await this.pmpVoucherService.updateVoucher(id, updatedData,updatedBy);
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(updateAny, req.files as any[]);
+
+      Object.keys(updateAny).forEach((key) => {
+        if (updateAny[key] === "null") updateAny[key] = null;
+      });
+      logger.info(`Updating voucher with ID: ${id}`);
+      const updatedVoucher = await this.pmpVoucherService.updateVoucher(id, updatedData, updatedBy);
 
       if (!updatedVoucher) {
         logger.warn(`Voucher with ID: ${id} not found for update`);
@@ -358,8 +359,8 @@ export class PMPVoucherController {
           
           res.status(200).json({
             message: result.message,
-            success: result.success,
-            failed: result.failed,
+            // success: result.success,
+            // failed: result.failed,
           });
         }
           catch (error) {

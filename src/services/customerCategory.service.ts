@@ -8,6 +8,7 @@ import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import { CacheService } from './cache.service';
+import { CreateCustomerCategoryDto, CustomerCategoryResponseDto, PaginatedResponse } from '../dtos/createCustomer.dto';
 
 const CACHE_PREFIX = 'customerCategory';
 const CACHE_TTL = 300;       // 5 min for lists
@@ -43,7 +44,7 @@ export class CustomerCategoryService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+  public async getAll(queryOptions: PaginationOptions): Promise<PaginatedResponse<CustomerCategoryResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -55,7 +56,7 @@ export class CustomerCategoryService {
 
     const result = await buildQuery(queryBuilder, queryOptions, 'customerCategory');
 
-    const formatted = {
+    const formatted:PaginatedResponse<CustomerCategoryResponseDto> = {
       data: result.data.map((category) => ({
         id: category.id,
         name: category.name,
@@ -67,12 +68,12 @@ export class CustomerCategoryService {
     return formatted;
   }
 
-  public async getById(id: string): Promise<CustomerCategory | null> {
+  public async getById(id: string): Promise<CustomerCategoryResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<CustomerCategory>(key);
     if (cached) return cached;
 
-    const category = await this.customerCategoryRepository
+    const category: CustomerCategoryResponseDto | null = await this.customerCategoryRepository
       .createQueryBuilder('customerCategory')
       .select(['customerCategory.id', 'customerCategory.name'])
       .where('customerCategory.id = :id', { id })
@@ -83,7 +84,7 @@ export class CustomerCategoryService {
   }
 
   public async create(
-    categoryData: Partial<CustomerCategory>,
+    categoryData: CreateCustomerCategoryDto,
   ): Promise<CustomerCategory> {
     const category = this.customerCategoryRepository.create(categoryData);
     const saved = await this.customerCategoryRepository.save(category);
@@ -93,9 +94,9 @@ export class CustomerCategoryService {
 
   public async update(
     id: string,
-    categoryData: Partial<CustomerCategory>,
+    categoryData: CreateCustomerCategoryDto,
     updatedBy: string,
-  ): Promise<CustomerCategory | null> {
+  ): Promise<CustomerCategoryResponseDto | null> {
     const existingCategory = await this.customerCategoryRepository.findOne({
       where: { id },
     });

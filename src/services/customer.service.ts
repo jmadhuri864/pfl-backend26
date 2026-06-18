@@ -29,6 +29,7 @@ import { Role } from '../entities/user.entity';
 import { Status } from '../utils/status.enum';
 import { formatDateTime } from '../utils/dateUtils';
 import { CacheService } from './cache.service';
+import { CreateCustomerDto, CustomerListResponseDto, CustomerViewResponseDto, PaginatedResponse } from '../dtos/createCustomer.dto';
 
 const CACHE_PREFIX = 'customer';
 const CACHE_TTL = 180;       // 3 min for lists
@@ -77,7 +78,9 @@ export class CustomerService {
     await Promise.all(tasks);
   }
 
-  public async create(customerData: any): Promise<Customer> {
+
+  //TODo:New Code 
+  public async create(customerData: CreateCustomerDto): Promise<Customer> {
     console.log('in the service', customerData);
 
     return await this.dataSource.transaction(async (manager) => {
@@ -91,7 +94,7 @@ export class CustomerService {
       }
 
       // Set status to draft regardless of role - must go through submit → pending → approve flow
-      customerData.status = 'draft';
+      customerData.status = Status.DRAFT;
 
       // Generate customer code using raw SQL to bypass soft-delete filter
       const custYear = new Date().getFullYear();
@@ -112,11 +115,11 @@ export class CustomerService {
       customer.organisationName = customerData.organisationName;
       customer.customerImage = customerData.customerImage;
       customer.organisationType = customerData.organisationType;
-      customer.otherType = customerData.otherType;
+      customer.otherType = customerData.otherType??"";
       customer.primaryContactNo = customerData.primaryContactNo;
-      customer.secondaryContactNo = customerData.secondaryContactNo;
+      customer.secondaryContactNo = customerData.secondaryContactNo??"";
       customer.emailPrimary = customerData.emailPrimary;
-      customer.emailSecondary = customerData.emailSecondary;
+      customer.emailSecondary = customerData.emailSecondary??"";
       customer.customerCode = customerData.customerCode;
       customer.status = customerData.status;
       customer.createdBy = user;
@@ -270,7 +273,8 @@ export class CustomerService {
     });
   }
 
-async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
+  //TODO:New Code
+async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedResponse<CustomerListResponseDto>> {
   const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
@@ -309,7 +313,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
 
   const customers = await buildQuery(queryBuilder, queryOptions, 'customer');
 
-  const formattedData = customers.data.map((cust) => {
+  const formattedData: CustomerListResponseDto[] = customers.data.map((cust):CustomerListResponseDto => {
     const { createdDate, createdTime } = formatDateTime(cust.createdAt);
 
     return {
@@ -329,15 +333,10 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       contactPersonName: `${cust.billingDetails?.contactPersonFName ?? ''} ${cust.billingDetails?.contactPersonMName ?? ''} ${cust.billingDetails?.contactPersonLName ?? ''}`.trim() || null,
     };
   });
-  
-
   const result = { ...customers, data: formattedData };
   await this.cacheService.set(key, result, CACHE_TTL);
   return result;
 }
-
-
-
 
   async findCustomerById(id: string): Promise<any> {
     const key = `${CACHE_PREFIX}:id:${id}`;
@@ -369,7 +368,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     return result;
   }
 
-  async findCustomerByIdforview(id: string): Promise<any> {
+  async findCustomerByIdforview(id: string): Promise<CustomerViewResponseDto> {
     const key = `${CACHE_PREFIX}:view:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -476,7 +475,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
       location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
     } : null;
 
-    const formatteddata = {
+    const formatteddata: CustomerViewResponseDto = {
       id: data.id,
       organisationName: data.organisationName,
       customerImage: data.customerImage,
@@ -747,7 +746,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     return formatteddata;
   }
 
-   async findCustomerByIdforupdate(id: string): Promise<any> {
+   async findCustomerByIdforupdate(id: string): Promise<CustomerViewResponseDto> {
     const key = `${CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -777,7 +776,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     if (!data) {
       throw new AppError(404, 'Customer not found');
     }
-    const formatteddata = {
+    const formatteddata: CustomerViewResponseDto = {
       id: data.id,
       organisationName: data.organisationName,
       customerImage: data.customerImage,
@@ -1154,14 +1153,72 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
     return result;
   }
 
-  public async updateCustomer(
-    id: string,
-    updateData: any,
-    updatedBy: string,
-  ): Promise<Customer | null> {
-    console.log('in service', id), console.log('inservice', updateData);
+  // public async updateCustomer(
+  //   id: string,
+  //   updateData: any,
+  //   updatedBy: string,
+  // ): Promise<Customer | null> {
+  //   console.log('in service', id), console.log('inservice', updateData);
     
-    const customer = await this.customerRepository.findOne({
+  //   const customer = await this.customerRepository.findOne({
+  //     where: { id },
+  //     relations: [
+  //       'customerCategory',
+  //       'customerTypes',
+  //       'bankDetails',
+  //       'bankDetails.bankAddress',
+  //       'customerAddress',
+  //       'statutoryDetails',
+  //       'billingDetails',
+  //       'billingDetails.billingAddress',
+  //       'deliveryDetails',
+  //       'deliveryDetails.deliveryAddress',
+  //       'paymentTerms',
+  //       'officeUseOnly',
+  //       'keyMobileNumbers',
+  //       'productSpecification',
+  //     ],
+  //   });
+
+  //   if (!customer) {
+  //     throw new AppError(404, 'Customer not found');
+  //   }
+
+  //   const originalCustomer = { ...customer };
+
+  //   // Remove fields that should not be updated
+  //   const { 
+  //     createdBy, 
+  //     createdAt, 
+  //     id: updateId, 
+  //     createdDate,
+  //     createdTime,
+  //     ...safeUpdateData 
+  //   } = updateData;
+    
+  //   //console.log('Safe update data (excluding system fields):', safeUpdateData);
+
+  //   const updatedCustomer = this.customerRepository.merge(customer, {
+  //     ...safeUpdateData,
+  //     updatedBy,
+  //   });
+
+  //   const updatedCustomer1 = await this.customerRepository.save(updatedCustomer);
+
+  //   await this.auditLogService.logChange('Customer', id, originalCustomer, updatedCustomer1, updatedBy);
+  //   await this.invalidateCustomerCache(id);
+
+  //   return updatedCustomer1;
+  // }
+
+  public async updateCustomer(
+  id: string,
+  updateData: CreateCustomerDto,
+  updatedBy: string,
+): Promise<Customer | null> {
+  return await this.dataSource.transaction(async (manager) => {
+
+    const customer = await manager.findOne(Customer, {
       where: { id },
       relations: [
         'customerCategory',
@@ -1177,40 +1234,320 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<any> {
         'paymentTerms',
         'officeUseOnly',
         'keyMobileNumbers',
+        'keyMobileNumbers.ref1Address',
+        'keyMobileNumbers.ref2Address',
         'productSpecification',
       ],
     });
 
+    console.log("existing customer data...",customer)
     if (!customer) {
       throw new AppError(404, 'Customer not found');
     }
 
-    const originalCustomer = { ...customer };
+    const originalCustomer = JSON.parse(JSON.stringify(customer));
+    console.log("original Customer data",originalCustomer)
 
-    // Remove fields that should not be updated
-    const { 
-      createdBy, 
-      createdAt, 
-      id: updateId, 
-      createdDate,
-      createdTime,
-      ...safeUpdateData 
-    } = updateData;
-    
-    console.log('Safe update data (excluding system fields):', safeUpdateData);
+    // ------------------------
+    // CUSTOMER BASIC DETAILS
+    // ------------------------
 
-    const updatedCustomer = this.customerRepository.merge(customer, {
-      ...safeUpdateData,
+    customer.organisationName = updateData.organisationName ?? customer.organisationName;
+    customer.customerImage = updateData.customerImage ?? customer.customerImage;
+    customer.organisationType = updateData.organisationType ?? customer.organisationType;
+    customer.otherType = updateData.otherType ?? customer.otherType;
+    customer.primaryContactNo = updateData.primaryContactNo ?? customer.primaryContactNo;
+    customer.secondaryContactNo = updateData.secondaryContactNo ?? customer.secondaryContactNo;
+    customer.emailPrimary = updateData.emailPrimary ?? customer.emailPrimary;
+    customer.emailSecondary = updateData.emailSecondary ?? customer.emailSecondary;
+
+    // ------------------------
+    // CATEGORY
+    // ------------------------
+
+    if (updateData.customerCategory) {
+      const category = await manager.findOne(CustomerCategory, {
+        where: { id: String(updateData.customerCategory) },
+      });
+
+      if (category) {
+        customer.customerCategory = category;
+      }
+    }
+
+    // ------------------------
+    // TYPE
+    // ------------------------
+
+    if (updateData.customerTypes) {
+      const type = await manager.findOne(CustomerType, {
+        where: { id: String(updateData.customerTypes) },
+      });
+
+      if (type) {
+        customer.customerTypes = type;
+      }
+    }
+
+    // ------------------------
+    // CUSTOMER ADDRESS
+    // ------------------------
+
+    if (updateData.customerAddress) {
+
+      if (!customer.customerAddress) {
+        customer.customerAddress = new Address();
+      }
+
+      Object.assign(
+        customer.customerAddress,
+        updateData.customerAddress,
+      );
+
+      await manager.save(Address, customer.customerAddress);
+    }
+
+    // ------------------------
+    // BANK DETAILS
+    // ------------------------
+
+    if (updateData.bankDetails) {
+
+      if (!customer.bankDetails) {
+        customer.bankDetails = new BankDetailsCust();
+      }
+
+      Object.assign(
+        customer.bankDetails,
+        updateData.bankDetails,
+      );
+
+      if (updateData.bankDetails.bankAddress) {
+
+        if (!customer.bankDetails.bankAddress) {
+          customer.bankDetails.bankAddress = new Address();
+        }
+
+        Object.assign(
+          customer.bankDetails.bankAddress,
+          updateData.bankDetails.bankAddress,
+        );
+
+        await manager.save(
+          Address,
+          customer.bankDetails.bankAddress,
+        );
+      }
+
+      await manager.save(
+        BankDetailsCust,
+        customer.bankDetails,
+      );
+    }
+
+    // ------------------------
+    // STATUTORY DETAILS
+    // ------------------------
+
+    if (updateData.statutoryDetails) {
+
+      if (!customer.statutoryDetails) {
+        customer.statutoryDetails = new StatutoryDetails();
+      }
+
+      Object.assign(
+        customer.statutoryDetails,
+        updateData.statutoryDetails,
+      );
+
+      await manager.save(
+        StatutoryDetails,
+        customer.statutoryDetails,
+      );
+    }
+
+    // ------------------------
+    // BILLING DETAILS
+    // ------------------------
+
+    if (updateData.billingDetails) {
+
+      if (!customer.billingDetails) {
+        customer.billingDetails = new BillingDetailsCust();
+      }
+
+      Object.assign(
+        customer.billingDetails,
+        updateData.billingDetails,
+      );
+
+      if (updateData.billingDetails.billingAddress) {
+
+        if (!customer.billingDetails.billingAddress) {
+          customer.billingDetails.billingAddress = new Address();
+        }
+
+        Object.assign(
+          customer.billingDetails.billingAddress,
+          updateData.billingDetails.billingAddress,
+        );
+
+        await manager.save(
+          Address,
+          customer.billingDetails.billingAddress,
+        );
+      }
+
+      await manager.save(
+        BillingDetailsCust,
+        customer.billingDetails,
+      );
+    }
+
+    // ------------------------
+    // DELIVERY DETAILS
+    // ------------------------
+
+    if (updateData.deliveryDetails) {
+
+      if (!customer.deliveryDetails) {
+        customer.deliveryDetails = new DeliveryDetails();
+      }
+
+      Object.assign(
+        customer.deliveryDetails,
+        updateData.deliveryDetails,
+      );
+
+      if (updateData.deliveryDetails.deliveryAddress) {
+
+        if (!customer.deliveryDetails.deliveryAddress) {
+          customer.deliveryDetails.deliveryAddress = new Address();
+        }
+
+        Object.assign(
+          customer.deliveryDetails.deliveryAddress,
+          updateData.deliveryDetails.deliveryAddress,
+        );
+
+        await manager.save(
+          Address,
+          customer.deliveryDetails.deliveryAddress,
+        );
+      }
+
+      await manager.save(
+        DeliveryDetails,
+        customer.deliveryDetails,
+      );
+    }
+
+    // ------------------------
+    // PAYMENT TERMS
+    // ------------------------
+
+    if (updateData.paymentTerms) {
+
+      if (!customer.paymentTerms) {
+        customer.paymentTerms = new PaymentTerms();
+      }
+
+      Object.assign(
+        customer.paymentTerms,
+        updateData.paymentTerms,
+      );
+
+      await manager.save(
+        PaymentTerms,
+        customer.paymentTerms,
+      );
+    }
+
+    // ------------------------
+    // OFFICE USE ONLY
+    // ------------------------
+
+    if (updateData.officeUseOnly) {
+
+      if (!customer.officeUseOnly) {
+        customer.officeUseOnly = new OfficeUseOnly();
+      }
+
+      Object.assign(
+        customer.officeUseOnly,
+        updateData.officeUseOnly,
+      );
+
+      await manager.save(
+        OfficeUseOnly,
+        customer.officeUseOnly,
+      );
+    }
+
+    // ------------------------
+    // KEY MOBILE NUMBERS
+    // ------------------------
+
+    if (updateData.keyMobileNumbers) {
+
+      if (!customer.keyMobileNumbers) {
+        customer.keyMobileNumbers = new keyMobileNoData();
+      }
+
+      Object.assign(
+        customer.keyMobileNumbers,
+        updateData.keyMobileNumbers,
+      );
+
+      await manager.save(
+        keyMobileNoData,
+        customer.keyMobileNumbers,
+      );
+    }
+
+    // ------------------------
+    // PRODUCT SPECIFICATION
+    // ------------------------
+
+    if (updateData.productSpecification) {
+
+      await manager.delete(ProductSpecification, {
+        customer: {
+          id: customer.id,
+        },
+      });
+
+      for (const item of updateData.productSpecification) {
+
+        const spec = new ProductSpecification();
+
+        Object.assign(spec, item);
+
+        spec.customer = customer;
+
+        await manager.save(
+          ProductSpecification,
+          spec,
+        );
+      }
+    }
+
+    const savedCustomer = await manager.save(Customer, customer);
+    console.log("Saved Customer",savedCustomer)
+
+    await this.auditLogService.logChange(
+      'Customer',
+      id,
+      originalCustomer,
+      savedCustomer,
       updatedBy,
-    });
+    );
 
-    const updatedCustomer1 = await this.customerRepository.save(updatedCustomer);
-
-    await this.auditLogService.logChange('Customer', id, originalCustomer, updatedCustomer1, updatedBy);
     await this.invalidateCustomerCache(id);
 
-    return updatedCustomer1;
-  }
+    return savedCustomer;
+  });
+}
   public async getCustomersName(): Promise<{ id: string; organisationName: string }[]> {
     const key = `${CACHE_PREFIX}:names`;
     const cached = await this.cacheService.get<any>(key);

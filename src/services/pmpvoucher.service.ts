@@ -16,6 +16,7 @@ import { DocumentbRepository } from '../repositories/documentb.repository';
 import { In, DataSource } from 'typeorm';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import { CreatePMPVoucherDto, PMPVoucherListItemDto, PMPVoucherDetailDto, UpdatePMPVoucherDto } from '../dtos/pmpVoucher.dto';
 
 @injectable()
 export class PMPVoucherService {
@@ -52,10 +53,10 @@ export class PMPVoucherService {
     await Promise.all(tasks);
   }
 
-  public async getAllVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  public async getAllVouchers(queryOptions: PaginationOptions, userId: string): Promise<{ data: PMPVoucherListItemDto[]; meta: { total: number; page: number; pages: number } }> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<{ data: PMPVoucherListItemDto[]; meta: { total: number; page: number; pages: number } }>(cacheKey);
     if (cached) return cached;
 
     const { search } = queryOptions;
@@ -85,7 +86,7 @@ export class PMPVoucherService {
     const voucherMap = new Map(vouchers.map(v => [v.id, v]));
     const docCreatedAtMap = new Map(activeDocuments.map(d => [d.id, d.createdAt]));
 
-    let relatedDataOnly = activeDocuments
+    let relatedDataOnly: PMPVoucherListItemDto[] = activeDocuments
       .filter(doc => doc.document_type_id && voucherMap.has(doc.document_type_id))
       .map((doc) => {
         const rd = voucherMap.get(doc.document_type_id!)!;
@@ -96,10 +97,21 @@ export class PMPVoucherService {
           createdBy: `${doc.lastActionBy?.firstName || ''} ${doc.lastActionBy?.lastName || ''}`.trim(),
           createdDate,
           createdTime,
-          ...rd,
           id: rd.id,
+          voucherNo: rd.voucherNo || null,
+          approvalStatus: rd.approvalStatus || null,
+          debitCreditTo: rd.debitCreditTo || null,
+          payReceivedFrom: rd.payReceivedFrom || null,
+          location: rd.location || null,
+          sellerName: rd.sellerName || null,
           companyName: rd.companyName?.name || null,
           grnNo: rd.grnNo?.grnNo || null,
+          totalAmt: rd.totalAmt ?? null,
+          amtWords: rd.amtWords || null,
+          paymentMode: rd.paymentMode || null,
+          receiverName: rd.receiverName || null,
+          remark: rd.remark || null,
+          requestingDepartment: rd.requestingDepartment || null,
         };
       });
 
@@ -130,8 +142,10 @@ export class PMPVoucherService {
       });
     } else {
       relatedDataOnly.sort((a, b) => {
-        const tA = new Date(docCreatedAtMap.get(a.documentId) ?? 0).getTime();
-        const tB = new Date(docCreatedAtMap.get(b.documentId) ?? 0).getTime();
+        const docA = docCreatedAtMap.get(a.documentId ?? '') ?? 0;
+        const docB = docCreatedAtMap.get(b.documentId ?? '') ?? 0;
+        const tA = new Date(docA).getTime();
+        const tB = new Date(docB).getTime();
         return tB - tA;
       });
     }
@@ -143,15 +157,6 @@ export class PMPVoucherService {
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
-
-              
-                
-              
-                      
-        
-
-    
-
 public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: string): Promise<any> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:recycle:${hash}`;
@@ -332,9 +337,9 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     return voucher;
   }
 
-  public async getVoucherByIdforView(docid: string): Promise<any> {
+  public async getVoucherByIdforView(docid: string): Promise<PMPVoucherDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<PMPVoucherDetailDto>(cacheKey);
     if (cached) return cached;
 
     const document = await this.documentbService.getDocumentById(docid);
@@ -354,7 +359,7 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     if (!voucher) return null;
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
-   const formatResponse = {
+    const formatResponse: PMPVoucherDetailDto = {
       id: voucher.id,
       voucherNo: voucher.voucherNo,
       approvalStatus: voucher.approvalStatus,
@@ -378,12 +383,25 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
       paymentMode: voucher.paymentMode,
       totalAmt: voucher.totalAmt,
       amtWords: voucher.amtWords,
-companyName: voucher.companyName?.id ?? null,
-requestedBy: (voucher.requestedBy?.firstName && voucher.requestedBy?.lastName)
-  ? voucher.requestedBy.firstName + ' ' + voucher.requestedBy.lastName
-  : null,
-
-      grnNo:voucher.grnNo?.grnNo ?? null,
+      companyName: voucher.companyName
+        ? {
+            id: voucher.companyName.id ?? null,
+            companyName: voucher.companyName.name ?? null,
+          }
+        : null,
+      requestedBy: voucher.requestedBy
+        ? {
+            id: voucher.requestedBy.id ?? null,
+            firstName: voucher.requestedBy.firstName ?? null,
+            lastName: voucher.requestedBy.lastName ?? null,
+          }
+        : null,
+      grnNo: voucher.grnNo
+        ? {
+            id: voucher.grnNo.id ?? null,
+            grnNo: voucher.grnNo.grnNo ?? null,
+          }
+        : null,
       createdTime: createdTime,
       remark: voucher.remark,
       createdDate: createdDate,
@@ -406,18 +424,13 @@ requestedBy: (voucher.requestedBy?.firstName && voucher.requestedBy?.lastName)
         documentId: document.id,
 
     }
-    
- 
-
     await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
-
-   
   }
 
-  public async getVoucherByIdForUpdate(id: string): Promise<any> {
+  public async getVoucherByIdForUpdate(id: string): Promise<UpdatePMPVoucherDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<UpdatePMPVoucherDto>(cacheKey);
     if (cached) return cached;
 
     const voucher = await this.pmpVoucherRepository
@@ -435,8 +448,8 @@ requestedBy: (voucher.requestedBy?.firstName && voucher.requestedBy?.lastName)
     const rawDate = voucher.createdAt;
     const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    const formatResponse = {
-      id: voucher.id,
+    const formatResponse: UpdatePMPVoucherDto = {
+      //id: voucher.id,
       voucherNo: voucher.voucherNo,
       approvalStatus: voucher.approvalStatus,
       debitCreditTo: voucher.debitCreditTo,
@@ -448,28 +461,46 @@ requestedBy: (voucher.requestedBy?.firstName && voucher.requestedBy?.lastName)
       purpose: voucher.purpose,
       paymentMode: voucher.paymentMode,
       totalAmt: voucher.totalAmt,
-         remark: voucher.remark,
+      remark: voucher.remark,
       amtWords: voucher.amtWords,
-      address:{
-      address1: voucher?.address?.address1,
-      address2: voucher?.address?.address2,
-      location:voucher?.address?.location,
-      city:voucher?.address?.city,
-      state:voucher?.address?.state,
-      pincode:voucher?.address?.pincode,
-
-      } ,
-
-companyName: voucher.companyName?.id ?? null,
-requestedBy: voucher.requestedBy?.id ?? null,
-
-      grnNo:voucher.grnNo?.id ?? null,
-      createdTime: createdTime,
-      createdDate: createdDate,
+      address: voucher.address
+        ? {
+            id: voucher.address.id ?? null,
+            address1: voucher.address.address1 ?? null,
+            address2: voucher.address.address2 ?? null,
+            location: voucher.address.location ?? null,
+            city: voucher.address.city ?? null,
+            state: voucher.address.state ?? null,
+            pincode: voucher.address.pincode ?? null,
+          }
+        : null,
+      // companyName: voucher.companyName
+      //   ? {
+      //       id: voucher.companyName.id ?? null,
+      //       companyName: voucher.companyName.name ?? null,
+      //     }
+      //   : null,
+      companyName: voucher.companyName?.id ?? undefined,
+      grnNo: voucher.grnNo?.id || null,
+      requestedBy: `${voucher.requestedBy.firstName} ${voucher.requestedBy.lastName}`,
+        // ? {
+        //     id: voucher.requestedBy.id ?? null,
+        //     firstName: voucher.requestedBy.firstName ?? null,
+        //     lastName: voucher.requestedBy.lastName ?? null,
+        //   }
+        // : null,
+      // grnNo: voucher.grnNo
+      //   ? {
+      //       id: voucher.grnNo.id ?? null,
+      //       grnNo: voucher.grnNo.grnNo ?? null,
+      //     }
+      //   : null,
+      // createdTime,
+      // createdDate,
       receiverName: voucher.receiverName,
-      anyAttachment: voucher.anyAttachment,
-      requestingDepartment: voucher.requestingDepartment,
-      kyc: voucher.kyc,
+      anyAttachment: voucher.anyAttachment ?? null,
+      requestingDepartment: voucher.requestingDepartment ?? null,
+      kyc: voucher.kyc ?? null,
       materials: voucher.materials.map((material) => ({
         id: material.id,
         itemName: material.itemName,
@@ -478,25 +509,20 @@ requestedBy: voucher.requestedBy?.id ?? null,
         amt: material.amt,
         itemUom: material.itemUom?.id ?? null,
       })),
+    };
 
-    }
-    
-if(!voucher)
-{
-  return null;
-}
     await this.cacheService.set(cacheKey, formatResponse, this.CACHE_TTL);
     return formatResponse;
   }
 
-  public async createVoucher(voucherData: any): Promise<any> {
+  public async createVoucher(voucherData: CreatePMPVoucherDto): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
 
-       const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, 'packaging-material-voucher')
+       const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER)
 
       if (!approvalFlowExit) {
         throw new Error('Approval flow not found');
@@ -504,7 +530,7 @@ if(!voucher)
 
       voucherData.voucherNo = await this.generatePMPVoucherNo();
 
-      const pmpvoucher = queryRunner.manager.create(this.pmpVoucherRepository.target, voucherData);
+      const pmpvoucher = queryRunner.manager.create(this.pmpVoucherRepository.target, voucherData as any);
       const savePmpVoucher =  await queryRunner.manager.save(pmpvoucher);
 
       const document = await this.documentbService.createDocument({
@@ -533,7 +559,7 @@ if(!voucher)
 
   public async updateVoucher(
     id: string,
-    updatedData: any,
+    updatedData: UpdatePMPVoucherDto,
     updatedBy: string,
   ): Promise<PMPVoucher | null> {
     const voucher = await this.pmpVoucherRepository.findOne({
@@ -546,10 +572,14 @@ if(!voucher)
 
     const originalVoucher = { ...voucher };
 
-    const grn = await this.grnRepository.findOne({ where: { grnNo: updatedData.grnNo } });
-    if (grn) updatedData.grnNo = grn;
+    const dataToUpdate = { ...updatedData } as any;
+    const grnNo = dataToUpdate.grnNo;
+    if (typeof grnNo === 'string' && grnNo.trim()) {
+      const grn = await this.grnRepository.findOne({ where: { grnNo } });
+      if (grn) dataToUpdate.grnNo = grn;
+    }
 
-    Object.assign(voucher, updatedData);
+    Object.assign(voucher, dataToUpdate);
 
     const savedVoucher = await this.pmpVoucherRepository.save(voucher);
 

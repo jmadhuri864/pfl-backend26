@@ -11,7 +11,7 @@ export class ProductSubcategory extends Model {
 
   @ManyToOne(() => ProductCategory, (category) => category.subcategories,{ onDelete: "SET NULL" ,cascade:true})
   @JoinColumn({ name: "category_id" })  // Foreign key column for category
-  category: ProductCategory;
+  category: ProductCategory | null;
 
   @OneToMany(() => Product, (product) => product.subcategory, {
     //cascade: true,

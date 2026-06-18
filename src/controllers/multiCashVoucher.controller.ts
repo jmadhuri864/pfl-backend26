@@ -16,6 +16,7 @@ import { NotificationService } from "../services/notification.service";
 import { uploadSingle } from "../middleware/uploadsingle.middleware";
 import { upload, uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
+import { CreateMultiCashVoucherDto, UpdateMultiCashVoucherDto } from "../dtos/multiCashVoucher.dto";
 //,deserializeUser,requireUser
 @controller('/multiCashVoucher',deserializeUser,requireUser)
 export class  MultiCashVoucherController {
@@ -27,23 +28,25 @@ export class  MultiCashVoucherController {
 
     @httpPost("/", uploadAttachments)
   public async createVoucher(
-    @request() req: Request,
+    @request() req: Request<{}, {}, CreateMultiCashVoucherDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       logger.info("Creating a new Multi Cash Voucher");
-      const voucherData = req.body;
-    
-    // Use helper function to handle file URL extraction
-    setAttachmentUrls(voucherData, req.files as any[]);
+      const voucherData: CreateMultiCashVoucherDto = req.body;
 
-   Object.keys(voucherData).forEach((key) => {
-    if (voucherData[key] === "null") voucherData[key] = null;
-  });
-   
-    voucherData.requestedBy = res.locals.user.id;
-    voucherData.requestingDepartment = res.locals.user.selectDepartment;
+      // Use helper function to handle file URL extraction
+      setAttachmentUrls(voucherData, req.files as any[]);
+
+      // type-safe null-string cleanup
+      const voucherAny = voucherData as any;
+      Object.keys(voucherAny).forEach((key) => {
+        if (voucherAny[key] === 'null') voucherAny[key] = null;
+      });
+
+      voucherAny.requestedBy = res.locals.user.id;
+      voucherAny.requestingDepartment = res.locals.user.selectDepartment;
       const newVoucher = await this.multicashVoucherService.createVoucher(voucherData);
       logger.info("Multi Cash Voucher created successfully", { voucherId: newVoucher.id });
       ControllerLogger.logSuccess('Multi Cash Voucher created', newVoucher.id, req, res);
@@ -157,7 +160,7 @@ export class  MultiCashVoucherController {
   // Get voucher by ID
   @httpGet("/:id")
   public async getVoucherById(
-    @request() req: Request,
+    @request() req: Request<{ id: string }>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -197,7 +200,7 @@ export class  MultiCashVoucherController {
 
   @httpGet("/:id/view")
   public async getVoucherByIdForView(
-    @request() req: Request,
+    @request() req: Request<{ id: string }>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -225,7 +228,7 @@ export class  MultiCashVoucherController {
   }
    @httpGet("/:id/update")
   public async getVoucherByIdForUpdate(
-    @request() req: Request,
+    @request() req: Request<{ id: string }>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -255,23 +258,24 @@ export class  MultiCashVoucherController {
   // Update a Labour Payment Voucher
   @httpPatch("/:id", uploadAttachments, captureUser)
   public async updateVoucher(
-    @request() req: Request,
+    @request() req: Request<{ id: string }, {}, UpdateMultiCashVoucherDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
       const updatedBy = res.locals.updatedBy;
       const { id } = req.params;
-      const updatedData = req.body;
+      const updatedData: UpdateMultiCashVoucherDto = req.body;
       logger.info(`Updating Multi Cash Voucher with ID: ${id}`, { updatedBy });
       
       // Use helper function to handle file URL extraction
       setAttachmentUrls(updatedData, req.files as any[]);
 
-     Object.keys( updatedData).forEach((key) => {
-      if ( updatedData[key] === "null")  updatedData[key] = null;
-    });
-      const updatedVoucher = await this.multicashVoucherService.updateVoucher(id, updatedData,updatedBy);
+      const updateAny = updatedData as any;
+      Object.keys(updateAny).forEach((key) => {
+        if (updateAny[key] === "null") updateAny[key] = null;
+      });
+      const updatedVoucher = await this.multicashVoucherService.updateVoucher(id, updatedData, updatedBy);
 
       if (!updatedVoucher) {
         logger.warn(`Voucher with ID ${id} not found for update`);
@@ -296,7 +300,7 @@ export class  MultiCashVoucherController {
         data: updatedVoucher,
       });
     } catch (err) {
-      logger.error(`Error updating Multi Cash Voucher with ID: ${req.params.id}`, { error: err });
+     // logger.error(`Error updating Multi Cash Voucher with ID: ${req.params.id}`, { error: err });
       ControllerLogger.logError('Multi Cash Voucher update', err, req, res);
       next(err);
     }
@@ -355,7 +359,8 @@ export class  MultiCashVoucherController {
 
             res.status(200).json({
               message: result.message,
-            
+              // success: result.success,
+              // failed: result.failed,
             });
           }
             catch (error) {

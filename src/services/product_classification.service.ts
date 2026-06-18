@@ -7,6 +7,8 @@ import { AuditLogService } from "./auditLog.service";
 import AppError from "../utils/appError";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import { PaginatedResponse } from "../dtos/createCustomer.dto";
+import { CreateProductClassificationDto, ProductClassificationResponseDto } from "../dtos/product.dto";
 
 const CACHE_PREFIX = "productClassification";
 const CACHE_TTL = 300;
@@ -36,7 +38,7 @@ export class ProductClassificationService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  async findAll(queryOptions: PaginationOptions): Promise<any> {
+  async findAll(queryOptions: PaginationOptions): Promise<PaginatedResponse<ProductClassificationResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -48,7 +50,7 @@ export class ProductClassificationService {
 
     const result = await buildQuery(queryBuilder, queryOptions, "productClassification");
 
-    const formatted = {
+    const formatted: PaginatedResponse<ProductClassificationResponseDto> = {
       data: result.data.map((pro) => ({ id: pro.id, name: pro.name })),
       meta: result.meta,
     };
@@ -57,12 +59,12 @@ export class ProductClassificationService {
     return formatted;
   }
 
-  async findById(id: string): Promise<ProductClassification | null> {
+  async findById(id: string): Promise<ProductClassificationResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<ProductClassification>(key);
     if (cached) return cached;
 
-    const result = await this.productClassificationRepository
+    const result: ProductClassificationResponseDto | null = await this.productClassificationRepository
       .createQueryBuilder("productClassification")
       .select(["productClassification.id", "productClassification.name"])
       .where("productClassification.id = :id", { id })
@@ -72,11 +74,11 @@ export class ProductClassificationService {
     return result;
   }
 
-  async getById(id: string): Promise<ProductClassification | null> {
+  async getById(id: string): Promise<ProductClassificationResponseDto | null> {
     return this.findById(id);
   }
 
-  async create(productClassificationData: any): Promise<any> {
+  async create(productClassificationData: CreateProductClassificationDto): Promise<ProductClassification> {
     const productClassification = this.productClassificationRepository.create(productClassificationData);
     const saved = await this.productClassificationRepository.save(productClassification);
     await this.invalidateCache();
@@ -85,7 +87,7 @@ export class ProductClassificationService {
 
   public async update(
     id: string,
-    productClassificationData: Partial<ProductClassification>,
+    productClassificationData: CreateProductClassificationDto,
     updatedBy: string,
   ): Promise<ProductClassification | null> {
     const existingProductClassification = await this.productClassificationRepository.findOneBy({ id });

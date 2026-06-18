@@ -24,6 +24,7 @@ import logger from '../utils/logger';
 
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
+import { CreateSecondSaleDto, UpdateSecondSaleDto } from '../dtos/secondSale.dto';
 
 @controller('/secondSales', deserializeUser, requireUser)
 export class SecondSaleController {
@@ -35,26 +36,30 @@ export class SecondSaleController {
   ) {}
 
   // Create a new second sale
+
   @httpPost('/')
   public async createSecondSale(
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateSecondSaleDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      //console.log(req.body)
       logger.info('Attempting to create a new second sale', {
         requestedBy: res.locals.user.id,
       });
-      const secondSaleData = req.body;
-      const requestedBy= res.locals.user.id;
-      if (secondSaleData.deliveryChallanNo === '') {
-        secondSaleData.deliveryChallanNo = null;
-      }
+//console.log(req.body)
+      const secondSaleData: CreateSecondSaleDto = {
+        ...req.body,
+        deliveryChallanNo: req.body.deliveryChallanNo === '' ? null : req.body.deliveryChallanNo,
+      };
+
+      const requestedBy: string = res.locals.user.id;
+
       const secondSale = await this.secondSaleService.createSecondSale(
         secondSaleData,
-        requestedBy
+        requestedBy,
       );
+
       if (!secondSale) {
         logger.error('Failed to create second sale', { secondSaleData });
         ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
@@ -65,7 +70,6 @@ export class SecondSaleController {
         secondSaleId: secondSale.id,
       });
 
-      // Trigger a notification
       await this.notificationService.createNoti(
         `New second sale created successfully`,
         res.locals.user.id,
@@ -81,11 +85,62 @@ export class SecondSaleController {
       logger.error('Error occurred while creating second sale', { error: err });
       ControllerLogger.logError('Second Sale creation', err, req, res);
       if (err instanceof Error) {
-               return next(new AppError(400, err.message)); // ← sends 400 with real message
-             }
+        return next(new AppError(400, err.message));
+      }
       next(err);
     }
   }
+  // @httpPost('/')
+  // public async createSecondSale(
+  //   @request() req: Request<{}, {}, any>,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     //console.log(req.body)
+  //     logger.info('Attempting to create a new second sale', {
+  //       requestedBy: res.locals.user.id,
+  //     });
+  //     const secondSaleData = req.body;
+  //     const requestedBy= res.locals.user.id;
+  //     if (secondSaleData.deliveryChallanNo === '') {
+  //       secondSaleData.deliveryChallanNo = null;
+  //     }
+  //     const secondSale = await this.secondSaleService.createSecondSale(
+  //       secondSaleData,
+  //       requestedBy
+  //     );
+  //     if (!secondSale) {
+  //       logger.error('Failed to create second sale', { secondSaleData });
+  //       ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
+  //       return next(new AppError(400, 'Second sale could not be created'));
+  //     }
+
+  //     logger.info('Second sale created successfully', {
+  //       secondSaleId: secondSale.id,
+  //     });
+
+  //     // Trigger a notification
+  //     await this.notificationService.createNoti(
+  //       `New second sale created successfully`,
+  //       res.locals.user.id,
+  //     );
+
+  //     ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
+  //     res.status(201).json({
+  //       status: 'success',
+  //       message: 'Second sale created successfully',
+  //       data: secondSale.id,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error occurred while creating second sale', { error: err });
+  //     ControllerLogger.logError('Second Sale creation', err, req, res);
+  //     if (err instanceof Error) {
+  //              return next(new AppError(400, err.message)); // ← sends 400 with real message
+  //            }
+  //     next(err);
+  //   }
+  // }
 
   // Get second sale by ID
   @httpGet('/:id')
@@ -266,7 +321,7 @@ export class SecondSaleController {
   @httpPatch('/:id', captureUser)
   public async updateSecondSale(
     @requestParam('id') id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdateSecondSaleDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {

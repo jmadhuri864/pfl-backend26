@@ -7,6 +7,8 @@ import { ProductCategory } from "../entities/product_category.entity";
 import { AuditLogService } from "./auditLog.service";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import { CreateProductSubcategoryDto, ProductSubcategoryResponseDto } from "../dtos/product.dto";
+import { PaginatedResponse } from "../dtos/createCustomer.dto";
 
 const CACHE_PREFIX = "productSubcategory";
 const CACHE_TTL = 300;
@@ -41,7 +43,7 @@ export class ProductSubcategoryService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  async getAll(queryOptions: PaginationOptions): Promise<{ data: any[]; meta: any }> {
+  async getAll(queryOptions: PaginationOptions): Promise<PaginatedResponse<ProductSubcategoryResponseDto>> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -59,7 +61,7 @@ export class ProductSubcategoryService {
 
     const subcategories = await buildQuery(baseQuery, queryOptions, "productSubcategory");
 
-    const formatted = {
+    const formatted:PaginatedResponse<ProductSubcategoryResponseDto> = {
       data: subcategories.data.map((subcategory) => ({
         id: subcategory.id,
         name: subcategory.name,
@@ -72,7 +74,7 @@ export class ProductSubcategoryService {
     return formatted;
   }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<ProductSubcategoryResponseDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -86,7 +88,7 @@ export class ProductSubcategoryService {
 
     if (!result) return null;
 
-    const formatted = {
+    const formatted : ProductSubcategoryResponseDto = {
       id: result.id,
       name: result.name,
       category: result.category?.id ?? null,
@@ -108,7 +110,7 @@ export class ProductSubcategoryService {
 
   async update(
     id: string,
-    subcategoryData: any,
+    subcategoryData: CreateProductSubcategoryDto,
     updatedBy: string,
   ): Promise<ProductSubcategory | null> {
     const existingSubcategory = await this.productSubcategoryRepository.findOne({

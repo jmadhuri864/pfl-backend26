@@ -23,6 +23,13 @@ import { deserializeUser, requireUser } from '../middleware/deserializeUser';
 import { Status } from '../utils/status.enum';
 import { NotificationService } from '../services/notification.service';
 import { handleMulterFields, upload } from '../middleware/upload.middleware';
+import { CreateCustomerDto } from '../dtos/createCustomer.dto';
+import { BankDetailsDto } from '../dtos/bankDetails.dto';
+import { BillingDetailsDto } from '../dtos/billingDetails.dto';
+import { DeliveryDetailsDto } from '../dtos/deliveryDetails.dto';
+import { PaymentTermsDto } from '../dtos/paydetails.dto';
+import { StatutoryDetailsDto } from '../dtos/statutoryDetails.dto';
+import { KeyMobileNoDto } from '../dtos/keyMobileNo.dto';
 
 
 @controller('/customers', deserializeUser, requireUser)
@@ -69,9 +76,11 @@ export class CustomerController {
       const files = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
-      const customerData = req.body;
-customerData.createdBy = res.locals.user.id;
-      customerData.bankDetailsCust = customerData.bankDetailsCust || {};
+      const customerData: CreateCustomerDto = req.body;
+      console.log('Received customer data:', customerData);
+      console.log(typeof customerData.emailPrimary);
+      customerData.createdBy = res.locals.user.id;
+      customerData.bankDetails = customerData.bankDetails || {};
       customerData.statutoryDetails = customerData.statutoryDetails || {};
       customerData.billingDetails = customerData.billingDetails || {};
       customerData.deliveryDetails = customerData.deliveryDetails || {};
@@ -81,10 +90,10 @@ customerData.createdBy = res.locals.user.id;
       if (files.customerImage?.[0])
         customerData.customerImage = (files.customerImage[0] as any).location;
       if (files['bankDetails[cancelledChequeCopy]']?.[0])
-        customerData.bankDetailsCust.cancelledChequeCopy =
+        customerData.bankDetails.cancelledChequeCopy =
           (files['bankDetails[cancelledChequeCopy]'][0] as any).location;
       if (files['bankDetails[bankStatementCopy]']?.[0])
-        customerData.bankDetailsCust.bankStatementCopy =
+        customerData.bankDetails.bankStatementCopy =
           (files['bankDetails[bankStatementCopy]'][0] as any).location;
       if (files['statutoryDetails[panCopy]']?.[0])
         customerData.statutoryDetails.panCopy = (files['statutoryDetails[panCopy]'][0] as any).location;
@@ -126,6 +135,7 @@ customerData.createdBy = res.locals.user.id;
           (files.visitingCardCopy[0] as any).location;
 
       const customer = await this.customerService.create(customerData);
+
 
       if (!customer) {
         ControllerLogger.logOperationFailed('Create', 'Customer', 'could not be created', req, res);
@@ -679,18 +689,26 @@ async approveCustomer(
       
       const { id } = req.params;
       const updatedBy = res.locals.updatedBy;
-      const customerData = req.body;
+      const customerData: CreateCustomerDto = req.body;
+      console.log("customerData",customerData);
       const files = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
+
+      customerData.statutoryDetails ??= {} as StatutoryDetailsDto;
+customerData.billingDetails ??= {} as BillingDetailsDto;
+customerData.deliveryDetails ??= {} as DeliveryDetailsDto;
+customerData.paymentTerms ??= {} as PaymentTermsDto;
+customerData.keyMobileNumbers ??= {} as KeyMobileNoDto;
+customerData.bankDetails ??= {} as BankDetailsDto;
       if (files) {
         // Assign DigitalOcean Spaces URLs to customer data
         if (files.customerImage?.[0]) customerData.customerImage = (files.customerImage[0] as any).location;
         if (files.cancelledChequeCopy?.[0])
-          customerData.bankDetailsCust.cancelledChequeCopy =
+          customerData.bankDetails.cancelledChequeCopy =
             (files.cancelledChequeCopy[0] as any).location;
         if (files.bankStatementCopy?.[0])
-          customerData.bankDetailsCust.bankStatementCopy =
+          customerData.bankDetails.bankStatementCopy =
             (files.bankStatementCopy[0] as any).location;
         if (files.panCopy?.[0])
           customerData.statutoryDetails.panCopy = (files.panCopy[0] as any).location;
@@ -889,9 +907,9 @@ public async softDeleteMultipleCustomers(
 ) {
   try {
 
-    const { customerIds } = req.body;
-
-    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+    const { ids } = req.body;
+    console.log('reqboy',ids);
+    if (!Array.isArray(ids) || ids.length === 0) {
       ControllerLogger.logError(
         "Customer bulk deletion",
         new AppError(400, "customerIds must be a non-empty array"),
@@ -901,11 +919,11 @@ public async softDeleteMultipleCustomers(
       return next(new AppError(400, "customerIds must be a non-empty array"));
     }
 
-    const result = await this.customerService.softDeleteCustomers(customerIds);
+    const result = await this.customerService.softDeleteCustomers(ids);
 
     ControllerLogger.logSuccess(
       "Customer bulk soft deleted",
-      customerIds.join(","),
+      ids.join(","),
       req,
       res
     );

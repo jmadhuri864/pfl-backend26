@@ -37,26 +37,26 @@ export class ProductVarient extends Model {
 
   @Index()
   @Column({ type: 'varchar', length: 50, nullable: true })
-  count: string;
+  count: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 50, nullable: true })
-  size: string;
+  size: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 100, nullable: true })
-  variety: string;
+  variety: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 100, nullable: true })
-  origin: string;
+  origin: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 100, nullable: true })
-  brand: string;
+  brand: string | null;
 
   @Column({ type: 'int', nullable: true })
-  thresholdStock: number;
+  thresholdStock: number | null;
 
   
 }

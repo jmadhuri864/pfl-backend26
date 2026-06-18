@@ -29,6 +29,7 @@ import { PaginationOptions } from '../utils/pagination';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 
 import { ControllerLogger } from '../utils/controllerLogger'
+import { CreateProductDto } from '../dtos/product.dto';
  @controller('/products', deserializeUser, requireUser)
 export class ProductController {
   constructor(
@@ -59,7 +60,7 @@ export class ProductController {
       };
       logger.info('Fetching all products');
       const products = await this.productService.getAll(queryOptions);
-      logger.info(`Fetched ${products.length} products successfully`);
+      logger.info(`Fetched ${products.data.length} products successfully`);
       ControllerLogger.logList('Product', req, res);
 
       // Send notification for product list access
@@ -239,6 +240,7 @@ export class ProductController {
   ) {
     try {
       logger.info(`Fetching product with ID`);
+      console.log("product id",id);
       const product = await this.productService.getVarientByProductId(id);
       if (!product) {
         logger.warn(`Product with ID not found`);
@@ -285,7 +287,7 @@ export class ProductController {
   ) {
     try {
       logger.info('Creating a new product');
-      const productData = req.body;
+      const productData:CreateProductDto = req.body;
 
       if (req.file) {
         const imageUrl = (req.file as any).location;
@@ -366,7 +368,7 @@ export class ProductController {
   @httpPut('/:id', uploadSingle.single('image'), captureUser)
   public async update(
     @requestParam('id') id: string,
-    @requestBody() productData: any,
+    @requestBody() productData: CreateProductDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction,

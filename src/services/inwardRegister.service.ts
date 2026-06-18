@@ -4,7 +4,7 @@ import { InwardRepository } from '../repositories/inwardRegister.repository';
 import { InwardRegister } from '../entities/inwardRegister.entity';
 import AppError from '../utils/appError';
 
-import { LessThanOrEqual, DataSource, SelectQueryBuilder, In, IsNull, ILike } from 'typeorm';
+import { LessThanOrEqual, DataSource, SelectQueryBuilder, In, IsNull, ILike, DeepPartial } from 'typeorm';
 import { AuditLogService } from './auditLog.service';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 
@@ -25,6 +25,20 @@ import { ProductVarientRepository } from '../repositories/varients.repository';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import {
+  CreateInwardRegisterInput,
+  InwardRegisterViewDto,
+  InwardViewAddressDto,
+  InwardViewFarmerPartyDto,
+  InwardViewVendorPartyDto,
+  InwardViewProductDto,
+  InwardRegisterUpdateDto,
+  InwardUpdateProductDto,
+  InwardRegisterListItemDto,
+  InwardRegisterListResultDto,
+  UpdateInwardRegisterDto,
+} from '../dtos/inwardRegister.dto';
+import { InwardProduct } from '../entities/inwardProduct.entity';
 
 
 function normalizeDateFormat(date: string | null | undefined): string | null | undefined {
@@ -104,37 +118,121 @@ export class InwardRegisterService {
 
     
 
-public async createInwardRegister(data: any): Promise<any> {
+public async createInwardRegister(data: CreateInwardRegisterInput): Promise<any> {
   const queryRunner = this.dataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
 
   try {
     // 1. Normalize variant IDs
-    let variantIds: string[] = [];
-    if (Array.isArray(data.variants)) {
-      variantIds = data.variants;
-    } else if (data.variants) {
-      variantIds = [data.variants];
-    }
+    // let variantIds: string[] = [];
+    // if (Array.isArray(data.variants)) {
+    //   variantIds = data.variants;
+    // } else if (data.variants) {
+    //   variantIds = [data.variants];
+    // }
 
-    // 2. Fetch variants with product relation
-    const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
-      where: { id: In(variantIds) },
-      relations: ['product'],
-    });
+    // // 2. Fetch variants with product relation
+    // const variants = await queryRunner.manager.find(this.productVarientsRepository.target, {
+    //   where: { id: In(variantIds) },
+    //   relations: ['product'],
+    // });
 
-    // 3. Extract product IDs from variants
-    const productIds = variants.map(v => v.product?.id).filter(Boolean);
+    // // 3. Extract product IDs from variants
+    // const productIds = variants.map(v => v.product?.id).filter(Boolean);
 const serialNo = await this.generateSerialNo();
-      data.inwardNo = serialNo;
+    //  data.inwardNo = serialNo;
+
+      const {
+  requestedBy,
+  variants,
+  selectedParty,
+  ...entityData
+} = data;
+
+      const inwardData: DeepPartial<InwardRegister> = {
+  ...entityData,
+
+  inwardNo: serialNo,
+
+  grnNo: data.grnNo
+    ? { id: data.grnNo }
+    : undefined,
+
+  deliveryChallanNo: data.deliveryChallanNo
+    ? { id: data.deliveryChallanNo }
+    : undefined,
+
+  rbcNo: data.rbcNo
+    ? { id: data.rbcNo }
+    : undefined,
+
+  companyName: {
+    id: data.companyName,
+  },
+
+  location: {
+    id: data.location,
+  },
+
+  fromLocation: data.fromLocation
+    ? { id: data.fromLocation }
+    : undefined,
+
+  selectedVendor: data.selectedVendor
+    ? { id: data.selectedVendor.id }
+    : undefined,
+
+  selectedFarmer: data.selectedFarmer
+    ? { id: data.selectedFarmer.id }
+    : undefined,
+
+  customerName: data.customerName
+    ? { id: data.customerName }
+    : undefined,
+
+  purchasedBy: data.purchasedBy
+    ? { id: data.purchasedBy }
+    : undefined,
+
+  inwardBy: data.inwardBy
+    ? { id: data.inwardBy }
+    : undefined,
+
+  inwardProducts: data.inwardProducts?.map(item => ({
+    productName: item.productName
+      ? { id: item.productName }
+      : undefined,
+
+    variant: item.variant
+      ? { id: item.variant }
+      : undefined,
+
+    uom: item.uom
+      ? { id: item.uom }
+      : undefined,
+
+    packingMaterialWeight: item.packingMaterialWeight,
+    quantity: item.quantity,
+    weight: item.weight,
+    unitPrice: item.unitPrice,
+    amount: item.amount,
+    netWeight: item.netWeight,
+    grossWeight: item.grossWeight,
+  })),
+};
     // 4. Create Inward Register
-    const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
-      ...data,
-      inwardNo: serialNo,
-      variants: variants.map(v => ({ id: v.id })),
-      products: productIds.map(id => ({ id })),
-    });
+    // const inward = queryRunner.manager.create(this.inwardRegisterRepo.target, {
+    //   ...entityData,
+    //   inwardNo: serialNo,
+    //   // variants: variants.map(v => ({ id: v.id })),
+    //   // products: productIds.map(id => ({ id })),
+    // });
+
+    const inward = queryRunner.manager.create(
+  this.inwardRegisterRepo.target,
+  inwardData
+);
 
     const savedInward = await queryRunner.manager.save(inward);
 
@@ -745,15 +843,16 @@ async filterInwardRegisters(
     await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
     return transformedInwardRegister;
   }
-async getInwardidforupdate(id: string, userId: string): Promise<any> {
+async getInwardidforupdate(id: string, userId: string): Promise<InwardRegisterUpdateDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<InwardRegisterUpdateDto>(cacheKey);
     if (cached) return cached;
 
     const inwardRegister = await this.inwardRegisterRepo
       .createQueryBuilder('ir')
       .leftJoin('ir.grnNo', 'grnNo')
       .leftJoin('ir.location', 'location')
+      .leftJoin('ir.fromLocation', 'fromLocation')
       .leftJoin('ir.companyName', 'companyName')
       .leftJoin('ir.deliveryChallanNo', 'deliveryChallanNo')
       .leftJoin('ir.rbcNo', 'rbcNo')
@@ -765,18 +864,21 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
       .leftJoin('inwardProducts.productName', 'productName')
       .leftJoin('inwardProducts.uom', 'uom')
       .leftJoin('inwardProducts.variant', 'variant')
+      .leftJoin('ir.customerName','customer')
       .select([
         'ir.id', 'ir.inwardType', 'ir.batchNo', 'ir.source', 'ir.date',
         'ir.totalWeightInKg', 'ir.incomingGrossQty', 'ir.incomingNetQty',
         'ir.inwardGrossQty', 'ir.inwardNetQty', 'ir.inwardCost', 'ir.remarks', 'ir.createdAt',
-        'grnNo.id', 'location.id', 'companyName.id',
+        'grnNo.id', 'location.id', 'fromLocation.id', 'companyName.id',
         'deliveryChallanNo.id', 'rbcNo.id',
         'selectedVendor.id', 'selectedFarmer.id',
         'inwardBy.id', 'purchasedBy.id',
         'inwardProducts.id', 'inwardProducts.grossWeight', 'inwardProducts.netWeight',
         'inwardProducts.weight', 'inwardProducts.packingMaterialWeight',
         'inwardProducts.quantity', 'inwardProducts.unitPrice', 'inwardProducts.amount',
-        'productName.id', 'uom.id', 'variant.id',
+        'productName.id','productName.name','productName.productCode', 'uom.id', 'variant.id',
+        'variant.variantName','variant.variantCode',
+        'customer.id','customer.organisationName'
       ])
       .where('ir.id = :id', { id })
       .getOne();
@@ -791,13 +893,14 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
       ? inwardRegister.selectedVendor.id
       : null;
 
-    const transformedInwardRegister = {
+    const transformedInwardRegister: InwardRegisterUpdateDto = {
       id: inwardRegister.id,
       createdDate,
       createdTime,
       inwardType: inwardRegister.inwardType,
       companyName: inwardRegister.companyName?.id ?? null,
       location: inwardRegister.location?.id ?? null,
+      fromLocation: inwardRegister.fromLocation?.id ?? null,
       date: inwardRegister.date,
       batchNo: inwardRegister.batchNo,
       source: inwardRegister.source,
@@ -814,21 +917,28 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
       deliveryChallanNo: inwardRegister.deliveryChallanNo?.id ?? null,
       rbcNo: inwardRegister.rbcNo?.id ?? null,
       selectedParty,
-      inwardProducts: (inwardRegister.inwardProducts ?? []).map((p) => ({
-        id: p.id ?? null,
-        productName: p.productName?.id ?? null,
-        variant: p.variant?.id ?? null,
-        uom: p.uom?.id ?? null,
-        grossWeight: p.grossWeight,
-        netWeight: p.netWeight,
-        weight: p.weight,
-        packingMaterialWeight: p.packingMaterialWeight,
-        quantity: p.quantity,
-        unitPrice: p.unitPrice,
-        amount: p.amount,
-      })),
+      customer:inwardRegister.customerName?.organisationName ?? null,
+      
+      inwardProducts: (inwardRegister.inwardProducts ?? []).map(
+        (p): InwardUpdateProductDto => ({
+          id: p.id ?? null,
+          productName: p.productName?.name ?? null,
+          productCode:p.productName?.productCode??null,
+          variant: p.variant?.id ?? null,
+          variantName:p.variant?.variantName ?? null,
+          variantCode:p.variant?.variantCode??null,
+          uom: p.uom?.id ?? null,
+          grossWeight: p.grossWeight,
+          netWeight: p.netWeight,
+          weight: p.weight,
+          packingMaterialWeight: p.packingMaterialWeight,
+          quantity: p.quantity,
+          unitPrice: p.unitPrice,
+          amount: p.amount,
+        }),
+      ),
     };
-
+console.log(transformedInwardRegister)
     await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
     return transformedInwardRegister;
   }
@@ -996,7 +1106,7 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
  
   async updateInwardRegister(
     id: string,
-    data: any,
+    data: UpdateInwardRegisterDto,
     updatedBy: string,
   ): Promise<InwardRegister> {
     const inwardRegister = await this.inwardRegisterRepo.findOne({
@@ -1253,10 +1363,10 @@ async getInwardidforupdate(id: string, userId: string): Promise<any> {
 //       }
 //     };
 //   }
-public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: string): Promise<any> {
+public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: string): Promise<InwardRegisterListResultDto> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
+    const cached = await this.cacheService.get<InwardRegisterListResultDto>(cacheKey);
     if (cached) return cached;
 
     const data = await this.docSingalApproverService.getAllSingleApprovalDocumentsByUserId(
@@ -1300,9 +1410,9 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       inwardMap = new Map(inwards.map((i) => [i.id, i]));
     }
 
-    let relatedDataOnly = typedDocuments
+    let relatedDataOnly: InwardRegisterListItemDto[] = typedDocuments
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map((doc) => {
+      .map((doc): InwardRegisterListItemDto => {
         const rd = doc.document_type_id ? inwardMap.get(doc.document_type_id) : null;
         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {
@@ -1366,7 +1476,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
       });
     }
 
-    const allResult = {
+    const allResult: InwardRegisterListResultDto = {
       data: relatedDataOnly,
       meta: {
         total: relatedDataOnly.length,
@@ -1380,7 +1490,7 @@ public async getAllInwardRegisters(queryOptions: PaginationOptions, userId: stri
 
 
   //TODO:Get Inward Register By Id For View..By Vaishali
-public async getInwardregisterByIdForView(docid: string, userId: string): Promise<any> {
+public async getInwardregisterByIdForView(docid: string, userId: string): Promise<InwardRegisterViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -1446,38 +1556,48 @@ public async getInwardregisterByIdForView(docid: string, userId: string): Promis
     if (!inwardRegister) throw new Error('inwardRegister not found');
 
     const { createdDate, createdTime } = formatDateTime(inwardRegister.createdAt);
-    const mapAddress = (addr: any) => addr ? {
-      id: addr.id, address1: addr.address1, address2: addr.address2,
-      location: addr.location, city: addr.city, state: addr.state, pincode: addr.pincode,
-    } : null;
+
+    const mapAddress = (addr: any): InwardViewAddressDto | null =>
+      addr
+        ? {
+            id: addr.id,
+            address1: addr.address1,
+            address2: addr.address2,
+            location: addr.location,
+            city: addr.city,
+            state: addr.state,
+            pincode: addr.pincode,
+          }
+        : null;
 
     const sf = inwardRegister.selectedFarmer;
     const sv = inwardRegister.selectedVendor;
 
-    const selectedParty = inwardRegister.source === 'farmer' && sf
-      ? {
-          fullname: `${sf.farmerfName ?? ''} ${sf.farmermName ?? ''} ${sf.farmerlName ?? ''}`.trim(),
-          primaryMobileNo: sf.primaryMobileNo ?? null,
-          secondaryMobileNo: sf.secondaryMobileNo ?? null,
-          farmerCode: sf.farmerCode ?? null,
-          email: sf.email ?? null,
-          farmAddress: mapAddress(sf.farmAddress),
-          residensialAddress: mapAddress(sf.residensialAddress),
-        }
-      : inwardRegister.source === 'vendor' && sv
-      ? {
-          companyName: sv.companyName ?? null,
-          category: sv.category?.name ?? null,
-          subcategory: sv.subcategory?.name ?? null,
-          vendorCode: sv.vendorCode ?? null,
-          contactPersonName: sv.vendorSaleInfo
-            ? `${sv.vendorSaleInfo.contactFName ?? ''} ${sv.vendorSaleInfo.contactMName ?? ''} ${sv.vendorSaleInfo.contactLName ?? ''}`.trim()
-            : null,
-          officeAddress: mapAddress(sv.officeAddress),
-        }
-      : null;
+    const selectedParty: InwardViewFarmerPartyDto | InwardViewVendorPartyDto | null =
+      inwardRegister.source === 'farmer' && sf
+        ? ({
+            fullname: `${sf.farmerfName ?? ''} ${sf.farmermName ?? ''} ${sf.farmerlName ?? ''}`.trim(),
+            primaryMobileNo: sf.primaryMobileNo ?? null,
+            secondaryMobileNo: sf.secondaryMobileNo ?? null,
+            farmerCode: sf.farmerCode ?? null,
+            email: sf.email ?? null,
+            farmAddress: mapAddress(sf.farmAddress),
+            residensialAddress: mapAddress(sf.residensialAddress),
+          } satisfies InwardViewFarmerPartyDto)
+        : inwardRegister.source === 'vendor' && sv
+        ? ({
+            companyName: sv.companyName ?? null,
+            category: sv.category?.name ?? null,
+            subcategory: sv.subcategory?.name ?? null,
+            vendorCode: sv.vendorCode ?? null,
+            contactPersonName: sv.vendorSaleInfo
+              ? `${sv.vendorSaleInfo.contactFName ?? ''} ${sv.vendorSaleInfo.contactMName ?? ''} ${sv.vendorSaleInfo.contactLName ?? ''}`.trim()
+              : null,
+            officeAddress: mapAddress(sv.officeAddress),
+          } satisfies InwardViewVendorPartyDto)
+        : null;
 
-    const result = {
+    const result: InwardRegisterViewDto = {
       documentId: document.documentId,
       overAllStatus: document.status,
       createdBy: document.createdBy,
@@ -1511,19 +1631,21 @@ public async getInwardregisterByIdForView(docid: string, userId: string): Promis
       inwardBy: inwardRegister.inwardBy
         ? `${inwardRegister.inwardBy.firstName ?? ''} ${inwardRegister.inwardBy.lastName ?? ''}`.trim()
         : null,
-      inwardProducts: (inwardRegister.inwardProducts ?? []).map((prod) => ({
-        id: prod.id,
-        productName: prod.productName?.name ?? null,
-        uom: prod.uom?.unit ?? null,
-        variant: prod.variant?.variantName ?? null,
-        packingMaterialWeight: prod.packingMaterialWeight,
-        quantity: prod.quantity,
-        weight: prod.weight,
-        unitPrice: prod.unitPrice,
-        amount: prod.amount,
-        netWeight: prod.netWeight,
-        grossWeight: prod.grossWeight,
-      })),
+      inwardProducts: (inwardRegister.inwardProducts ?? []).map(
+        (prod): InwardViewProductDto => ({
+          id: prod.id,
+          productName: prod.productName?.name ?? null,
+          uom: prod.uom?.unit ?? null,
+          variant: prod.variant?.variantName ?? null,
+          packingMaterialWeight: prod.packingMaterialWeight,
+          quantity: prod.quantity,
+          weight: prod.weight,
+          unitPrice: prod.unitPrice,
+          amount: prod.amount,
+          netWeight: prod.netWeight,
+          grossWeight: prod.grossWeight,
+        }),
+      ),
     };
 
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);

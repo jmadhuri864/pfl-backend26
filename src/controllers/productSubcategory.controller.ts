@@ -16,7 +16,7 @@ import {
 
 import { TYPES } from "../types";
 import AppError from "../utils/appError";
-import { NextFunction, Response,Request } from "express";
+import { NextFunction, Response, Request } from "express";
 import { ProductSubcategoryService } from "../services/product_subcategory";
 
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
@@ -24,32 +24,33 @@ import logger from "../utils/logger";
 import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
+import { CreateProductSubcategoryDto } from "../dtos/product.dto";
 
-@controller("/productSubcategory",deserializeUser,requireUser)
+@controller("/productSubcategory", deserializeUser, requireUser)
 export class ProductSubcategoryController {
   constructor(
     @inject(TYPES.ProductSubcategoryService)
     private productSubcategoryService: ProductSubcategoryService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService
-  ) {}
+  ) { }
 
   @httpGet("/")
   public async getAll(
-    @request() req:Request,
+    @request() req: Request,
     @response() res: Response, @next() next: NextFunction) {
     try {
-      const { page, limit, search, sort,name} = req.query;
-                            
-                        
-                              const queryOptions: PaginationOptions = {
-                                page: page ? Number(page) : undefined,  
-                limit: limit ? Number(limit) : undefined,
-                                searchFields: ['subCategory.name'],
-                                filters: {},
-                                sort: sort as string || undefined, // Adjust this line to match your sorting requirements
-                                search: search as string|| '',
-                              };
+      const { page, limit, search, sort, name } = req.query;
+
+
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        searchFields: ['subCategory.name'],
+        filters: {},
+        sort: sort as string || undefined, // Adjust this line to match your sorting requirements
+        search: search as string || '',
+      };
       const subcategories = await this.productSubcategoryService.getAll(queryOptions);
       if (!subcategories.data.length) {
         ControllerLogger.logError('Product Subcategory list retrieval', new AppError(404, "No product subcategories found"), req, res);
@@ -66,11 +67,13 @@ export class ProductSubcategoryController {
       //   );
       // }
 
-      res.status(200).json({ status: "success",
-         data: subcategories.data,
+      res.status(200).json({
+        status: "success",
+        data: subcategories.data,
         allRecords: subcategories.meta.total,
         totalPages: subcategories.meta.pages,
-        page: subcategories.meta.page, });
+        page: subcategories.meta.page,
+      });
     } catch (err) {
       ControllerLogger.logError('Product Subcategory list retrieval', err, req, res);
       next(err);
@@ -110,7 +113,7 @@ export class ProductSubcategoryController {
 
   @httpPost("/")
   public async create(
-    @requestBody() subcategoryData: { name: string; category: string },
+    @requestBody() subcategoryData:CreateProductSubcategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
@@ -143,16 +146,16 @@ export class ProductSubcategoryController {
     }
   }
 
-  @httpPatch("/:id",captureUser)
+  @httpPatch("/:id", captureUser)
   public async update(
     @requestParam("id") id: string,
-    @requestBody() subcategoryData: any,
+    @requestBody() subcategoryData: CreateProductSubcategoryDto,
     @request() req: Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      const updatedBy=res.locals.updatedBy
+      const updatedBy = res.locals.updatedBy
       const subcategory = await this.productSubcategoryService.update(
         id,
         subcategoryData,
@@ -221,53 +224,53 @@ export class ProductSubcategoryController {
       next(err);
     }
   }
-   @httpDelete("/delete/multiple")
-public async softDeleteMultipleProductSubcategory(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
+  @httpDelete("/delete/multiple")
+  public async softDeleteMultipleProductSubcategory(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction
+  ) {
+    try {
 
-    const { productSubcategoryIds } = req.body;
+      const { productSubcategoryIds } = req.body;
 
-    if (!Array.isArray(productSubcategoryIds) || productSubcategoryIds.length === 0) {
-      ControllerLogger.logError(
-        "ProductSubcategory bulk deletion",
-        new AppError(400, "productSubcategoryIds must be a non-empty array"),
+      if (!Array.isArray(productSubcategoryIds) || productSubcategoryIds.length === 0) {
+        ControllerLogger.logError(
+          "ProductSubcategory bulk deletion",
+          new AppError(400, "productSubcategoryIds must be a non-empty array"),
+          req,
+          res
+        );
+        return next(new AppError(400, "productSubcategoryIds must be a non-empty array"));
+      }
+
+      const result = await this.productSubcategoryService.softDeleteSubcategory(productSubcategoryIds);
+
+      ControllerLogger.logSuccess(
+        "ProductSubcategory bulk soft deleted",
+        productSubcategoryIds.join(","),
         req,
         res
       );
-      return next(new AppError(400, "productSubcategoryIds must be a non-empty array"));
+
+      // Send notification
+      // const userId = res.locals.user?.id;
+      // if (userId) {
+      //   await this.notificationService.createNoti(
+      //     `Multiple ProductSubcategory soft deleted: ${productSubcategoryIds.length}`,
+      //     userId
+      //   );
+      // }
+
+      return res.status(200).json({
+        status: "success",
+        message: "ProductSubcategory soft deleted successfully",
+        affected: result.affected,
+      });
+
+    } catch (err) {
+      ControllerLogger.logError("ProductSubcategory bulk deletion", err, req, res);
+      next(err);
     }
-
-    const result = await this.productSubcategoryService.softDeleteSubcategory(productSubcategoryIds);
-
-    ControllerLogger.logSuccess(
-      "ProductSubcategory bulk soft deleted",
-      productSubcategoryIds.join(","),
-      req,
-      res
-    );
-
-    // Send notification
-    // const userId = res.locals.user?.id;
-    // if (userId) {
-    //   await this.notificationService.createNoti(
-    //     `Multiple ProductSubcategory soft deleted: ${productSubcategoryIds.length}`,
-    //     userId
-    //   );
-    // }
-
-    return res.status(200).json({
-      status: "success",
-      message: "ProductSubcategory soft deleted successfully",
-      affected: result.affected,
-    });
-
-  } catch (err) {
-    ControllerLogger.logError("ProductSubcategory bulk deletion", err, req, res);
-    next(err);
   }
-}
 }

@@ -334,7 +334,7 @@ export class DocumentbService {
         DocumentTypeEnum.LABOR_PAYMENT_VOUCHER,
         DocumentTypeEnum.MULTI_CASH_VOUCHER,
         DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
-        DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER,
+        DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER
       ].includes(type) &&
       approvalFlow.verifiers.length > 0
     ) {
