@@ -355,8 +355,7 @@ export class  MultiCashVoucherController {
 
             res.status(200).json({
               message: result.message,
-              success: result.success,
-              failed: result.failed,
+            
             });
           }
             catch (error) {

@@ -22,6 +22,7 @@ import {
   BulkDeleteDealSlipResultDto,
 } from "../dtos/dealSlip.dto";
 
+
 @controller('/dealSlip', deserializeUser, requireUser)
 export class DealSlipController {
   
