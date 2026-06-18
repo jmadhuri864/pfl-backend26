@@ -1,5 +1,5 @@
 import { Request,  Response } from 'express';
-import { controller, httpGet, httpPost, httpPut, httpDelete, requestParam, requestBody, response, next, request, httpPatch } from 'inversify-express-utils';
+import { controller, httpGet, httpPost, httpDelete, requestParam, requestBody, response, next, request, httpPatch } from 'inversify-express-utils';
 import { inject } from 'inversify';
 
 import { TPVoucher } from '../entities/transportPaymentvoucher.entity';
@@ -17,6 +17,16 @@ import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { upload, uploadAttachments } from '../middleware/upload.middleware';
 import { setAttachmentUrls } from '../utils/fileUploadHelper';
+import {
+  CreateTPVoucherDto,
+  UpdateTPVoucherDto,
+  TPVoucherListResponseDto,
+  TPVoucherDetailDto,
+  TPVoucherViewDto,
+  TPVoucherUpdateFormDto,
+  BulkDeleteTPVoucherDto,
+  BulkDeleteTPVoucherResultDto,
+} from '../dtos/transportPaymentVoucher.dto';
 
 @controller('/tpvoucher', deserializeUser, requireUser)
 export class TPVoucherController {
@@ -369,8 +379,6 @@ export class TPVoucherController {
 
           res.status(200).json({
             message: result.message,
-            success: result.success,
-            failed: result.failed,
           });
         }
           catch (error) {

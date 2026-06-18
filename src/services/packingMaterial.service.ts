@@ -1,10 +1,20 @@
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../types';
+import { PackingMaterial } from '../entities/packingMaterial.entity';
 import { PackingMaterialRepository } from '../repositories/packingMaterial.repository';
 import { buildQuery, PaginationOptions } from '../utils/pagination';
 import AppError from '../utils/appError';
 import { AuditLogService } from './auditLog.service';
 import { CacheService } from './cache.service';
+import {
+  CreatePackingMaterialDto,
+  UpdatePackingMaterialDto,
+  PackingMaterialListResponseDto,
+  PackingMaterialDetailDto,
+  PackingMaterialPartialDto,
+  PackingMaterialDropdownDto,
+  BulkDeletePackingMaterialResultDto,
+} from '../dtos/packingMaterial.dto';
 
 const CACHE_PREFIX = 'packingMaterial';
 const CACHE_TTL = 300; // 5 minutes
@@ -36,7 +46,7 @@ export class PackingMaterialService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  async getAll(queryOptions: PaginationOptions): Promise<any> {
+  async getAll(queryOptions: PaginationOptions): Promise<PackingMaterialListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -73,7 +83,7 @@ export class PackingMaterialService {
     return formatted;
   }
 
-  async getMaterialById(id: string): Promise<any> {
+  async getMaterialById(id: string): Promise<PackingMaterialDetailDto> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -111,7 +121,7 @@ export class PackingMaterialService {
     return formatted;
   }
 
-  async findAllPackingMaterial(): Promise<{ id: string; name: string }[]> {
+  async findAllPackingMaterial(): Promise<PackingMaterialDropdownDto[]> {
     const key = `${CACHE_PREFIX}:dropdown`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -134,7 +144,7 @@ export class PackingMaterialService {
     return formatted;
   }
 
-  async getAllPartial(): Promise<any[]> {
+  async getAllPartial(): Promise<PackingMaterialPartialDto[]> {
     const key = `${CACHE_PREFIX}:partial`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -159,14 +169,14 @@ export class PackingMaterialService {
     return formatted;
   }
 
-  async createPackingMaterial(data: any): Promise<any> {
-    const material = this.packingMaterialRepository.create(data);
-    const saved = await this.packingMaterialRepository.save(material);
+  async createPackingMaterial(data: CreatePackingMaterialDto): Promise<PackingMaterial> {
+    const material = this.packingMaterialRepository.create(data as any) as unknown as PackingMaterial;
+    const saved = await this.packingMaterialRepository.save(material) as unknown as PackingMaterial;
     await this.invalidateCache();
     return saved;
   }
 
-  async updatePackingMaterial(id: string, data: any, updatedBy: string): Promise<any> {
+  async updatePackingMaterial(id: string, data: UpdatePackingMaterialDto, updatedBy: string): Promise<PackingMaterial> {
     const material = await this.packingMaterialRepository.findOne({ where: { id } });
 
     if (!material) {
@@ -190,7 +200,7 @@ export class PackingMaterialService {
     return updated;
   }
 
-  async deleteMultiplePackingMaterials(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
+  async deleteMultiplePackingMaterials(ids: string[]): Promise<BulkDeletePackingMaterialResultDto> {
     const success: string[] = [];
     const failed: { id: string; reason: string }[] = [];
 

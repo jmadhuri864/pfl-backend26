@@ -6,6 +6,14 @@ import { AuditLogService } from "./auditLog.service";
 import { UOMConversionMatrix } from "../entities/uom_matrix.entity";
 import { buildQuery, PaginationOptions } from "../utils/pagination";
 import { CacheService } from "./cache.service";
+import {
+  CreateUOMConversionMatrixDto,
+  UpdateUOMConversionMatrixDto,
+  UOMConversionMatrixListResponseDto,
+  UOMConversionMatrixDetailDto,
+  UOMConversionMatrixUpdateFormDto,
+  BulkDeleteUOMConversionMatrixResultDto,
+} from "../dtos/uomConversionMatrix.dto";
 
 const CACHE_PREFIX = "uomMatrix";
 const CACHE_TTL = 300; // 5 minutes
@@ -39,7 +47,7 @@ export class UOMConversionMatrixService {
 
   // ─── Methods ──────────────────────────────────────────────────────────────
 
-  public async getAll(queryOptions: PaginationOptions): Promise<any> {
+  public async getAll(queryOptions: PaginationOptions): Promise<UOMConversionMatrixListResponseDto> {
     const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -74,7 +82,7 @@ export class UOMConversionMatrixService {
     return formatted;
   }
 
-  public async getById(id: string): Promise<any> {
+  public async getById(id: string): Promise<UOMConversionMatrixDetailDto | null> {
     const key = `${CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -107,7 +115,7 @@ export class UOMConversionMatrixService {
     return formatted;
   }
 
-  public async getByIdForUpdate(id: string): Promise<any> {
+  public async getByIdForUpdate(id: string): Promise<UOMConversionMatrixUpdateFormDto | null> {
     const key = `${CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
@@ -138,16 +146,16 @@ export class UOMConversionMatrixService {
     return formatted;
   }
 
-  public async create(conversionData: Partial<UOMConversionMatrix>): Promise<UOMConversionMatrix> {
-    const conversion = this.uomConversionMatrixRepository.create(conversionData);
-    const saved = await this.uomConversionMatrixRepository.save(conversion);
+  public async create(conversionData: CreateUOMConversionMatrixDto): Promise<UOMConversionMatrix> {
+    const conversion = this.uomConversionMatrixRepository.create(conversionData as any) as unknown as UOMConversionMatrix;
+    const saved = await this.uomConversionMatrixRepository.save(conversion) as unknown as UOMConversionMatrix;
     await this.invalidateCache();
     return saved;
   }
 
   public async update(
     id: string,
-    conversionData: Partial<UOMConversionMatrix>,
+    conversionData: UpdateUOMConversionMatrixDto,
     updatedBy: string,
   ): Promise<UOMConversionMatrix | null> {
     const existingConversionMatrix = await this.uomConversionMatrixRepository.findOne({
@@ -194,7 +202,7 @@ export class UOMConversionMatrixService {
     return true;
   }
 
-  public async softDeleteConversion(ids: string[]): Promise<any> {
+  public async softDeleteConversion(ids: string[]): Promise<BulkDeleteUOMConversionMatrixResultDto> {
     const result = await this.uomConversionMatrixRepository.softDelete({ id: In(ids) });
     await this.invalidateCache();
     return result;

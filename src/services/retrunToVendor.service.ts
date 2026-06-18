@@ -12,8 +12,18 @@ import { DocumentTypeEnum as DocDefEnum } from "../entities/documentdef.entity";
 import { DocDoubleApproverService } from "./docDoubleApprover.service";
 import { PaginationOptions } from "../utils/pagination";
 import { formatDateTime } from "../utils/dateUtils";
+import { ReturnToVendor } from "../entities/returnToVendor.entity";
 import { CacheService } from "./cache.service";
 import { createHash } from "crypto";
+import {
+  CreateRTVDto,
+  UpdateRTVDto,
+  RTVListResponseDto,
+  RTVViewDto,
+  RTVUpdateFormDto,
+  SoftDeleteRTVResultDto,
+  BulkDeleteRTVResultDto,
+} from "../dtos/returnToVendor.dto";
 
 @injectable()
 export class ReturnToVendorService {
@@ -69,7 +79,7 @@ export class ReturnToVendorService {
       return `${datePrefix}${nextSeq.toString().padStart(5, '0')}`;
     }
 
-    public async createReturn(returnData: any, requestedBy: any, clientIp?: string): Promise<any>{
+    public async createReturn(returnData: CreateRTVDto & Record<string, any>, requestedBy: string, clientIp?: string): Promise<ReturnToVendor> {
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
@@ -110,7 +120,7 @@ export class ReturnToVendorService {
             createdBy: requestedBy,
             variants: variants.map((v: any) => ({ id: v.id })),
             products: productIds.map((id: any) => ({ id })),
-          });
+          } as any) as unknown as ReturnToVendor;
 
           const savedNewReturn = await queryRunner.manager.save(newReturn);
           const savedreturn = Array.isArray(savedNewReturn) ? savedNewReturn[0] : savedNewReturn;
@@ -234,7 +244,7 @@ export class ReturnToVendorService {
         }
     }
 
-    public async getAll(queryOptions: PaginationOptions, userId: any): Promise<any> {
+    public async getAll(queryOptions: PaginationOptions, userId: string): Promise<RTVListResponseDto> {
         const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
         const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
         const cached = await this.cacheService.get<any>(cacheKey);
@@ -340,7 +350,7 @@ export class ReturnToVendorService {
         return result;
     }
 
-    public async getById(id: string): Promise<any> {
+    public async getById(id: string): Promise<ReturnToVendor | null> {
         const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
         const cached = await this.cacheService.get<any>(cacheKey);
         if (cached) return cached;
@@ -364,7 +374,7 @@ export class ReturnToVendorService {
         }
     }
 
-     public async getByIdForUpdate(id: string): Promise<any> {
+     public async getByIdForUpdate(id: string): Promise<RTVUpdateFormDto | null> {
         const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
         const cached = await this.cacheService.get<any>(cacheKey);
         if (cached) return cached;
@@ -414,7 +424,7 @@ export class ReturnToVendorService {
         }
     }
 
-     public async getByIdForView(docid: string): Promise<any> {
+     public async getByIdForView(docid: string): Promise<RTVViewDto | null> {
         const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
         const cached = await this.cacheService.get<any>(cacheKey);
         if (cached) return cached;
@@ -474,7 +484,7 @@ export class ReturnToVendorService {
         }
     }
 
-    public async updateReturn(id: string, updateData: any): Promise<any> {
+    public async updateReturn(id: string, updateData: UpdateRTVDto & Record<string, any>): Promise<ReturnToVendor> {
         try {
             if (!id) {
                 throw new Error('Return to vendor ID is required');
@@ -624,7 +634,7 @@ export class ReturnToVendorService {
         }
     }
 
-    public async softDeleteReturn(id: string): Promise<any> {
+    public async softDeleteReturn(id: string): Promise<SoftDeleteRTVResultDto> {
     try {
         if (!id) {
             throw new Error("Return to vendor ID is required");
@@ -657,7 +667,7 @@ export class ReturnToVendorService {
     }
 }
 
-    public async deleteMultipleReturnToVendor(ids: string[]): Promise<{ message: string }> {
+    public async deleteMultipleReturnToVendor(ids: string[]): Promise<BulkDeleteRTVResultDto> {
         if (!ids.length) return { message: 'No IDs provided' };
 
         const records = await this.postReturnToVendorRepository.find({

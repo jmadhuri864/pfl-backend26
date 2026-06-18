@@ -14,6 +14,15 @@ import { DocumentTypeEnum as DocDefEnum } from '../entities/documentdef.entity';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { DocumentbRepository } from '../repositories/documentb.repository';
+import {
+  CreateODCDto,
+  UpdateODCDto,
+  ODCViewDto,
+  ODCUpdateFormDto,
+  ODCListResponseDto,
+  BulkDeleteODCResultDto,
+} from '../dtos/otherDeliveryChallan.dto';
+import { OtherDeliveryChallan } from '../entities/otherDeliveryChallan.entity';
 
 
 @injectable()
@@ -54,7 +63,7 @@ export class OtherDeliveryChallanService {
     await Promise.all(tasks);
   }
 
-  async create(data: any): Promise<any> {
+  async create(data: CreateODCDto & Record<string, any>): Promise<any> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -145,7 +154,7 @@ export class OtherDeliveryChallanService {
     return null;
   }
 
-  async getById(id: string): Promise<any> {
+  async getById(id: string): Promise<{ data: any } | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -165,8 +174,10 @@ export class OtherDeliveryChallanService {
           'fromLocation',
         ],
       });
-      if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-      return result;
+      if (!result) return null;
+      const wrapped = { data: result };
+      await this.cacheService.set(cacheKey, wrapped, this.CACHE_TTL);
+      return wrapped;
     } catch (err) {
       logger.error(`Error fetching other delivery challan by ID: ${id}`, {
         error: err,
@@ -175,7 +186,7 @@ export class OtherDeliveryChallanService {
     }
   }
 
-  async getByIdChallanforView(docId: string): Promise<any> {
+  async getByIdChallanforView(docId: string): Promise<ODCViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -284,7 +295,7 @@ export class OtherDeliveryChallanService {
 
   
 
-  async getByIdChallanforUpdate(id: string): Promise<any> {
+  async getByIdChallanforUpdate(id: string): Promise<ODCUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -388,7 +399,7 @@ export class OtherDeliveryChallanService {
 
 
   
-  async getAll(queryOptions: PaginationOptions, userId: string): Promise<any> {
+  async getAll(queryOptions: PaginationOptions, userId: string): Promise<ODCListResponseDto> {
     const hash = createHash('md5').update(`${userId}:${JSON.stringify(queryOptions)}`).digest('hex');
     const cacheKey = `${this.CACHE_PREFIX}:list:${hash}`;
     const cached = await this.cacheService.get<any>(cacheKey);
@@ -485,14 +496,14 @@ export class OtherDeliveryChallanService {
       .filter(Boolean);
 
     const result = {
-      data: relatedDataOnly,
+      data: relatedDataOnly as ODCListResponseDto['data'],
       meta: { total: meta.total, page: meta.page, pages: meta.pages },
     };
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
 
-  async update(id: string, data: any): Promise<any> {
+  async update(id: string, data: UpdateODCDto & Record<string, any>): Promise<OtherDeliveryChallan | null> {
     try {
       const challan = await this.challanRepository.findOne({ where: { id } });
       if (!challan) return null;

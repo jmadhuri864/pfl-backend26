@@ -19,6 +19,14 @@ import { captureUser, deserializeUser, requireUser } from '../middleware/deseria
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
+import {
+  CreateBranchDto,
+  UpdateBranchDto,
+  BranchDetailDto,
+  BranchListResponseDto,
+  BranchFilterItemDto,
+  BulkDeleteBranchDto,
+} from '../dtos/branch.dto';
 
 @controller('/location-branches', deserializeUser, requireUser)
 export class BranchessController {
@@ -33,12 +41,12 @@ export class BranchessController {
 
   @httpPost('/:branchType')
   public async createBranch(
-    @request() req: Request<{ branchType: string }, {}, any>,
+    @request() req: Request<{ branchType: string }, {}, CreateBranchDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      const branchData = { ...req.body, type: req.params.branchType as BranchType };
+      const branchData: CreateBranchDto & Record<string, any> = { ...req.body, type: req.params.branchType as BranchType };
       const branch = await this.branchesService.createBranch(branchData);
 
       if (!branch) {
@@ -71,7 +79,8 @@ export class BranchessController {
   ) {
     try {
       const { id } = req.params;
-      const branch = await this.branchesService.getBranchByIdAndType(id);
+      console.log("hiiiiiiiiiiii");
+      const branch: BranchDetailDto | null = await this.branchesService.getBranchByIdAndType(id);
 
       if (!branch) {
         ControllerLogger.logNotFound('Branch', id, req, res);
@@ -106,7 +115,7 @@ export class BranchessController {
         search: (search as string) || '',
       };
 
-      const branch = await this.branchesService.getAllByBranchType(branchType, queryOptions);
+      const branch: BranchListResponseDto | null = await this.branchesService.getAllByBranchType(branchType, queryOptions);
 
       if (!branch) {
         ControllerLogger.logNotFound('Branch', branchType, req, res);
@@ -136,7 +145,7 @@ export class BranchessController {
     @next() next: NextFunction,
   ) {
     try {
-      const branches = await this.branchesService.getAllByFilterDataBranchType();
+      const branches: BranchFilterItemDto[] = await this.branchesService.getAllByFilterDataBranchType();
 
       if (!branches || branches.length === 0) {
         ControllerLogger.logNotFound('Branches', 'filter data', req, res);
@@ -157,13 +166,13 @@ export class BranchessController {
   public async updateBranch(
     @requestParam('id') id: string,
     @requestParam('branchType') branchType: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdateBranchDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       const updatedBy = res.locals.updatedBy;
-      const updateData = { ...req.body, type: branchType };
+      const updateData: UpdateBranchDto & Record<string, any> = { ...req.body, type: branchType as BranchType };
 
       const branch = await this.branchesService.updateBranch(id, updateData, updatedBy);
 
@@ -223,7 +232,7 @@ export class BranchessController {
     @next() next: NextFunction,
   ) {
     try {
-      const { branchIds } = req.body;
+      const { branchIds }: BulkDeleteBranchDto = req.body;
       const branchType = req.query.branchType as BranchType;
 
       if (!Array.isArray(branchIds) || branchIds.length === 0) {

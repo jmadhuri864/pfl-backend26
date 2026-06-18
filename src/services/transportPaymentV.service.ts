@@ -17,6 +17,15 @@ import { ProductRepository } from '../repositories/product.repository';
 import { In, DataSource } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
+import {
+  CreateTPVoucherDto,
+  UpdateTPVoucherDto,
+  TPVoucherListResponseDto,
+  TPVoucherDetailDto,
+  TPVoucherViewDto,
+  TPVoucherUpdateFormDto,
+  BulkDeleteTPVoucherResultDto,
+} from '../dtos/transportPaymentVoucher.dto';
 
 @injectable()
 export class TPVoucherService {
@@ -55,7 +64,7 @@ export class TPVoucherService {
     await Promise.all(tasks);
   }
 
-  async createTPVoucher(tpvoucherData: any): Promise<any> {
+  async createTPVoucher(tpvoucherData: CreateTPVoucherDto & Record<string, any>): Promise<TPVoucher> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -78,11 +87,11 @@ export class TPVoucherService {
         const products = await queryRunner.manager.findBy(this.productRepository.target, {
           id: In(tpvoucherData.products),
         });
-        tpvoucherData.products = products;
+        (tpvoucherData as any).products = products;
       }
 
-      const newVoucher = queryRunner.manager.create(this.tpVoucherRepository.target, tpvoucherData);
-      const saveVoucher= await queryRunner.manager.save(newVoucher);
+      const newVoucher = queryRunner.manager.create(this.tpVoucherRepository.target, tpvoucherData as any) as unknown as TPVoucher;
+      const saveVoucher = await queryRunner.manager.save(newVoucher) as unknown as TPVoucher;
       const document = await this.documentbService.createDocument({
               type: DocumentTypeEnum.TRANSPORT_PAYMENT_VOUCHER,
               docDef: DocDefEnum.PROCUREMENT,
@@ -108,7 +117,7 @@ export class TPVoucherService {
   }
  public async getAllRecycleBinTPVouchers(
     queryOptions: PaginationOptions, userId: string,
-  ): Promise<{ data: any[]; meta: any }> {
+  ): Promise<TPVoucherListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -213,7 +222,7 @@ export class TPVoucherService {
 
 public async getAllTPVouchers(
     queryOptions: PaginationOptions, userId: string,
-  ): Promise<{ data: any[]; meta: any }> {
+  ): Promise<TPVoucherListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -326,7 +335,7 @@ public async getAllTPVouchers(
     return result;
   }
 
-  public async getTPVoucherById(id: string): Promise<any> {
+  public async getTPVoucherById(id: string): Promise<TPVoucherDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -388,10 +397,10 @@ public async getAllTPVouchers(
     }
 
     await this.cacheService.set(cacheKey, voucher, this.CACHE_TTL);
-    return voucher;
+    return voucher as unknown as TPVoucherDetailDto;
   }
 
-  public async getTPVoucherByIdForView(docid: string): Promise<any> {
+  public async getTPVoucherByIdForView(docid: string): Promise<TPVoucherViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -457,7 +466,7 @@ public async getAllTPVouchers(
     return formatResponse;
   }
 
-  public async getTPVoucherByIdForUpdate(id: string): Promise<any> {
+  public async getTPVoucherByIdForUpdate(id: string): Promise<TPVoucherUpdateFormDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -516,7 +525,7 @@ public async getAllTPVouchers(
 
   public async updateTPVoucher(
   id: string,
-  updatedData: any,
+  updatedData: UpdateTPVoucherDto & Record<string, any>,
   updatedBy: string,
 ): Promise<TPVoucher | null> {
   const voucher = await this.tpVoucherRepository.findOne({
@@ -590,7 +599,7 @@ public async getAllTPVouchers(
     return `TPV-${formattedDate}`;
   }
 
-  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<{ message: string }> {
+  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<BulkDeleteTPVoucherResultDto> {
     if (!ids.length) return { message: 'No IDs provided' };
 
     const [tpVouchers, relatedDocuments] = await Promise.all([

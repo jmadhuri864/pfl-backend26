@@ -10,8 +10,17 @@ import AppError from "../utils/appError";
 import { PaginationOptions } from "../utils/pagination";
 
 import { ControllerLogger } from "../utils/controllerLogger";
-import { upload, uploadAttachments } from "../middleware/upload.middleware";
+import { uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
+import {
+  CreateSTDeliveryChallanDto,
+  UpdateSTDeliveryChallanDto,
+  STDeliveryChallanUpdateFormDto,
+  STDeliveryChallanViewDto,
+  STDeliveryChallanListResponseDto,
+  BulkDeleteSTChallanDto,
+  BulkDeleteSTChallanResultDto,
+} from "../dtos/stockTransferDeliveryChallan.dto";
 
 @controller('/tranfer-delivery-challan', deserializeUser, requireUser)
 export class StockTranferDeliveryChallanController {
@@ -36,7 +45,10 @@ export class StockTranferDeliveryChallanController {
       const requestedBy = res.locals.user.id;
       req.body.createdBy = requestedBy;
       req.body.transferType=req.body.stockTransferType;
-      const challan = await this.stockTransferDeliveryChallanService.create(req.body, requestedBy);
+      const challan = await this.stockTransferDeliveryChallanService.create(
+        req.body as CreateSTDeliveryChallanDto & Record<string, any>,
+        requestedBy
+      );
       if (!challan) {
         ControllerLogger.logError('Stock Transfer Delivery Challan creation', new AppError(400, 'Stock transfer delivery challan could not be created'), req, res);
         return next(new AppError(400, 'Stock transfer delivery challan could not be created'));
@@ -147,7 +159,7 @@ export class StockTranferDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      const challan = await this.stockTransferDeliveryChallanService.getByIdChallanforUpdate(id);
+      const challan: STDeliveryChallanUpdateFormDto | null = await this.stockTransferDeliveryChallanService.getByIdChallanforUpdate(id);
       if (!challan) {
         ControllerLogger.logError('Stock Transfer Delivery Challan retrieval for update', new AppError(404, 'Stock transfer delivery challan not found'), req, res);
         return next(new AppError(404, 'Stock transfer delivery challan not found'));
@@ -173,7 +185,7 @@ export class StockTranferDeliveryChallanController {
     @next() next: NextFunction,
   ) {
     try {
-      const challan = await this.stockTransferDeliveryChallanService.getByIdChallanforView(id);
+      const challan: STDeliveryChallanViewDto | null = await this.stockTransferDeliveryChallanService.getByIdChallanforView(id);
       if (!challan) {
         ControllerLogger.logError('Stock Transfer Delivery Challan view', new AppError(404, 'Stock transfer delivery challan not found'), req, res);
         return next(new AppError(404, 'Stock transfer delivery challan not found'));
@@ -211,7 +223,7 @@ export class StockTranferDeliveryChallanController {
 
       const userId = res.locals.user.id;
 
-      const challans = await this.stockTransferDeliveryChallanService.getAll(queryOptions, userId);
+      const challans: STDeliveryChallanListResponseDto = await this.stockTransferDeliveryChallanService.getAll(queryOptions, userId);
 
       ControllerLogger.logList('Stock Transfer Delivery Challan', req, res);
 

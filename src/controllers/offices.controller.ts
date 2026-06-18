@@ -16,11 +16,6 @@ import { NextFunction, Request, Response } from 'express';
 import { OFFICE_TYPE } from '../entities/offices.entity';
 import AppError from '../utils/appError';
 import {
-  CreateOfficeBodySchema,
-  UpdateOfficeBodySchema,
-} from '../schemas/offices.schema';
-
-import {
   captureUser,
   deserializeUser,
   requireUser,
@@ -29,6 +24,16 @@ import { PaginationOptions } from '../utils/pagination';
 import logger from '../utils/logger';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
+import {
+  CreateOfficeDto,
+  UpdateOfficeDto,
+  OfficeDetailDto,
+  OfficeListResponseDto,
+  OfficeFilterItemDto,
+  OfficeSearchItemDto,
+  BulkDeleteOfficeDto,
+  BulkDeleteOfficeResultDto,
+} from '../dtos/office.dto';
 
 @controller('/location-offices', deserializeUser, requireUser)
 export class OfficesController {
@@ -41,13 +46,12 @@ export class OfficesController {
   @httpPost('/:officeType')
   public async createOffice(
     @requestParam('officeType') officeType: OFFICE_TYPE,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, CreateOfficeDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
-      //const officeData = CreateOfficeBodySchema.parse(req.body);
-      const officeData = req.body;
+      const officeData: CreateOfficeDto & Record<string, any> = req.body;
       officeData.type = officeType;
       const office = await this.officesService.createOffice(officeData);
       if (!office) {
@@ -85,10 +89,7 @@ export class OfficesController {
     @next() next: NextFunction,
   ) {
     try {
-      const office = await this.officesService.getOfficeByIdAndType(
-        id,
-        officeType,
-      );
+      const office: OfficeDetailDto | null = await this.officesService.getOfficeByIdAndType(id, officeType);
       if (!office) {
         return next(new AppError(404, 'Office not found'));
       }
@@ -122,7 +123,7 @@ export class OfficesController {
     try {
       logger.info(`Received request to fetch all offices`);
 
-      const offices = await this.officesService.getAllByFilterDataOffice();
+      const offices: OfficeFilterItemDto[] = await this.officesService.getAllByFilterDataOffice();
       if (!offices || offices.length === 0) {
         logger.warn(`No offices found`);
         return next(new AppError(404, 'Office not found'));
@@ -158,7 +159,7 @@ export class OfficesController {
     @next() next: NextFunction,
   ) {
     try {
-      const office = await this.officesService.getAllOffice();
+      const office: OfficeSearchItemDto[] | null = await this.officesService.getAllOffice();
       if (!office) {
         return next(new AppError(404, 'Office not found'));
       }
@@ -192,7 +193,7 @@ export class OfficesController {
     @next() next: NextFunction,
   ) {
     try {
-      const { page, limit, search, sort, officeId } = req.query;
+      const { page, limit, search, sort } = req.query;
 
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
@@ -202,10 +203,7 @@ export class OfficesController {
         sort: (sort as string) || undefined, // Adjust this line to match your sorting requirements
         search: (search as string) || '',
       };
-      const offices = await this.officesService.getOfficesByType1(
-        officeType,
-        queryOptions,
-      );
+      const offices: OfficeListResponseDto = await this.officesService.getOfficesByType1(officeType, queryOptions);
       //console.log(offices)
 
       ControllerLogger.logList('Office (By Type)', req, res);
@@ -240,7 +238,7 @@ export class OfficesController {
   ) {
     try {
       const officeType = req.query.search as OFFICE_TYPE;
-      const offices = await this.officesService.getOfficesByType(officeType);
+      const offices: OfficeSearchItemDto[] = await this.officesService.getOfficesByType(officeType);
       if (!offices || offices.length === 0) {
         return next(
           new AppError(404, 'No offices found for the specified type'),
@@ -271,13 +269,13 @@ export class OfficesController {
   public async updateOffice(
     @requestParam('officeType') officeType: OFFICE_TYPE,
     @requestParam('id') id: string,
-    @request() req: Request<{}, {}, any>,
+    @request() req: Request<{}, {}, UpdateOfficeDto>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
       const updatedBy = res.locals.updatedBy;
-      const updateData = req.body;
+      const updateData: UpdateOfficeDto & Record<string, any> = req.body;
       updateData.type = officeType;
 
       const office = await this.officesService.updateOffice(
@@ -358,7 +356,7 @@ public async softDeleteMultipleOffices(
 ) {
   try {
 
-    const { officeIds } = req.body;
+    const { officeIds }: BulkDeleteOfficeDto = req.body;
       const officeType = req.query.officeType as OFFICE_TYPE;
 
     if (!Array.isArray(officeIds) || officeIds.length === 0) {
@@ -371,7 +369,7 @@ public async softDeleteMultipleOffices(
       return next(new AppError(400, "officeIds must be a non-empty array"));
     }
 
-    const result = await this.officesService.softDeleteOffices(officeIds,officeType);
+    const result: BulkDeleteOfficeResultDto = await this.officesService.softDeleteOffices(officeIds, officeType);
 
     ControllerLogger.logSuccess(
       "Office bulk soft deleted",
