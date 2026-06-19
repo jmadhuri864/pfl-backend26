@@ -22,10 +22,15 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user.id;
+        const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
+        console.log("User ID in DashboardController:", userId);
         try {
-            // Frontend sends month as 0-11 (JS convention), year as full year
-            const month = req.query.month !== undefined ? Number(req.query.month) : undefined;
-            const year  = req.query.year  !== undefined ? Number(req.query.year)  : undefined;
             const data = await this.dashboardService.getProcurementTeamPerformance(userId, month, year);
             return res.status(200).json({
                 success: true,
@@ -47,8 +52,15 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user?.id;
+        const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getSaleTeamPerformance(userId);
+            const data = await this.dashboardService.getSaleTeamPerformance(userId, month, year);
             return res.status(200).json({
                 success: true,
                 data,
@@ -69,8 +81,15 @@ export class DashboardController {
         @response() res: Response
     ) {
         const userId = res.locals.user?.id;
+        const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getProcurementSourceWise(userId);
+            const data = await this.dashboardService.getProcurementSourceWise(userId,month,year);
             return res.status(200).json({
                 success: true,
                 data,
@@ -92,7 +111,23 @@ export class DashboardController {
     ) {
         const userId = res.locals.user.id;
         try {
-            const data = await this.dashboardService.getProcurementTeamMembersPerformance(userId);
+            const monthParam = req.query.month ? Number(req.query.month) : undefined;
+            const yearParam  = req.query.year  ? Number(req.query.year)  : undefined;
+
+            if ((monthParam === undefined) !== (yearParam === undefined)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please provide both 'month' and 'year' query params, or neither."
+                });
+            }
+            if (monthParam !== undefined && (isNaN(monthParam) || monthParam < 1 || monthParam > 12)) {
+                return res.status(400).json({ success: false, message: "'month' must be between 1 and 12." });
+            }
+            if (yearParam !== undefined && (isNaN(yearParam) || yearParam < 2000)) {
+                return res.status(400).json({ success: false, message: "'year' must be a valid 4-digit year." });
+            }
+
+            const data = await this.dashboardService.getProcurementTeamMembersPerformance(userId, monthParam, yearParam);
             return res.status(200).json({
                 success: true,
                 data,
@@ -105,6 +140,34 @@ export class DashboardController {
             });
         }
     }
+    // @httpGet('/midlevel/procurement/team-members-performance')
+    // async getProcurementTeamMembersPerformance(
+    //     @request() req: Request,
+    //     @response() res: Response
+    // ) {
+    //     const userId = res.locals.user.id;
+    //     const month = req.query.month
+    //   ? Number(req.query.month)
+    //   : undefined;
+
+    // const year = req.query.year
+    //   ? Number(req.query.year)
+    //   : undefined;
+    //     console.log("User ID in DashboardController:", userId);
+    //     try {
+    //         const data = await this.dashboardService.getProcurementTeamMembersPerformance(userId, month, year);
+    //         return res.status(200).json({
+    //             success: true,
+    //             data,
+    //             message: "Procurement team members performance data retrieved successfully"
+    //         });
+    //     } catch (error: any) {
+    //         return res.status(500).json({
+    //             success: false,
+    //             message: error.message
+    //         });
+    //     }
+    // }
 
     //TODO:Get Sale Team Memebers Performance Overview in Deashboard
     @httpGet('/midlevel/sale/team-members-performance')
@@ -114,7 +177,23 @@ export class DashboardController {
     ) {
         const userId = res.locals.user.id;
         try {
-            const data = await this.dashboardService.getSaleTeamMembersPerformance(userId);
+            const monthParam = req.query.month ? Number(req.query.month) : undefined;
+            const yearParam  = req.query.year  ? Number(req.query.year)  : undefined;
+
+            if ((monthParam === undefined) !== (yearParam === undefined)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please provide both 'month' and 'year' query params, or neither."
+                });
+            }
+            if (monthParam !== undefined && (isNaN(monthParam) || monthParam < 1 || monthParam > 12)) {
+                return res.status(400).json({ success: false, message: "'month' must be between 1 and 12." });
+            }
+            if (yearParam !== undefined && (isNaN(yearParam) || yearParam < 2000)) {
+                return res.status(400).json({ success: false, message: "'year' must be a valid 4-digit year." });
+            }
+
+            const data = await this.dashboardService.getSaleTeamMembersPerformance(userId, monthParam, yearParam);
             return res.status(200).json({
                 success: true,
                 data,
@@ -126,7 +205,36 @@ export class DashboardController {
                 message: error.message
             });
         }
-        }
+    }
+    // @httpGet('/midlevel/sale/team-members-performance')
+    // async getSaleTeamMembersPerformance(
+    //     @request() req: Request,
+    //     @response() res: Response
+    // ) {
+    //     const userId = res.locals.user.id;
+    //     const month = req.query.month
+    //   ? Number(req.query.month)
+    //   : undefined;
+
+    // const year = req.query.year
+    //   ? Number(req.query.year)
+    //   : undefined;
+
+    //     console.log("User ID in DashboardController:", userId);
+    //     try {
+    //         const data = await this.dashboardService.getSaleTeamMembersPerformance(userId, month, year);
+    //         return res.status(200).json({
+    //             success: true,
+    //             data,
+    //             message: "Sale team members performance data retrieved successfully"
+    //         });
+    //     } catch (error: any) {
+    //         return res.status(500).json({
+    //             success: false,
+    //             message: error.message
+    //         });
+    //     }
+    //     }
     //TODO:Get Farmer Registration Overview of Team in Dashboard
       @httpGet("/registration-insight/farmer-registration")
     async getFarmerRegistrationOverviewOfTeam(
@@ -134,13 +242,19 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getFarmerRegistrationOverviewOfTeam(teamLeaderId);
+            const data = await this.dashboardService.getFarmerRegistrationOverviewOfTeam(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                
-                message: "Farmer registration overview data retrieved successfully",
-                data:data.data
+                data,
+                message: "Farmer registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -157,13 +271,19 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getVendorRegistrationOverviewOfTeam(teamLeaderId);
+            const data = await this.dashboardService.getVendorRegistrationOverviewOfTeam(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                //data,
-                message: "Vendor registration overview data retrieved successfully",
-                 data:data.data
+                data,
+                message: "Vendor registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -180,13 +300,19 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getCustomerRegistrationOverviewOfTeam(teamLeaderId);
+            const data = await this.dashboardService.getCustomerRegistrationOverviewOfTeam(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                //data,
-                message: "Customer registration overview data retrieved successfully",
-                 data:data.data
+                data,
+                message: "Customer registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -203,13 +329,19 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            const data = await this.dashboardService.getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                //data,
-                message: "Farmer registration overview data retrieved successfully",
-                 data:data.data
+                data:data.data,
+                message: "Farmer registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -226,13 +358,20 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
+
         try {
-            const data = await this.dashboardService.getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            const data = await this.dashboardService.getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                //data,
-                message: "Vendor registration overview data retrieved successfully",
-                 data:data.data
+                data:data.data,
+                message: "Vendor registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -249,13 +388,19 @@ export class DashboardController {
         @response() res: Response
     ) {
        const teamLeaderId = res.locals.user?.id as string;
+       const month = req.query.month
+      ? Number(req.query.month)
+      : undefined;
+
+    const year = req.query.year
+      ? Number(req.query.year)
+      : undefined;
         try {
-            const data = await this.dashboardService.getCustomerRegistrationOverviewOfEachTeamMember(teamLeaderId);
+            const data = await this.dashboardService.getCustomerRegistrationOverviewOfEachTeamMember(teamLeaderId, month, year);
             return res.status(200).json({
                 success: true,
-                //data,
-                message: "Customer registration overview data retrieved successfully",
-                 data:data.data
+                data: data.data,
+                message: "Customer registration overview data retrieved successfully"
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -275,6 +420,7 @@ export class DashboardController {
             const userId = res.locals.user?.id;
 
             const data = await this.dashboardService.getEmployeeCountByDept({ userId, department });
+console.log(data);
             return res.status(200).json({
                 success: true,
                 message: userId
@@ -283,6 +429,7 @@ export class DashboardController {
                 data,
             });
         } catch (error: any) {
+            console.log(error);
             return res.status(500).json({
                 success: false,
                 message: error.message || "Failed to fetch employee team stats",
@@ -576,7 +723,9 @@ export class DashboardController {
             });
         }
     }
-@httpGet("/weekly-procurement-performance")
+
+//TODO:Get week wise Procurement Overview for Employee in Dashboard
+ @httpGet("/weekly-procurement-performance")
 async getWeeklyProcurementPerformance(
   @request() req: Request,
   @response() res: Response
