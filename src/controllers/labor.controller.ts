@@ -1,6 +1,7 @@
 import { inject } from "inversify";
 import {
   controller,
+  httpDelete,
   httpGet,
   httpPatch,
   httpPost,
@@ -179,7 +180,7 @@ export class LaborController {
   }
 
 
-  @httpPatch("/:id")
+  @httpDelete("/:id")
   public async deleteLabor(
     @requestParam("id") id: string,
     @request() req: Request,

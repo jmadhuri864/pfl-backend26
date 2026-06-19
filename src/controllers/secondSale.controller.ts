@@ -90,96 +90,9 @@ export class SecondSaleController {
       next(err);
     }
   }
-  // @httpPost('/')
-  // public async createSecondSale(
-  //   @request() req: Request<{}, {}, any>,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     //console.log(req.body)
-  //     logger.info('Attempting to create a new second sale', {
-  //       requestedBy: res.locals.user.id,
-  //     });
-  //     const secondSaleData = req.body;
-  //     const requestedBy= res.locals.user.id;
-  //     if (secondSaleData.deliveryChallanNo === '') {
-  //       secondSaleData.deliveryChallanNo = null;
-  //     }
-  //     const secondSale = await this.secondSaleService.createSecondSale(
-  //       secondSaleData,
-  //       requestedBy
-  //     );
-  //     if (!secondSale) {
-  //       logger.error('Failed to create second sale', { secondSaleData });
-  //       ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
-  //       return next(new AppError(400, 'Second sale could not be created'));
-  //     }
-
-  //     logger.info('Second sale created successfully', {
-  //       secondSaleId: secondSale.id,
-  //     });
-
-  //     // Trigger a notification
-  //     await this.notificationService.createNoti(
-  //       `New second sale created successfully`,
-  //       res.locals.user.id,
-  //     );
-
-  //     ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
-  //     res.status(201).json({
-  //       status: 'success',
-  //       message: 'Second sale created successfully',
-  //       data: secondSale.id,
-  //     });
-  //   } catch (err) {
-  //     logger.error('Error occurred while creating second sale', { error: err });
-  //     ControllerLogger.logError('Second Sale creation', err, req, res);
-  //     if (err instanceof Error) {
-  //              return next(new AppError(400, err.message)); // ← sends 400 with real message
-  //            }
-  //     next(err);
-  //   }
-  // }
-
+  
   // Get second sale by ID
-  @httpGet('/:id')
-  public async getSecondSaleById(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      logger.info('Fetching second sale details by ID', { secondSaleId: id });
-      const secondSale = await this.secondSaleService.getSecondSaleById(id);
-      if (!secondSale) {
-        logger.warn('Second sale not found', { secondSaleId: id });
-        ControllerLogger.logError('Second Sale view', new AppError(404, 'Second sale not found'), req, res);
-        return next(new AppError(404, 'Second sale not found'));
-      }
-      logger.info('Second sale details retrieved successfully', { secondSale });
 
-      // Trigger a notification
-      // await this.notificationService.createNoti(
-      //   `Second sale details retrieved for ID: ${secondSale.id}`,
-      //   res.locals.user.id,
-      // );
-
-      ControllerLogger.logView('Second Sale', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: secondSale,
-      });
-    } catch (err) {
-      logger.error('Error occurred while fetching second sale details', {
-        secondSaleId: id,
-        error: err,
-      });
-      ControllerLogger.logError('Second Sale view', err, req, res);
-      next(err);
-    }
-  }
 
   @httpGet('/:id/view')
   public async getSecondSaleByIdForView(
@@ -450,3 +363,97 @@ export class SecondSaleController {
       }
   
 }
+
+
+// @httpPost('/')
+  // public async createSecondSale(
+  //   @request() req: Request<{}, {}, any>,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     //console.log(req.body)
+  //     logger.info('Attempting to create a new second sale', {
+  //       requestedBy: res.locals.user.id,
+  //     });
+  //     const secondSaleData = req.body;
+  //     const requestedBy= res.locals.user.id;
+  //     if (secondSaleData.deliveryChallanNo === '') {
+  //       secondSaleData.deliveryChallanNo = null;
+  //     }
+  //     const secondSale = await this.secondSaleService.createSecondSale(
+  //       secondSaleData,
+  //       requestedBy
+  //     );
+  //     if (!secondSale) {
+  //       logger.error('Failed to create second sale', { secondSaleData });
+  //       ControllerLogger.logError('Second Sale creation', new AppError(400, 'Second sale could not be created'), req, res);
+  //       return next(new AppError(400, 'Second sale could not be created'));
+  //     }
+
+  //     logger.info('Second sale created successfully', {
+  //       secondSaleId: secondSale.id,
+  //     });
+
+  //     // Trigger a notification
+  //     await this.notificationService.createNoti(
+  //       `New second sale created successfully`,
+  //       res.locals.user.id,
+  //     );
+
+  //     ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
+  //     res.status(201).json({
+  //       status: 'success',
+  //       message: 'Second sale created successfully',
+  //       data: secondSale.id,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error occurred while creating second sale', { error: err });
+  //     ControllerLogger.logError('Second Sale creation', err, req, res);
+  //     if (err instanceof Error) {
+  //              return next(new AppError(400, err.message)); // ← sends 400 with real message
+  //            }
+  //     next(err);
+  //   }
+  // }
+
+
+
+  // @httpGet('/:id')
+  // public async getSecondSaleById(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     logger.info('Fetching second sale details by ID', { secondSaleId: id });
+  //     const secondSale = await this.secondSaleService.getSecondSaleById(id);
+  //     if (!secondSale) {
+  //       logger.warn('Second sale not found', { secondSaleId: id });
+  //       ControllerLogger.logError('Second Sale view', new AppError(404, 'Second sale not found'), req, res);
+  //       return next(new AppError(404, 'Second sale not found'));
+  //     }
+  //     logger.info('Second sale details retrieved successfully', { secondSale });
+
+  //     // Trigger a notification
+  //     // await this.notificationService.createNoti(
+  //     //   `Second sale details retrieved for ID: ${secondSale.id}`,
+  //     //   res.locals.user.id,
+  //     // );
+
+  //     ControllerLogger.logView('Second Sale', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: secondSale,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error occurred while fetching second sale details', {
+  //       secondSaleId: id,
+  //       error: err,
+  //     });
+  //     ControllerLogger.logError('Second Sale view', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

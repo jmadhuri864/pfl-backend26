@@ -154,37 +154,7 @@ export class OtherDeliveryChallanService {
     return null;
   }
 
-  async getById(id: string): Promise<{ data: any } | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    try {
-      const result = await this.challanRepository.findOne({
-        where: { id },
-        relations: [
-          'deliveryChallanProducts',
-          'deliveryChallanProducts.productName',
-          'deliveryChallanProducts.packagingMaterial',
-          'deliveryChallanProducts.packagingMaterialUoM',
-          'deliveryChallanProducts.saleUoM',
-          'companyName',
-          'offices',
-          'grnNo',
-          'fromLocation',
-        ],
-      });
-      if (!result) return null;
-      const wrapped = { data: result };
-      await this.cacheService.set(cacheKey, wrapped, this.CACHE_TTL);
-      return wrapped;
-    } catch (err) {
-      logger.error(`Error fetching other delivery challan by ID: ${id}`, {
-        error: err,
-      });
-      return null;
-    }
-  }
 
   async getByIdChallanforView(docId: string): Promise<ODCViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
@@ -570,3 +540,37 @@ export class OtherDeliveryChallanService {
     return { success, failed, message };
   }
 }
+
+
+  // async getById(id: string): Promise<{ data: any } | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   try {
+  //     const result = await this.challanRepository.findOne({
+  //       where: { id },
+  //       relations: [
+  //         'deliveryChallanProducts',
+  //         'deliveryChallanProducts.productName',
+  //         'deliveryChallanProducts.packagingMaterial',
+  //         'deliveryChallanProducts.packagingMaterialUoM',
+  //         'deliveryChallanProducts.saleUoM',
+  //         'companyName',
+  //         'offices',
+  //         'grnNo',
+  //         'fromLocation',
+  //       ],
+  //     });
+  //     if (!result) return null;
+  //     const wrapped = { data: result };
+  //     await this.cacheService.set(cacheKey, wrapped, this.CACHE_TTL);
+  //     return wrapped;
+  //   } catch (err) {
+  //     logger.error(`Error fetching other delivery challan by ID: ${id}`, {
+  //       error: err,
+  //     });
+  //     return null;
+  //   }
+  // }
+

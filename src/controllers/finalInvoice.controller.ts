@@ -181,50 +181,7 @@ export class FinalInvoiceController {
     }
   }
 
-  @httpPatch('/:id', captureUser)
-  public async updateInvoice(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const updatedBy = res.locals.updatedBy;
 
-      const invoice = await this.finalInvoiceService.update(id, {
-        ...req.body,
-        updatedBy,
-      });
-
-      if (!invoice) {
-        ControllerLogger.logNotFound('Final Invoice', id, req, res);
-        return next(
-          new AppError(404, 'Invoice not found or could not be updated'),
-        );
-      }
-
-      // 🔔 Send notification for invoice update
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Final invoice updated successfully`,
-            userId
-          );
-        }
-      } catch (notifError) {
-      }
-
-      ControllerLogger.logSuccess('Final Invoice updated', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        message: 'Final invoice updated successfully',
-      });
-    } catch (err) {
-      ControllerLogger.logError('Update Final Invoice', err, req, res);
-      next(err);
-    }
-  }
 
   @httpPost('/pdf/download')
   public async downloadInvoicePdf(
@@ -317,3 +274,50 @@ export class FinalInvoiceController {
     }
   }
 }
+
+
+  // @httpPatch('/:id', captureUser)
+  // public async updateInvoice(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const updatedBy = res.locals.updatedBy;
+
+  //     const invoice = await this.finalInvoiceService.update(id, {
+  //       ...req.body,
+  //       updatedBy,
+  //     });
+
+  //     if (!invoice) {
+  //       ControllerLogger.logNotFound('Final Invoice', id, req, res);
+  //       return next(
+  //         new AppError(404, 'Invoice not found or could not be updated'),
+  //       );
+  //     }
+
+  //     // 🔔 Send notification for invoice update
+  //     try {
+  //       const userId = res.locals.user?.id;
+  //       if (userId) {
+  //         await this.notificationService.createNoti(
+  //           `Final invoice updated successfully`,
+  //           userId
+  //         );
+  //       }
+  //     } catch (notifError) {
+  //     }
+
+  //     ControllerLogger.logSuccess('Final Invoice updated', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: 'Final invoice updated successfully',
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Update Final Invoice', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

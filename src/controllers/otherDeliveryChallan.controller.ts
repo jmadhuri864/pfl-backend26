@@ -170,89 +170,7 @@ export class OtherDeliveryChallanController {
     }
   }
 
-  @httpGet('/:id')
-  public async getOtherDeliveryChallanById(
-    @requestParam('id') id: string,
-    @response() res: Response,
-    @request() req: Request,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const otherDeliveryChallan =
-        await this.otherDeliveryChallanService.getById(id);
-      if (!otherDeliveryChallan) {
-        return next(new AppError(404, 'Other Delivery Challan not found'));
-      }
 
-      const accessedBy = res.locals.user.id;
-
-      // 🔔 Send SSE notification when Other Delivery Challan is accessed
-      // try {
-      //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.data.id);
-
-      //   if (document && document.approvalFlow) {
-      //     const flow = document.approvalFlow;
-      //     let isApprover = false;
-
-      //     // Check if accessor is a verifier
-      //     if (flow.verifiers && flow.verifiers.length > 0) {
-      //       isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
-      //     }
-
-      //     // Check if accessor is an approver
-      //     if (!isApprover && flow.approvers) {
-      //       const levels = [
-      //         flow.approvers.firstApprover,
-      //         flow.approvers.secondApprover,
-      //         flow.approvers.thirdApprover
-      //       ];
-
-      //       for (const level of levels) {
-      //         if (level && level.users && level.users.length > 0) {
-      //           if (level.users.some((u: any) => u.id === accessedBy)) {
-      //             isApprover = true;
-      //             break;
-      //           }
-      //         }
-      //       }
-      //     }
-
-      //     // If accessor is an approver, notify the creator
-      //     if (isApprover && otherDeliveryChallan.data.createdBy?.id && otherDeliveryChallan.data.createdBy.id !== accessedBy) {
-      //       const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
-      //       const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
-
-      //       await this.notificationService.createNoti(
-      //         `${accessorName} viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
-      //         otherDeliveryChallan.data.createdBy.id
-      //       );
-      //     }
-      //   }
-      // } catch (notifError) {
-      //   console.error('Notification error:', notifError);
-      // }
-
-      // 📊 Log activity
-      await this.logUserActivity(req, res, ActivityAction.VIEW,
-        `Viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
-        { 
-          entityId: otherDeliveryChallan.data.id,
-          metadata: { challanId: otherDeliveryChallan.data.id }
-        }
-      );
-
-      // Log the successful view
-      ControllerLogger.logView('Other Delivery Challan', id, req, res);
-
-      res.status(200).json({
-        status: 'success',
-        data: otherDeliveryChallan.data,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Other Delivery Challan view', err, req, res);
-      next(err);
-    }
-  }
 
   @httpGet('/view/:id')
   public async getOtherDeliveryChallanByIdForView(
@@ -522,8 +440,8 @@ export class OtherDeliveryChallanController {
       const deletedBy = res.locals.user.id;
 
       // Get Other Delivery Challan details before deletion for notification
-      const challan = await this.otherDeliveryChallanService.getById(id);
-      const challanId = challan?.data?.id || id;
+      // const challan = await this.otherDeliveryChallanService.getById(id);
+      // const challanId = challan?.data?.id || id;
 
       const success = await this.otherDeliveryChallanService.delete(id);
       if (!success) {
@@ -629,3 +547,89 @@ export class OtherDeliveryChallanController {
     }
   }
 }
+
+
+  // @httpGet('/:id')
+  // public async getOtherDeliveryChallanById(
+  //   @requestParam('id') id: string,
+  //   @response() res: Response,
+  //   @request() req: Request,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const otherDeliveryChallan =
+  //       await this.otherDeliveryChallanService.getById(id);
+  //     if (!otherDeliveryChallan) {
+  //       return next(new AppError(404, 'Other Delivery Challan not found'));
+  //     }
+
+  //     const accessedBy = res.locals.user.id;
+
+  //     // 🔔 Send SSE notification when Other Delivery Challan is accessed
+  //     // try {
+  //     //   const document = await this.documentbService.getDocumentByTypeId(otherDeliveryChallan.data.id);
+
+  //     //   if (document && document.approvalFlow) {
+  //     //     const flow = document.approvalFlow;
+  //     //     let isApprover = false;
+
+  //     //     // Check if accessor is a verifier
+  //     //     if (flow.verifiers && flow.verifiers.length > 0) {
+  //     //       isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
+  //     //     }
+
+  //     //     // Check if accessor is an approver
+  //     //     if (!isApprover && flow.approvers) {
+  //     //       const levels = [
+  //     //         flow.approvers.firstApprover,
+  //     //         flow.approvers.secondApprover,
+  //     //         flow.approvers.thirdApprover
+  //     //       ];
+
+  //     //       for (const level of levels) {
+  //     //         if (level && level.users && level.users.length > 0) {
+  //     //           if (level.users.some((u: any) => u.id === accessedBy)) {
+  //     //             isApprover = true;
+  //     //             break;
+  //     //           }
+  //     //         }
+  //     //       }
+  //     //     }
+
+  //     //     // If accessor is an approver, notify the creator
+  //     //     if (isApprover && otherDeliveryChallan.data.createdBy?.id && otherDeliveryChallan.data.createdBy.id !== accessedBy) {
+  //     //       const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
+  //     //       const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
+
+  //     //       await this.notificationService.createNoti(
+  //     //         `${accessorName} viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
+  //     //         otherDeliveryChallan.data.createdBy.id
+  //     //       );
+  //     //     }
+  //     //   }
+  //     // } catch (notifError) {
+  //     //   console.error('Notification error:', notifError);
+  //     // }
+
+  //     // 📊 Log activity
+  //     await this.logUserActivity(req, res, ActivityAction.VIEW,
+  //       `Viewed Other Delivery Challan ${otherDeliveryChallan.data.id}`,
+  //       { 
+  //         entityId: otherDeliveryChallan.data.id,
+  //         metadata: { challanId: otherDeliveryChallan.data.id }
+  //       }
+  //     );
+
+  //     // Log the successful view
+  //     ControllerLogger.logView('Other Delivery Challan', id, req, res);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: otherDeliveryChallan.data,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Other Delivery Challan view', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

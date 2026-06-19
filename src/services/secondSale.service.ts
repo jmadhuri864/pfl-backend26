@@ -469,60 +469,7 @@ console.log(document.id)
     }
   }
 
-  public async getSecondSaleById(id: string): Promise<SecondSale | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<SecondSale>(cacheKey);
-    if (cached) return cached;
 
-    try {
-      const secondSale = await this.secondSaleRepository
-        .createQueryBuilder("secondSale")
-        .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
-        .leftJoinAndSelect("secondSale.companyName", "companyName")
-        .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
-        .leftJoinAndSelect("secondSale.location", "location")
-        .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
-        .leftJoinAndSelect("secondSaleProducts.productName", "product")
-        .leftJoinAndSelect("secondSaleProducts.variant", "variant")
-        .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
-        .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
-        .select([
-          "secondSale",
-          "secondSaleProducts.id",
-          "secondSaleProducts.quantity",
-          "secondSaleProducts.unitPrice",
-          "secondSaleProducts.amount",
-          "secondSaleProducts.grossWeight",
-          "secondSaleProducts.packingMaterialWeight",
-          "secondSaleProducts.netWeight",
-          "secondSaleProducts.packagingMaterialQuantity",
-          "secondSaleProducts.packagingMaterialUnitPrice",
-          "secondSaleProducts.packagingMaterialAmount",
-          "location.id",
-          "location.name",
-          "companyName.id",
-          "companyName.name",
-          "deliveryChallanNo.id",
-          "deliveryChallanNo.challanNo",
-          "customerAddress.id",
-          "product.id",
-          "product.name",
-          "variant.id",
-          "variant.name",
-          "saleUoM.id",
-          "saleUoM.unit",
-          "packagingMaterial.id",
-          "packagingMaterial.name",
-        ])
-        .where("secondSale.id = :id", { id })
-        .getOne();
-      if (secondSale) await this.cacheService.set(cacheKey, secondSale, this.CACHE_TTL);
-      return secondSale || null;
-    } catch (error) {
-      logger.error("Error fetching SecondSale by ID:", error);
-      throw error;
-    }
-  }
 
   public async getSecondSaleByIdForView(docId: string): Promise<SecondSaleDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docId}`;
@@ -811,3 +758,60 @@ console.log(document.id)
 
   }
 }
+
+
+  // public async getSecondSaleById(id: string): Promise<SecondSale | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<SecondSale>(cacheKey);
+  //   if (cached) return cached;
+
+  //   try {
+  //     const secondSale = await this.secondSaleRepository
+  //       .createQueryBuilder("secondSale")
+  //       .leftJoinAndSelect("secondSale.secondSaleProducts", "secondSaleProducts")
+  //       .leftJoinAndSelect("secondSale.companyName", "companyName")
+  //       .leftJoinAndSelect("secondSale.deliveryChallanNo", "deliveryChallanNo")
+  //       .leftJoinAndSelect("secondSale.location", "location")
+  //       .leftJoinAndSelect("secondSale.customerAddress", "customerAddress")
+  //       .leftJoinAndSelect("secondSaleProducts.productName", "product")
+  //       .leftJoinAndSelect("secondSaleProducts.variant", "variant")
+  //       .leftJoinAndSelect("secondSaleProducts.saleUoM", "saleUoM")
+  //       .leftJoinAndSelect("secondSaleProducts.packagingMaterial", "packagingMaterial")
+  //       .select([
+  //         "secondSale",
+  //         "secondSaleProducts.id",
+  //         "secondSaleProducts.quantity",
+  //         "secondSaleProducts.unitPrice",
+  //         "secondSaleProducts.amount",
+  //         "secondSaleProducts.grossWeight",
+  //         "secondSaleProducts.packingMaterialWeight",
+  //         "secondSaleProducts.netWeight",
+  //         "secondSaleProducts.packagingMaterialQuantity",
+  //         "secondSaleProducts.packagingMaterialUnitPrice",
+  //         "secondSaleProducts.packagingMaterialAmount",
+  //         "location.id",
+  //         "location.name",
+  //         "companyName.id",
+  //         "companyName.name",
+  //         "deliveryChallanNo.id",
+  //         "deliveryChallanNo.challanNo",
+  //         "customerAddress.id",
+  //         "product.id",
+  //         "product.name",
+  //         "variant.id",
+  //         "variant.name",
+  //         "saleUoM.id",
+  //         "saleUoM.unit",
+  //         "packagingMaterial.id",
+  //         "packagingMaterial.name",
+  //       ])
+  //       .where("secondSale.id = :id", { id })
+  //       .getOne();
+  //     if (secondSale) await this.cacheService.set(cacheKey, secondSale, this.CACHE_TTL);
+  //     return secondSale || null;
+  //   } catch (error) {
+  //     logger.error("Error fetching SecondSale by ID:", error);
+  //     throw error;
+  //   }
+  // }
+

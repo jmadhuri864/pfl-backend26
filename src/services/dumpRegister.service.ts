@@ -379,62 +379,7 @@ const serialNo = await this.generateSerialNo();
       return recycleResponse;
     }
   
-  //TODO: Document for view
-      async getDumpRegisterById(id: string): Promise<DumpRegisterByIdDto | null> {
-        const key = `${CACHE_PREFIX}:id:${id}`;
-        const cached = await this.cacheService.get<DumpRegisterByIdDto>(key);
-        if (cached) return cached;
 
-        const dumpRegister = await this.dumpRegisterRepository.findOne({
-          where: { id },
-          relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.uom","companyName","location"],
-        });
-      
-        if (!dumpRegister) {
-          throw new Error(`Dump Register with ID ${id} not found`);
-        }
-
-        const rawDate = dumpRegister.createdAt;
-        const { createdDate, createdTime } = formatDateTime(rawDate);
-      
-        const result: DumpRegisterByIdDto = {
-          id: dumpRegister.id,
-          companyName: dumpRegister.companyName?.id ?? null,
-          createdDate,
-          createdTime,
-          location: dumpRegister.location ? dumpRegister.location.id : null,
-          date: dumpRegister.date,
-          totalDumpCost: dumpRegister.totalDumpCost,
-          totalCostInWords: dumpRegister.totalCostInWords,
-          batchNo: dumpRegister.batchNo,
-          remark: dumpRegister.remark,
-          grn: dumpRegister.grn ? dumpRegister.grn.id : null,
-          requestedBy: dumpRegister.requestedBy
-            ? {
-                id: dumpRegister.requestedBy.id,
-                firstName: dumpRegister.requestedBy.firstName,
-                lastName: dumpRegister.requestedBy.lastName,
-              }
-            : null,
-          dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
-            id: dumpProduct.id,
-            productName: dumpProduct.productName ? {
-              id: dumpProduct.productName.id,
-              productName: dumpProduct.productName.name,
-            } : null,
-            varient: dumpProduct.variant ? {
-              id: dumpProduct.variant.id,
-              productName: dumpProduct.variant.variantName ?? null,
-            } : null,
-            uom: dumpProduct.uom ? { id: dumpProduct.uom.id, unit: dumpProduct.uom.unit } : null,
-            quantity: dumpProduct.quantity,
-            amount: dumpProduct.amount,
-            unitPrice: dumpProduct.unitPrice,
-          })),
-        };
-        await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-        return result;
-      }
 
        async getDumpRegisterByIdforUpdate(id: string): Promise<DumpRegisterForUpdateDto | null> {
     const key = `${CACHE_PREFIX}:update:${id}`;
@@ -575,147 +520,7 @@ const serialNo = await this.generateSerialNo();
     await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
     return viewResult;
   }
-//     async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
 
-//       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
-//         userId,
-//         DocumentTypeEnum.DUMP_REGISTER,
-//         queryOptions
-//       );
-//  const { search } = queryOptions;
-//       // let queryBuilder = await this.dumpRegisterRepository
-//       // .createQueryBuilder("dump_register") 
-//       // .leftJoinAndSelect("dump_register.location", "location")
-//       // .leftJoinAndSelect("dump_register.dumpProducts", "dumpProducts")
-//       // .leftJoinAndSelect("dump_register.grn", "grn")
-//       // .leftJoinAndSelect("dump_register.requestedBy", "requestedBy")
-//       // .leftJoinAndSelect("dumpProducts.productName", "productName") 
-//       // .leftJoinAndSelect("dumpProducts.uom", "uom")
-//       // .leftJoinAndSelect("dump_register.companyName", "companyName")
-//       // .orderBy("dump_register.createdAt", "DESC");
-    
-//       //   const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'dump_register');
-      
-//       const typedDocuments = data as DocumentWithRelatedData[];
-//           for (const doc of typedDocuments) {
-//             if (!doc.document_type_id) continue;
-//             try {
-//               doc.relatedData = await this.dumpRegisterRepository.findOne({
-//                 where: { id: doc.document_type_id },
-//                 relations: ['companyName', 'location', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
-//               });
-      
-//             } catch {
-//               doc.relatedData = null;
-//             }
-//           }
-      
-//           let relatedDataOnly = typedDocuments
-//             .filter((doc) => doc.relatedData)
-//             .map((doc) => ({
-//               documentId: doc.id,
-//               overAllStatus: doc.status, 
-//               createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
-//               createdDate: formatDateTime(doc.createdAt).createdDate,
-//               createdTime: formatDateTime(doc.createdAt).createdTime,
-//               ...doc.relatedData,
-//               companyName: doc.relatedData.companyName.name || null,
-//               location: doc.relatedData.location.name || null,
-//             })
-//             );
-
-//              // 🔍 Deep search helper
-//   const objectToString = (obj: any): string => {
-//     if (obj == null) return '';
-//     if (typeof obj === 'object') {
-//       return Object.values(obj).map((v) => objectToString(v)).join(' ');
-//     }
-//     return String(obj);
-//   };
-
-//   // 🔍 Apply search filter
-//   if (search && search.trim()) {
-//     const term = search.toLowerCase();
-//     relatedDataOnly = relatedDataOnly.filter((item) =>
-//       objectToString(item).toLowerCase().includes(term)
-//     );
-//   }
-//    // 🔄 Sorting
-//   if (queryOptions.sort) {
-//     const [field, direction] = queryOptions.sort.split(':');
-//     const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
-
-//     const getNestedValue = (obj: any, path: string) =>
-//       path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
-
-//     relatedDataOnly.sort((a, b) => {
-//       const valA = getNestedValue(a, field);
-//       const valB = getNestedValue(b, field);
-
-//       if (valA == null && valB == null) return 0;
-//       if (valA == null) return -1 * sortOrder;
-//       if (valB == null) return 1 * sortOrder;
-
-//       if (!isNaN(valA) && !isNaN(valB)) {
-//         return (Number(valA) - Number(valB)) * sortOrder;
-//       }
-//       return String(valA).localeCompare(String(valB)) * sortOrder;
-//     });
-//   }
-      
-//              return {
-//         data: relatedDataOnly,
-//         meta: {
-//           total: meta.total,
-//           page: meta.page,
-//           pages: meta.pages
-//         }
-//       };
-      
-
-//     //     return {
-//     // data :data.map(dumpRegister => {
-//     //   const rawDate = dumpRegister.createdAt;
-//     //   const { createdDate, createdTime } = formatDateTime(rawDate);
-//     //   return {
-//     //     id: dumpRegister.id,
-//     //     companyName: dumpRegister.companyName?.name || null,
-//     //     location: dumpRegister.location ? dumpRegister.location.name : null,
-//     //     createdDate: createdDate,
-//     //     createdTime: createdTime,
-//     //     date: dumpRegister.date,
-//     //     batchNo: dumpRegister.batchNo,
-//     //     remark: dumpRegister.remark,
-//     //     grn: dumpRegister.grn
-//     //       ? {
-//     //           id: dumpRegister.grn.id || null,
-//     //           grnNo: dumpRegister.grn.grnNo,
-//     //         }
-//     //       : null,
-//     //     requestedBy: dumpRegister.requestedBy
-//     //       ? {
-//     //           id: dumpRegister.requestedBy.id || null,
-//     //           firstName: dumpRegister.requestedBy.firstName,
-//     //           lastName: dumpRegister.requestedBy.lastName,
-//     //         }
-//     //       : null,
-//     //     dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
-//     //       id: dumpProduct.id,
-//     //       product: dumpProduct.productName?.name || null,
-//     //       uom: dumpProduct.uom.unit || null,
-//     //       variety:dumpProduct.variety,
-//     //       count:dumpProduct.count,
-//     //       size:dumpProduct.size,
-//     //       origin:dumpProduct.origin,
-//     //       quantity: dumpProduct.quantity,
-//     //       amount:dumpProduct.amount,
-//     //       unitPrice:dumpProduct.unitPrice
-//     //     })),
-//     //   };
-//     // }),
-//     // meta,
-//     //     }
-// }
 async getAllDumpRegisters(queryOptions: PaginationOptions, userId: string): Promise<DumpRegisterListResultDto> {
     const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<DumpRegisterListResultDto>(key);
@@ -918,156 +723,17 @@ async deleteDumpRegister(id: string): Promise<boolean> {
   return true;
 }
 
-async dumpcount():Promise<number>{
-  const key = `${CACHE_PREFIX}:count`;
-  const cached = await this.cacheService.get<number>(key);
-  if (cached !== null && cached !== undefined) return cached;
-  const count = await this.dumpRegisterRepository.count();
-  await this.cacheService.set(key, count, CACHE_TTL);
-  return count; 
-}
-
-async totaldumpquantity():Promise<number>{
-  const key = `${CACHE_PREFIX}:totalQty`;
-  const cached = await this.cacheService.get<number>(key);
-  if (cached !== null && cached !== undefined) return cached;
-  const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
-  .select("SUM(dumpRegister.totalQty)", "total")
-  .getRawOne();
-  const result = total.total;
-  await this.cacheService.set(key, result, CACHE_TTL);
-  return result;
-}
-// async totaldumpcost():Promise<number>{
-//   const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
-//   .select("SUM(dumpRegister.totalCost)", "total")
-//   .getRawOne();
-//   return total.total;
-// }
-
-async totaldumpcost(): Promise<number> {
-  const key = `${CACHE_PREFIX}:totalCost`;
-  const cached = await this.cacheService.get<number>(key);
-  if (cached !== null && cached !== undefined) return cached;
-  const total = await this.dumpRegisterRepository
-    .createQueryBuilder("dumpRegister")
-    .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
-    .select("SUM(dumpProduct.amount)", "total")
-    .getRawOne();
-  const result = total.total ? Number(total.total) : 0;
-  await this.cacheService.set(key, result, CACHE_TTL);
-  return result;
-}
 
 
-async totalqunatityandtotaldumpcostfromstartdatetoenddate(startdate: Date, enddate: Date): Promise<any> {
-  const key = `${CACHE_PREFIX}:dateRange:${startdate}:${enddate}`;
-  const cached = await this.cacheService.get<any>(key);
-  if (cached) return cached;
-  const total = await this.dumpRegisterRepository
-    .createQueryBuilder("dumpRegister")
-    .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
-    .select("SUM(dumpRegister.totalQty)", "totalQuantity")
-    .addSelect("SUM(dumpProduct.amount)", "totalCost")
-    .where("dumpRegister.date BETWEEN :startdate AND :enddate", { startdate: startdate, enddate: enddate })
-    .getRawOne();
- 
-  await this.cacheService.set(key, total, CACHE_TTL);
-  return total;
-}
-async getDumpRegisterlocation(location: string): Promise<any> { 
-  const key = `${CACHE_PREFIX}:location:${location}`;
-  const cached = await this.cacheService.get<any>(key);
-  if (cached) return cached;
-  const total = await this.dumpRegisterRepository
-  .createQueryBuilder("dumpRegister")
-  .leftJoin("dumpRegister.location", "location")
-  .where("location.id = :location", { location: location })
-  .getMany();
-  await this.cacheService.set(key, total, CACHE_TTL);
-  return total; 
-}
 
-async getDumpRegisterByCompanyName(companyName: string): Promise<any> {
-  const key = `${CACHE_PREFIX}:company:${companyName}`;
-  const cached = await this.cacheService.get<any>(key);
-  if (cached) return cached;
-  const total = await this.dumpRegisterRepository
-    .createQueryBuilder("dumpRegister")
-    .leftJoin("dumpRegister.companyName", "companyName")
-    .where("companyName.id = :companyName", { companyName: companyName })
-    .getMany();
-  await this.cacheService.set(key, total, CACHE_TTL);
-  return total; 
-}
 
-public async getDumpDataForDates(
-  filterType?: string,
-  startDate?: string,
-  endDate?: string
-): Promise<any[]> {
-  const key = `${CACHE_PREFIX}:datesData:${filterType}:${startDate}:${endDate}`;
-  const cached = await this.cacheService.get<any[]>(key);
-  if (cached) return cached;
-  let query = this.dumpProductRepository
-    .createQueryBuilder("dumpProducts")
-    .select("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')", "date")
-    .addSelect("COALESCE(SUM(dumpProducts.quantity), 0)", "totalQuantity")
-    .addSelect("COALESCE(SUM(dumpProducts.amount), 0)", "totalCost")
-    .innerJoin(DumpRegister, "dumpRegister", "dumpRegister.id = dumpProducts.dumpRegister") // Fixed alias here
-    .groupBy("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')")
-    .orderBy("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')", "ASC");
 
-  
-  const currentDate = new Date().toISOString().split("T")[0]; 
 
-  switch (filterType) {
-    case "tillDate":
-      query = query.andWhere("dumpRegister.date <= :currentDate", { currentDate });
-      break;
 
-    case "financialYear": {
-      const today = new Date();
-      const financialYearStart =
-        today.getMonth() + 1 >= 4 
-          ? `${today.getFullYear()}-04-01`
-          : `${today.getFullYear() - 1}-04-01`;
-      query = query.andWhere("dumpRegister.date BETWEEN :start AND :end", {
-        start: financialYearStart,
-        end: currentDate,
-      });
-      break;
-    }
 
-    case "today":
-      query = query.andWhere("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD') = :currentDate", {
-        currentDate,
-      });
-      break;
 
-    case "dateRange":
-      if (startDate && endDate) {
-        query = query.andWhere("dumpRegister.date BETWEEN :start AND :end", {
-          start: startDate,
-          end: endDate,
-        });
-      }
-      break;
 
-    default:
-      break; 
-  }
 
-  const rawResult = await query.getRawMany();
-
-  const mappedResult = rawResult.map((row) => ({
-    date: row.date,
-    quantity: Number(row.totalQuantity),
-    amount: Number(row.totalCost),
-  }));
-  await this.cacheService.set(key, mappedResult, CACHE_TTL);
-  return mappedResult;
-}
 public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];
@@ -1107,3 +773,362 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
 }
 
 }
+
+
+//     async getAllDumpRegisters(queryOptions:PaginationOptions, userId: string): Promise<any> {
+
+//       const {data, meta} = await this.docDoubleApproverService.getAllDocumentByUserIdForDoubleApprover(
+//         userId,
+//         DocumentTypeEnum.DUMP_REGISTER,
+//         queryOptions
+//       );
+//  const { search } = queryOptions;
+//       // let queryBuilder = await this.dumpRegisterRepository
+//       // .createQueryBuilder("dump_register") 
+//       // .leftJoinAndSelect("dump_register.location", "location")
+//       // .leftJoinAndSelect("dump_register.dumpProducts", "dumpProducts")
+//       // .leftJoinAndSelect("dump_register.grn", "grn")
+//       // .leftJoinAndSelect("dump_register.requestedBy", "requestedBy")
+//       // .leftJoinAndSelect("dumpProducts.productName", "productName") 
+//       // .leftJoinAndSelect("dumpProducts.uom", "uom")
+//       // .leftJoinAndSelect("dump_register.companyName", "companyName")
+//       // .orderBy("dump_register.createdAt", "DESC");
+    
+//       //   const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'dump_register');
+      
+//       const typedDocuments = data as DocumentWithRelatedData[];
+//           for (const doc of typedDocuments) {
+//             if (!doc.document_type_id) continue;
+//             try {
+//               doc.relatedData = await this.dumpRegisterRepository.findOne({
+//                 where: { id: doc.document_type_id },
+//                 relations: ['companyName', 'location', 'dumpProducts', 'dumpProducts.productName', 'dumpProducts.uom'],
+//               });
+      
+//             } catch {
+//               doc.relatedData = null;
+//             }
+//           }
+      
+//           let relatedDataOnly = typedDocuments
+//             .filter((doc) => doc.relatedData)
+//             .map((doc) => ({
+//               documentId: doc.id,
+//               overAllStatus: doc.status, 
+//               createdBy: doc.lastActionBy.firstName + ' ' + doc.lastActionBy.lastName,
+//               createdDate: formatDateTime(doc.createdAt).createdDate,
+//               createdTime: formatDateTime(doc.createdAt).createdTime,
+//               ...doc.relatedData,
+//               companyName: doc.relatedData.companyName.name || null,
+//               location: doc.relatedData.location.name || null,
+//             })
+//             );
+
+//              // 🔍 Deep search helper
+//   const objectToString = (obj: any): string => {
+//     if (obj == null) return '';
+//     if (typeof obj === 'object') {
+//       return Object.values(obj).map((v) => objectToString(v)).join(' ');
+//     }
+//     return String(obj);
+//   };
+
+//   // 🔍 Apply search filter
+//   if (search && search.trim()) {
+//     const term = search.toLowerCase();
+//     relatedDataOnly = relatedDataOnly.filter((item) =>
+//       objectToString(item).toLowerCase().includes(term)
+//     );
+//   }
+//    // 🔄 Sorting
+//   if (queryOptions.sort) {
+//     const [field, direction] = queryOptions.sort.split(':');
+//     const sortOrder = direction?.toUpperCase() === 'DESC' ? -1 : 1;
+
+//     const getNestedValue = (obj: any, path: string) =>
+//       path.split('.').reduce((o, key) => (o ? o[key] : undefined), obj);
+
+//     relatedDataOnly.sort((a, b) => {
+//       const valA = getNestedValue(a, field);
+//       const valB = getNestedValue(b, field);
+
+//       if (valA == null && valB == null) return 0;
+//       if (valA == null) return -1 * sortOrder;
+//       if (valB == null) return 1 * sortOrder;
+
+//       if (!isNaN(valA) && !isNaN(valB)) {
+//         return (Number(valA) - Number(valB)) * sortOrder;
+//       }
+//       return String(valA).localeCompare(String(valB)) * sortOrder;
+//     });
+//   }
+      
+//              return {
+//         data: relatedDataOnly,
+//         meta: {
+//           total: meta.total,
+//           page: meta.page,
+//           pages: meta.pages
+//         }
+//       };
+      
+
+//     //     return {
+//     // data :data.map(dumpRegister => {
+//     //   const rawDate = dumpRegister.createdAt;
+//     //   const { createdDate, createdTime } = formatDateTime(rawDate);
+//     //   return {
+//     //     id: dumpRegister.id,
+//     //     companyName: dumpRegister.companyName?.name || null,
+//     //     location: dumpRegister.location ? dumpRegister.location.name : null,
+//     //     createdDate: createdDate,
+//     //     createdTime: createdTime,
+//     //     date: dumpRegister.date,
+//     //     batchNo: dumpRegister.batchNo,
+//     //     remark: dumpRegister.remark,
+//     //     grn: dumpRegister.grn
+//     //       ? {
+//     //           id: dumpRegister.grn.id || null,
+//     //           grnNo: dumpRegister.grn.grnNo,
+//     //         }
+//     //       : null,
+//     //     requestedBy: dumpRegister.requestedBy
+//     //       ? {
+//     //           id: dumpRegister.requestedBy.id || null,
+//     //           firstName: dumpRegister.requestedBy.firstName,
+//     //           lastName: dumpRegister.requestedBy.lastName,
+//     //         }
+//     //       : null,
+//     //     dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
+//     //       id: dumpProduct.id,
+//     //       product: dumpProduct.productName?.name || null,
+//     //       uom: dumpProduct.uom.unit || null,
+//     //       variety:dumpProduct.variety,
+//     //       count:dumpProduct.count,
+//     //       size:dumpProduct.size,
+//     //       origin:dumpProduct.origin,
+//     //       quantity: dumpProduct.quantity,
+//     //       amount:dumpProduct.amount,
+//     //       unitPrice:dumpProduct.unitPrice
+//     //     })),
+//     //   };
+//     // }),
+//     // meta,
+//     //     }
+// }
+
+
+// public async getDumpDataForDates(
+//   filterType?: string,
+//   startDate?: string,
+//   endDate?: string
+// ): Promise<any[]> {
+//   const key = `${CACHE_PREFIX}:datesData:${filterType}:${startDate}:${endDate}`;
+//   const cached = await this.cacheService.get<any[]>(key);
+//   if (cached) return cached;
+//   let query = this.dumpProductRepository
+//     .createQueryBuilder("dumpProducts")
+//     .select("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')", "date")
+//     .addSelect("COALESCE(SUM(dumpProducts.quantity), 0)", "totalQuantity")
+//     .addSelect("COALESCE(SUM(dumpProducts.amount), 0)", "totalCost")
+//     .innerJoin(DumpRegister, "dumpRegister", "dumpRegister.id = dumpProducts.dumpRegister") // Fixed alias here
+//     .groupBy("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')")
+//     .orderBy("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD')", "ASC");
+
+  
+//   const currentDate = new Date().toISOString().split("T")[0]; 
+
+//   switch (filterType) {
+//     case "tillDate":
+//       query = query.andWhere("dumpRegister.date <= :currentDate", { currentDate });
+//       break;
+
+//     case "financialYear": {
+//       const today = new Date();
+//       const financialYearStart =
+//         today.getMonth() + 1 >= 4 
+//           ? `${today.getFullYear()}-04-01`
+//           : `${today.getFullYear() - 1}-04-01`;
+//       query = query.andWhere("dumpRegister.date BETWEEN :start AND :end", {
+//         start: financialYearStart,
+//         end: currentDate,
+//       });
+//       break;
+//     }
+
+//     case "today":
+//       query = query.andWhere("TO_CHAR(dumpRegister.date, 'YYYY-MM-DD') = :currentDate", {
+//         currentDate,
+//       });
+//       break;
+
+//     case "dateRange":
+//       if (startDate && endDate) {
+//         query = query.andWhere("dumpRegister.date BETWEEN :start AND :end", {
+//           start: startDate,
+//           end: endDate,
+//         });
+//       }
+//       break;
+
+//     default:
+//       break; 
+//   }
+
+//   const rawResult = await query.getRawMany();
+
+//   const mappedResult = rawResult.map((row) => ({
+//     date: row.date,
+//     quantity: Number(row.totalQuantity),
+//     amount: Number(row.totalCost),
+//   }));
+//   await this.cacheService.set(key, mappedResult, CACHE_TTL);
+//   return mappedResult;
+// }
+
+
+// async getDumpRegisterByCompanyName(companyName: string): Promise<any> {
+//   const key = `${CACHE_PREFIX}:company:${companyName}`;
+//   const cached = await this.cacheService.get<any>(key);
+//   if (cached) return cached;
+//   const total = await this.dumpRegisterRepository
+//     .createQueryBuilder("dumpRegister")
+//     .leftJoin("dumpRegister.companyName", "companyName")
+//     .where("companyName.id = :companyName", { companyName: companyName })
+//     .getMany();
+//   await this.cacheService.set(key, total, CACHE_TTL);
+//   return total; 
+// }
+
+
+// async getDumpRegisterlocation(location: string): Promise<any> { 
+//   const key = `${CACHE_PREFIX}:location:${location}`;
+//   const cached = await this.cacheService.get<any>(key);
+//   if (cached) return cached;
+//   const total = await this.dumpRegisterRepository
+//   .createQueryBuilder("dumpRegister")
+//   .leftJoin("dumpRegister.location", "location")
+//   .where("location.id = :location", { location: location })
+//   .getMany();
+//   await this.cacheService.set(key, total, CACHE_TTL);
+//   return total; 
+// }
+
+
+// async totalqunatityandtotaldumpcostfromstartdatetoenddate(startdate: Date, enddate: Date): Promise<any> {
+//   const key = `${CACHE_PREFIX}:dateRange:${startdate}:${enddate}`;
+//   const cached = await this.cacheService.get<any>(key);
+//   if (cached) return cached;
+//   const total = await this.dumpRegisterRepository
+//     .createQueryBuilder("dumpRegister")
+//     .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
+//     .select("SUM(dumpRegister.totalQty)", "totalQuantity")
+//     .addSelect("SUM(dumpProduct.amount)", "totalCost")
+//     .where("dumpRegister.date BETWEEN :startdate AND :enddate", { startdate: startdate, enddate: enddate })
+//     .getRawOne();
+ 
+//   await this.cacheService.set(key, total, CACHE_TTL);
+//   return total;
+// }
+
+
+// async dumpcount():Promise<number>{
+//   const key = `${CACHE_PREFIX}:count`;
+//   const cached = await this.cacheService.get<number>(key);
+//   if (cached !== null && cached !== undefined) return cached;
+//   const count = await this.dumpRegisterRepository.count();
+//   await this.cacheService.set(key, count, CACHE_TTL);
+//   return count; 
+// }
+
+
+// async totaldumpquantity():Promise<number>{
+//   const key = `${CACHE_PREFIX}:totalQty`;
+//   const cached = await this.cacheService.get<number>(key);
+//   if (cached !== null && cached !== undefined) return cached;
+//   const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
+//   .select("SUM(dumpRegister.totalQty)", "total")
+//   .getRawOne();
+//   const result = total.total;
+//   await this.cacheService.set(key, result, CACHE_TTL);
+//   return result;
+// }
+// async totaldumpcost():Promise<number>{
+//   const total = await this.dumpRegisterRepository.createQueryBuilder("dumpRegister")
+//   .select("SUM(dumpRegister.totalCost)", "total")
+//   .getRawOne();
+//   return total.total;
+// }
+
+// async totaldumpcost(): Promise<number> {
+//   const key = `${CACHE_PREFIX}:totalCost`;
+//   const cached = await this.cacheService.get<number>(key);
+//   if (cached !== null && cached !== undefined) return cached;
+//   const total = await this.dumpRegisterRepository
+//     .createQueryBuilder("dumpRegister")
+//     .leftJoin("dumpRegister.dumpProducts", "dumpProduct")
+//     .select("SUM(dumpProduct.amount)", "total")
+//     .getRawOne();
+//   const result = total.total ? Number(total.total) : 0;
+//   await this.cacheService.set(key, result, CACHE_TTL);
+//   return result;
+// }
+
+
+  // //TODO: Document for view
+  //     async getDumpRegisterById(id: string): Promise<DumpRegisterByIdDto | null> {
+  //       const key = `${CACHE_PREFIX}:id:${id}`;
+  //       const cached = await this.cacheService.get<DumpRegisterByIdDto>(key);
+  //       if (cached) return cached;
+
+  //       const dumpRegister = await this.dumpRegisterRepository.findOne({
+  //         where: { id },
+  //         relations: ["location", "grn", "requestedBy", "dumpProducts", "dumpProducts.productName", "dumpProducts.uom","companyName","location"],
+  //       });
+      
+  //       if (!dumpRegister) {
+  //         throw new Error(`Dump Register with ID ${id} not found`);
+  //       }
+
+  //       const rawDate = dumpRegister.createdAt;
+  //       const { createdDate, createdTime } = formatDateTime(rawDate);
+      
+  //       const result: DumpRegisterByIdDto = {
+  //         id: dumpRegister.id,
+  //         companyName: dumpRegister.companyName?.id ?? null,
+  //         createdDate,
+  //         createdTime,
+  //         location: dumpRegister.location ? dumpRegister.location.id : null,
+  //         date: dumpRegister.date,
+  //         totalDumpCost: dumpRegister.totalDumpCost,
+  //         totalCostInWords: dumpRegister.totalCostInWords,
+  //         batchNo: dumpRegister.batchNo,
+  //         remark: dumpRegister.remark,
+  //         grn: dumpRegister.grn ? dumpRegister.grn.id : null,
+  //         requestedBy: dumpRegister.requestedBy
+  //           ? {
+  //               id: dumpRegister.requestedBy.id,
+  //               firstName: dumpRegister.requestedBy.firstName,
+  //               lastName: dumpRegister.requestedBy.lastName,
+  //             }
+  //           : null,
+  //         dumpProducts: dumpRegister.dumpProducts.map((dumpProduct) => ({
+  //           id: dumpProduct.id,
+  //           productName: dumpProduct.productName ? {
+  //             id: dumpProduct.productName.id,
+  //             productName: dumpProduct.productName.name,
+  //           } : null,
+  //           varient: dumpProduct.variant ? {
+  //             id: dumpProduct.variant.id,
+  //             productName: dumpProduct.variant.variantName ?? null,
+  //           } : null,
+  //           uom: dumpProduct.uom ? { id: dumpProduct.uom.id, unit: dumpProduct.uom.unit } : null,
+  //           quantity: dumpProduct.quantity,
+  //           amount: dumpProduct.amount,
+  //           unitPrice: dumpProduct.unitPrice,
+  //         })),
+  //       };
+  //       await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //       return result;
+  //     }
+

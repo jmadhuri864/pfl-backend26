@@ -166,44 +166,7 @@ export class DealSlipController {
     }
   }
 
-  @httpGet("/:id")
-  public async getDealSlipById(
-    @requestParam("id") id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ): Promise<void> {
-    try {
-      const dealSlip: DealSlipDetailDto | null = await this.dealSlipService.findDealSlipById(id);
-      
-      if (!dealSlip) {
-        ControllerLogger.logNotFound('Deal Slip', id, req, res);
-        return next(new AppError(404, "Deal Slip not found"));
-      }
-      
-      // 🔔 Send notification for deal slip view
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Viewed deal slip "${dealSlip.dealSlipNo}" details`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Deal slip view notification error:', notifError);
-      // }
-      
-      ControllerLogger.logView('Deal Slip', id, req, res);
-      res.status(200).json({
-        status: "success",
-        data: dealSlip,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Get Deal Slip by ID', error, req, res);
-      next(error);
-    }
-  }
+
 
   @httpGet("/:id/update")
   public async findDealSlipByIdforUpdate(
@@ -363,30 +326,7 @@ export class DealSlipController {
     }
   }
 
-  // @httpGet("/dealslipno/getAlldealslipNo")
-  // public async getAllDealSlipNumbers(
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ) {
-  //   try {
-  //     const dealSlips = await this.dealSlipService.getAllDealSlipsNo();
-      
-  //     if (!dealSlips || dealSlips.length === 0) {
-  //       ControllerLogger.logOperationFailed('Get All', 'Deal Slip Numbers', 'No records found', req, res);
-  //       return next(new AppError(404, "No Deal Slips found"));
-  //     }
-      
-  //     ControllerLogger.logList('Deal Slip Numbers', req, res);
-  //     res.status(200).json({
-  //       status: "success",
-  //       data: dealSlips,
-  //     });
-  //   } catch (error) {
-  //     ControllerLogger.logError('Get All Deal Slip Numbers', error, req, res);
-  //     next(error);
-  //   }
-  // }
+  
   @httpGet("/dealslipno/getAlldealslipNo")
   public async getAllDealSlipNumbers(
     @request() req: Request,
@@ -491,37 +431,7 @@ export class DealSlipController {
     }
   }
 
-  @httpGet('/filter')
-  public async filterDealSlips(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
 
-      const { page: _p, limit: _l, ...restQuery } = req.query;
-
-      const filters: Record<string, any> = {};
-      for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== "") {
-          filters[key] = value;
-        }
-      }
-
-      const result = await this.dealSlipService.filterDealSlips(page, limit, filters);
-
-      ControllerLogger.logList('Deal Slips (filtered)', req, res);
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Filter Deal Slips', error, req, res);
-      res.status(500).json({ success: false, message: "Server Error" });
-    }
-  }
 
   @httpDelete("/delete/multiple")
   public async deleteMultipleDealSlips(
@@ -556,3 +466,105 @@ export class DealSlipController {
     }
   }
 }
+
+
+
+  // @httpGet('/filter')
+  // public async filterDealSlips(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const page = parseInt(req.query.page as string, 10) || 1;
+  //     const limit = parseInt(req.query.limit as string, 10) || 10;
+
+  //     const { page: _p, limit: _l, ...restQuery } = req.query;
+
+  //     const filters: Record<string, any> = {};
+  //     for (const [key, value] of Object.entries(restQuery ?? {})) {
+  //       if (value !== undefined && value !== "") {
+  //         filters[key] = value;
+  //       }
+  //     }
+
+  //     const result = await this.dealSlipService.filterDealSlips(page, limit, filters);
+
+  //     ControllerLogger.logList('Deal Slips (filtered)', req, res);
+  //     res.json({
+  //       success: true,
+  //       ...result,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Filter Deal Slips', error, req, res);
+  //     res.status(500).json({ success: false, message: "Server Error" });
+  //   }
+  // }
+
+
+
+// @httpGet("/dealslipno/getAlldealslipNo")
+  // public async getAllDealSlipNumbers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dealSlips = await this.dealSlipService.getAllDealSlipsNo();
+      
+  //     if (!dealSlips || dealSlips.length === 0) {
+  //       ControllerLogger.logOperationFailed('Get All', 'Deal Slip Numbers', 'No records found', req, res);
+  //       return next(new AppError(404, "No Deal Slips found"));
+  //     }
+      
+  //     ControllerLogger.logList('Deal Slip Numbers', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dealSlips,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Get All Deal Slip Numbers', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+
+  // @httpGet("/:id")
+  // public async getDealSlipById(
+  //   @requestParam("id") id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ): Promise<void> {
+  //   try {
+  //     const dealSlip: DealSlipDetailDto | null = await this.dealSlipService.findDealSlipById(id);
+      
+  //     if (!dealSlip) {
+  //       ControllerLogger.logNotFound('Deal Slip', id, req, res);
+  //       return next(new AppError(404, "Deal Slip not found"));
+  //     }
+      
+  //     // 🔔 Send notification for deal slip view
+  //     // try {
+  //     //   const userId = res.locals.user?.id;
+  //     //   if (userId) {
+  //     //     await this.notificationService.createNoti(
+  //     //       `Viewed deal slip "${dealSlip.dealSlipNo}" details`,
+  //     //       userId
+  //     //     );
+  //     //   }
+  //     // } catch (notifError) {
+  //     //   console.log('Deal slip view notification error:', notifError);
+  //     // }
+      
+  //     ControllerLogger.logView('Deal Slip', id, req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dealSlip,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Get Deal Slip by ID', error, req, res);
+  //     next(error);
+  //   }
+  // }

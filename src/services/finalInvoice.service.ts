@@ -626,23 +626,7 @@ export class FinalInvoiceService {
     return result;
   }
 
-  async update(id: string, data: any): Promise<any> {
-    try {
-      const invoice = await this.invoiceRepository.findOne({ where: { id } });
 
-      if (!invoice) return null;
-
-      const updated = Object.assign(invoice, data);
-      const saved = await this.invoiceRepository.save(updated);
-      await this.invalidateCache(id);
-      return saved;
-    } catch (err) {
-      logger.error(`Error updating final invoice with ID: ${id}`, {
-        error: err,
-      });
-      return null;
-    }
-  }
 
   public async getByIdForPdf(id: string): Promise<any> {
       const cacheKey = `${this.CACHE_PREFIX}:pdf:${id}`;
@@ -856,3 +840,23 @@ export class FinalInvoiceService {
 }
 
 }
+
+
+  // async update(id: string, data: any): Promise<any> {
+  //   try {
+  //     const invoice = await this.invoiceRepository.findOne({ where: { id } });
+
+  //     if (!invoice) return null;
+
+  //     const updated = Object.assign(invoice, data);
+  //     const saved = await this.invoiceRepository.save(updated);
+  //     await this.invalidateCache(id);
+  //     return saved;
+  //   } catch (err) {
+  //     logger.error(`Error updating final invoice with ID: ${id}`, {
+  //       error: err,
+  //     });
+  //     return null;
+  //   }
+  // }
+

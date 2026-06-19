@@ -193,76 +193,7 @@ export class LabourPaymentVoucherService {
     return listResult;
   }
 
-  public async getLPVoucherById(id: string): Promise<LPVoucherDetailDto | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const voucher = await this.lpVoucherRepository
-      .createQueryBuilder('lpVoucher')
-      .leftJoinAndSelect('lpVoucher.grnNo', 'grn')
-      .leftJoinAndSelect('lpVoucher.companyName', 'companyName')
-      .leftJoinAndSelect('lpVoucher.requestedBy', 'requestedBy')
-
-      .select([
-        'lpVoucher.id',
-        'lpVoucher.voucherNo',
-        'lpVoucher.approvalStatus',
-        'lpVoucher.debitCreditTo',
-        'lpVoucher.payReceivedFrom',
-        'lpVoucher.receiverName',
-        'lpVoucher.location',
-        'lpVoucher.noOfLabours',
-        'lpVoucher.loadingDate',
-
-        'lpVoucher.contactNo',
-        'lpVoucher.altContactNo',
-        'lpVoucher.products',
-        'lpVoucher.kyc',
-
-        'lpVoucher.paymentMode',
-        'lpVoucher.ratePerLabour',
-        'lpVoucher.totalAmt',
-        'lpVoucher.createdAt',
-
-        'lpVoucher.amtWords',
-        'lpVoucher.anyAttachment',
-        'lpVoucher.requestingDepartment',
-        'companyName.id',
-        'companyName.name',
-        'grn.grnNo',
-        'grn.id',
-        'requestedBy.id',
-        'requestedBy.firstName',
-        'requestedBy.lastName',
-      ])
-      .where('lpVoucher.id = :id', { id })
-      .getOne();
-    if (!voucher) {
-      return null;
-    }
-    const rawDate = voucher.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    if (voucher && voucher.grnNo) {
-      const idResult = {
-        ...voucher,
-        grnNo: {
-          id: voucher.grnNo?.id || null,
-          grnNo: voucher.grnNo?.grnNo || null,
-        },
-        companyName: {
-          id: voucher.companyName?.id || null,
-          companyName: voucher.companyName?.name || null,
-        },
-        createdTime: createdTime,
-        createdDate: createdDate,
-      };
-      await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
-      return idResult;
-    }
-
-    return voucher as unknown as LPVoucherDetailDto;
-  }
 
   public async getLPVoucherByIdForView(docid: string): Promise<LPVoucherViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
@@ -567,3 +498,77 @@ remark : voucher.remark || null,
   }
 
 }
+
+
+
+
+  // public async getLPVoucherById(id: string): Promise<LPVoucherDetailDto | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const voucher = await this.lpVoucherRepository
+  //     .createQueryBuilder('lpVoucher')
+  //     .leftJoinAndSelect('lpVoucher.grnNo', 'grn')
+  //     .leftJoinAndSelect('lpVoucher.companyName', 'companyName')
+  //     .leftJoinAndSelect('lpVoucher.requestedBy', 'requestedBy')
+
+  //     .select([
+  //       'lpVoucher.id',
+  //       'lpVoucher.voucherNo',
+  //       'lpVoucher.approvalStatus',
+  //       'lpVoucher.debitCreditTo',
+  //       'lpVoucher.payReceivedFrom',
+  //       'lpVoucher.receiverName',
+  //       'lpVoucher.location',
+  //       'lpVoucher.noOfLabours',
+  //       'lpVoucher.loadingDate',
+
+  //       'lpVoucher.contactNo',
+  //       'lpVoucher.altContactNo',
+  //       'lpVoucher.products',
+  //       'lpVoucher.kyc',
+
+  //       'lpVoucher.paymentMode',
+  //       'lpVoucher.ratePerLabour',
+  //       'lpVoucher.totalAmt',
+  //       'lpVoucher.createdAt',
+
+  //       'lpVoucher.amtWords',
+  //       'lpVoucher.anyAttachment',
+  //       'lpVoucher.requestingDepartment',
+  //       'companyName.id',
+  //       'companyName.name',
+  //       'grn.grnNo',
+  //       'grn.id',
+  //       'requestedBy.id',
+  //       'requestedBy.firstName',
+  //       'requestedBy.lastName',
+  //     ])
+  //     .where('lpVoucher.id = :id', { id })
+  //     .getOne();
+  //   if (!voucher) {
+  //     return null;
+  //   }
+  //   const rawDate = voucher.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   if (voucher && voucher.grnNo) {
+  //     const idResult = {
+  //       ...voucher,
+  //       grnNo: {
+  //         id: voucher.grnNo?.id || null,
+  //         grnNo: voucher.grnNo?.grnNo || null,
+  //       },
+  //       companyName: {
+  //         id: voucher.companyName?.id || null,
+  //         companyName: voucher.companyName?.name || null,
+  //       },
+  //       createdTime: createdTime,
+  //       createdDate: createdDate,
+  //     };
+  //     await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+  //     return idResult;
+  //   }
+
+  //   return voucher as unknown as LPVoucherDetailDto;
+  // }

@@ -157,44 +157,8 @@ export class  MultiCashVoucherController {
     }
   }
 
-  // Get voucher by ID
-  @httpGet("/:id")
-  public async getVoucherById(
-    @request() req: Request<{ id: string }>,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      logger.info(`Fetching Multi Cash Voucher with ID`);
-      const { id } = req.params;
-      const voucher = await this.multicashVoucherService.getVoucherById(id);
+  
 
-      if (!voucher) {
-        logger.warn(`Voucher with ID ${id} not found`);
-        return res.status(404).json({ status: "fail", message: "Voucher not found" });
-      }
-      logger.info("Voucher fetched successfully", { voucherId: id });
-      ControllerLogger.logView('Multi Cash Voucher', id, req, res);
-
-      // Send notification for multi cash voucher view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Multi Cash Voucher viewed: ${id}`,
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: "success",
-        data: voucher,
-      });
-    } catch (err) {
-      logger.error(`Error fetching Multi Cash Voucher with ID: ${req.params.id}`, { error: err });
-      ControllerLogger.logError('Multi Cash Voucher view', err, req, res);
-      next(err);
-    }
-  }
 
 
 
@@ -369,17 +333,64 @@ export class  MultiCashVoucherController {
             next(error);
           }
         }
-@httpGet('/:id/generate-pdf')
-async generateVoucherPdf(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
+        
 
-    try {
-      const pdfUrl = await this.multicashVoucherService.generateMultiCashVoucherPdf(id);
-      res.status(200).json({ message:"Url Fetch Successfully", url: pdfUrl });
-    } catch (error) {
-      console.error('Error generating voucher PDF:', error);
-      res.status(500).json({ success: false, message: 'Failed to generate PDF' });
-    }
-  }
 
 }
+
+
+
+// @httpGet('/:id/generate-pdf')
+// async generateVoucherPdf(req: Request, res: Response): Promise<void> {
+//     const { id } = req.params;
+
+//     try {
+//       const pdfUrl = await this.multicashVoucherService.generateMultiCashVoucherPdf(id);
+//       res.status(200).json({ message:"Url Fetch Successfully", url: pdfUrl });
+//     } catch (error) {
+//       console.error('Error generating voucher PDF:', error);
+//       res.status(500).json({ success: false, message: 'Failed to generate PDF' });
+//     }
+//   }
+
+
+
+
+  // // Get voucher by ID
+  // @httpGet("/:id")
+  // public async getVoucherById(
+  //   @request() req: Request<{ id: string }>,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     logger.info(`Fetching Multi Cash Voucher with ID`);
+  //     const { id } = req.params;
+  //     const voucher = await this.multicashVoucherService.getVoucherById(id);
+
+  //     if (!voucher) {
+  //       logger.warn(`Voucher with ID ${id} not found`);
+  //       return res.status(404).json({ status: "fail", message: "Voucher not found" });
+  //     }
+  //     logger.info("Voucher fetched successfully", { voucherId: id });
+  //     ControllerLogger.logView('Multi Cash Voucher', id, req, res);
+
+  //     // Send notification for multi cash voucher view
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Multi Cash Voucher viewed: ${id}`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: voucher,
+  //     });
+  //   } catch (err) {
+  //     logger.error(`Error fetching Multi Cash Voucher with ID: ${req.params.id}`, { error: err });
+  //     ControllerLogger.logError('Multi Cash Voucher view', err, req, res);
+  //     next(err);
+  //   }
+  // }

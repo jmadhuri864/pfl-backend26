@@ -169,76 +169,7 @@ export class MultiCashVoucherService {
       
               
 
-  public async getVoucherById(id: string): Promise<any> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const voucher = await this.cashVoucherRepository
-      .createQueryBuilder('voucher')
-      .leftJoinAndSelect('voucher.particulars', 'particulars')
-
-      .leftJoinAndSelect('voucher.companyName', 'companyName')
-      .leftJoinAndSelect('voucher.passBy', 'passBy')
-      .leftJoinAndSelect('voucher.approveBy', 'approveBy')
-      .leftJoinAndSelect('voucher.grnNo', 'grn')
-      .leftJoinAndSelect('voucher.requestedBy', 'requestedBy')
-      .leftJoinAndSelect('voucher.challanNo', 'deliveryChallan')
-      .select([
-        'voucher.id',
-        'voucher.requestingDepartment',
-        'companyName.id',
-        'companyName.name',
-        'voucher.debitCreditTo',
-        'voucher.voucherNo',
-        'voucher.payReceivedFrom',
-        'voucher.location',
-        'voucher.totalAmt',
-        'voucher.amtWords',
-        'voucher.paymentMode',
-        'voucher.anyAttachment',
-        'voucher.approvalStatus',
-        'voucher.createdAt',
-        'voucher.receiverName',
-        'voucher.remark',
-
-        'particulars.id',
-        'particulars.description',
-        'particulars.amt',
-        'requestedBy.id',
-        'requestedBy.firstName',
-        'requestedBy.lastName',
-        'grn.id',
-        'grn.grnNo',
-        'deliveryChallan.id',
-        'deliveryChallan.challanNo',
-      ])
-      .where('voucher.id = :id', { id })
-      .getOne();
-
-    if (!voucher) {
-      return null;
-    }
-    const rawDate = voucher.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-
-    const idResult = {
-      ...voucher,
-      grnNo: { id: voucher.grnNo?.id, grnNo: voucher.grnNo?.grnNo },
-      challanNo: {
-        id: voucher.challanNo?.id || null,
-        challanNo: voucher.challanNo || null,
-      },
-      companyName: {
-        id: voucher.companyName?.id || null,
-        companyName: voucher.companyName?.name || null,
-      },
-      createdTime: createdTime,
-      createdDate: createdDate,
-    };
-    await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
-    return idResult;
-  }
 
   public async getVoucherByIdForUpdate(id: string): Promise<UpdateMultiCashVoucherDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
@@ -614,24 +545,7 @@ public async getAllRecycleBinVouchers(
     return voucherNo;
   }
 
-  async generateMultiCashVoucherPdf(id: string): Promise<string> {
-    const voucher = await this.getVoucherByIdForView(id);
 
-    //console.log('voucher is ', voucher);
-    if (!voucher) throw new Error('Voucher not found');
-
-    const s3Key = `multi-cash-vouchers/voucher-${voucher.voucherNo}.pdf`;
-
-    //console.log('Voucher data passed to EJS:', voucher.companyName);
-
-    const pdfUrl = await this.pdfGeneratorService.generatePdfFromTemplate(
-      'multiCashVoucher',
-      { voucher },
-      s3Key,
-    );
-
-    return pdfUrl;
-  }
   public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<{ message: string }> {
     if (!ids.length) return { message: 'No IDs provided' };
 
@@ -679,3 +593,99 @@ public async getAllRecycleBinVouchers(
   }
 
 }
+
+
+
+
+  // async generateMultiCashVoucherPdf(id: string): Promise<string> {
+  //   const voucher = await this.getVoucherByIdForView(id);
+
+  //   //console.log('voucher is ', voucher);
+  //   if (!voucher) throw new Error('Voucher not found');
+
+  //   const s3Key = `multi-cash-vouchers/voucher-${voucher.voucherNo}.pdf`;
+
+  //   //console.log('Voucher data passed to EJS:', voucher.companyName);
+
+  //   const pdfUrl = await this.pdfGeneratorService.generatePdfFromTemplate(
+  //     'multiCashVoucher',
+  //     { voucher },
+  //     s3Key,
+  //   );
+
+  //   return pdfUrl;
+  // }
+
+
+
+
+  // public async getVoucherById(id: string): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const voucher = await this.cashVoucherRepository
+  //     .createQueryBuilder('voucher')
+  //     .leftJoinAndSelect('voucher.particulars', 'particulars')
+
+  //     .leftJoinAndSelect('voucher.companyName', 'companyName')
+  //     .leftJoinAndSelect('voucher.passBy', 'passBy')
+  //     .leftJoinAndSelect('voucher.approveBy', 'approveBy')
+  //     .leftJoinAndSelect('voucher.grnNo', 'grn')
+  //     .leftJoinAndSelect('voucher.requestedBy', 'requestedBy')
+  //     .leftJoinAndSelect('voucher.challanNo', 'deliveryChallan')
+  //     .select([
+  //       'voucher.id',
+  //       'voucher.requestingDepartment',
+  //       'companyName.id',
+  //       'companyName.name',
+  //       'voucher.debitCreditTo',
+  //       'voucher.voucherNo',
+  //       'voucher.payReceivedFrom',
+  //       'voucher.location',
+  //       'voucher.totalAmt',
+  //       'voucher.amtWords',
+  //       'voucher.paymentMode',
+  //       'voucher.anyAttachment',
+  //       'voucher.approvalStatus',
+  //       'voucher.createdAt',
+  //       'voucher.receiverName',
+  //       'voucher.remark',
+
+  //       'particulars.id',
+  //       'particulars.description',
+  //       'particulars.amt',
+  //       'requestedBy.id',
+  //       'requestedBy.firstName',
+  //       'requestedBy.lastName',
+  //       'grn.id',
+  //       'grn.grnNo',
+  //       'deliveryChallan.id',
+  //       'deliveryChallan.challanNo',
+  //     ])
+  //     .where('voucher.id = :id', { id })
+  //     .getOne();
+
+  //   if (!voucher) {
+  //     return null;
+  //   }
+  //   const rawDate = voucher.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+
+  //   const idResult = {
+  //     ...voucher,
+  //     grnNo: { id: voucher.grnNo?.id, grnNo: voucher.grnNo?.grnNo },
+  //     challanNo: {
+  //       id: voucher.challanNo?.id || null,
+  //       challanNo: voucher.challanNo || null,
+  //     },
+  //     companyName: {
+  //       id: voucher.companyName?.id || null,
+  //       companyName: voucher.companyName?.name || null,
+  //     },
+  //     createdTime: createdTime,
+  //     createdDate: createdDate,
+  //   };
+  //   await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+  //   return idResult;
+  // }

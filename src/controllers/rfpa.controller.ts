@@ -42,122 +42,9 @@ export class RfpaController {
     private readonly rfpaService: RfpaService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
-  ) {}
+  ) { }
 
-  // @httpGet('/')
-  // @httpGet('/get')
-  // public async getAllRfpas(
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ): Promise<void> {
-  //   try {
-  //     logger.info('Fetching all RFPAs');
 
-  //     const { page, limit, search, sort, rfpaId } = req.query;
-
-  //     const queryOptions: PaginationOptions = {
-  //       page: page ? Number(page) : undefined,
-  //       limit: limit ? Number(limit) : undefined,
-  //       searchFields: ['rfpa.rfpaId'],
-  //       filters: {},
-  //       sort: (sort as string) || undefined,
-  //       search: (search as string) || '',
-  //     };
-  //     const rfpas = await this.rfpaService.findAllRfpas(queryOptions);
-
-  //     if (!rfpas || (Array.isArray(rfpas) && rfpas.length === 0)) {
-  //       logger.warn('No RFPAs found');
-  //       return next(new AppError(400, 'No RFPAs found'));
-  //     }
-  //     logger.info('Successfully fetched all RFPAs');
-  //     res.status(200).json({
-  //       status: 'success',
-
-  //       data: rfpas.data,
-  //       allRecords: rfpas.meta.total,
-  //       totalPages: rfpas.meta.pages,
-  //       page: rfpas.meta.page,
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //     logger.error('Error fetching all RFPAs', error);
-  //     next(error);
-  //   }
-  // }
-
-  // @httpGet('/:id', checkPermission('rfpa', 'view'))
-  // public async getRfpaById(
-  //   @requestParam('id') rfpaId: string,
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ): Promise<void> {
-  //   try {
-  //     logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-  //     const rfpa = await this.rfpaService.getRFQById(rfpaId);
-
-  //     if (!rfpa) {
-  //       logger.warn(`RFPA with ID ${rfpaId} not found`);
-  //       throw new AppError(404, 'RFPA not found');
-  //     }
-  //     logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
-  //     res.status(200).json({
-  //       status: 'success',
-  //       data: rfpa,
-  //       //message:"rfpa is created"
-  //     });
-  //   } catch (error) {
-  //     console.log(error);
-  //     logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
-  //     next(error);
-  //   }
-  // }
-
-  @httpGet('/:id/view')
-  public async getRfpaByIdByView(
-    @requestParam('id') rfpaId: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-      const rfpa: RfpaViewResponseDto | null = await this.rfpaService.getRFQByIdByView(rfpaId);
-
-      if (!rfpa) {
-        logger.warn(`RFPA with ID ${rfpaId} not found`);
-        ControllerLogger.logError(
-          'RFPA view',
-          new AppError(404, 'RFPA not found'),
-          req,
-          res,
-        );
-        throw new AppError(404, 'RFPA not found');
-      }
-      logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
-      ControllerLogger.logView('RFPA (for view)', rfpaId, req, res);
-
-      // // Send notification for RFPA view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `RFPA viewed: ${rfpaId}`,
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        data: rfpa,
-        //message:"rfpa is created"
-      });
-    } catch (error) {
-      logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
-      ControllerLogger.logError('RFPA view', error, req, res);
-      next(error);
-    }
-  }
 
   @httpGet('/recyclebin')
   public async getRecycleBinRfpa(
@@ -224,40 +111,7 @@ export class RfpaController {
       next(error);
     }
   }
-  @httpGet('/:id/update')
-  public async getRfpaByIdByUpdate(
-    @requestParam('id') rfpaId: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-      const rfpa: RfpaUpdateFormDto | null = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
 
-      if (!rfpa) {
-        logger.warn(`RFPA with ID ${rfpaId} not found`);
-        ControllerLogger.logError(
-          'RFPA retrieval for update',
-          new AppError(404, 'RFPA not found'),
-          req,
-          res,
-        );
-        throw new AppError(404, 'RFPA not found');
-      }
-      logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
-      ControllerLogger.logView('RFPA (for update)', rfpaId, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: rfpa,
-        //message:"rfpa is created"
-      });
-    } catch (error) {
-      logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
-      ControllerLogger.logError('RFPA retrieval for update', error, req, res);
-      next(error);
-    }
-  }
 
   //TODO: Create RFPA
   @httpPost('/', checkPermission('rfpa', 'create'))
@@ -885,40 +739,7 @@ export class RfpaController {
     }
   }
 
-  @httpGet('/filter')
-  public async filterRfpas(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      // Extract pagination
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
 
-      // Remove pagination keys and treat the rest as filters
-      const { page: _p, limit: _l, ...restQuery } = req.query;
-
-      // Always initialize filters as a Record
-      const filters: Record<string, any> = {};
-
-      for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== '') {
-          filters[key] = value;
-        }
-      }
-
-      const result = await this.rfpaService.filterRfpas(page, limit, filters);
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, message: 'Server Error' });
-    }
-  }
 
   //pest in rfpa controller
   @httpDelete('/delete/multiple')
@@ -958,3 +779,198 @@ export class RfpaController {
     }
   }
 }
+
+
+
+// @httpGet('/filter')
+// public async filterRfpas(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ) {
+//   try {
+//     // Extract pagination
+//     const page = parseInt(req.query.page as string, 10) || 1;
+//     const limit = parseInt(req.query.limit as string, 10) || 10;
+
+//     // Remove pagination keys and treat the rest as filters
+//     const { page: _p, limit: _l, ...restQuery } = req.query;
+
+//     // Always initialize filters as a Record
+//     const filters: Record<string, any> = {};
+
+//     for (const [key, value] of Object.entries(restQuery ?? {})) {
+//       if (value !== undefined && value !== '') {
+//         filters[key] = value;
+//       }
+//     }
+
+//     const result = await this.rfpaService.filterRfpas(page, limit, filters);
+
+//     res.json({
+//       success: true,
+//       ...result,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: 'Server Error' });
+//   }
+// }
+
+
+
+// @httpGet('/:id/update')
+// public async getRfpaByIdByUpdate(
+//   @requestParam('id') rfpaId: string,
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ): Promise<void> {
+//   try {
+//     logger.info(`Fetching RFPA with ID: ${rfpaId}`);
+//     const rfpa: RfpaUpdateFormDto | null = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
+
+//     if (!rfpa) {
+//       logger.warn(`RFPA with ID ${rfpaId} not found`);
+//       ControllerLogger.logError(
+//         'RFPA retrieval for update',
+//         new AppError(404, 'RFPA not found'),
+//         req,
+//         res,
+//       );
+//       throw new AppError(404, 'RFPA not found');
+//     }
+//     logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+//     ControllerLogger.logView('RFPA (for update)', rfpaId, req, res);
+//     res.status(200).json({
+//       status: 'success',
+//       data: rfpa,
+//       //message:"rfpa is created"
+//     });
+//   } catch (error) {
+//     logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+//     ControllerLogger.logError('RFPA retrieval for update', error, req, res);
+//     next(error);
+//   }
+// }
+
+
+
+// @httpGet('/')
+// @httpGet('/get')
+// public async getAllRfpas(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ): Promise<void> {
+//   try {
+//     logger.info('Fetching all RFPAs');
+
+//     const { page, limit, search, sort, rfpaId } = req.query;
+
+//     const queryOptions: PaginationOptions = {
+//       page: page ? Number(page) : undefined,
+//       limit: limit ? Number(limit) : undefined,
+//       searchFields: ['rfpa.rfpaId'],
+//       filters: {},
+//       sort: (sort as string) || undefined,
+//       search: (search as string) || '',
+//     };
+//     const rfpas = await this.rfpaService.findAllRfpas(queryOptions);
+
+//     if (!rfpas || (Array.isArray(rfpas) && rfpas.length === 0)) {
+//       logger.warn('No RFPAs found');
+//       return next(new AppError(400, 'No RFPAs found'));
+//     }
+//     logger.info('Successfully fetched all RFPAs');
+//     res.status(200).json({
+//       status: 'success',
+
+//       data: rfpas.data,
+//       allRecords: rfpas.meta.total,
+//       totalPages: rfpas.meta.pages,
+//       page: rfpas.meta.page,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     logger.error('Error fetching all RFPAs', error);
+//     next(error);
+//   }
+// }
+
+// @httpGet('/:id', checkPermission('rfpa', 'view'))
+// public async getRfpaById(
+//   @requestParam('id') rfpaId: string,
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ): Promise<void> {
+//   try {
+//     logger.info(`Fetching RFPA with ID: ${rfpaId}`);
+//     const rfpa = await this.rfpaService.getRFQById(rfpaId);
+
+//     if (!rfpa) {
+//       logger.warn(`RFPA with ID ${rfpaId} not found`);
+//       throw new AppError(404, 'RFPA not found');
+//     }
+//     logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+//     res.status(200).json({
+//       status: 'success',
+//       data: rfpa,
+//       //message:"rfpa is created"
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+//     next(error);
+//   }
+// }
+
+// @httpGet('/:id/view')
+// public async getRfpaByIdByView(
+//   @requestParam('id') rfpaId: string,
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ): Promise<void> {
+//   try {
+//     logger.info(`Fetching RFPA with ID: ${rfpaId}`);
+//     const rfpa: RfpaViewResponseDto | null = await this.rfpaService.getRFQByIdByView(rfpaId);
+
+//     if (!rfpa) {
+//       logger.warn(`RFPA with ID ${rfpaId} not found`);
+//       ControllerLogger.logError(
+//         'RFPA view',
+//         new AppError(404, 'RFPA not found'),
+//         req,
+//         res,
+//       );
+//       throw new AppError(404, 'RFPA not found');
+//     }
+//     logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+//     ControllerLogger.logView('RFPA (for view)', rfpaId, req, res);
+
+//     // // Send notification for RFPA view
+//     // const userId = res.locals.user?.id;
+//     // if (userId) {
+//     //   await this.notificationService.createNoti(
+//     //     `RFPA viewed: ${rfpaId}`,
+//     //     userId
+//     //   );
+//     // }
+
+//     res.status(200).json({
+//       status: 'success',
+//       data: rfpa,
+//       //message:"rfpa is created"
+//     });
+//   } catch (error) {
+//     logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+//     ControllerLogger.logError('RFPA view', error, req, res);
+//     next(error);
+//   }
+// }
+
+
+
+

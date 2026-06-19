@@ -108,43 +108,7 @@ export class PMPVoucherController {
     }
   }
   // Get voucher by ID
-  @httpGet("/:id")
-  public async getVoucherById(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const { id } = req.params;
-      const voucher = await this.pmpVoucherService.getVoucherById(id);
-      logger.info(`Fetching voucher with ID: ${id}`);
-      if (!voucher) {
-        logger.warn(`Voucher with ID: ${id} not found`);
-        return res.status(404).json({ status: "fail", message: "Voucher not found" });
-      }
-      logger.info(`Voucher with ID: ${id} fetched successfully`);
-      
-      ControllerLogger.logView("PMP Voucher", id, req, res);
 
-      // Send notification for PMP voucher view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `PMP Voucher viewed: ${id}`,
-      //     userId
-      //   );
-      // }
-      
-      res.status(200).json({
-        status: "success",
-        data: voucher,
-      });
-    } catch (err) {
-      logger.error("Error fetching voucher by ID", { error: err });
-      ControllerLogger.logError('PMP Voucher view', err, req, res);
-      next(err);
-    }
-  }
 
 
   @httpGet("/:id/view")
@@ -372,3 +336,44 @@ export class PMPVoucherController {
 
 
 }
+
+
+
+
+  // @httpGet("/:id")
+  // public async getVoucherById(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const { id } = req.params;
+  //     const voucher = await this.pmpVoucherService.getVoucherById(id);
+  //     logger.info(`Fetching voucher with ID: ${id}`);
+  //     if (!voucher) {
+  //       logger.warn(`Voucher with ID: ${id} not found`);
+  //       return res.status(404).json({ status: "fail", message: "Voucher not found" });
+  //     }
+  //     logger.info(`Voucher with ID: ${id} fetched successfully`);
+      
+  //     ControllerLogger.logView("PMP Voucher", id, req, res);
+
+  //     // Send notification for PMP voucher view
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `PMP Voucher viewed: ${id}`,
+  //     //     userId
+  //     //   );
+  //     // }
+      
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: voucher,
+  //     });
+  //   } catch (err) {
+  //     logger.error("Error fetching voucher by ID", { error: err });
+  //     ControllerLogger.logError('PMP Voucher view', err, req, res);
+  //     next(err);
+  //   }
+  // }

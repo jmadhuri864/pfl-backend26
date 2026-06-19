@@ -143,37 +143,7 @@ export class EodStockController {
     }
   }
 
-  @httpGet('/:id')
-  public async getEodStockReport(
-    @requestParam('id') stockId: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const stock = await this.eodStockService.getEodStockById(stockId);
 
-      if (!stock) {
-        ControllerLogger.logNotFound('EOD Stock', stockId, req, res);
-        return next(new AppError(404, 'Stock report not found'));
-      }
-
-      // await this.notificationService.createNoti(
-      //   `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
-      //   res.locals.user.id,
-      // );
-
-      ControllerLogger.logView('EOD Stock', stockId, req, res);
-      return res.status(200).json({
-        status: 'success',
-        message: 'EOD stock report fetched successfully',
-        data: stock,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get EOD Stock by ID', err, req, res);
-      return next(err);
-    }
-  }
 
   @httpGet('/')
   public async getAllEodStockReports(
@@ -419,3 +389,37 @@ export class EodStockController {
   }
 
 }
+
+
+  // @httpGet('/:id')
+  // public async getEodStockReport(
+  //   @requestParam('id') stockId: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const stock = await this.eodStockService.getEodStockById(stockId);
+
+  //     if (!stock) {
+  //       ControllerLogger.logNotFound('EOD Stock', stockId, req, res);
+  //       return next(new AppError(404, 'Stock report not found'));
+  //     }
+
+  //     // await this.notificationService.createNoti(
+  //     //   `EOD stock report accessed: ${stock.companyName || 'Unnamed Report'}`,
+  //     //   res.locals.user.id,
+  //     // );
+
+  //     ControllerLogger.logView('EOD Stock', stockId, req, res);
+  //     return res.status(200).json({
+  //       status: 'success',
+  //       message: 'EOD stock report fetched successfully',
+  //       data: stock,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get EOD Stock by ID', err, req, res);
+  //     return next(err);
+  //   }
+  // }
+
