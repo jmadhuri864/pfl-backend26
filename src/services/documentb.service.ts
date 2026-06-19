@@ -1198,30 +1198,7 @@ function isWithinRange(min: number | string | null, max: number | string | null,
     });
   }
 
-  async getAllHoldGrnDocuments(): Promise<any[]> {
-    return this.documentbRepository.find({
-      where: {
-        type: DocumentTypeEnum.GRN,
-        status: DocumentStatus.HOLD,
-      },
-      relations: [
-        'lastActionBy',
-        'approvalFlow',
-        'approvalFlow.verifiers',
-        'approvalFlow.approvers',
-        'approvalFlow.approvers.firstApprover.users',
-        'approvalFlow.approvers.secondApprover.users',
-        'approvalFlow.approvers.thirdApprover.users',
-        'approvalFlow.approvers.fourthApprover.users',
-        'approvalFlow.approvers.fifthApprover.users',
-        'approvalFlow.approvers.sixthApprover.users',
-        'approvalFlow.finalizers',
-        'approvalFlow.finalizers.firstFinalizers',
-        'approvalFlow.finalizers.secondFinalizers',
-      ],
-      order: { createdAt: 'DESC' }, // optional: newest first
-    });
-  }
+
 
   public async getAllDocumentByUserId(userId: string, documentType: string, queryOptions: PaginationOptions, skipPagination: boolean = false, includeDeleted: boolean = false): Promise<any> {
 
@@ -1306,3 +1283,30 @@ function isWithinRange(min: number | string | null, max: number | string | null,
   }
 
 }
+
+
+
+  // async getAllHoldGrnDocuments(): Promise<any[]> {
+  //   return this.documentbRepository.find({
+  //     where: {
+  //       type: DocumentTypeEnum.GRN,
+  //       status: DocumentStatus.HOLD,
+  //     },
+  //     relations: [
+  //       'lastActionBy',
+  //       'approvalFlow',
+  //       'approvalFlow.verifiers',
+  //       'approvalFlow.approvers',
+  //       'approvalFlow.approvers.firstApprover.users',
+  //       'approvalFlow.approvers.secondApprover.users',
+  //       'approvalFlow.approvers.thirdApprover.users',
+  //       'approvalFlow.approvers.fourthApprover.users',
+  //       'approvalFlow.approvers.fifthApprover.users',
+  //       'approvalFlow.approvers.sixthApprover.users',
+  //       'approvalFlow.finalizers',
+  //       'approvalFlow.finalizers.firstFinalizers',
+  //       'approvalFlow.finalizers.secondFinalizers',
+  //     ],
+  //     order: { createdAt: 'DESC' }, // optional: newest first
+  //   });
+  // }

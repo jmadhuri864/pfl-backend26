@@ -409,92 +409,7 @@ export class GrnController {
   }
 
 
-  //TODO: GRN get by id
-  @httpGet('/:id')
-  public async getGrnById(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      
-      
-      const grn = await this.grnService.getGrnById(id);
-      //console.log(grn);
-      if (!grn) {
-        return next(new AppError(404, 'GRN not found'));
-      }
-      
-      const accessedBy = res.locals.user.id;
-
-      // 🔔 Send SSE notification when GRN is accessed
-      try {
-        const document = await this.documentbService.getDocumentByTypeId(grn.id);
-
-        if (document && document.approvalFlow) {
-          const flow = document.approvalFlow;
-          let isApprover = false;
-
-          // Check if accessor is a verifier
-          if (flow.verifiers && flow.verifiers.length > 0) {
-            isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
-          }
-
-          // Check if accessor is an approver
-          if (!isApprover && flow.approvers) {
-            const levels = [
-              flow.approvers.firstApprover,
-              flow.approvers.secondApprover,
-              flow.approvers.thirdApprover
-            ];
-
-            for (const level of levels) {
-              if (level && level.users && level.users.length > 0) {
-                if (level.users.some((u: any) => u.id === accessedBy)) {
-                  isApprover = true;
-                  break;
-                }
-              }
-            }
-          }
-
-          // If accessor is an approver, notify the creator
-          // if (isApprover && grn.createdBy?.id && grn.createdBy.id !== accessedBy) {
-          //   const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
-          //   const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
-
-            // await this.notificationService.createNoti(
-            //   `${accessorName} viewed GRN ${grn.grnNo}`,
-            //   grn.createdBy.id
-            // );
-            
-          //}
-        }
-      } catch (notifError) {
-        
-      }
-
-      // 📊 Log activity
-      await this.logUserActivity(req, res, ActivityAction.VIEW,
-        `Viewed GRN ${grn.grnNo}`,
-        { 
-          entityId: grn.id,
-          metadata: { grnNo: grn.grnNo, totalAmt: grn.totalAmt }
-        }
-      );
-
-      ControllerLogger.logView('GRN', grn.id, req, res);
-
-      res.status(200).json({
-        status: 'success',
-        data: grn,
-      });
-    } catch (error) {
-      ControllerLogger.logError('GRN view', error, req, res);
-      next(error);
-    }
-  }
+ 
 
   //TODO: GRN get by id for view
   @httpGet('/view/:docid')
@@ -566,41 +481,7 @@ export class GrnController {
   }
 
 
-  //TODO: Get all GRN numbers
-  // @httpGet('/grnnumbers/getAllgrnNo')
-  // public async getAllGrnNumbers(
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     const grns = await this.grnService.getAllGrnNumbers(); // Call the service method
-  //     if (!grns || grns.length === 0) {
-  //       return next(new AppError(404, 'No GRNs found'));
-  //     }
-
-  //     // 🔔 Send notification for accessing GRN numbers
-  //     try {
-  //       const userId = res.locals.user.id;
-  //       await this.notificationService.createNoti(
-  //         `Retrieved all GRN numbers (${grns.length} items)`,
-  //         userId
-  //       );
-  //     } catch (notifError) {
-  //       console.log('Notification error:', notifError);
-  //     }
-     
-  //     ControllerLogger.logList('GRN Numbers', req, res);
-
-  //     res.status(200).json({
-  //       status: 'success',
-  //       data: grns, // Respond with the fetched GRN data
-  //     });
-  //   } catch (error) {
-  //     ControllerLogger.logError('GRN numbers retrieval', error, req, res);
-  //     next(error); // Pass any errors to the error-handling middleware
-  //   }
-  // }
+  
   @httpGet('/grnnumbers/getAllgrnNo')
   public async getAllGrnNumbers(
     @request() req: Request,
@@ -734,10 +615,7 @@ export class GrnController {
     try {
       const deletedBy = res.locals.user.id;
 
-      // Get GRN details before deletion for notification
-      const grn = await this.grnService.getGrnById(id);
-      const grnNo = grn?.grnNo || id;
-
+     
       const success = await this.grnService.deleteGrn(id);
       if (!success) {
         return next(new AppError(404, 'GRN not found or could not be deleted'));
@@ -765,44 +643,154 @@ export class GrnController {
     }
   }
 
-  //TODO: Fetch GRN details by id
-  @httpGet('/details/:id')
-  public async getGrnDetails(
-    @requestParam('id') id: string,
-    @request() req: Request,
+
+
+  @httpDelete('/delete/multiple')
+  public async deleteMultipleGrns(
+    @request() req: Request<{}, {}, { ids: string[] }>,
     @response() res: Response,
     @next() next: NextFunction,
   ) {
     try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
       
-      const grnDetails = await this.grnService.getGrnDetails(id);
-      if (!grnDetails) {
-        return next(new AppError(404, 'GRN details not found'));
+        return next(new AppError(400, 'An array of GRN IDs is required'));
       }
 
-      // 🔔 Send notification for accessing GRN details
-      // try {
-      //   const userId = res.locals.user.id;
-      //   const grnNo = grnDetails.grnNo || id;
-      //   await this.notificationService.createNoti(
-      //     `Viewed detailed information for GRN ${grnNo}`,
-      //     userId
-      //   );
-      // } catch (notifError) {
-      //   console.log('Notification error:', notifError);
-      // }
-      
-      ControllerLogger.logView('GRN Details', id, req, res);
+      const result = await this.grnService.deleteMultipleGrns(ids);
+// await this.notificationService.createNoti(
+//           `${ids.length} GRNs deleted successfully`,
+//           deletedBy
+//         );
+      // 🔔 Send SSE notification to deleter
+    
+
+      ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
 
       res.status(200).json({
-        status: 'success',
-        data: grnDetails,
+        message: result.message,
       });
     } catch (error) {
-      ControllerLogger.logError('GRN details retrieval', error, req, res);
+      ControllerLogger.logError('Multiple GRNs deletion', error, req, res);
       next(error);
     }
   }
+
+}
+
+
+
+
+  // //TODO: Get all grn
+  // @httpGet("/getall/grns")
+  // async getAllGrn(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
+  //   try {
+  //     const resutl = await this.grnRepository.find();
+
+  //     // 🔔 Send notification for accessing all GRNs
+  //     // try {
+  //     //   const userId = res.locals.user.id;
+  //     //   await this.notificationService.createNoti(
+  //     //     `Retrieved all GRNs from database (${resutl.length} items)`,
+  //     //     userId
+  //     //   );
+  //     // } catch (notifError) {
+  //     //   console.log('Notification error:', notifError);
+  //     // }
+
+  //     ControllerLogger.logList('All GRNs', req, res);
+  //     res.status(200).json({ status: 'success', data: resutl });
+  //   } catch (error) {
+  //     ControllerLogger.logError('All GRNs retrieval', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+
+
+
+  // //TODO: Fetch GRN details by id
+  // @httpGet('/details/:id')
+  // public async getGrnDetails(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+      
+  //     const grnDetails = await this.grnService.getGrnDetails(id);
+  //     if (!grnDetails) {
+  //       return next(new AppError(404, 'GRN details not found'));
+  //     }
+
+  //     // 🔔 Send notification for accessing GRN details
+  //     // try {
+  //     //   const userId = res.locals.user.id;
+  //     //   const grnNo = grnDetails.grnNo || id;
+  //     //   await this.notificationService.createNoti(
+  //     //     `Viewed detailed information for GRN ${grnNo}`,
+  //     //     userId
+  //     //   );
+  //     // } catch (notifError) {
+  //     //   console.log('Notification error:', notifError);
+  //     // }
+      
+  //     ControllerLogger.logView('GRN Details', id, req, res);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: grnDetails,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('GRN details retrieval', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+
+
+//TODO: Get all GRN numbers
+  // @httpGet('/grnnumbers/getAllgrnNo')
+  // public async getAllGrnNumbers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const grns = await this.grnService.getAllGrnNumbers(); // Call the service method
+  //     if (!grns || grns.length === 0) {
+  //       return next(new AppError(404, 'No GRNs found'));
+  //     }
+
+  //     // 🔔 Send notification for accessing GRN numbers
+  //     try {
+  //       const userId = res.locals.user.id;
+  //       await this.notificationService.createNoti(
+  //         `Retrieved all GRN numbers (${grns.length} items)`,
+  //         userId
+  //       );
+  //     } catch (notifError) {
+  //       console.log('Notification error:', notifError);
+  //     }
+     
+  //     ControllerLogger.logList('GRN Numbers', req, res);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: grns, // Respond with the fetched GRN data
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('GRN numbers retrieval', error, req, res);
+  //     next(error); // Pass any errors to the error-handling middleware
+  //   }
+  // }
+
+
+
 
   //approve grn
   // @httpPost('/request/:grnId')
@@ -852,95 +840,92 @@ export class GrnController {
   // }
 
 
-  @httpGet('/grn/hold')
-  public async getAllHoldGrns(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const grns = await this.documentbService.getAllHoldGrnDocuments();
 
-      // 🔔 Send notification for accessing hold GRNs
-      // try {
-      //   const userId = res.locals.user.id;
-      //   await this.notificationService.createNoti(
-      //     `Accessed hold GRNs (${grns.length} items)`,
-      //     userId
-      //   );
-      // } catch (notifError) {
-      //   console.log('Notification error:', notifError);
-      // }
 
-      ControllerLogger.logList('Hold GRNs', req, res);
-      res.status(200).json({ status: 'success', data: grns });
-    } catch (error) {
-      ControllerLogger.logError('Hold GRNs retrieval', error, req, res);
-      next(error);
-    }
-  }
 
-  //TODO: Get all grn
-  @httpGet("/getall/grns")
-  async getAllGrn(@request() req: Request, @response() res: Response, @next() next: NextFunction) {
-    try {
-      const resutl = await this.grnRepository.find();
-
-      // 🔔 Send notification for accessing all GRNs
-      // try {
-      //   const userId = res.locals.user.id;
-      //   await this.notificationService.createNoti(
-      //     `Retrieved all GRNs from database (${resutl.length} items)`,
-      //     userId
-      //   );
-      // } catch (notifError) {
-      //   console.log('Notification error:', notifError);
-      // }
-
-      ControllerLogger.logList('All GRNs', req, res);
-      res.status(200).json({ status: 'success', data: resutl });
-    } catch (error) {
-      ControllerLogger.logError('All GRNs retrieval', error, req, res);
-      next(error);
-    }
-  }
-  @httpDelete('/delete/multiple')
-  public async deleteMultipleGrns(
-    @request() req: Request<{}, {}, { ids: string[] }>,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const { ids } = req.body;
-      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+ // //TODO: GRN get by id
+  // @httpGet('/:id')
+  // public async getGrnById(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
       
-        return next(new AppError(400, 'An array of GRN IDs is required'));
-      }
+      
+  //     const grn = await this.grnService.getGrnById(id);
+  //     //console.log(grn);
+  //     if (!grn) {
+  //       return next(new AppError(404, 'GRN not found'));
+  //     }
+      
+  //     const accessedBy = res.locals.user.id;
 
-      const deletedBy = res.locals.user.id;
+  //     // 🔔 Send SSE notification when GRN is accessed
+  //     try {
+  //       const document = await this.documentbService.getDocumentByTypeId(grn.id);
 
-      // Get GRN details before deletion for notifications
-      const grns = await Promise.all(
-        ids.map(id => this.grnService.getGrnById(id).catch(() => null))
-      );
+  //       if (document && document.approvalFlow) {
+  //         const flow = document.approvalFlow;
+  //         let isApprover = false;
 
-      const result = await this.grnService.deleteMultipleGrns(ids);
-// await this.notificationService.createNoti(
-//           `${ids.length} GRNs deleted successfully`,
-//           deletedBy
-//         );
-      // 🔔 Send SSE notification to deleter
-    
+  //         // Check if accessor is a verifier
+  //         if (flow.verifiers && flow.verifiers.length > 0) {
+  //           isApprover = flow.verifiers.some((v: any) => v.id === accessedBy);
+  //         }
 
-      ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
+  //         // Check if accessor is an approver
+  //         if (!isApprover && flow.approvers) {
+  //           const levels = [
+  //             flow.approvers.firstApprover,
+  //             flow.approvers.secondApprover,
+  //             flow.approvers.thirdApprover
+  //           ];
 
-      res.status(200).json({
-        message: result.message,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Multiple GRNs deletion', error, req, res);
-      next(error);
-    }
-  }
+  //           for (const level of levels) {
+  //             if (level && level.users && level.users.length > 0) {
+  //               if (level.users.some((u: any) => u.id === accessedBy)) {
+  //                 isApprover = true;
+  //                 break;
+  //               }
+  //             }
+  //           }
+  //         }
 
-}
+  //         // If accessor is an approver, notify the creator
+  //         if (isApprover && grn.createdBy?.id && grn.createdBy.id !== accessedBy) {
+  //           const accessor = await this.userRepository.findOne({ where: { id: accessedBy } });
+  //           const accessorName = accessor ? `${accessor.firstName} ${accessor.lastName}` : 'An approver';
+
+  //           // await this.notificationService.createNoti(
+  //           //   `${accessorName} viewed GRN ${grn.grnNo}`,
+  //           //   grn.createdBy.id
+  //           // );
+            
+  //         }
+  //       }
+  //     } catch (notifError) {
+        
+  //     }
+
+  //     // 📊 Log activity
+  //     await this.logUserActivity(req, res, ActivityAction.VIEW,
+  //       `Viewed GRN ${grn.grnNo}`,
+  //       { 
+  //         entityId: grn.id,
+  //         metadata: { grnNo: grn.grnNo, totalAmt: grn.totalAmt }
+  //       }
+  //     );
+
+  //     ControllerLogger.logView('GRN', grn.id, req, res);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: grn,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('GRN view', error, req, res);
+  //     next(error);
+  //   }
+  // }

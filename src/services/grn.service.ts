@@ -394,128 +394,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
   return allResult;
   }
 
-          
-         
-
-  public async getGrnById(id: string): Promise<GrnDetailDto> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
-
-    const grn = await this.grnRepository.findOne({
-      where: { id },
-      relations: [
-        'companyName',
-        'grnProducts',
-        'grnProducts.productName',
-        'grnProducts.uom',
-        'selectedFarmer',
-        'selectedVendor',
-        'paymentInfo',
-        'dealSlipId',
-        'purchaseForSalesLocation',
-        'purchaseLocation',
-        'purchaseBy',
-      ],
-    });
-
-    if (!grn) {
-      throw new Error('GRN not found');
-    }
-
-    let selectedPartyId: string | null = null;
-    if (grn.source === 'vendor' && grn.selectedVendor) {
-      selectedPartyId = grn.selectedVendor.id;
-    } else if (grn.source === 'farmer' && grn.selectedFarmer) {
-      selectedPartyId = grn.selectedFarmer.id;
-    }
-    const rawDate = grn.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    console.log(grn.timeIn);
-    const result: GrnDetailDto = {
-      id: grn.id,
-      companyName: grn.companyName?.id ?? null,
-      purchaseInstructionsBy: grn.purchaseInstructionsBy,
-      dealSlipId: {
-        id: grn.dealSlipId?.id || null,
-        dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
-      },
-      purchaseType: grn.purchaseType,
-      otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
-      otherPurchaseLoc: grn.otherPurchaseLoc || null,
-      grnNo: grn.grnNo,
-      locationType: grn.locationType,
-      grnType: grn.grnType,
-      rmn: grn.rmn,
-      createdDate: createdDate,
-      createdTime: createdTime,
-      requestingDepartment: grn.requestingDepartment,
-      purchaseLocation: grn.purchaseLocation?.id ?? null,
-      purchaseForSalesLocation: grn.purchaseForSalesLocation?.id ?? null,
-      selectedParty: selectedPartyId,
-      source: grn.source,
-      billNo: grn.billNo,
-      billImage: grn.billImage,
-      subTotalAmt: grn.subTotalAmt,
-      freight: grn.freight,
-      otherCharges: grn.otherCharges,
-      totalAmt: grn.totalAmt,
-      amtWords: grn.amtWords,
-      purchasedBy: grn.purchasedBy,
-      receivedThrough: grn.receivedThrough,
-      vehicleNo: grn.vehicleNo,
-      timeIn: grn.timeIn,
-      cratesIn: grn.cratesIn,
-      deliveryReceivingPerson: grn.deliveryReceivingPerson,
-      baseLocation: grn.baseLocation,
-      specialReq: grn.specialReq,
-      securityPerson: grn.securityPerson,
-      approvalNote: grn.approvalNote,
-      remark: grn.remark,
-
-      purchaseBy: {
-        firstName: grn.purchaseBy?.firstName || '',
-        lastName: grn.purchaseBy?.lastName || '',
-      },
-
-      paymentInfo: grn.paymentInfo
-        ? {
-          id: grn.paymentInfo.id,
-          paymentMode: grn.paymentInfo.paymentMode,
-          paymentDate: grn.paymentInfo.paymentDate,
-          advancePaidAmt: grn.paymentInfo.advancePaidAmt,
-          remainingAmt: grn.paymentInfo.remainingAmt,
-          paymentTerms: grn.paymentInfo.paymentTerms,
-          dueDate: grn.paymentInfo.dueDate,
-          creditPeriod: grn.paymentInfo.creditPeriod,
-        }
-        : null,
-      grnProducts: grn.grnProducts.map((product) => ({
-        id: product.id,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        productName: product.productName?.id ?? null,
-        uom: product.uom?.id ?? null,
-        variant: product.variant?.id || null,
-        amount: product.amount,
-        rtv: product.rtv,
-        netWeight: product.netWeight,
-        grossWeight: product.grossWeight,
-        packingMaterialWeight: product.packingMaterialWeight,
-        revisedRate: product.revisedRate,
-        revisedQuantity: product.revisedQuantity,
-        purchaseDate: product.purchaseDate,
-        dispatchDate: product.dispatchDate,
-        deliveryDate: product.deliveryDate,
-        deliveryLocation: product.deliveryLocation,
-        expectedHarvestDate: product.expectedHarvestDate,
-      })),
-    };
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
-
-  public async getGrnByIdForView(docid: string): Promise<GrnDetailDto> {
+  public async getGrnByIdForView(docid: string): Promise<any> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -929,57 +808,9 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     return true;
   }
 
-  public async getGrnDetails(grnId: string): Promise<GRN | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:details:${grnId}`;
-    const cached = await this.cacheService.get<GRN | null>(cacheKey);
-    if (cached) return cached;
 
-    const result = await this.grnRepository
-      .createQueryBuilder('grn')
-      .leftJoinAndSelect('grn.selectedVendor', 'selectedVendor')
-      .leftJoinAndSelect('grn.grnProducts', 'grnProducts')
-      .leftJoinAndSelect('grn.purchaseForWhich', 'purchaseForWhich')
-      .leftJoinAndSelect('grn.purchaseLocation', 'purchaseLocation')
-      .where('grn.id = :grnId', { grnId })
-      .getOne();
 
-    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
 
-  async generateGRNNo(): Promise<string> {
-    const today = new Date();
-    const datePart = today.toISOString().slice(0, 10).replace(/-/g, ''); // Generate date part in YYYYMMDD format
-
-    const startOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      0,
-      0,
-      0,
-    );
-    const endOfDay = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + 1,
-      0,
-      0,
-      0,
-    );
-
-    const lastGRN = await this.grnRepository.findOne({
-      where: [
-        { createdAt: MoreThanOrEqual(startOfDay) },
-        { createdAt: LessThan(endOfDay) },
-      ],
-      order: { createdAt: 'DESC' }, // Order by creation time, descending
-    });
-
-    const sequenceNumber = lastGRN ? parseInt(lastGRN.grnNo.slice(-4)) + 1 : 1;
-
-    return `${datePart}${sequenceNumber.toString().padStart(4, '0')}`;
-  }
 
   public async getAllGrnNumbers(
   filter: {
@@ -1213,3 +1044,180 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
   }
 
 }
+
+
+
+  // async generateGRNNo(): Promise<string> {
+  //   const today = new Date();
+  //   const datePart = today.toISOString().slice(0, 10).replace(/-/g, ''); // Generate date part in YYYYMMDD format
+
+  //   const startOfDay = new Date(
+  //     today.getFullYear(),
+  //     today.getMonth(),
+  //     today.getDate(),
+  //     0,
+  //     0,
+  //     0,
+  //   );
+  //   const endOfDay = new Date(
+  //     today.getFullYear(),
+  //     today.getMonth(),
+  //     today.getDate() + 1,
+  //     0,
+  //     0,
+  //     0,
+  //   );
+
+  //   const lastGRN = await this.grnRepository.findOne({
+  //     where: [
+  //       { createdAt: MoreThanOrEqual(startOfDay) },
+  //       { createdAt: LessThan(endOfDay) },
+  //     ],
+  //     order: { createdAt: 'DESC' }, // Order by creation time, descending
+  //   });
+
+  //   const sequenceNumber = lastGRN ? parseInt(lastGRN.grnNo.slice(-4)) + 1 : 1;
+
+  //   return `${datePart}${sequenceNumber.toString().padStart(4, '0')}`;
+  // }
+
+
+  // public async getGrnDetails(grnId: string): Promise<GRN | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:details:${grnId}`;
+  //   const cached = await this.cacheService.get<GRN | null>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const result = await this.grnRepository
+  //     .createQueryBuilder('grn')
+  //     .leftJoinAndSelect('grn.selectedVendor', 'selectedVendor')
+  //     .leftJoinAndSelect('grn.grnProducts', 'grnProducts')
+  //     .leftJoinAndSelect('grn.purchaseForWhich', 'purchaseForWhich')
+  //     .leftJoinAndSelect('grn.purchaseLocation', 'purchaseLocation')
+  //     .where('grn.id = :grnId', { grnId })
+  //     .getOne();
+
+  //   if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //   return result;
+  // }
+
+
+
+
+
+// public async getGrnById(id: string): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const grn = await this.grnRepository.findOne({
+  //     where: { id },
+  //     relations: [
+  //       'companyName',
+  //       'grnProducts',
+  //       'grnProducts.productName',
+  //       'grnProducts.uom',
+  //       'selectedFarmer',
+  //       'selectedVendor',
+  //       'paymentInfo',
+  //       'dealSlipId',
+  //       'purchaseForSalesLocation',
+  //       'purchaseLocation',
+  //       'purchaseBy',
+  //     ],
+  //   });
+
+  //   if (!grn) {
+  //     throw new Error('GRN not found');
+  //   }
+
+  //   let selectedPartyId: string | null = null;
+  //   if (grn.source === 'vendor' && grn.selectedVendor) {
+  //     selectedPartyId = grn.selectedVendor.id;
+  //   } else if (grn.source === 'farmer' && grn.selectedFarmer) {
+  //     selectedPartyId = grn.selectedFarmer.id;
+  //   }
+  //   const rawDate = grn.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   console.log(grn.timeIn);
+  //   const result = {
+  //     id: grn.id,
+  //     companyName: grn.companyName?.id ?? null,
+  //     purchaseInstructionsBy: grn.purchaseInstructionsBy,
+  //     dealSlipId: {
+  //       id: grn.dealSlipId?.id || null,
+  //       dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
+  //     },
+  //     purchaseType: grn.purchaseType,
+  //     otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
+  //     otherPurchaseLoc: grn.otherPurchaseLoc || null,
+  //     grnNo: grn.grnNo,
+  //     locationType: grn.locationType,
+  //     grnType: grn.grnType,
+  //     rmn: grn.rmn,
+  //     createdDate: createdDate,
+  //     createdTime: createdTime,
+  //     requestingDepartment: grn.requestingDepartment,
+  //     purchaseLocation: grn.purchaseLocation?.id ?? null,
+  //     purchaseForSalesLocation: grn.purchaseForSalesLocation?.id ?? null,
+  //     selectedParty: selectedPartyId,
+  //     source: grn.source,
+  //     billNo: grn.billNo,
+  //     billImage: grn.billImage,
+  //     subTotalAmt: grn.subTotalAmt,
+  //     freight: grn.freight,
+  //     otherCharges: grn.otherCharges,
+  //     totalAmt: grn.totalAmt,
+  //     amtWords: grn.amtWords,
+  //     purchasedBy: grn.purchasedBy,
+  //     receivedThrough: grn.receivedThrough,
+  //     vehicleNo: grn.vehicleNo,
+  //     timeIn: grn.timeIn,
+  //     cratesIn: grn.cratesIn,
+  //     deliveryReceivingPerson: grn.deliveryReceivingPerson,
+  //     baseLocation: grn.baseLocation,
+  //     specialReq: grn.specialReq,
+  //     securityPerson: grn.securityPerson,
+  //     approvalNote: grn.approvalNote,
+  //     remark: grn.remark,
+
+  //     purchaseBy: {
+  //       firstName: grn.purchaseBy?.firstName || '',
+  //       lastName: grn.purchaseBy?.lastName || '',
+  //     },
+
+  //     paymentInfo: grn.paymentInfo
+  //       ? {
+  //         id: grn.paymentInfo.id,
+  //         paymentMode: grn.paymentInfo.paymentMode,
+  //         paymentDate: grn.paymentInfo.paymentDate,
+  //         advancePaidAmt: grn.paymentInfo.advancePaidAmt,
+  //         remainingAmt: grn.paymentInfo.remainingAmt,
+  //         paymentTerms: grn.paymentInfo.paymentTerms,
+  //         dueDate: grn.paymentInfo.dueDate,
+  //         creditPeriod: grn.paymentInfo.creditPeriod,
+  //       }
+  //       : null,
+  //     grnProducts: grn.grnProducts.map((product) => ({
+  //       id: product.id,
+  //       quantity: product.quantity,
+  //       unitPrice: product.unitPrice,
+  //       productName: product.productName?.id ?? null,
+  //       uom: product.uom?.id ?? null,
+  //       variant: product.variant?.id || null,
+  //       amount: product.amount,
+  //       rtv: product.rtv,
+  //       netWeight: product.netWeight,
+  //       grossWeight: product.grossWeight,
+  //       packingMaterialWeight: product.packingMaterialWeight,
+  //       revisedRate: product.revisedRate,
+  //       revisedQuantity: product.revisedQuantity,
+  //       purchaseDate: product.purchaseDate,
+  //       dispatchDate: product.dispatchDate,
+  //       deliveryDate: product.deliveryDate,
+  //       deliveryLocation: product.deliveryLocation,
+  //       expectedHarvestDate: product.expectedHarvestDate,
+  //     })),
+  //   };
+  //   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //   return result;
+  // }
