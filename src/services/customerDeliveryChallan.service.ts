@@ -797,195 +797,205 @@ export class CustomerDeliveryChallanService {
 
 
 
-  /**
-   * Update delivery challan products with aggregated return data
-   * This method calculates total returns per product and updates the delivery challan items
-   */
-  async updateDeliveryChallanProductsWithReturns(deliveryChallanId: string): Promise<void> {
-    try {
-      // Get delivery challan with products and returns
-      const challan = await this.challanRepository.findOne({
-        where: { id: deliveryChallanId },
-        relations: [
-          'deliveryChallanProducts',
-          'deliveryChallanProducts.productName',
-          'deliveryChallanProducts.variant',
-          'returns',
-          'returns.returnedProducts',
-          'returns.returnedProducts.productName',
-          'returns.returnedProducts.variant',
-        ],
-      });
 
-      if (!challan) {
-        throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
-      }
 
-      // Aggregate returns by product and variant
-      const returnsByProductVariant = new Map<string, {
-        returnQty: number;
-        returnAmount: number;
-        returnNetWeight: number;
-      }>();
+ 
 
-      if (challan.returns && challan.returns.length > 0) {
-        challan.returns.forEach((returnRecord) => {
-          returnRecord.returnedProducts?.forEach((returnedProduct) => {
-            const productId = returnedProduct.productName?.id;
-            const variantId = returnedProduct.variant?.id || 'no-variant';
-            const key = `${productId}_${variantId}`;
 
-            const existing = returnsByProductVariant.get(key) || {
-              returnQty: 0,
-              returnAmount: 0,
-              returnNetWeight: 0,
-            };
+}
 
-            existing.returnQty += Number(returnedProduct.returnedQty || 0);
-            existing.returnAmount += Number(returnedProduct.returnedQtyAmt || 0);
-            existing.returnNetWeight += Number(returnedProduct.returnedNetWt || 0);
 
-            returnsByProductVariant.set(key, existing);
-          });
-        });
-      }
+  // /**
+  //  * Check if Return By Customer has been created for a delivery challan
+  //  * Returns the status and details
+  //  */
+  // async checkReturnByCustomerStatus(deliveryChallanId: string): Promise<any> {
+  //   const key = `${CACHE_PREFIX}:returnStatus:${deliveryChallanId}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
 
-      // Update delivery challan products with return data
-      let hasReturns = false;
-      for (const product of challan.deliveryChallanProducts) {
-        const productId = product.productName?.id;
-        const variantId = product.variant?.id || 'no-variant';
-        const key = `${productId}_${variantId}`;
+  //   const challan = await this.challanRepository.findOne({
+  //     where: { id: deliveryChallanId },
+  //     relations: ['returns'],
+  //   });
 
-        const returns = returnsByProductVariant.get(key);
+  //   if (!challan) {
+  //     throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
+  //   }
 
-        if (returns) {
-          product.returnedQty = returns.returnQty;
+  //   const result = {
+  //     deliveryChallanId: challan.id,
+  //     challanNo: challan.challanNo,
+  //     isReturnByCustomerCreated: (challan as any).isReturnByCustomerCreated || false,
+  //     isReturned: challan.isReturned,
+  //     returnsCount: challan.returns?.length || 0,
+  //     canCreateReturn: !(challan as any).isReturnByCustomerCreated,
+  //   };
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
 
-          hasReturns = true;
-        } else {
-          // Reset to 0 if no returns
-          product.returnedQty = 0;
 
-        }
-      }
-
-      // Update isReturned flag
-      challan.isReturned = hasReturns;
-
-      // Save updated challan
-      await this.challanRepository.save(challan);
-      await this.invalidateCDCCache(deliveryChallanId);
-
-      
-    } catch (error) {
-      logger.error('Error updating delivery challan with returns:', error);
-      throw error;
-    }
-  }
-
-  /**
+ /**
    * Get delivery challan with net amounts (after deducting returns)
    * Useful for invoice generation
    */
-  async getDeliveryChallanWithNetAmounts(deliveryChallanId: string): Promise<any> {
-    const key = `${CACHE_PREFIX}:net:${deliveryChallanId}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
+  // async getDeliveryChallanWithNetAmounts(deliveryChallanId: string): Promise<any> {
+  //   const key = `${CACHE_PREFIX}:net:${deliveryChallanId}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
 
-    // First update with latest return data
-    await this.updateDeliveryChallanProductsWithReturns(deliveryChallanId);
+  //   // First update with latest return data
+  //   await this.updateDeliveryChallanProductsWithReturns(deliveryChallanId);
 
-    // Get updated challan
-    const challan = await this.challanRepository.findOne({
-      where: { id: deliveryChallanId },
-      relations: [
-        'deliveryChallanProducts',
-        'deliveryChallanProducts.productName',
-        'deliveryChallanProducts.variant',
-        'deliveryChallanProducts.uom',
-        'deliveryChallanProducts.saleUoM',
-        'customerName',
-        'fromLocation',
-        'companyName',
-        'billingAddress',
-        'deliveryAddress',
-      ],
-    });
+  //   // Get updated challan
+  //   const challan = await this.challanRepository.findOne({
+  //     where: { id: deliveryChallanId },
+  //     relations: [
+  //       'deliveryChallanProducts',
+  //       'deliveryChallanProducts.productName',
+  //       'deliveryChallanProducts.variant',
+  //       'deliveryChallanProducts.uom',
+  //       'deliveryChallanProducts.saleUoM',
+  //       'customerName',
+  //       'fromLocation',
+  //       'companyName',
+  //       'billingAddress',
+  //       'deliveryAddress',
+  //     ],
+  //   });
 
-    if (!challan) {
-      throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
-    }
+  //   if (!challan) {
+  //     throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
+  //   }
 
-    // Calculate net amounts
-    const productsWithNetAmounts = challan.deliveryChallanProducts.map((product) => {
-      const originalQty = Number(product.changedQty || product.quantity || 0);
-      const originalAmount = Number(product.amount || 0);
-      const originalNetWeight = Number(product.netWeight || 0);
+  //   // Calculate net amounts
+  //   const productsWithNetAmounts = challan.deliveryChallanProducts.map((product) => {
+  //     const originalQty = Number(product.changedQty || product.quantity || 0);
+  //     const originalAmount = Number(product.amount || 0);
+  //     const originalNetWeight = Number(product.netWeight || 0);
 
-      const returnQty = Number(product.returnedQty || 0);
-
-
-      return {
-        ...product,
-        originalQty,
-        originalAmount,
-        originalNetWeight,
-        returnQty,
-
-        netQty: originalQty - returnQty,
-
-      };
-    });
-
-    // Calculate totals
-    const totalOriginalAmount = productsWithNetAmounts.reduce(
-      (sum, p) => sum + p.originalAmount,
-      0
-    );
+  //     const returnQty = Number(product.returnedQty || 0);
 
 
+  //     return {
+  //       ...product,
+  //       originalQty,
+  //       originalAmount,
+  //       originalNetWeight,
+  //       returnQty,
+
+  //       netQty: originalQty - returnQty,
+
+  //     };
+  //   });
+
+  //   // Calculate totals
+  //   const totalOriginalAmount = productsWithNetAmounts.reduce(
+  //     (sum, p) => sum + p.originalAmount,
+  //     0
+  //   );
 
 
-    const netResult = {
-      ...challan,
-      deliveryChallanProducts: productsWithNetAmounts,
-      summary: {
-        totalOriginalAmount,
-        hasReturns: challan.isReturned,
-      },
-    };
-    await this.cacheService.set(key, netResult, CACHE_TTL_DETAIL);
-    return netResult;
-  }
 
-  /**
-   * Check if Return By Customer has been created for a delivery challan
-   * Returns the status and details
-   */
-  async checkReturnByCustomerStatus(deliveryChallanId: string): Promise<any> {
-    const key = `${CACHE_PREFIX}:returnStatus:${deliveryChallanId}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const challan = await this.challanRepository.findOne({
-      where: { id: deliveryChallanId },
-      relations: ['returns'],
-    });
+  //   const netResult = {
+  //     ...challan,
+  //     deliveryChallanProducts: productsWithNetAmounts,
+  //     summary: {
+  //       totalOriginalAmount,
+  //       hasReturns: challan.isReturned,
+  //     },
+  //   };
+  //   await this.cacheService.set(key, netResult, CACHE_TTL_DETAIL);
+  //   return netResult;
+  // }
 
-    if (!challan) {
-      throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
-    }
 
-    const result = {
-      deliveryChallanId: challan.id,
-      challanNo: challan.challanNo,
-      isReturnByCustomerCreated: (challan as any).isReturnByCustomerCreated || false,
-      isReturned: challan.isReturned,
-      returnsCount: challan.returns?.length || 0,
-      canCreateReturn: !(challan as any).isReturnByCustomerCreated,
-    };
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
-}
+  // /**
+  //  * Update delivery challan products with aggregated return data
+  //  * This method calculates total returns per product and updates the delivery challan items
+  //  */
+  // async updateDeliveryChallanProductsWithReturns(deliveryChallanId: string): Promise<void> {
+  //   try {
+  //     // Get delivery challan with products and returns
+  //     const challan = await this.challanRepository.findOne({
+  //       where: { id: deliveryChallanId },
+  //       relations: [
+  //         'deliveryChallanProducts',
+  //         'deliveryChallanProducts.productName',
+  //         'deliveryChallanProducts.variant',
+  //         'returns',
+  //         'returns.returnedProducts',
+  //         'returns.returnedProducts.productName',
+  //         'returns.returnedProducts.variant',
+  //       ],
+  //     });
+
+  //     if (!challan) {
+  //       throw new AppError(400, `Delivery Challan with id ${deliveryChallanId} not found`);
+  //     }
+
+  //     // Aggregate returns by product and variant
+  //     const returnsByProductVariant = new Map<string, {
+  //       returnQty: number;
+  //       returnAmount: number;
+  //       returnNetWeight: number;
+  //     }>();
+
+  //     if (challan.returns && challan.returns.length > 0) {
+  //       challan.returns.forEach((returnRecord) => {
+  //         returnRecord.returnedProducts?.forEach((returnedProduct) => {
+  //           const productId = returnedProduct.productName?.id;
+  //           const variantId = returnedProduct.variant?.id || 'no-variant';
+  //           const key = `${productId}_${variantId}`;
+
+  //           const existing = returnsByProductVariant.get(key) || {
+  //             returnQty: 0,
+  //             returnAmount: 0,
+  //             returnNetWeight: 0,
+  //           };
+
+  //           existing.returnQty += Number(returnedProduct.returnedQty || 0);
+  //           existing.returnAmount += Number(returnedProduct.returnedQtyAmt || 0);
+  //           existing.returnNetWeight += Number(returnedProduct.returnedNetWt || 0);
+
+  //           returnsByProductVariant.set(key, existing);
+  //         });
+  //       });
+  //     }
+
+  //     // Update delivery challan products with return data
+  //     let hasReturns = false;
+  //     for (const product of challan.deliveryChallanProducts) {
+  //       const productId = product.productName?.id;
+  //       const variantId = product.variant?.id || 'no-variant';
+  //       const key = `${productId}_${variantId}`;
+
+  //       const returns = returnsByProductVariant.get(key);
+
+  //       if (returns) {
+  //         product.returnedQty = returns.returnQty;
+
+  //         hasReturns = true;
+  //       } else {
+  //         // Reset to 0 if no returns
+  //         product.returnedQty = 0;
+
+  //       }
+  //     }
+
+  //     // Update isReturned flag
+  //     challan.isReturned = hasReturns;
+
+  //     // Save updated challan
+  //     await this.challanRepository.save(challan);
+  //     await this.invalidateCDCCache(deliveryChallanId);
+
+      
+  //   } catch (error) {
+  //     logger.error('Error updating delivery challan with returns:', error);
+  //     throw error;
+  //   }
+  // }
+

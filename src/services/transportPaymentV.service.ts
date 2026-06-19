@@ -335,70 +335,7 @@ public async getAllTPVouchers(
     return result;
   }
 
-  public async getTPVoucherById(id: string): Promise<TPVoucherDetailDto | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const voucher = await this.tpVoucherRepository
-      .createQueryBuilder('tpVoucher')
-      .leftJoinAndSelect('tpVoucher.grnNo', 'grn')
-      .leftJoinAndSelect('tpVoucher.requestedBy', 'requestedBy')
-      .leftJoinAndSelect('tpVoucher.companyName', 'companyName')
-
-      .select([
-  'tpVoucher.id',
-  'tpVoucher.debitCreditTo',
-  'tpVoucher.payReceivedFrom',
-  'tpVoucher.location',
-  'tpVoucher.voucherNo',
-  'companyName.id',
-  'companyName.name',
-  'tpVoucher.requestingDepartment',
-  'tpVoucher.driverName',
-  'tpVoucher.contactNo',
-  'tpVoucher.altContactNo',
-  'tpVoucher.vehicleNo',
-  'tpVoucher.dispatchLocation',
-  'tpVoucher.destinationLocation',
-  'tpVoucher.products',
-  'tpVoucher.paymentMode',
-  'tpVoucher.freightAmt',
-  'tpVoucher.totalPayableAmt',   // ✅ or finalPayableAmt
-  'tpVoucher.kyc',
-  'tpVoucher.remark',
-  'tpVoucher.amtWords',
-  'tpVoucher.approvalStatus',
-  'tpVoucher.receiverName',
-  'tpVoucher.anyAttachment',
-  'tpVoucher.createdAt',
-  'grn.id',
-  'grn.grnNo',
-  'requestedBy.id',
-  'requestedBy.firstName',
-  'requestedBy.lastName',
-])
-
-      .where('tpVoucher.id = :id', { id })
-      .getOne();
-    if (!voucher) return null;
-    const rawDate = voucher.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    if (voucher && voucher.grnNo) {
-      const result = {
-        ...voucher,
-        grnNo: { id: voucher.grnNo?.id, grnNo: voucher.grnNo?.grnNo },
-        companyName: { id: voucher.companyName?.id || null, companyName: voucher.companyName?.name || null },
-        createdTime: createdTime,
-        createdDate: createdDate,
-      };
-      await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-      return result;
-    }
-
-    await this.cacheService.set(cacheKey, voucher, this.CACHE_TTL);
-    return voucher as unknown as TPVoucherDetailDto;
-  }
 
   public async getTPVoucherByIdForView(docid: string): Promise<TPVoucherViewDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
@@ -645,3 +582,69 @@ public async getAllTPVouchers(
     return { message: 'Transport Payment Voucher records marked for deletion successfully' };
   }
 }
+
+
+//   public async getTPVoucherById(id: string): Promise<TPVoucherDetailDto | null> {
+//     const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+//     const cached = await this.cacheService.get<any>(cacheKey);
+//     if (cached) return cached;
+
+//     const voucher = await this.tpVoucherRepository
+//       .createQueryBuilder('tpVoucher')
+//       .leftJoinAndSelect('tpVoucher.grnNo', 'grn')
+//       .leftJoinAndSelect('tpVoucher.requestedBy', 'requestedBy')
+//       .leftJoinAndSelect('tpVoucher.companyName', 'companyName')
+
+//       .select([
+//   'tpVoucher.id',
+//   'tpVoucher.debitCreditTo',
+//   'tpVoucher.payReceivedFrom',
+//   'tpVoucher.location',
+//   'tpVoucher.voucherNo',
+//   'companyName.id',
+//   'companyName.name',
+//   'tpVoucher.requestingDepartment',
+//   'tpVoucher.driverName',
+//   'tpVoucher.contactNo',
+//   'tpVoucher.altContactNo',
+//   'tpVoucher.vehicleNo',
+//   'tpVoucher.dispatchLocation',
+//   'tpVoucher.destinationLocation',
+//   'tpVoucher.products',
+//   'tpVoucher.paymentMode',
+//   'tpVoucher.freightAmt',
+//   'tpVoucher.totalPayableAmt',   // ✅ or finalPayableAmt
+//   'tpVoucher.kyc',
+//   'tpVoucher.remark',
+//   'tpVoucher.amtWords',
+//   'tpVoucher.approvalStatus',
+//   'tpVoucher.receiverName',
+//   'tpVoucher.anyAttachment',
+//   'tpVoucher.createdAt',
+//   'grn.id',
+//   'grn.grnNo',
+//   'requestedBy.id',
+//   'requestedBy.firstName',
+//   'requestedBy.lastName',
+// ])
+
+//       .where('tpVoucher.id = :id', { id })
+//       .getOne();
+//     if (!voucher) return null;
+//     const rawDate = voucher.createdAt;
+//     const { createdDate, createdTime } = formatDateTime(rawDate);
+//     if (voucher && voucher.grnNo) {
+//       const result = {
+//         ...voucher,
+//         grnNo: { id: voucher.grnNo?.id, grnNo: voucher.grnNo?.grnNo },
+//         companyName: { id: voucher.companyName?.id || null, companyName: voucher.companyName?.name || null },
+//         createdTime: createdTime,
+//         createdDate: createdDate,
+//       };
+//       await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+//       return result;
+//     }
+
+//     await this.cacheService.set(cacheKey, voucher, this.CACHE_TTL);
+//     return voucher as unknown as TPVoucherDetailDto;
+//   }

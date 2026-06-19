@@ -68,44 +68,7 @@ export class DumpRegisterController {
     }
   }
 
-  @httpGet("/:id")
-  public async getDumpRegisterById(
-    @requestParam("id") id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const dumpRegister = await this.dumpRegisterService.getDumpRegisterById(id);
-      
-      if (!dumpRegister) {
-        ControllerLogger.logNotFound('Dump Register', id, req, res);
-        return next(new AppError(404, "Dump register not found"));
-      }
 
-      // 🔔 Send notification for dump register view
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Viewed dump register with ID ${id} details`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Dump register view notification error:', notifError);
-      // }
-
-      ControllerLogger.logView('Dump Register', id, req, res);
-      res.status(200).json({
-        status: "success",
-        data: dumpRegister,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register by ID', err, req, res);
-      next(err);
-    }
-  }
 
   @httpGet("/recyclebin")
   public async getAllRecycleBinDumpRegisters(
@@ -332,178 +295,16 @@ export class DumpRegisterController {
     }
   }
 
-  @httpGet("/getDump/quantityandcost")
-  public async getDumpRegisterQty(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const dumpRegisterQty = await this.dumpRegisterService.totaldumpquantity();
-      const dumpregisterAmt = await this.dumpRegisterService.totaldumpcost();
-      
-      if (!dumpRegisterQty) {
-        ControllerLogger.logOperationFailed('Get', 'Dump Register Quantity and Cost', 'No records found', req, res);
-        return next(new AppError(404, "No dump registers found"));
-      }
-      
-      const number1 = parseInt(dumpRegisterQty.toString());
-      
-      ControllerLogger.logList('Dump Register Quantity and Cost', req, res);
-      res.status(200).json({
-        status: "success",
-        data: {
-          totalDumpQuantity: number1,
-          totalDumpAmount: dumpregisterAmt
-        },
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register Quantity and Cost', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet("/getDump/all/count")
-  public async getDumpRegisterCount(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const dumpRegister = await this.dumpRegisterService.dumpcount();
-      
-      if (!dumpRegister) {
-        ControllerLogger.logOperationFailed('Get', 'Dump Register Count', 'No records found', req, res);
-        return next(new AppError(404, "No dump registers found"));
-      }
 
-      ControllerLogger.logList('Dump Register Count', req, res);
-      res.status(200).json({
-        status: "success",
-        data: dumpRegister,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register Count', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet("/getDump/:startdate/and/:enddate")
-  public async getDumpRegisterByDate(
-    @requestParam("startdate") startdate: string,
-    @requestParam("enddate") enddate: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const startDateObj = new Date(startdate);
-      const endDateObj = new Date(enddate);
-      
-      const dumpRegister = await this.dumpRegisterService.totalqunatityandtotaldumpcostfromstartdatetoenddate(startDateObj, endDateObj);
-      
-      if (!dumpRegister) {
-        ControllerLogger.logOperationFailed('Get', 'Dump Register by Date', 'No records found', req, res);
-        return next(new AppError(404, "No dump registers found"));
-      }
 
-      ControllerLogger.logList('Dump Register by Date Range', req, res);
-      res.status(200).json({
-        status: "success",
-        data: dumpRegister,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register by Date', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet("/getDump/location/:location")
-  public async getDumpRegisterByLocation(
-    @requestParam("location") location: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const dumpRegister = await this.dumpRegisterService.getDumpRegisterlocation(location);
-      
-      if (!dumpRegister) {
-        ControllerLogger.logOperationFailed('Get', 'Dump Register by Location', 'No records found', req, res);
-        return next(new AppError(404, "No dump registers found"));
-      }
 
-      ControllerLogger.logList('Dump Register by Location', req, res);
-      res.status(200).json({
-        status: "success",
-        data: dumpRegister,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register by Location', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet("/getDump/companyName/:companyName")
-  public async getDumpRegisterByCompanyName(
-    @requestParam("companyName") location: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const dumpRegister = await this.dumpRegisterService.getDumpRegisterByCompanyName(location);
-      
-      if (!dumpRegister) {
-        ControllerLogger.logOperationFailed('Get', 'Dump Register by Company', 'No records found', req, res);
-        return next(new AppError(404, "No dump registers found"));
-      }
 
-      ControllerLogger.logList('Dump Register by Company Name', req, res);
-      res.status(200).json({
-        status: "success",
-        data: dumpRegister,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Register by Company Name', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet("/calculations/dates")
-  public async getDumpData(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const { filterType, startDate, endDate } = req.query;
- 
-      const data = await this.dumpRegisterService.getDumpDataForDates(
-        filterType as string | undefined,
-        startDate as string | undefined,
-        endDate as string | undefined
-      );
-      
-      const overallTotal = data.reduce(
-        (acc, row) => {
-          acc.quantity += Number(row.quantity);
-          acc.amount += Number(row.amount);
-          return acc;
-        },
-        { quantity: 0, amount: 0 }
-      );
-      
-      ControllerLogger.logList('Dump Calculations by Dates', req, res);
-      res.status(200).json({
-        message: "Dump calculations fetched successfully.",
-        data: overallTotal,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Dump Calculations by Dates', err, req, res);
-      next(err);
-    }
-  }
+
 
   @httpDelete("/delete/multiple/dumpRegisters")
   public async deleteMultipleDumpRegisters(
@@ -546,3 +347,224 @@ export class DumpRegisterController {
     }
   }
 }
+
+
+  // @httpGet("/calculations/dates")
+  // public async getDumpData(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const { filterType, startDate, endDate } = req.query;
+ 
+  //     const data = await this.dumpRegisterService.getDumpDataForDates(
+  //       filterType as string | undefined,
+  //       startDate as string | undefined,
+  //       endDate as string | undefined
+  //     );
+      
+  //     const overallTotal = data.reduce(
+  //       (acc, row) => {
+  //         acc.quantity += Number(row.quantity);
+  //         acc.amount += Number(row.amount);
+  //         return acc;
+  //       },
+  //       { quantity: 0, amount: 0 }
+  //     );
+      
+  //     ControllerLogger.logList('Dump Calculations by Dates', req, res);
+  //     res.status(200).json({
+  //       message: "Dump calculations fetched successfully.",
+  //       data: overallTotal,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Calculations by Dates', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet("/getDump/companyName/:companyName")
+  // public async getDumpRegisterByCompanyName(
+  //   @requestParam("companyName") location: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dumpRegister = await this.dumpRegisterService.getDumpRegisterByCompanyName(location);
+      
+  //     if (!dumpRegister) {
+  //       ControllerLogger.logOperationFailed('Get', 'Dump Register by Company', 'No records found', req, res);
+  //       return next(new AppError(404, "No dump registers found"));
+  //     }
+
+  //     ControllerLogger.logList('Dump Register by Company Name', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dumpRegister,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register by Company Name', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+
+  // @httpGet("/getDump/location/:location")
+  // public async getDumpRegisterByLocation(
+  //   @requestParam("location") location: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dumpRegister = await this.dumpRegisterService.getDumpRegisterlocation(location);
+      
+  //     if (!dumpRegister) {
+  //       ControllerLogger.logOperationFailed('Get', 'Dump Register by Location', 'No records found', req, res);
+  //       return next(new AppError(404, "No dump registers found"));
+  //     }
+
+  //     ControllerLogger.logList('Dump Register by Location', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dumpRegister,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register by Location', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet("/getDump/:startdate/and/:enddate")
+  // public async getDumpRegisterByDate(
+  //   @requestParam("startdate") startdate: string,
+  //   @requestParam("enddate") enddate: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const startDateObj = new Date(startdate);
+  //     const endDateObj = new Date(enddate);
+      
+  //     const dumpRegister = await this.dumpRegisterService.totalqunatityandtotaldumpcostfromstartdatetoenddate(startDateObj, endDateObj);
+      
+  //     if (!dumpRegister) {
+  //       ControllerLogger.logOperationFailed('Get', 'Dump Register by Date', 'No records found', req, res);
+  //       return next(new AppError(404, "No dump registers found"));
+  //     }
+
+  //     ControllerLogger.logList('Dump Register by Date Range', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dumpRegister,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register by Date', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet("/getDump/all/count")
+  // public async getDumpRegisterCount(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dumpRegister = await this.dumpRegisterService.dumpcount();
+      
+  //     if (!dumpRegister) {
+  //       ControllerLogger.logOperationFailed('Get', 'Dump Register Count', 'No records found', req, res);
+  //       return next(new AppError(404, "No dump registers found"));
+  //     }
+
+  //     ControllerLogger.logList('Dump Register Count', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dumpRegister,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register Count', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet("/getDump/quantityandcost")
+  // public async getDumpRegisterQty(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dumpRegisterQty = await this.dumpRegisterService.totaldumpquantity();
+  //     const dumpregisterAmt = await this.dumpRegisterService.totaldumpcost();
+      
+  //     if (!dumpRegisterQty) {
+  //       ControllerLogger.logOperationFailed('Get', 'Dump Register Quantity and Cost', 'No records found', req, res);
+  //       return next(new AppError(404, "No dump registers found"));
+  //     }
+      
+  //     const number1 = parseInt(dumpRegisterQty.toString());
+      
+  //     ControllerLogger.logList('Dump Register Quantity and Cost', req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: {
+  //         totalDumpQuantity: number1,
+  //         totalDumpAmount: dumpregisterAmt
+  //       },
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register Quantity and Cost', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet("/:id")
+  // public async getDumpRegisterById(
+  //   @requestParam("id") id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const dumpRegister = await this.dumpRegisterService.getDumpRegisterById(id);
+      
+  //     if (!dumpRegister) {
+  //       ControllerLogger.logNotFound('Dump Register', id, req, res);
+  //       return next(new AppError(404, "Dump register not found"));
+  //     }
+
+  //     // 🔔 Send notification for dump register view
+  //     // try {
+  //     //   const userId = res.locals.user?.id;
+  //     //   if (userId) {
+  //     //     await this.notificationService.createNoti(
+  //     //       `Viewed dump register with ID ${id} details`,
+  //     //       userId
+  //     //     );
+  //     //   }
+  //     // } catch (notifError) {
+  //     //   console.log('Dump register view notification error:', notifError);
+  //     // }
+
+  //     ControllerLogger.logView('Dump Register', id, req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: dumpRegister,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Dump Register by ID', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

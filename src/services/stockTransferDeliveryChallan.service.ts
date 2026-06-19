@@ -215,34 +215,7 @@ export class StockTransferDeliveryChallanService {
   }
 }
 
-  async getById(id: string): Promise<StockTransferDeliveryChallan | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    try {
-      const result = await this.challanRepository.findOne({
-        where: { id },
-        relations: [
-          'deliveryChallanProducts',
-          'deliveryChallanProducts.productName',
-          'deliveryChallanProducts.packagingMaterial',
-          'deliveryChallanProducts.packagingMaterialUoM',
-          'deliveryChallanProducts.saleUoM',
-          'companyName',
-          'offices',
-          'grnNo',
-          'fromLocation',
-          'toLocation',
-        ],
-      });
-      if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-      return result;
-    } catch (err) {
-      logger.error(`Error fetching stock transfer challan by ID: ${id}`, { error: err });
-      return null;
-    }
-  }
 
 
   async getByIdChallanforUpdate(id: string): Promise<STDeliveryChallanUpdateFormDto | null> {
@@ -634,3 +607,34 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDelete
     }
   }
 }
+
+
+  // async getById(id: string): Promise<StockTransferDeliveryChallan | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   try {
+  //     const result = await this.challanRepository.findOne({
+  //       where: { id },
+  //       relations: [
+  //         'deliveryChallanProducts',
+  //         'deliveryChallanProducts.productName',
+  //         'deliveryChallanProducts.packagingMaterial',
+  //         'deliveryChallanProducts.packagingMaterialUoM',
+  //         'deliveryChallanProducts.saleUoM',
+  //         'companyName',
+  //         'offices',
+  //         'grnNo',
+  //         'fromLocation',
+  //         'toLocation',
+  //       ],
+  //     });
+  //     if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //     return result;
+  //   } catch (err) {
+  //     logger.error(`Error fetching stock transfer challan by ID: ${id}`, { error: err });
+  //     return null;
+  //   }
+  // }
+

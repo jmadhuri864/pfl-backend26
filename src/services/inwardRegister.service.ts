@@ -484,89 +484,7 @@ incomingGrossQty: rd.incomingGrossQty,
     return recycleResult;
   } 
 
-async filterInwardRegisters(
-  page: number,
-  limit: number,
-  filters: Record<string, any>
-) {
-  const cacheKey = `${this.CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
-  const cached = await this.cacheService.get<any>(cacheKey);
-  if (cached) return cached;
 
-  const queryBuilder: SelectQueryBuilder<InwardRegister> =
-    this.inwardRegisterRepo.createQueryBuilder("inwardRegister");
-
-  // ✅ Select all fields from InwardRegister
-  queryBuilder.select("inwardRegister");
-
-  // ✅ Join relations but select only specific fields
-  queryBuilder
-    .leftJoin("inwardRegister.deliveryChallanNo", "deliveryChallanNo")
-    .addSelect(["deliveryChallanNo.challanNo", "deliveryChallanNo.vehicleNo"])
-    .leftJoin("inwardRegister.companyName", "companyName")
-    .addSelect(["companyName.name"])
-    .leftJoin("inwardRegister.location", "location")
-    .addSelect(["location.name"])
-    .leftJoin("inwardRegister.selectedVendor", "selectedVendor")
-    .addSelect(["selectedVendor.companyName"])
-    .leftJoin("inwardRegister.selectedFarmer", "selectedFarmer")
-    .addSelect([
-      "selectedFarmer.farmerlName",
-      "selectedFarmer.farmermName",
-      "selectedFarmer.farmerfName",
-    ])
-    .leftJoinAndSelect("inwardRegister.inwardProducts", "inwardProducts")
-    .leftJoinAndSelect("inwardProducts.productName", "product")
-    .addSelect(["product.name"]);
-
-  // ✅ Apply dynamic filters (including deep relations)
-  Object.entries(filters).forEach(([key, value], index) => {
-    const paramKey = `param_${index}`; // avoid param conflicts
-
-    const parts = key.split(".");
-    if (parts.length > 1) {
-      // Example: inwardProducts.productName.name
-      const aliasPath = parts.slice(0, -1).join(".");
-      const field = parts[parts.length - 1];
-      const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
-
-      if (typeof value === "string" && isNaN(Number(value))) {
-        queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
-          [paramKey]: `%${value}%`,
-        });
-      } else {
-        queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
-          [paramKey]: value,
-        });
-      }
-    } else {
-      // Normal InwardRegister field filter
-      if (typeof value === "string" && isNaN(Number(value))) {
-        queryBuilder.andWhere(`inwardRegister.${key} ILIKE :${paramKey}`, {
-          [paramKey]: `%${value}%`,
-        });
-      } else {
-        queryBuilder.andWhere(`inwardRegister.${key} = :${paramKey}`, {
-          [paramKey]: value,
-        });
-      }
-    }
-  });
-  // ✅ Pagination
-  queryBuilder.skip((page - 1) * limit).take(limit);
-
-  const [data, total] = await queryBuilder.getManyAndCount();
-
-  const filterResult = {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-  await this.cacheService.set(cacheKey, filterResult, this.CACHE_TTL);
-  return filterResult;
-}
 
       // Save Inward Product line
       // const inwardProduct = this.inwardProductRepository.create({
@@ -614,235 +532,9 @@ async filterInwardRegisters(
 
   // await queryRunner.manager.save(inwardProduct);
 
-  async getInwardRegisters(queryOptions: PaginationOptions): Promise<any> {
-    const cacheKey = `${this.CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const queryBuilder = this.inwardRegisterRepo
-      .createQueryBuilder('inwardRegister')
-      .leftJoinAndSelect('inwardRegister.grnNo', 'grnNo')
-      .leftJoinAndSelect('inwardRegister.companyName', 'companyName')
-      .leftJoinAndSelect('inwardRegister.location', 'location')
-      .leftJoinAndSelect(
-        'inwardRegister.deliveryChallanNo',
-        'deliveryChallanNo',
-      )
-      .leftJoinAndSelect('inwardRegister.selectedVendor', 'selectedVendor')
-      .leftJoinAndSelect('inwardRegister.selectedFarmer', 'selectedFarmer')
-      .leftJoinAndSelect('inwardRegister.inwardProducts', 'inwardProducts')
-      .leftJoinAndSelect('inwardProducts.productName', 'productName')
-      .leftJoinAndSelect('inwardProducts.uom', 'uom')
-      .orderBy('inwardRegister.createdAt', 'DESC');
 
-    // Apply pagination, search, filters, and sorting
-    const result = await buildQuery(
-      queryBuilder,
-      queryOptions,
-      'inwardRegister',
-    );
-    console.log(result);
 
-    // Transform inward registers data to match the expected structure
-    const transformedInwardRegisters = result.data.map((inwardRegister) => {
-      const rawDate = inwardRegister.createdAt;
-      const { createdDate, createdTime } = formatDateTime(rawDate);
-      const selectedParty =
-        inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-          ? inwardRegister.selectedFarmer.id
-          : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-          ? inwardRegister.selectedVendor.id
-          : null;
-      return {
-        id: inwardRegister.id,
-        inwardType: inwardRegister.inwardType,
-        companyName: inwardRegister.companyName?.name || null,
-        location: inwardRegister.location ? inwardRegister.location.name : null,
-        createdDate: createdDate,
-        createdTime: createdTime,
-
-        date: inwardRegister.date || null,
-        batchNo: inwardRegister.batchNo,
-        source: inwardRegister.source,
-        purchasedBy: inwardRegister.purchasedBy,
-        totalWeightInKg: inwardRegister.totalWeightInKg,
-        
-        inwardCost: inwardRegister.inwardCost,
-        remarks: inwardRegister.remarks,
-        inwardBy: inwardRegister.inwardBy,
-        grnNo: inwardRegister.grnNo?.grnNo || null,
-        deliveryChallanNo: inwardRegister.deliveryChallanNo?.challanNo || null,
-        selectedParty: selectedParty,
-        inwardProducts: inwardRegister.inwardProducts.map((product) => ({
-          id: product?.id || null,
-          productName: product?.productName?.id || null,
-          variant: product?.variant?.variantName || null,
-          grossWeight: product.grossWeight,
-          netWeight: product.netWeight,
-          uom: product.uom?.id || null,
-          packingMaterialWeight: product.packingMaterialWeight,
-          quantity: product.quantity,
-          unitPrice: product.unitPrice,
-          amount: product.amount,
-        })),
-      };
-    });
-
-    const listResult = {
-      data: transformedInwardRegisters,
-      meta: result.meta,
-    };
-    await this.cacheService.set(cacheKey, listResult, this.CACHE_TTL);
-    return listResult;
-  }
-
-  async getInwardRegisterById(id: string): Promise<any> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
-
-    console.log('in service', id);
-
-    // Fetch the inward register with relations
-    const inwardRegister = await this.inwardRegisterRepo.findOne({
-      where: { id },
-      relations: [
-        'grnNo',
-        'location',
-        'companyName',
-        'deliveryChallanNo',
-        'rbcNo',
-        'selectedVendor',
-        'selectedFarmer',
-        'inwardProducts',
-        'inwardBy',
-        'purchasedBy',
-        'inwardProducts.productName',
-        'inwardProducts.uom',
-      ],
-    });
-
-    if (!inwardRegister) {
-      return null; // Handle null case appropriately
-    }
-    // Dynamically construct the selectedParty field
-    // const selectedParty =
-    //   inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-    //     ? inwardRegister.selectedFarmer.id
-    //     : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-    //     ? inwardRegister.selectedVendor.id
-    //     : null;
-    const selectedParty =
-      inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-        ? {
-            id: inwardRegister.selectedFarmer.id,
-            name:
-              inwardRegister.selectedFarmer.farmerfName +
-              ' ' +
-              inwardRegister.selectedFarmer.farmermName +
-              ' ' +
-              inwardRegister.selectedFarmer.farmerlName,
-          }
-        : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-        ? {
-            id: inwardRegister.selectedVendor.id,
-            name: inwardRegister.selectedVendor.companyName,
-          }
-        : null;
-    const rawDate = inwardRegister.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    const transformedInwardRegister = {
-      id: inwardRegister.id,
-      createdDate: createdDate,
-      createdTime: createdTime,
-
-      inwardType: inwardRegister.inwardType,
-      companyName: inwardRegister.companyName
-        ? inwardRegister.companyName?.id
-        : null,
-      location: inwardRegister.location ? inwardRegister.location?.id : null,
-      date: inwardRegister.date || null,
-      batchNo: inwardRegister.batchNo,
-      source: inwardRegister.source,
-      totalWeightInKg: inwardRegister.totalWeightInKg,
-      purchasedBy: inwardRegister.purchasedBy
-        ? {
-            id: inwardRegister.purchasedBy.id,
-            name:
-              inwardRegister.purchasedBy?.firstName +
-                ' ' +
-                inwardRegister.purchasedBy?.middleName +
-                ' ' +
-                inwardRegister.purchasedBy?.lastName || null,
-          }
-        : null,
-      incomingGrossQty: inwardRegister.incomingGrossQty,
-      incomingNetQty: inwardRegister.incomingNetQty,
-
-      inwardGrossQty: inwardRegister.inwardGrossQty,
-      inwardNetQty: inwardRegister.inwardNetQty,
-
-      inwardCost: inwardRegister.inwardCost,
-      remarks: inwardRegister.remarks,
-      inwardBy: inwardRegister.inwardBy
-        ? {
-            id: inwardRegister.inwardBy.id,
-            name:
-              inwardRegister.inwardBy?.firstName +
-                ' ' +
-                inwardRegister.inwardBy?.middleName +
-                ' ' +
-                inwardRegister.inwardBy?.lastName || null,
-          }
-        : null,
-      grnNo: inwardRegister.grnNo
-        ? {
-            id: inwardRegister.grnNo.id,
-            grnNo: inwardRegister.grnNo.grnNo,
-          }
-        : null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo
-        ? {
-            id: inwardRegister.deliveryChallanNo.id,
-            challanNo: inwardRegister.deliveryChallanNo.challanNo,
-          }
-        : null,
-
-      selectedParty: selectedParty,
-      inwardProducts: inwardRegister.inwardProducts.map((product) => ({
-        id: product?.id || null,
-        productName: product.productName
-          ? {
-              id: product.productName.id,
-              name: product.productName.name,
-            }
-          : null,
-
-       variant: product.variant
-         ? {
-             id: product.variant.id,
-             name: product.variant.variantName,
-           }
-         : null,
-        grossWeight: product.grossWeight,
-        netWeight: product.netWeight,
-        uom: product.uom
-          ? {
-              id: product.uom.id,
-              unit: product.uom.unit,
-            }
-          : null,
-
-        packingMaterialWeight: product.packingMaterialWeight,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        amount: product.amount,
-      })),
-    };
-
-    await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
-    return transformedInwardRegister;
-  }
 async getInwardidforupdate(id: string, userId: string): Promise<InwardRegisterUpdateDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
     const cached = await this.cacheService.get<InwardRegisterUpdateDto>(cacheKey);
@@ -943,166 +635,7 @@ console.log(transformedInwardRegister)
     return transformedInwardRegister;
   }
 
-  async getInwardidforget(id: string): Promise<any> {
-    const cacheKey = `${this.CACHE_PREFIX}:get:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    console.log('in service', id);
-
-    // Fetch the inward register with relations
-    const inwardRegister = await this.inwardRegisterRepo.findOne({
-      where: { id },
-      relations: [
-        'grnNo',
-        'location',
-        'companyName',
-        'deliveryChallanNo',
-        'selectedVendor',
-        'selectedVendor.officeAddress',
-        'selectedVendor.category',
-        'selectedVendor.subcategory',
-        'selectedVendor.vendorSaleInfo',
-        'selectedFarmer',
-        'selectedFarmer.farmAddress',
-        'selectedFarmer.residensialAddress',
-        'inwardProducts',
-        'inwardBy',
-        'purchasedBy',
-        'inwardProducts.productName',
-        'inwardProducts.uom',
-      ],
-    });
-
-    if (!inwardRegister) {
-      return null; // Handle null case appropriately
-    }
-    // Dynamically construct the selectedParty field
-    // const selectedParty =
-    //   inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-    //     ? inwardRegister.selectedFarmer.id
-    //     : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-    //     ? inwardRegister.selectedVendor.id
-    //     : null;
-    const selectedParty =
-      inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
-        ? { 
-          fullname:inwardRegister.selectedFarmer.farmerfName+' '+inwardRegister.selectedFarmer.farmermName+' '+inwardRegister.selectedFarmer.farmerlName,
-          primaryMobileNo:inwardRegister.selectedFarmer.primaryMobileNo,
-          secondaryMobileNo:inwardRegister.selectedFarmer.secondaryMobileNo,
-          farmerCode:inwardRegister.selectedFarmer.farmerCode,
-          email:inwardRegister.selectedFarmer.email,
-
-           farmAddress:inwardRegister.selectedFarmer.farmAddress ? {
-            id:inwardRegister.selectedFarmer.farmAddress.id,
-            address1:inwardRegister.selectedFarmer.farmAddress.address1,
-            address2:inwardRegister.selectedFarmer.farmAddress.address2,
-            location:inwardRegister.selectedFarmer.farmAddress.location,
-            city:inwardRegister.selectedFarmer.farmAddress.city,
-            state:inwardRegister.selectedFarmer.farmAddress.state,
-            pincode:inwardRegister.selectedFarmer.farmAddress.pincode
-
-          }:null,
-
-           residensialAddress:inwardRegister.selectedFarmer.residensialAddress ? {
-            id:inwardRegister.selectedFarmer.residensialAddress.id,
-            address1:inwardRegister.selectedFarmer.residensialAddress.address1,
-            address2:inwardRegister.selectedFarmer.residensialAddress.address2,
-            location:inwardRegister.selectedFarmer.residensialAddress.location,
-            city:inwardRegister.selectedFarmer.residensialAddress.city,
-            state:inwardRegister.selectedFarmer.residensialAddress.state,
-            pincode:inwardRegister.selectedFarmer.residensialAddress.pincode
-
-          }:null
-          
-
-        }
-           
-        : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
-        ? {
-          companyName:inwardRegister.selectedVendor.companyName,
-          category:inwardRegister.selectedVendor.category?.name,
-          subcategory:inwardRegister.selectedVendor.subcategory?.name,
-          vendorCode:inwardRegister.selectedVendor?.vendorCode,
-          contactPersonName:inwardRegister.selectedVendor.vendorSaleInfo.contactFName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactMName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactLName,
-          officeAddress:inwardRegister.selectedVendor.officeAddress ? {
-            id:inwardRegister.selectedVendor.officeAddress.id,
-            address1:inwardRegister.selectedVendor.officeAddress.address1,
-            address2:inwardRegister.selectedVendor.officeAddress.address2,
-            location:inwardRegister.selectedVendor.officeAddress.location,
-            city:inwardRegister.selectedVendor.officeAddress.city,
-            state:inwardRegister.selectedVendor.officeAddress.state,
-            pincode:inwardRegister.selectedVendor.officeAddress.pincode
-
-          }:null
-        }
-        : null;
-    const rawDate = inwardRegister.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    const transformedInwardRegister = {
-      id: inwardRegister.id,
-      createdDate: createdDate,
-      createdTime: createdTime,
-
-      inwardType: inwardRegister.inwardType,
-      companyName: inwardRegister.companyName?.name||null,
-        
-      location: inwardRegister.location ? inwardRegister.location?.name : null,
-      date: inwardRegister.date || null,
-      batchNo: inwardRegister.batchNo,
-      source: inwardRegister.source,
-      totalWeightInKg: inwardRegister.totalWeightInKg,
-      purchasedBy: inwardRegister.purchasedBy
-        ? 
-            inwardRegister.purchasedBy?.firstName+' '+inwardRegister.purchasedBy?.middleName+' '+inwardRegister.purchasedBy?.lastName
-            
-        : null,
-     incomingGrossQty: inwardRegister.incomingGrossQty,
-      incomingNetQty: inwardRegister.incomingNetQty,
-
-      inwardGrossQty: inwardRegister.inwardGrossQty,
-      inwardNetQty: inwardRegister.inwardNetQty,
-      inwardCost: inwardRegister.inwardCost,
-      remarks: inwardRegister.remarks,
-      inwardBy: inwardRegister.inwardBy
-        ?  inwardRegister.inwardBy?.firstName+' '+inwardRegister.inwardBy?.middleName+' '+inwardRegister.inwardBy?.lastName
-            
-        : null,
-      grnNo: inwardRegister.grnNo
-        ?  inwardRegister.grnNo.grnNo
-           
-        : null,
-      deliveryChallanNo: inwardRegister.deliveryChallanNo
-        ?  inwardRegister.deliveryChallanNo.challanNo
-            
-        : null,
-
-      selectedParty: selectedParty,
-      inwardProducts: inwardRegister.inwardProducts.map((product) => ({
-        id: product?.id || null,
-        productName: product.productName
-          ?  product.productName.name
-             
-          : null,
-
-       variant:product.variant ? product.variant.variantName:null,
-        grossWeight: product.grossWeight,
-        netWeight: product.netWeight,
-        uom: product.uom
-          ?  product.uom.unit
-             
-          : null,
-
-        packingMaterialWeight: product.packingMaterialWeight,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        amount: product.amount,
-      })),
-    };
-
-    await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
-    return transformedInwardRegister;
-  }
  
   async updateInwardRegister(
     id: string,
@@ -1220,11 +753,7 @@ console.log(transformedInwardRegister)
     await this.invalidateCache(id);
   }
 
-  public async getScheduledForDeletionRecords(): Promise<InwardRegister[]> {
-    return this.inwardRegisterRepo.find({
-      where: { deletionScheduledAt: LessThanOrEqual(new Date()) },
-    });
-  }
+
 
 
 
@@ -1688,3 +1217,493 @@ public async deleteMultipleInwardRegister(ids: string[]): Promise<{ success: str
 
 
 }
+
+
+  // public async getScheduledForDeletionRecords(): Promise<InwardRegister[]> {
+  //   return this.inwardRegisterRepo.find({
+  //     where: { deletionScheduledAt: LessThanOrEqual(new Date()) },
+  //   });
+  // }
+
+
+  // async getInwardidforget(id: string): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:get:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   console.log('in service', id);
+
+  //   // Fetch the inward register with relations
+  //   const inwardRegister = await this.inwardRegisterRepo.findOne({
+  //     where: { id },
+  //     relations: [
+  //       'grnNo',
+  //       'location',
+  //       'companyName',
+  //       'deliveryChallanNo',
+  //       'selectedVendor',
+  //       'selectedVendor.officeAddress',
+  //       'selectedVendor.category',
+  //       'selectedVendor.subcategory',
+  //       'selectedVendor.vendorSaleInfo',
+  //       'selectedFarmer',
+  //       'selectedFarmer.farmAddress',
+  //       'selectedFarmer.residensialAddress',
+  //       'inwardProducts',
+  //       'inwardBy',
+  //       'purchasedBy',
+  //       'inwardProducts.productName',
+  //       'inwardProducts.uom',
+  //     ],
+  //   });
+
+  //   if (!inwardRegister) {
+  //     return null; // Handle null case appropriately
+  //   }
+  //   // Dynamically construct the selectedParty field
+  //   // const selectedParty =
+  //   //   inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+  //   //     ? inwardRegister.selectedFarmer.id
+  //   //     : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+  //   //     ? inwardRegister.selectedVendor.id
+  //   //     : null;
+  //   const selectedParty =
+  //     inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+  //       ? { 
+  //         fullname:inwardRegister.selectedFarmer.farmerfName+' '+inwardRegister.selectedFarmer.farmermName+' '+inwardRegister.selectedFarmer.farmerlName,
+  //         primaryMobileNo:inwardRegister.selectedFarmer.primaryMobileNo,
+  //         secondaryMobileNo:inwardRegister.selectedFarmer.secondaryMobileNo,
+  //         farmerCode:inwardRegister.selectedFarmer.farmerCode,
+  //         email:inwardRegister.selectedFarmer.email,
+
+  //          farmAddress:inwardRegister.selectedFarmer.farmAddress ? {
+  //           id:inwardRegister.selectedFarmer.farmAddress.id,
+  //           address1:inwardRegister.selectedFarmer.farmAddress.address1,
+  //           address2:inwardRegister.selectedFarmer.farmAddress.address2,
+  //           location:inwardRegister.selectedFarmer.farmAddress.location,
+  //           city:inwardRegister.selectedFarmer.farmAddress.city,
+  //           state:inwardRegister.selectedFarmer.farmAddress.state,
+  //           pincode:inwardRegister.selectedFarmer.farmAddress.pincode
+
+  //         }:null,
+
+  //          residensialAddress:inwardRegister.selectedFarmer.residensialAddress ? {
+  //           id:inwardRegister.selectedFarmer.residensialAddress.id,
+  //           address1:inwardRegister.selectedFarmer.residensialAddress.address1,
+  //           address2:inwardRegister.selectedFarmer.residensialAddress.address2,
+  //           location:inwardRegister.selectedFarmer.residensialAddress.location,
+  //           city:inwardRegister.selectedFarmer.residensialAddress.city,
+  //           state:inwardRegister.selectedFarmer.residensialAddress.state,
+  //           pincode:inwardRegister.selectedFarmer.residensialAddress.pincode
+
+  //         }:null
+          
+
+  //       }
+           
+  //       : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+  //       ? {
+  //         companyName:inwardRegister.selectedVendor.companyName,
+  //         category:inwardRegister.selectedVendor.category?.name,
+  //         subcategory:inwardRegister.selectedVendor.subcategory?.name,
+  //         vendorCode:inwardRegister.selectedVendor?.vendorCode,
+  //         contactPersonName:inwardRegister.selectedVendor.vendorSaleInfo.contactFName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactMName+' '+inwardRegister.selectedVendor.vendorSaleInfo?.contactLName,
+  //         officeAddress:inwardRegister.selectedVendor.officeAddress ? {
+  //           id:inwardRegister.selectedVendor.officeAddress.id,
+  //           address1:inwardRegister.selectedVendor.officeAddress.address1,
+  //           address2:inwardRegister.selectedVendor.officeAddress.address2,
+  //           location:inwardRegister.selectedVendor.officeAddress.location,
+  //           city:inwardRegister.selectedVendor.officeAddress.city,
+  //           state:inwardRegister.selectedVendor.officeAddress.state,
+  //           pincode:inwardRegister.selectedVendor.officeAddress.pincode
+
+  //         }:null
+  //       }
+  //       : null;
+  //   const rawDate = inwardRegister.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   const transformedInwardRegister = {
+  //     id: inwardRegister.id,
+  //     createdDate: createdDate,
+  //     createdTime: createdTime,
+
+  //     inwardType: inwardRegister.inwardType,
+  //     companyName: inwardRegister.companyName?.name||null,
+        
+  //     location: inwardRegister.location ? inwardRegister.location?.name : null,
+  //     date: inwardRegister.date || null,
+  //     batchNo: inwardRegister.batchNo,
+  //     source: inwardRegister.source,
+  //     totalWeightInKg: inwardRegister.totalWeightInKg,
+  //     purchasedBy: inwardRegister.purchasedBy
+  //       ? 
+  //           inwardRegister.purchasedBy?.firstName+' '+inwardRegister.purchasedBy?.middleName+' '+inwardRegister.purchasedBy?.lastName
+            
+  //       : null,
+  //    incomingGrossQty: inwardRegister.incomingGrossQty,
+  //     incomingNetQty: inwardRegister.incomingNetQty,
+
+  //     inwardGrossQty: inwardRegister.inwardGrossQty,
+  //     inwardNetQty: inwardRegister.inwardNetQty,
+  //     inwardCost: inwardRegister.inwardCost,
+  //     remarks: inwardRegister.remarks,
+  //     inwardBy: inwardRegister.inwardBy
+  //       ?  inwardRegister.inwardBy?.firstName+' '+inwardRegister.inwardBy?.middleName+' '+inwardRegister.inwardBy?.lastName
+            
+  //       : null,
+  //     grnNo: inwardRegister.grnNo
+  //       ?  inwardRegister.grnNo.grnNo
+           
+  //       : null,
+  //     deliveryChallanNo: inwardRegister.deliveryChallanNo
+  //       ?  inwardRegister.deliveryChallanNo.challanNo
+            
+  //       : null,
+
+  //     selectedParty: selectedParty,
+  //     inwardProducts: inwardRegister.inwardProducts.map((product) => ({
+  //       id: product?.id || null,
+  //       productName: product.productName
+  //         ?  product.productName.name
+             
+  //         : null,
+
+  //      variant:product.variant ? product.variant.variantName:null,
+  //       grossWeight: product.grossWeight,
+  //       netWeight: product.netWeight,
+  //       uom: product.uom
+  //         ?  product.uom.unit
+             
+  //         : null,
+
+  //       packingMaterialWeight: product.packingMaterialWeight,
+  //       quantity: product.quantity,
+  //       unitPrice: product.unitPrice,
+  //       amount: product.amount,
+  //     })),
+  //   };
+
+  //   await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
+  //   return transformedInwardRegister;
+  // }
+
+
+  // async getInwardRegisterById(id: string): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   console.log('in service', id);
+
+  //   // Fetch the inward register with relations
+  //   const inwardRegister = await this.inwardRegisterRepo.findOne({
+  //     where: { id },
+  //     relations: [
+  //       'grnNo',
+  //       'location',
+  //       'companyName',
+  //       'deliveryChallanNo',
+  //       'rbcNo',
+  //       'selectedVendor',
+  //       'selectedFarmer',
+  //       'inwardProducts',
+  //       'inwardBy',
+  //       'purchasedBy',
+  //       'inwardProducts.productName',
+  //       'inwardProducts.uom',
+  //     ],
+  //   });
+
+  //   if (!inwardRegister) {
+  //     return null; // Handle null case appropriately
+  //   }
+  //   // Dynamically construct the selectedParty field
+  //   // const selectedParty =
+  //   //   inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+  //   //     ? inwardRegister.selectedFarmer.id
+  //   //     : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+  //   //     ? inwardRegister.selectedVendor.id
+  //   //     : null;
+  //   const selectedParty =
+  //     inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+  //       ? {
+  //           id: inwardRegister.selectedFarmer.id,
+  //           name:
+  //             inwardRegister.selectedFarmer.farmerfName +
+  //             ' ' +
+  //             inwardRegister.selectedFarmer.farmermName +
+  //             ' ' +
+  //             inwardRegister.selectedFarmer.farmerlName,
+  //         }
+  //       : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+  //       ? {
+  //           id: inwardRegister.selectedVendor.id,
+  //           name: inwardRegister.selectedVendor.companyName,
+  //         }
+  //       : null;
+  //   const rawDate = inwardRegister.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   const transformedInwardRegister = {
+  //     id: inwardRegister.id,
+  //     createdDate: createdDate,
+  //     createdTime: createdTime,
+
+  //     inwardType: inwardRegister.inwardType,
+  //     companyName: inwardRegister.companyName
+  //       ? inwardRegister.companyName?.id
+  //       : null,
+  //     location: inwardRegister.location ? inwardRegister.location?.id : null,
+  //     date: inwardRegister.date || null,
+  //     batchNo: inwardRegister.batchNo,
+  //     source: inwardRegister.source,
+  //     totalWeightInKg: inwardRegister.totalWeightInKg,
+  //     purchasedBy: inwardRegister.purchasedBy
+  //       ? {
+  //           id: inwardRegister.purchasedBy.id,
+  //           name:
+  //             inwardRegister.purchasedBy?.firstName +
+  //               ' ' +
+  //               inwardRegister.purchasedBy?.middleName +
+  //               ' ' +
+  //               inwardRegister.purchasedBy?.lastName || null,
+  //         }
+  //       : null,
+  //     incomingGrossQty: inwardRegister.incomingGrossQty,
+  //     incomingNetQty: inwardRegister.incomingNetQty,
+
+  //     inwardGrossQty: inwardRegister.inwardGrossQty,
+  //     inwardNetQty: inwardRegister.inwardNetQty,
+
+  //     inwardCost: inwardRegister.inwardCost,
+  //     remarks: inwardRegister.remarks,
+  //     inwardBy: inwardRegister.inwardBy
+  //       ? {
+  //           id: inwardRegister.inwardBy.id,
+  //           name:
+  //             inwardRegister.inwardBy?.firstName +
+  //               ' ' +
+  //               inwardRegister.inwardBy?.middleName +
+  //               ' ' +
+  //               inwardRegister.inwardBy?.lastName || null,
+  //         }
+  //       : null,
+  //     grnNo: inwardRegister.grnNo
+  //       ? {
+  //           id: inwardRegister.grnNo.id,
+  //           grnNo: inwardRegister.grnNo.grnNo,
+  //         }
+  //       : null,
+  //     deliveryChallanNo: inwardRegister.deliveryChallanNo
+  //       ? {
+  //           id: inwardRegister.deliveryChallanNo.id,
+  //           challanNo: inwardRegister.deliveryChallanNo.challanNo,
+  //         }
+  //       : null,
+
+  //     selectedParty: selectedParty,
+  //     inwardProducts: inwardRegister.inwardProducts.map((product) => ({
+  //       id: product?.id || null,
+  //       productName: product.productName
+  //         ? {
+  //             id: product.productName.id,
+  //             name: product.productName.name,
+  //           }
+  //         : null,
+
+  //      variant: product.variant
+  //        ? {
+  //            id: product.variant.id,
+  //            name: product.variant.variantName,
+  //          }
+  //        : null,
+  //       grossWeight: product.grossWeight,
+  //       netWeight: product.netWeight,
+  //       uom: product.uom
+  //         ? {
+  //             id: product.uom.id,
+  //             unit: product.uom.unit,
+  //           }
+  //         : null,
+
+  //       packingMaterialWeight: product.packingMaterialWeight,
+  //       quantity: product.quantity,
+  //       unitPrice: product.unitPrice,
+  //       amount: product.amount,
+  //     })),
+  //   };
+
+  //   await this.cacheService.set(cacheKey, transformedInwardRegister, this.CACHE_TTL);
+  //   return transformedInwardRegister;
+  // }
+
+
+  // async getInwardRegisters(queryOptions: PaginationOptions): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const queryBuilder = this.inwardRegisterRepo
+  //     .createQueryBuilder('inwardRegister')
+  //     .leftJoinAndSelect('inwardRegister.grnNo', 'grnNo')
+  //     .leftJoinAndSelect('inwardRegister.companyName', 'companyName')
+  //     .leftJoinAndSelect('inwardRegister.location', 'location')
+  //     .leftJoinAndSelect(
+  //       'inwardRegister.deliveryChallanNo',
+  //       'deliveryChallanNo',
+  //     )
+  //     .leftJoinAndSelect('inwardRegister.selectedVendor', 'selectedVendor')
+  //     .leftJoinAndSelect('inwardRegister.selectedFarmer', 'selectedFarmer')
+  //     .leftJoinAndSelect('inwardRegister.inwardProducts', 'inwardProducts')
+  //     .leftJoinAndSelect('inwardProducts.productName', 'productName')
+  //     .leftJoinAndSelect('inwardProducts.uom', 'uom')
+  //     .orderBy('inwardRegister.createdAt', 'DESC');
+
+  //   // Apply pagination, search, filters, and sorting
+  //   const result = await buildQuery(
+  //     queryBuilder,
+  //     queryOptions,
+  //     'inwardRegister',
+  //   );
+  //   console.log(result);
+
+  //   // Transform inward registers data to match the expected structure
+  //   const transformedInwardRegisters = result.data.map((inwardRegister) => {
+  //     const rawDate = inwardRegister.createdAt;
+  //     const { createdDate, createdTime } = formatDateTime(rawDate);
+  //     const selectedParty =
+  //       inwardRegister.source === 'farmer' && inwardRegister.selectedFarmer
+  //         ? inwardRegister.selectedFarmer.id
+  //         : inwardRegister.source === 'vendor' && inwardRegister.selectedVendor
+  //         ? inwardRegister.selectedVendor.id
+  //         : null;
+  //     return {
+  //       id: inwardRegister.id,
+  //       inwardType: inwardRegister.inwardType,
+  //       companyName: inwardRegister.companyName?.name || null,
+  //       location: inwardRegister.location ? inwardRegister.location.name : null,
+  //       createdDate: createdDate,
+  //       createdTime: createdTime,
+
+  //       date: inwardRegister.date || null,
+  //       batchNo: inwardRegister.batchNo,
+  //       source: inwardRegister.source,
+  //       purchasedBy: inwardRegister.purchasedBy,
+  //       totalWeightInKg: inwardRegister.totalWeightInKg,
+        
+  //       inwardCost: inwardRegister.inwardCost,
+  //       remarks: inwardRegister.remarks,
+  //       inwardBy: inwardRegister.inwardBy,
+  //       grnNo: inwardRegister.grnNo?.grnNo || null,
+  //       deliveryChallanNo: inwardRegister.deliveryChallanNo?.challanNo || null,
+  //       selectedParty: selectedParty,
+  //       inwardProducts: inwardRegister.inwardProducts.map((product) => ({
+  //         id: product?.id || null,
+  //         productName: product?.productName?.id || null,
+  //         variant: product?.variant?.variantName || null,
+  //         grossWeight: product.grossWeight,
+  //         netWeight: product.netWeight,
+  //         uom: product.uom?.id || null,
+  //         packingMaterialWeight: product.packingMaterialWeight,
+  //         quantity: product.quantity,
+  //         unitPrice: product.unitPrice,
+  //         amount: product.amount,
+  //       })),
+  //     };
+  //   });
+
+  //   const listResult = {
+  //     data: transformedInwardRegisters,
+  //     meta: result.meta,
+  //   };
+  //   await this.cacheService.set(cacheKey, listResult, this.CACHE_TTL);
+  //   return listResult;
+  // }
+
+
+
+
+// async filterInwardRegisters(
+//   page: number,
+//   limit: number,
+//   filters: Record<string, any>
+// ) {
+//   const cacheKey = `${this.CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
+//   const cached = await this.cacheService.get<any>(cacheKey);
+//   if (cached) return cached;
+
+//   const queryBuilder: SelectQueryBuilder<InwardRegister> =
+//     this.inwardRegisterRepo.createQueryBuilder("inwardRegister");
+
+//   // ✅ Select all fields from InwardRegister
+//   queryBuilder.select("inwardRegister");
+
+//   // ✅ Join relations but select only specific fields
+//   queryBuilder
+//     .leftJoin("inwardRegister.deliveryChallanNo", "deliveryChallanNo")
+//     .addSelect(["deliveryChallanNo.challanNo", "deliveryChallanNo.vehicleNo"])
+//     .leftJoin("inwardRegister.companyName", "companyName")
+//     .addSelect(["companyName.name"])
+//     .leftJoin("inwardRegister.location", "location")
+//     .addSelect(["location.name"])
+//     .leftJoin("inwardRegister.selectedVendor", "selectedVendor")
+//     .addSelect(["selectedVendor.companyName"])
+//     .leftJoin("inwardRegister.selectedFarmer", "selectedFarmer")
+//     .addSelect([
+//       "selectedFarmer.farmerlName",
+//       "selectedFarmer.farmermName",
+//       "selectedFarmer.farmerfName",
+//     ])
+//     .leftJoinAndSelect("inwardRegister.inwardProducts", "inwardProducts")
+//     .leftJoinAndSelect("inwardProducts.productName", "product")
+//     .addSelect(["product.name"]);
+
+//   // ✅ Apply dynamic filters (including deep relations)
+//   Object.entries(filters).forEach(([key, value], index) => {
+//     const paramKey = `param_${index}`; // avoid param conflicts
+
+//     const parts = key.split(".");
+//     if (parts.length > 1) {
+//       // Example: inwardProducts.productName.name
+//       const aliasPath = parts.slice(0, -1).join(".");
+//       const field = parts[parts.length - 1];
+//       const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
+
+//       if (typeof value === "string" && isNaN(Number(value))) {
+//         queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
+//           [paramKey]: `%${value}%`,
+//         });
+//       } else {
+//         queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
+//           [paramKey]: value,
+//         });
+//       }
+//     } else {
+//       // Normal InwardRegister field filter
+//       if (typeof value === "string" && isNaN(Number(value))) {
+//         queryBuilder.andWhere(`inwardRegister.${key} ILIKE :${paramKey}`, {
+//           [paramKey]: `%${value}%`,
+//         });
+//       } else {
+//         queryBuilder.andWhere(`inwardRegister.${key} = :${paramKey}`, {
+//           [paramKey]: value,
+//         });
+//       }
+//     }
+//   });
+//   // ✅ Pagination
+//   queryBuilder.skip((page - 1) * limit).take(limit);
+
+//   const [data, total] = await queryBuilder.getManyAndCount();
+
+//   const filterResult = {
+//     data,
+//     total,
+//     page,
+//     limit,
+//     totalPages: Math.ceil(total / limit),
+//   };
+//   await this.cacheService.set(cacheKey, filterResult, this.CACHE_TTL);
+//   return filterResult;
+// }
+
+

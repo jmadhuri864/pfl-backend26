@@ -198,36 +198,7 @@ export class DealSlipService {
       return response;
   }
     
-  async findDealSlipById(id: string): Promise<DealSlipDetailDto | null> {
-      const key = `${CACHE_PREFIX}:id:${id}`;
-      const cached = await this.cacheService.get<any>(key);
-      if (cached) return cached;
 
-      const dealSlip = await this.dealSlipRepository.findOne({
-          where: { id },
-          relations: ['rfpa'],
-      });
-
-      if (!dealSlip) return null;
-
-      const { createdDate, createdTime } = formatDateTime(dealSlip.createdAt);
-      const response: any = {
-          id: dealSlip.id,
-          lotNo: dealSlip.lotNo,
-          approvalNote: dealSlip.approvalNote,
-          loadingLocation: dealSlip.loadingLocation,
-          remark: dealSlip.remark,
-          specialRequest: dealSlip.specialRequest,
-          requestingDepartment: dealSlip.requestingDepartment,
-          approvalStatus: dealSlip.approvalStatus,
-          createdDate,
-          createdTime,
-          dealSlipNo: dealSlip.dealSlipNo,
-          rfpa: dealSlip.rfpa?.id || null,
-      };
-      await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
-      return response;
-  }
   
 
   async createDealSlip(dealSlipData: CreateDealSlipDto & Record<string, any>): Promise<DealSlip> {
@@ -741,59 +712,7 @@ public async getDealSlipByIdForView(docid: string, userId: string): Promise<Deal
     await this.cacheService.set(key, viewResult, CACHE_TTL_DETAIL);
     return viewResult;
 }
- async filterDealSlips(
-  page: number,
-  limit: number,
-  filters: Record<string, any>
-) {
-  const filterKey = `${CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
-  const filterCached = await this.cacheService.get<any>(filterKey);
-  if (filterCached) return filterCached;
 
-  const queryBuilder: SelectQueryBuilder<DealSlip> =
-    this.dealSlipRepository.createQueryBuilder("dealSlip");
-
-  queryBuilder.select("dealSlip");
-
-  queryBuilder
-    .where("dealSlip.isDeleted = false")
-    .andWhere("dealSlip.deletedAt IS NULL");
-
-  queryBuilder
-    .leftJoin("dealSlip.rfpa", "rfpa")
-    .addSelect("rfpa.rfpaId");
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (key.includes(".")) {
-      const [alias, field] = key.split(".");
-      queryBuilder.andWhere(`${alias}.${field} ILIKE :${field}`, {
-        [field]: `%${value}%`,
-      });
-    } else {
-      if (typeof value === "string" && isNaN(Number(value))) {
-        queryBuilder.andWhere(`dealSlip.${key} ILIKE :${key}`, {
-          [key]: `%${value}%`,
-        });
-      } else {
-        queryBuilder.andWhere(`dealSlip.${key} = :${key}`, { [key]: value });
-      }
-    }
-  });
-
-  queryBuilder.skip((page - 1) * limit).take(limit);
-
-  const [data, total] = await queryBuilder.getManyAndCount();
-
-  const filterResult = {
-    data,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-  await this.cacheService.set(filterKey, filterResult, CACHE_TTL);
-  return filterResult;
-}
 
 public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipResultDto> {
   if (!ids.length) return { message: 'No IDs provided' };
@@ -848,3 +767,91 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipR
 }
  
 }
+
+
+
+//  async filterDealSlips(
+//   page: number,
+//   limit: number,
+//   filters: Record<string, any>
+// ) {
+//   const filterKey = `${CACHE_PREFIX}:filter:${page}:${limit}:${JSON.stringify(filters)}`;
+//   const filterCached = await this.cacheService.get<any>(filterKey);
+//   if (filterCached) return filterCached;
+
+//   const queryBuilder: SelectQueryBuilder<DealSlip> =
+//     this.dealSlipRepository.createQueryBuilder("dealSlip");
+
+//   queryBuilder.select("dealSlip");
+
+//   queryBuilder
+//     .where("dealSlip.isDeleted = false")
+//     .andWhere("dealSlip.deletedAt IS NULL");
+
+//   queryBuilder
+//     .leftJoin("dealSlip.rfpa", "rfpa")
+//     .addSelect("rfpa.rfpaId");
+
+//   Object.entries(filters).forEach(([key, value]) => {
+//     if (key.includes(".")) {
+//       const [alias, field] = key.split(".");
+//       queryBuilder.andWhere(`${alias}.${field} ILIKE :${field}`, {
+//         [field]: `%${value}%`,
+//       });
+//     } else {
+//       if (typeof value === "string" && isNaN(Number(value))) {
+//         queryBuilder.andWhere(`dealSlip.${key} ILIKE :${key}`, {
+//           [key]: `%${value}%`,
+//         });
+//       } else {
+//         queryBuilder.andWhere(`dealSlip.${key} = :${key}`, { [key]: value });
+//       }
+//     }
+//   });
+
+//   queryBuilder.skip((page - 1) * limit).take(limit);
+
+//   const [data, total] = await queryBuilder.getManyAndCount();
+
+//   const filterResult = {
+//     data,
+//     total,
+//     page,
+//     limit,
+//     totalPages: Math.ceil(total / limit),
+//   };
+//   await this.cacheService.set(filterKey, filterResult, CACHE_TTL);
+//   return filterResult;
+// }
+
+
+  // async findDealSlipById(id: string): Promise<DealSlipDetailDto | null> {
+  //     const key = `${CACHE_PREFIX}:id:${id}`;
+  //     const cached = await this.cacheService.get<any>(key);
+  //     if (cached) return cached;
+
+  //     const dealSlip = await this.dealSlipRepository.findOne({
+  //         where: { id },
+  //         relations: ['rfpa'],
+  //     });
+
+  //     if (!dealSlip) return null;
+
+  //     const { createdDate, createdTime } = formatDateTime(dealSlip.createdAt);
+  //     const response: any = {
+  //         id: dealSlip.id,
+  //         lotNo: dealSlip.lotNo,
+  //         approvalNote: dealSlip.approvalNote,
+  //         loadingLocation: dealSlip.loadingLocation,
+  //         remark: dealSlip.remark,
+  //         specialRequest: dealSlip.specialRequest,
+  //         requestingDepartment: dealSlip.requestingDepartment,
+  //         approvalStatus: dealSlip.approvalStatus,
+  //         createdDate,
+  //         createdTime,
+  //         dealSlipNo: dealSlip.dealSlipNo,
+  //         rfpa: dealSlip.rfpa?.id || null,
+  //     };
+  //     await this.cacheService.set(key, response, CACHE_TTL_DETAIL);
+  //     return response;
+  // }

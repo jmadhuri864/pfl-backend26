@@ -77,43 +77,7 @@ export class LabourPaymentVoucherController {
   }
 
   // Get Labour Payment Voucher by ID
-  @httpGet("/:id")
-  public async getVoucherById(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      logger.info(`Fetching Labour Payment Voucher with ID`);
-      const { id } = req.params;
-      const voucher: LPVoucherDetailDto | null = await this.lpVoucherService.getLPVoucherById(id);
 
-      if (!voucher) {
-        logger.warn(`Voucher with ID: ${id} not found`);
-        return res.status(404).json({ status: "fail", message: "Voucher not found" });
-      }
-      logger.info(`Fetched voucher with ID: ${id} successfully`);
-      ControllerLogger.logView('Labour Payment Voucher', id, req, res);
-
-      // Send notification for labour payment voucher view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Labour Payment Voucher viewed: ${id}`,
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: "success",
-        data: voucher,
-      });
-    } catch (err) {
-      logger.error("Error fetching Labour Payment Voucher by ID", { error: err });
-      ControllerLogger.logError('Labour Payment Voucher view', err, req, res);
-      next(err);
-    }
-  }
 
 
 

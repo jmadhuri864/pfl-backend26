@@ -421,67 +421,7 @@ const activeDocuments = typedDocuments;
 
   }
 
-  async getEodStockById(id: string): Promise<EodStockDetailDto | null> {
-    const result = await this.eodRepository.findOne({
-      where: { id },
-      relations: [
-        'eodProducts',
-        'companyName',
-        'location',
-        'eodProducts.sku',
-        'eodProducts.uom',
-      ],
-    });
 
-    if (!result) {
-      throw new Error('EOD Stock Report not found');
-    }
-
-    const rawDate = result.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    const formattedResponse = {
-      id: result.id,
-      createdDate: createdDate,
-      createdTime: createdTime,
-
-      stockDate: result.stockDate,
-      submission: result.submission,
-      comments: result.comments,
-      submittedBy: result.submittedBy,
-
-      companyName: result.companyName
-        ? {
-            id: result.companyName.id,
-            companyName: result.companyName.name,
-          }
-        : null,
-      location: result.location
-        ? {
-            id: result.location.id,
-            name: result.location.name,
-          }
-        : null,
-      eodProducts: result.eodProducts.map((product) => ({
-        id: product.id,
-        qty: product.qty,
-        totalWeightInKg: product.totalWeightInKg,
-        sku: product.sku
-          ? {
-              id: product.sku.id,
-              name: product.sku.name,
-            }
-          : null,
-        uom: product.uom
-          ? {
-              id: product.uom.id,
-              name: product.uom.unit,
-            }
-          : null,
-      })),
-    };
-
-    return formattedResponse;
-  }
 
   async getEodStockByIdForView(docId: string): Promise<EodStockViewDto | null> {
 
@@ -679,3 +619,67 @@ public async deleteMultipleEodStock(ids: string[]): Promise<BulkDeleteEodStockRe
 
   
 }
+
+
+  // async getEodStockById(id: string): Promise<EodStockDetailDto | null> {
+  //   const result = await this.eodRepository.findOne({
+  //     where: { id },
+  //     relations: [
+  //       'eodProducts',
+  //       'companyName',
+  //       'location',
+  //       'eodProducts.sku',
+  //       'eodProducts.uom',
+  //     ],
+  //   });
+
+  //   if (!result) {
+  //     throw new Error('EOD Stock Report not found');
+  //   }
+
+  //   const rawDate = result.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   const formattedResponse = {
+  //     id: result.id,
+  //     createdDate: createdDate,
+  //     createdTime: createdTime,
+
+  //     stockDate: result.stockDate,
+  //     submission: result.submission,
+  //     comments: result.comments,
+  //     submittedBy: result.submittedBy,
+
+  //     companyName: result.companyName
+  //       ? {
+  //           id: result.companyName.id,
+  //           companyName: result.companyName.name,
+  //         }
+  //       : null,
+  //     location: result.location
+  //       ? {
+  //           id: result.location.id,
+  //           name: result.location.name,
+  //         }
+  //       : null,
+  //     eodProducts: result.eodProducts.map((product) => ({
+  //       id: product.id,
+  //       qty: product.qty,
+  //       totalWeightInKg: product.totalWeightInKg,
+  //       sku: product.sku
+  //         ? {
+  //             id: product.sku.id,
+  //             name: product.sku.name,
+  //           }
+  //         : null,
+  //       uom: product.uom
+  //         ? {
+  //             id: product.uom.id,
+  //             name: product.uom.unit,
+  //           }
+  //         : null,
+  //     })),
+  //   };
+
+  //   return formattedResponse;
+  // }
+

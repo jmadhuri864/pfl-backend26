@@ -717,72 +717,7 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
   return result;
   }
 }
-//TODO:Filterd VehicalDispatch By Vaishali...20/08/2025
-       async filterVehicalDispatch(
-        page: number,
-        limit: number,
-        filters: Record<string, any>
-      ) {
-        const queryBuilder: SelectQueryBuilder<VehicleDispatch> =
-          this.vehicleDispatchRepository.createQueryBuilder("vehicalDispatch");
-      
-        // ✅ Select all fields from Aqr
-        queryBuilder.select("vehicalDispatch");
-      
-        // ✅ Join relations but select only specific fields
-        queryBuilder
-          .leftJoin("vehicalDispatch.companyName", "companyName")
-          .addSelect("companyName.name")
-          .leftJoin("vehicalDispatch.deliveryChallanNo", "deliveryChallanNo")
-          .addSelect("deliveryChallanNo.challanNo")
-          
-     // ✅ Apply dynamic filters (including deep relations)
-      Object.entries(filters).forEach(([key, value], index) => {
-        const paramKey = `param_${index}`; // avoid param conflicts
-    
-        const parts = key.split(".");
-        if (parts.length > 1) {
-          // Example: inwardProducts.productName.name
-          const aliasPath = parts.slice(0, -1).join(".");
-          const field = parts[parts.length - 1];
-          const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
-    
-          if (typeof value === "string" && isNaN(Number(value))) {
-            queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
-              [paramKey]: `%${value}%`,
-            });
-          } else {
-            queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
-              [paramKey]: value,
-            });
-          }
-        } else {
-          // Normal InwardRegister field filter
-          if (typeof value === "string" && isNaN(Number(value))) {
-            queryBuilder.andWhere(`vehicalDispatch.${key} ILIKE :${paramKey}`, {
-              [paramKey]: `%${value}%`,
-            });
-          } else {
-            queryBuilder.andWhere(`vehicalDispatch.${key} = :${paramKey}`, {
-              [paramKey]: value,
-            });
-          }
-        }
-      });
-      
-        // ✅ Pagination
-        queryBuilder.skip((page - 1) * limit).take(limit);
-      
-        const [data, total] = await queryBuilder.getManyAndCount();
-      
-        return {
-          data,
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
-        };
-      }
+
 public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
   const success: string[] = [];
   const failed: { id: string; reason: string }[] = [];  
@@ -817,3 +752,72 @@ public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: st
 
   }
 }
+
+
+// //TODO:Filterd VehicalDispatch By Vaishali...20/08/2025
+//        async filterVehicalDispatch(
+//         page: number,
+//         limit: number,
+//         filters: Record<string, any>
+//       ) {
+//         const queryBuilder: SelectQueryBuilder<VehicleDispatch> =
+//           this.vehicleDispatchRepository.createQueryBuilder("vehicalDispatch");
+      
+//         // ✅ Select all fields from Aqr
+//         queryBuilder.select("vehicalDispatch");
+      
+//         // ✅ Join relations but select only specific fields
+//         queryBuilder
+//           .leftJoin("vehicalDispatch.companyName", "companyName")
+//           .addSelect("companyName.name")
+//           .leftJoin("vehicalDispatch.deliveryChallanNo", "deliveryChallanNo")
+//           .addSelect("deliveryChallanNo.challanNo")
+          
+//      // ✅ Apply dynamic filters (including deep relations)
+//       Object.entries(filters).forEach(([key, value], index) => {
+//         const paramKey = `param_${index}`; // avoid param conflicts
+    
+//         const parts = key.split(".");
+//         if (parts.length > 1) {
+//           // Example: inwardProducts.productName.name
+//           const aliasPath = parts.slice(0, -1).join(".");
+//           const field = parts[parts.length - 1];
+//           const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
+    
+//           if (typeof value === "string" && isNaN(Number(value))) {
+//             queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
+//               [paramKey]: `%${value}%`,
+//             });
+//           } else {
+//             queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
+//               [paramKey]: value,
+//             });
+//           }
+//         } else {
+//           // Normal InwardRegister field filter
+//           if (typeof value === "string" && isNaN(Number(value))) {
+//             queryBuilder.andWhere(`vehicalDispatch.${key} ILIKE :${paramKey}`, {
+//               [paramKey]: `%${value}%`,
+//             });
+//           } else {
+//             queryBuilder.andWhere(`vehicalDispatch.${key} = :${paramKey}`, {
+//               [paramKey]: value,
+//             });
+//           }
+//         }
+//       });
+      
+//         // ✅ Pagination
+//         queryBuilder.skip((page - 1) * limit).take(limit);
+      
+//         const [data, total] = await queryBuilder.getManyAndCount();
+      
+//         return {
+//           data,
+//           total,
+//           page,
+//           limit,
+//           totalPages: Math.ceil(total / limit),
+//         };
+//       }
+

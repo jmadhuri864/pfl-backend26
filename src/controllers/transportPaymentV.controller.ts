@@ -169,43 +169,7 @@ export class TPVoucherController {
       next(error);
     }
   }
-  @httpGet('/:id')
-  public async getTPVoucherById(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      logger.info(`Received request to get TPVoucher with id: ${id}`);
-      const voucher = await this.tpVoucherService.getTPVoucherById(id);
-      if (!voucher) {
-        logger.warn(`TPVoucher with id ${id} not found`);
-        ControllerLogger.logError('Transport Payment Voucher view', new AppError(404, 'Transport Payment Voucher not found'), req, res);
-        return next(new AppError(404, 'Transport Payment Voucher not found'));
-      }
-      logger.info(`Fetched Transport Payment Voucher with ID: ${id} successfully`);
-      ControllerLogger.logView('Transport Payment Voucher', id, req, res);
 
-      // Send notification for transport payment voucher view
-      const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Transport Payment Voucher viewed: ${id}`,
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        data: voucher,
-      });
-    } catch (error) {
-      logger.error('Error fetching TPVoucher by id', { error, id });
-      ControllerLogger.logError('Transport Payment Voucher view', error, req, res);
-      next(error);
-    }
-  }
 
   @httpGet('/:id/view')
   public async getTPVoucherByIdForView(
@@ -388,3 +352,42 @@ export class TPVoucherController {
         }
       }
 }
+
+
+  // @httpGet('/:id')
+  // public async getTPVoucherById(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     logger.info(`Received request to get TPVoucher with id: ${id}`);
+  //     const voucher = await this.tpVoucherService.getTPVoucherById(id);
+  //     if (!voucher) {
+  //       logger.warn(`TPVoucher with id ${id} not found`);
+  //       ControllerLogger.logError('Transport Payment Voucher view', new AppError(404, 'Transport Payment Voucher not found'), req, res);
+  //       return next(new AppError(404, 'Transport Payment Voucher not found'));
+  //     }
+  //     logger.info(`Fetched Transport Payment Voucher with ID: ${id} successfully`);
+  //     ControllerLogger.logView('Transport Payment Voucher', id, req, res);
+
+  //     // Send notification for transport payment voucher view
+  //     const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Transport Payment Voucher viewed: ${id}`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: voucher,
+  //     });
+  //   } catch (error) {
+  //     logger.error('Error fetching TPVoucher by id', { error, id });
+  //     ControllerLogger.logError('Transport Payment Voucher view', error, req, res);
+  //     next(error);
+  //   }
+  // }

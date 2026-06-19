@@ -163,56 +163,7 @@ public async createAqr(
     }
   }
 
-  // ─── Filter ───────────────────────────────────────────────────────────────
 
-  @httpGet("/filter")
-  public async filterAqrs(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-      const { page: _p, limit: _l, ...restQuery } = req.query;
-
-      const filters: Record<string, any> = {};
-      for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== "") filters[key] = value;
-      }
-
-      const result = await this.aqrService.filterAqrs(page, limit, filters);
-      res.json({ success: true, ...result });
-    } catch (error) {
-      ControllerLogger.logError("AQR filter", error, req, res);
-      next(error);
-    }
-  }
-
-  // ─── Get By ID ────────────────────────────────────────────────────────────
-
-  @httpGet("/:id")
-  public async getAqrById(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<Response | void> {
-    try {
-      const { id } = req.params;
-      const aqr = await this.aqrService.getAqrById(id);
-
-      if (!aqr) {
-        ControllerLogger.logNotFound("AQR", id, req, res);
-        throw new AppError(404, "AQR not found");
-      }
-
-      ControllerLogger.logView("AQR", id, req, res);
-      return res.status(200).json({ status: "success", data: aqr });
-    } catch (error) {
-      ControllerLogger.logError("AQR Get", error, req, res);
-      next(error);
-    }
-  }
 
   // ─── Get For Update ───────────────────────────────────────────────────────
 
@@ -239,30 +190,6 @@ public async createAqr(
     }
   }
 
-  // ─── Search ───────────────────────────────────────────────────────────────
-
-  @httpGet("/search/:search")
-  public async searchAqr(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<Response | void> {
-    try {
-      const { search } = req.params;
-      const aqr = await this.aqrService.searchAqr(search);
-
-      if (!aqr) {
-        ControllerLogger.logNotFound("AQR", search, req, res);
-        throw new AppError(404, "AQR not found");
-      }
-
-      ControllerLogger.logView("AQR", search, req, res);
-      return res.status(200).json({ status: "success", data: aqr });
-    } catch (error) {
-      ControllerLogger.logError("AQR search", error, req, res);
-      next(error);
-    }
-  }
 
   // ─── Update ───────────────────────────────────────────────────────────────
 
@@ -369,3 +296,88 @@ public async createAqr(
     }
   }
 }
+
+
+
+
+  // ─── Search ───────────────────────────────────────────────────────────────
+
+  // @httpGet("/search/:search")
+  // public async searchAqr(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ): Promise<Response | void> {
+  //   try {
+  //     const { search } = req.params;
+  //     const aqr = await this.aqrService.searchAqr(search);
+
+  //     if (!aqr) {
+  //       ControllerLogger.logNotFound("AQR", search, req, res);
+  //       throw new AppError(404, "AQR not found");
+  //     }
+
+  //     ControllerLogger.logView("AQR", search, req, res);
+  //     return res.status(200).json({ status: "success", data: aqr });
+  //   } catch (error) {
+  //     ControllerLogger.logError("AQR search", error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+
+
+
+  // ─── Filter ───────────────────────────────────────────────────────────────
+
+  // @httpGet("/filter")
+  // public async filterAqrs(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const page = parseInt(req.query.page as string, 10) || 1;
+  //     const limit = parseInt(req.query.limit as string, 10) || 10;
+  //     const { page: _p, limit: _l, ...restQuery } = req.query;
+
+  //     const filters: Record<string, any> = {};
+  //     for (const [key, value] of Object.entries(restQuery ?? {})) {
+  //       if (value !== undefined && value !== "") filters[key] = value;
+  //     }
+
+  //     const result = await this.aqrService.filterAqrs(page, limit, filters);
+  //     res.json({ success: true, ...result });
+  //   } catch (error) {
+  //     ControllerLogger.logError("AQR filter", error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+  // ─── Get By ID ────────────────────────────────────────────────────────────
+
+  // @httpGet("/:id")
+  // public async getAqrById(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ): Promise<Response | void> {
+  //   try {
+  //     const { id } = req.params;
+  //     const aqr = await this.aqrService.getAqrById(id);
+
+  //     if (!aqr) {
+  //       ControllerLogger.logNotFound("AQR", id, req, res);
+  //       throw new AppError(404, "AQR not found");
+  //     }
+
+  //     ControllerLogger.logView("AQR", id, req, res);
+  //     return res.status(200).json({ status: "success", data: aqr });
+  //   } catch (error) {
+  //     ControllerLogger.logError("AQR Get", error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+

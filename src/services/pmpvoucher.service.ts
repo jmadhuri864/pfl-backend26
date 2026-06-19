@@ -250,92 +250,7 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     return recycleResult;
   }
 
-  public async getVoucherById(id: string): Promise<any> {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const voucher = await this.pmpVoucherRepository
-      .createQueryBuilder('pmpVoucher')
-      .leftJoinAndSelect('pmpVoucher.materials', 'materials')
-      .leftJoinAndSelect('materials.itemUom', 'itemUom')
-      .leftJoinAndSelect('pmpVoucher.address', 'address')
-      .leftJoinAndSelect('pmpVoucher.requestedBy', 'requestedBy')
-      .leftJoinAndSelect('pmpVoucher.companyName', 'company') // Renamed alias to "company"
-      .leftJoinAndSelect('pmpVoucher.grnNo', 'grn') // Join with GRN entity
-      .select([
-        'pmpVoucher.id',
-        'pmpVoucher.voucherNo',
-        'pmpVoucher.approvalStatus',
-        'pmpVoucher.debitCreditTo',
-        'pmpVoucher.payReceivedFrom',
-        'pmpVoucher.location',
-        'pmpVoucher.sellerName',
-        'pmpVoucher.contactNo',
-        'pmpVoucher.altContactNo',
-        'pmpVoucher.purpose',
-        'pmpVoucher.paymentMode',
-        'pmpVoucher.totalAmt',
-        'pmpVoucher.amtWords',
-        'pmpVoucher.createdAt',
-
-        'pmpVoucher.receiverName',
-        'pmpVoucher.anyAttachment',
-        'pmpVoucher.requestingDepartment',
-        'pmpVoucher.kyc',
-
-        'materials.id',
-        'materials.itemName',
-        'materials.itemQty',
-        'materials.rate',
-        'materials.amt',
-        'itemUom.id',
-        'itemUom.unit',
-
-        'company.id',
-        'company.name',
-
-        'address',
-
-        'requestedBy.id',
-        'requestedBy.firstName',
-        'requestedBy.lastName',
-
-        'grn.id',
-        'grn.grnNo',
-      ])
-      .where('pmpVoucher.id = :id', { id })
-      .getOne();
-    if (!voucher) return null;
-    const rawDate = voucher.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-    if (voucher) {
-      const idResult = {
-        ...voucher,
-
-        grnNo: voucher.grnNo
-          ? {
-              id: voucher.grnNo.id || null,
-              grnNo: voucher.grnNo.grnNo || null,
-            }
-          : null,
-
-        companyName: voucher.companyName
-          ? {
-              id: voucher.companyName.id || null,
-              companyName: voucher.companyName.name || null,
-            }
-          : null,
-
-        createdTime: createdTime,
-        createdDate: createdDate,
-      };
-      await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
-      return idResult;
-    }
-
-    return voucher;
-  }
 
   public async getVoucherByIdforView(docid: string): Promise<PMPVoucherDetailDto | null> {
     const cacheKey = `${this.CACHE_PREFIX}:view:${docid}`;
@@ -674,3 +589,93 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
   }
 
 }
+
+
+
+
+  // public async getVoucherById(id: string): Promise<any> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const voucher = await this.pmpVoucherRepository
+  //     .createQueryBuilder('pmpVoucher')
+  //     .leftJoinAndSelect('pmpVoucher.materials', 'materials')
+  //     .leftJoinAndSelect('materials.itemUom', 'itemUom')
+  //     .leftJoinAndSelect('pmpVoucher.address', 'address')
+  //     .leftJoinAndSelect('pmpVoucher.requestedBy', 'requestedBy')
+  //     .leftJoinAndSelect('pmpVoucher.companyName', 'company') // Renamed alias to "company"
+  //     .leftJoinAndSelect('pmpVoucher.grnNo', 'grn') // Join with GRN entity
+  //     .select([
+  //       'pmpVoucher.id',
+  //       'pmpVoucher.voucherNo',
+  //       'pmpVoucher.approvalStatus',
+  //       'pmpVoucher.debitCreditTo',
+  //       'pmpVoucher.payReceivedFrom',
+  //       'pmpVoucher.location',
+  //       'pmpVoucher.sellerName',
+  //       'pmpVoucher.contactNo',
+  //       'pmpVoucher.altContactNo',
+  //       'pmpVoucher.purpose',
+  //       'pmpVoucher.paymentMode',
+  //       'pmpVoucher.totalAmt',
+  //       'pmpVoucher.amtWords',
+  //       'pmpVoucher.createdAt',
+
+  //       'pmpVoucher.receiverName',
+  //       'pmpVoucher.anyAttachment',
+  //       'pmpVoucher.requestingDepartment',
+  //       'pmpVoucher.kyc',
+
+  //       'materials.id',
+  //       'materials.itemName',
+  //       'materials.itemQty',
+  //       'materials.rate',
+  //       'materials.amt',
+  //       'itemUom.id',
+  //       'itemUom.unit',
+
+  //       'company.id',
+  //       'company.name',
+
+  //       'address',
+
+  //       'requestedBy.id',
+  //       'requestedBy.firstName',
+  //       'requestedBy.lastName',
+
+  //       'grn.id',
+  //       'grn.grnNo',
+  //     ])
+  //     .where('pmpVoucher.id = :id', { id })
+  //     .getOne();
+  //   if (!voucher) return null;
+  //   const rawDate = voucher.createdAt;
+  //   const { createdDate, createdTime } = formatDateTime(rawDate);
+  //   if (voucher) {
+  //     const idResult = {
+  //       ...voucher,
+
+  //       grnNo: voucher.grnNo
+  //         ? {
+  //             id: voucher.grnNo.id || null,
+  //             grnNo: voucher.grnNo.grnNo || null,
+  //           }
+  //         : null,
+
+  //       companyName: voucher.companyName
+  //         ? {
+  //             id: voucher.companyName.id || null,
+  //             companyName: voucher.companyName.name || null,
+  //           }
+  //         : null,
+
+  //       createdTime: createdTime,
+  //       createdDate: createdDate,
+  //     };
+  //     await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
+  //     return idResult;
+  //   }
+
+  //   return voucher;
+  // }

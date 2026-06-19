@@ -364,101 +364,111 @@ export class CustomerDeliveryChallanController {
   
   
 
-  @httpPost('/update-returns/:id')
-  public async updateChallanWithReturns(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      await this.customerDeliveryChallanService.updateDeliveryChallanProductsWithReturns(id);
 
-      // 🔔 Send notification for delivery challan returns update
-      try {
-        const userId = res.locals.user?.id;
-        if (userId) {
-          await this.notificationService.createNoti(
-            `Delivery challan with ID ${id} updated with return data`,
-            userId
-          );
-        }
-      } catch (notifError) {
-      }
 
-      ControllerLogger.logSuccess('Delivery Challan updated with returns', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        message: 'Delivery challan updated with return data successfully',
-      });
-    } catch (err) {
-      ControllerLogger.logError('Update Delivery Challan with returns', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet('/net-amounts/:id')
-  public async getChallanWithNetAmounts(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const challan = await this.customerDeliveryChallanService.getDeliveryChallanWithNetAmounts(id);
 
-      if (!challan) {
-        ControllerLogger.logNotFound('Delivery Challan', id, req, res);
-        return next(new AppError(404, 'Delivery challan not found'));
-      }
 
-      // 🔔 Send notification for delivery challan net amounts view
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Viewed delivery challan with ID ${id} net amounts`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Delivery challan net amounts view notification error:', notifError);
-      // }
-
-      ControllerLogger.logView('Delivery Challan with net amounts', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: challan,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Delivery Challan with net amounts', err, req, res);
-      next(err);
-    }
-  }
-
-  @httpGet('/check-return-status/:id')
-  public async checkReturnStatus(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const status = await this.customerDeliveryChallanService.checkReturnByCustomerStatus(id);
-
-      if (!status) {
-        ControllerLogger.logNotFound('Delivery Challan', id, req, res);
-        return next(new AppError(404, 'Delivery challan not found'));
-      }
-
-      ControllerLogger.logView('Delivery Challan return status', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: status,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Check Delivery Challan return status', err, req, res);
-      next(err);
-    }
-  }
 }
+
+
+  // @httpGet('/check-return-status/:id')
+  // public async checkReturnStatus(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const status = await this.customerDeliveryChallanService.checkReturnByCustomerStatus(id);
+
+  //     if (!status) {
+  //       ControllerLogger.logNotFound('Delivery Challan', id, req, res);
+  //       return next(new AppError(404, 'Delivery challan not found'));
+  //     }
+
+  //     ControllerLogger.logView('Delivery Challan return status', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: status,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Check Delivery Challan return status', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet('/net-amounts/:id')
+  // public async getChallanWithNetAmounts(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const challan = await this.customerDeliveryChallanService.getDeliveryChallanWithNetAmounts(id);
+
+  //     if (!challan) {
+  //       ControllerLogger.logNotFound('Delivery Challan', id, req, res);
+  //       return next(new AppError(404, 'Delivery challan not found'));
+  //     }
+
+  //     // 🔔 Send notification for delivery challan net amounts view
+  //     // try {
+  //     //   const userId = res.locals.user?.id;
+  //     //   if (userId) {
+  //     //     await this.notificationService.createNoti(
+  //     //       `Viewed delivery challan with ID ${id} net amounts`,
+  //     //       userId
+  //     //     );
+  //     //   }
+  //     // } catch (notifError) {
+  //     //   console.log('Delivery challan net amounts view notification error:', notifError);
+  //     // }
+
+  //     ControllerLogger.logView('Delivery Challan with net amounts', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: challan,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Delivery Challan with net amounts', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpPost('/update-returns/:id')
+  // public async updateChallanWithReturns(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     await this.customerDeliveryChallanService.updateDeliveryChallanProductsWithReturns(id);
+
+  //     // 🔔 Send notification for delivery challan returns update
+  //     try {
+  //       const userId = res.locals.user?.id;
+  //       if (userId) {
+  //         await this.notificationService.createNoti(
+  //           `Delivery challan with ID ${id} updated with return data`,
+  //           userId
+  //         );
+  //       }
+  //     } catch (notifError) {
+  //     }
+
+  //     ControllerLogger.logSuccess('Delivery Challan updated with returns', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: 'Delivery challan updated with return data successfully',
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Update Delivery Challan with returns', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

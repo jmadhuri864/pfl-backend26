@@ -80,41 +80,7 @@ export class StockTranferDeliveryChallanController {
     }
   }
 
-  @httpGet('/:id')
-  public async getById(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const challan = await this.stockTransferDeliveryChallanService.getById(id);
-      if (!challan) {
-        ControllerLogger.logError('Stock Transfer Delivery Challan view', new AppError(404, 'Stock transfer delivery challan not found'), req, res);
-        return next(new AppError(404, 'Stock transfer delivery challan not found'));
-      }
 
-      ControllerLogger.logView('Stock Transfer Delivery Challan', id, req, res);
-
-      // Send notification for stock transfer delivery challan view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Stock Transfer Delivery Challan viewed: ${id}`,
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        data: challan,
-      });
-    } catch (err) {
-      logger.error('Error fetching challan by ID', { error: err });
-      ControllerLogger.logError('Stock Transfer Delivery Challan view', err, req, res);
-      next(err);
-    }
-  }
 @httpDelete('/delete/multiple')
   public async deleteMultipleDCForStockTransfer(
     @request() req: Request,
@@ -327,3 +293,41 @@ export class StockTranferDeliveryChallanController {
     }
   }
 }
+
+
+  // @httpGet('/:id')
+  // public async getById(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const challan = await this.stockTransferDeliveryChallanService.getById(id);
+  //     if (!challan) {
+  //       ControllerLogger.logError('Stock Transfer Delivery Challan view', new AppError(404, 'Stock transfer delivery challan not found'), req, res);
+  //       return next(new AppError(404, 'Stock transfer delivery challan not found'));
+  //     }
+
+  //     ControllerLogger.logView('Stock Transfer Delivery Challan', id, req, res);
+
+  //     // Send notification for stock transfer delivery challan view
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Stock Transfer Delivery Challan viewed: ${id}`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: challan,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error fetching challan by ID', { error: err });
+  //     ControllerLogger.logError('Stock Transfer Delivery Challan view', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

@@ -165,110 +165,6 @@ export class InwardRegisterController {
       next(error);
     }
   }
-@httpGet('/filter')
-public async filterInwardRegisters(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction,
-) {
-try {
-      // Extract pagination
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-
-      // Remove pagination keys and treat the rest as filters
-      const { page: _p, limit: _l, ...restQuery } = req.query;
-
-      // Always initialize filters as a Record
-      const filters: Record<string, any> = {};
-
-      for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== "") {
-          filters[key] = value;
-        }
-      }
-
-      const result = await this.inwardRegisterService.filterInwardRegisters(page, limit, filters);
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, message: "Server Error" });
-    }
-}
-  // @httpGet('/')
-  // public async getInwardRegisters(
-  //   @response() res: Response,
-  //   @request() req: Request,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     logger.info('Fetching all inward registers');
-  //     const { page, limit, search, sort, inwardId } = req.query;
-
-  //     const queryOptions: PaginationOptions = {
-  //       page: page ? Number(page) : undefined,
-  //       limit: limit ? Number(limit) : undefined,
-  //       searchFields: [''],
-  //       filters: {},
-  //       sort: (sort as string) || undefined, 
-  //       search: (search as string) || '',
-  //     };
-  //     const inwardRegisters =
-  //       await this.inwardRegisterService.getInwardRegisters(queryOptions);
-
-  //     res.status(200).json({
-  //       status: 'success',
-  //       data: inwardRegisters.data,
-  //       allRecords: inwardRegisters.meta.total,
-  //       totalPages: inwardRegisters.meta.pages,
-  //       page: inwardRegisters.meta.page,
-  //     });
-  //   } catch (err) {
-  //     logger.error('Error fetching inward registers', { error: err });
-  //     console.log(err);
-  //     next(err);
-  //   }
-  // }
-
-  @httpGet('/:id')
-  public async getInwardRegisterById(
-    @requestParam('id') id: string,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      logger.info('Fetching inward register by ID', { id });
-      const inwardRegister =
-        await this.inwardRegisterService.getInwardRegisterById(id);
-      if (!inwardRegister) {
-        logger.warn('Inward register not found', { id });
-        return next(
-          new AppError(404, `Inward register with ID ${id} not found`),
-        );
-      }
-
-      // Send notification for inward register view
-      // const currentUserId = res.locals.user?.id;
-      // if (currentUserId) {
-      //   await this.notificationService.createNoti(
-      //     `Inward register viewed: ${id}`,
-      //     currentUserId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        data: inwardRegister,
-      });
-    } catch (err) {
-      logger.error('Error fetching inward register', { id, error: err });
-      next(err);
-    }
-  }
 
 
   @httpGet('/update/:id')
@@ -298,36 +194,6 @@ try {
       next(err);
     }
   }
-
-  //  @httpGet('/view/:id')
-  // public async getInwardRegisterForGet(
-  //   @requestParam('id') id: string,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     console.log(id);
-  //     logger.info('Fetching inward register by ID', { id });
-  //     const inwardRegister =
-  //       await this.inwardRegisterService.getInwardidforget(id);
-  //     console.log(inwardRegister)
-  //     if (!inwardRegister) {
-  //       logger.warn('Inward register not found', { id });
-  //       return next(
-  //         new AppError(404, `Inward register with ID ${id} not found`),
-  //       );
-  //     }
-
-  //     res.status(200).json({
-  //       status: 'success',
-  //       data: inwardRegister,
-  //     });
-  //   } catch (err) {
-  //     console.log(err);
-  //     logger.error('Error fetching inward register', { id, error: err });
-  //     next(err);
-  //   }
-  // }
 
   @httpPatch('/:id')
   public async updateInwardRegister(
@@ -410,25 +276,6 @@ try {
       next(error);
     }
   }
-
-  @httpGet('/inward-registers/scheduled-for-deletion')
-  public async getScheduledForDeletion(
-    @response() res: Response,
-  ): Promise<void> {
-    try {
-      const records =
-        await this.inwardRegisterService.getScheduledForDeletionRecords();
-      res.status(200).json(records);
-    } catch (error) {
-      logger.error('Error retrieving scheduled for deletion records', {
-        error,
-      });
-      res.status(500).json({ message: 'Error retrieving records' });
-    }
-  }
-
-
- 
 
 //TODO: get All Inward Register.....By Vaishali
   @httpGet('/')
@@ -540,6 +387,7 @@ try {
       next(error);
     }
   }
+
   @httpDelete('/delete/multiple')
     public async deleteMultipleInwardRegister(
       @request() req: Request,
@@ -564,6 +412,161 @@ try {
       }
     }
 
-
-
 }
+
+
+  // @httpGet('/inward-registers/scheduled-for-deletion')
+  // public async getScheduledForDeletion(
+  //   @response() res: Response,
+  // ): Promise<void> {
+  //   try {
+  //     const records =
+  //       await this.inwardRegisterService.getScheduledForDeletionRecords();
+  //     res.status(200).json(records);
+  //   } catch (error) {
+  //     logger.error('Error retrieving scheduled for deletion records', {
+  //       error,
+  //     });
+  //     res.status(500).json({ message: 'Error retrieving records' });
+  //   }
+  // }
+
+
+
+  //  @httpGet('/view/:id')
+  // public async getInwardRegisterForGet(
+  //   @requestParam('id') id: string,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     console.log(id);
+  //     logger.info('Fetching inward register by ID', { id });
+  //     const inwardRegister =
+  //       await this.inwardRegisterService.getInwardidforget(id);
+  //     console.log(inwardRegister)
+  //     if (!inwardRegister) {
+  //       logger.warn('Inward register not found', { id });
+  //       return next(
+  //         new AppError(404, `Inward register with ID ${id} not found`),
+  //       );
+  //     }
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: inwardRegister,
+  //     });
+  //   } catch (err) {
+  //     console.log(err);
+  //     logger.error('Error fetching inward register', { id, error: err });
+  //     next(err);
+  //   }
+  // }
+
+
+// @httpGet('/filter')
+// public async filterInwardRegisters(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ) {
+// try {
+//       // Extract pagination
+//       const page = parseInt(req.query.page as string, 10) || 1;
+//       const limit = parseInt(req.query.limit as string, 10) || 10;
+
+//       // Remove pagination keys and treat the rest as filters
+//       const { page: _p, limit: _l, ...restQuery } = req.query;
+
+//       // Always initialize filters as a Record
+//       const filters: Record<string, any> = {};
+
+//       for (const [key, value] of Object.entries(restQuery ?? {})) {
+//         if (value !== undefined && value !== "") {
+//           filters[key] = value;
+//         }
+//       }
+
+//       const result = await this.inwardRegisterService.filterInwardRegisters(page, limit, filters);
+
+//       res.json({
+//         success: true,
+//         ...result,
+//       });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ success: false, message: "Server Error" });
+//     }
+// }
+  // @httpGet('/')
+  // public async getInwardRegisters(
+  //   @response() res: Response,
+  //   @request() req: Request,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     logger.info('Fetching all inward registers');
+  //     const { page, limit, search, sort, inwardId } = req.query;
+
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : undefined,
+  //       limit: limit ? Number(limit) : undefined,
+  //       searchFields: [''],
+  //       filters: {},
+  //       sort: (sort as string) || undefined, 
+  //       search: (search as string) || '',
+  //     };
+  //     const inwardRegisters =
+  //       await this.inwardRegisterService.getInwardRegisters(queryOptions);
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: inwardRegisters.data,
+  //       allRecords: inwardRegisters.meta.total,
+  //       totalPages: inwardRegisters.meta.pages,
+  //       page: inwardRegisters.meta.page,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error fetching inward registers', { error: err });
+  //     console.log(err);
+  //     next(err);
+  //   }
+  // }
+
+  // @httpGet('/:id')
+  // public async getInwardRegisterById(
+  //   @requestParam('id') id: string,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     logger.info('Fetching inward register by ID', { id });
+  //     const inwardRegister =
+  //       await this.inwardRegisterService.getInwardRegisterById(id);
+  //     if (!inwardRegister) {
+  //       logger.warn('Inward register not found', { id });
+  //       return next(
+  //         new AppError(404, `Inward register with ID ${id} not found`),
+  //       );
+  //     }
+
+  //     // Send notification for inward register view
+  //     // const currentUserId = res.locals.user?.id;
+  //     // if (currentUserId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Inward register viewed: ${id}`,
+  //     //     currentUserId
+  //     //   );
+  //     // }
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: inwardRegister,
+  //     });
+  //   } catch (err) {
+  //     logger.error('Error fetching inward register', { id, error: err });
+  //     next(err);
+  //   }
+  // }
+
+

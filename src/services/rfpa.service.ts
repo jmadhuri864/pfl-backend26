@@ -79,25 +79,25 @@ export class RfpaService {
     @inject(TYPES.NotificationService)
     private readonly notificationService: NotificationService,
 
-     @inject(TYPES.ProductVarientRepository)
-        private productVarientsRepository: ProductVarientRepository,
+    @inject(TYPES.ProductVarientRepository)
+    private productVarientsRepository: ProductVarientRepository,
     @inject(TYPES.AuditLogService)
     private readonly auditLogService: AuditLogService,
     @inject(TYPES.DocumentbService)
     private readonly documentbService: DocumentbService, // Replace with actual type if available
     @inject(TYPES.DocSingalApproverService)
-     private readonly docSingalApproverService: DocSingalApproverService,
-     @inject(TYPES.ApprovalFlowService)
+    private readonly docSingalApproverService: DocSingalApproverService,
+    @inject(TYPES.ApprovalFlowService)
     private approvalFlowService: ApprovalFlowService,
     @inject(TYPES.DocumentbRepository)
     private documentbRepository: DocumentbRepository,
     @inject(TYPES.RfpaPaymentInfoRepository)
-    private rfpaPaymentInfoRepository:RfpaPaymentInfoRepository,
+    private rfpaPaymentInfoRepository: RfpaPaymentInfoRepository,
     @inject(TYPES.ApprovalFlowRepository)
-    private approvalFlowRepository:ApprovalFlowRepository,
+    private approvalFlowRepository: ApprovalFlowRepository,
     @inject(TYPES.CacheService)
     private readonly cacheService: CacheService,
-  ) {}
+  ) { }
 
   private readonly CACHE_PREFIX = 'rfpa';
   private readonly CACHE_TTL = 180;
@@ -120,451 +120,110 @@ export class RfpaService {
   }
 
   async createRfpa(rfpaData: CreateRfpaDto & Record<string, any>): Promise<RFPA> {
-  const queryRunner = this.dataSource.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-  try {
-    const rfpaId = await this.generateRFPAId();
+    try {
+      const rfpaId = await this.generateRFPAId();
 
-    
 
-    const extractId = (value: any) => {
-      if (!value) return null;
-      if (typeof value === 'string') return value;
-      if (typeof value === 'object' && value.id) return value.id;
-      return null;
-    };
 
-    const selectedVendorId = rfpaData.source === 'vendor' ? extractId(rfpaData.selectedParty || rfpaData.selectedVendor) : null;
-    const selectedFarmerId = rfpaData.source === 'farmer' ? extractId(rfpaData.selectedParty || rfpaData.selectedFarmer) : null;
+      const extractId = (value: any) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object' && value.id) return value.id;
+        return null;
+      };
 
-    const rfpaPaymentInfo = queryRunner.manager.create(this.rfpaPaymentInfoRepository.target, {
-      paymentMode: rfpaData.paymentInfo.paymentMode,
-      creditPeriod: rfpaData.paymentInfo.creditPeriod,
-      paymentDate: rfpaData.paymentInfo.paymentDate,
-      paymentTerms: rfpaData.paymentInfo.paymentTerms,
-      dueDate: rfpaData.paymentInfo.dueDate,
-      advancePaidAmt: rfpaData.paymentInfo.advancePaidAmt,
-      validityOfQuote: rfpaData.paymentInfo.validityOfQuote
-    } as any) as unknown as PaymentInfoForRFPA;
+      const selectedVendorId = rfpaData.source === 'vendor' ? extractId(rfpaData.selectedParty || rfpaData.selectedVendor) : null;
+      const selectedFarmerId = rfpaData.source === 'farmer' ? extractId(rfpaData.selectedParty || rfpaData.selectedFarmer) : null;
 
-    const saveRfpaPaymentInfo = await queryRunner.manager.save(rfpaPaymentInfo);
-    
-    const rfpaEntity = queryRunner.manager.create(this.rfpaRepository.target, {
-      rfpaId,
-      requestingDepartment: rfpaData.requestingDepartment,
-      companyName: extractId(rfpaData.companyName),
-      purchaseLocation: extractId(rfpaData.purchaseLocation),
-      purchaseForSalesLocation: extractId(rfpaData.purchaseForSalesLocation),
-      otherPurchaseLoc: rfpaData.otherPurchaseLoc,
-      otherPurchaseForSalesLoc: rfpaData.otherPurchaseForSalesLoc,
-      deliveryReceivingPerson: rfpaData.deliveryReceivingPerson,
-      packingInstruction: rfpaData.packingInstruction,
-      selectedVendor: selectedVendorId,
-      selectedFarmer: selectedFarmerId,
-      specialReq: rfpaData.specialReq,
-      source: rfpaData.source,
-      paymentInfo: saveRfpaPaymentInfo.id,
-      remark: rfpaData.remark,
-    } as any) as unknown as RFPA;
+      const rfpaPaymentInfo = queryRunner.manager.create(this.rfpaPaymentInfoRepository.target, {
+        paymentMode: rfpaData.paymentInfo.paymentMode,
+        creditPeriod: rfpaData.paymentInfo.creditPeriod,
+        paymentDate: rfpaData.paymentInfo.paymentDate,
+        paymentTerms: rfpaData.paymentInfo.paymentTerms,
+        dueDate: rfpaData.paymentInfo.dueDate,
+        advancePaidAmt: rfpaData.paymentInfo.advancePaidAmt,
+        validityOfQuote: rfpaData.paymentInfo.validityOfQuote
+      } as any) as unknown as PaymentInfoForRFPA;
 
-    if (rfpaData.rfpaProducts && Array.isArray(rfpaData.rfpaProducts)) {
-      rfpaEntity.rfpaProducts = rfpaData.rfpaProducts.map((product: any) => {
-        const rfpaProduct = new RFPAProduct();
-        rfpaProduct.productName = extractId(product.productName) as any;
-        rfpaProduct.variant = extractId(product.variant) as any;
-        rfpaProduct.grade = product.grade;
-        rfpaProduct.quantity = product.quantity;
-        rfpaProduct.uom = extractId(product.uom) as any;
-        rfpaProduct.unitPrice = product.unitPrice;
-        rfpaProduct.count = product.count;
-        rfpaProduct.size = product.size;
-        rfpaProduct.origin = product.origin;
-        rfpaProduct.variety = product.variety;
-        rfpaProduct.amount = product.amount;
-        rfpaProduct.purchaseDate = product.purchaseDate;
-        rfpaProduct.expectedHarvestDate = product.expectedHarvestDate;
-        rfpaProduct.dispatchDate = product.dispatchDate;
-        rfpaProduct.deliveryDate = product.deliveryDate;
-        rfpaProduct.deliveryLocation = product.deliveryLocation;
-        return rfpaProduct;
+      const saveRfpaPaymentInfo = await queryRunner.manager.save(rfpaPaymentInfo);
+
+      const rfpaEntity = queryRunner.manager.create(this.rfpaRepository.target, {
+        rfpaId,
+        requestingDepartment: rfpaData.requestingDepartment,
+        companyName: extractId(rfpaData.companyName),
+        purchaseLocation: extractId(rfpaData.purchaseLocation),
+        purchaseForSalesLocation: extractId(rfpaData.purchaseForSalesLocation),
+        otherPurchaseLoc: rfpaData.otherPurchaseLoc,
+        otherPurchaseForSalesLoc: rfpaData.otherPurchaseForSalesLoc,
+        deliveryReceivingPerson: rfpaData.deliveryReceivingPerson,
+        packingInstruction: rfpaData.packingInstruction,
+        selectedVendor: selectedVendorId,
+        selectedFarmer: selectedFarmerId,
+        specialReq: rfpaData.specialReq,
+        source: rfpaData.source,
+        paymentInfo: saveRfpaPaymentInfo.id,
+        remark: rfpaData.remark,
+      } as any) as unknown as RFPA;
+
+      if (rfpaData.rfpaProducts && Array.isArray(rfpaData.rfpaProducts)) {
+        rfpaEntity.rfpaProducts = rfpaData.rfpaProducts.map((product: any) => {
+          const rfpaProduct = new RFPAProduct();
+          rfpaProduct.productName = extractId(product.productName) as any;
+          rfpaProduct.variant = extractId(product.variant) as any;
+          rfpaProduct.grade = product.grade;
+          rfpaProduct.quantity = product.quantity;
+          rfpaProduct.uom = extractId(product.uom) as any;
+          rfpaProduct.unitPrice = product.unitPrice;
+          rfpaProduct.count = product.count;
+          rfpaProduct.size = product.size;
+          rfpaProduct.origin = product.origin;
+          rfpaProduct.variety = product.variety;
+          rfpaProduct.amount = product.amount;
+          rfpaProduct.purchaseDate = product.purchaseDate;
+          rfpaProduct.expectedHarvestDate = product.expectedHarvestDate;
+          rfpaProduct.dispatchDate = product.dispatchDate;
+          rfpaProduct.deliveryDate = product.deliveryDate;
+          rfpaProduct.deliveryLocation = product.deliveryLocation;
+          return rfpaProduct;
+        });
+      }
+
+      const savedRfpaResult = await queryRunner.manager.save(rfpaEntity);
+
+      const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
+      const document = await this.documentbService.createDocument({
+        type: DocumentTypeEnum.RFPA,
+        docDef: DocDefEnum.PROCUREMENT,
+        status: DocumentStatus.HOLD,
+        remarks: 'Document auto-created with RFPA',
+        lastActionBy: { id: rfpaData.createdBy } as any,
+        document_type_id: savedRfpa.id,
       });
+
+      await queryRunner.commitTransaction();
+
+      await this.documentbService.startApprovalFlow(document.id);
+
+      await this.invalidateCache();
+      return savedRfpa;
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      logger.error('Error creating RFPA:', error);
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const savedRfpaResult = await queryRunner.manager.save(rfpaEntity);
-    
-    const savedRfpa = Array.isArray(savedRfpaResult) ? savedRfpaResult[0] : savedRfpaResult;
-    const document = await this.documentbService.createDocument({
-      type: DocumentTypeEnum.RFPA,
-      docDef: DocDefEnum.PROCUREMENT,
-      status: DocumentStatus.HOLD,
-      remarks: 'Document auto-created with RFPA',
-      lastActionBy: { id: rfpaData.createdBy } as any,
-      document_type_id: savedRfpa.id,
-    });
-
-    await queryRunner.commitTransaction();
-
-    await this.documentbService.startApprovalFlow(document.id);
-
-    await this.invalidateCache();
-    return savedRfpa;
-  } catch (error: any) {
-    await queryRunner.rollbackTransaction();
-    logger.error('Error creating RFPA:', error);
-    throw error;
-  } finally {
-    await queryRunner.release();
-  }
-}
-
-  async findAllRfpas(
-    queryOptions: PaginationOptions,
-  ): Promise<{ data: any[]; meta: any }> {
-    const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
-    const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
-
-    const page = queryOptions.page ?? 1;
-    const limit = queryOptions.limit ?? 10;
-
-    const skip = (page - 1) * limit;
-
-    const [rfpas, total] = await this.rfpaRepository.findAndCount({
-      relations: [
-        'companyName',
-        'selectedVendor',
-        'selectedFarmer',
-        'rfpaProducts',
-        'rfpaProducts.productName',
-        'rfpaProducts.uom',
-        'paymentInfo',
-        'purchaseForSalesLocation',
-        'purchaseLocation',
-      ],
-      where: { isDeleted: false },
-      order: {
-        createdAt: 'DESC',
-      },
-      skip,
-      take: limit,
-    });
-
-    const formattedResponses = rfpas.map((rfpa) => {
-      const rawDate = rfpa.createdAt;
-      const { createdDate, createdTime } = formatDateTime(rawDate);
-      const getSelectedParty = (rfpa: RFPA) => {
-        return rfpa.source === 'vendor'
-          ? rfpa.selectedVendor?.id || null
-          : rfpa.source === 'farmer'
-          ? rfpa.selectedFarmer?.id || null
-          : null;
-      };
-
-      return {
-        id: rfpa.id,
-        companyName: rfpa.companyName?.name || null,
-        rfpaId: rfpa.rfpaId,
-        createdTime,
-        createdDate,
-
-        requestingDepartment: rfpa.requestingDepartment,
-        purchaseLocation: rfpa.purchaseLocation?.name || null,
-        purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.name || null,
-        deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
-        packingInstruction: rfpa.packingInstruction,
-       specialReq: rfpa.specialReq,
-        source: rfpa.source,
-        selectedParty: getSelectedParty(rfpa),
-        paymentInfo: rfpa.paymentInfo
-          ? {
-              id: rfpa.paymentInfo.id,
-              paymentMode: rfpa.paymentInfo.paymentMode,
-              paymentDate: rfpa.paymentInfo.paymentDate,
-              advancePaidAmount: rfpa.paymentInfo.advancePaidAmt,
-              paymentTerms: rfpa.paymentInfo.paymentTerms,
-              validityOfQuote: rfpa.paymentInfo.validityOfQuote,
-              creditPeriod: rfpa.paymentInfo.creditPeriod,
-              dueDate: rfpa.paymentInfo.dueDate,
-            }
-          : null,
-        rfpaProducts: rfpa.rfpaProducts
-          ? rfpa.rfpaProducts.map((product) => ({
-              id: product.id,
-              grade: product.grade,
-              quantity: product.quantity,
-              unitPrice: product.unitPrice,
-              productName: product.productName?.name || null,
-              uom: product.uom?.unit || null,
-              amount: product.amount,
-              purchaseDate: product.purchaseDate,
-              dispatchDate: product.dispatchDate,
-              deliveryDate: product.deliveryDate,
-              deliveryLocation: product.deliveryLocation,
-              expectedHarvestDate: product.expectedHarvestDate,
-            }))
-          : [],
-      };
-    });
-
-    const result = {
-      data: formattedResponses,
-      meta: {
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-      },
-    };
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
   }
 
-  async getRFQById(id: string) {
-    const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const rfpa = await this.rfpaRepository.findOne({
-      where: { id },
-      relations: [
-        'companyName',
-        'selectedVendor',
-        'selectedFarmer',
-        'rfpaProducts',
-        'rfpaProducts.productName',
-        'rfpaProducts.uom',
-        'paymentInfo',
-        'purchaseForSalesLocation',
-        'purchaseLocation',
-      ],
-    });
 
-    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
 
-    const selectedParty =
-      rfpa.source === 'vendor' && rfpa.selectedVendor
-        ? rfpa.selectedVendor.id
-        : rfpa.source === 'farmer' && rfpa.selectedFarmer
-        ? rfpa.selectedFarmer.id
-        : null;
-    const rawDate = rfpa.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
 
-    const result = {
-      rfpaId: rfpa.rfpaId,
-      companyName: rfpa.companyName
-        ? { id: rfpa.companyName.id, companyName: rfpa.companyName.name }
-        : null,
-      createdDate,
-      createdTime,
-      requestingDepartment: rfpa.requestingDepartment,
-      purchaseLocation: rfpa.purchaseLocation?.id || null,
-      purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
-      otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
-      otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
-      remark: rfpa.remark,
-      packingInstruction: rfpa.packingInstruction,
-      specialReq: rfpa.specialReq,
-      source: rfpa.source,
-      selectedParty,
-      paymentInfo: rfpa.paymentInfo
-        ? {
-            paymentMode: rfpa.paymentInfo.paymentMode,
-            paymentDate: rfpa.paymentInfo.paymentDate,
-            advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
-            paymentTerms: rfpa.paymentInfo.paymentTerms,
-            validityOfQuote: rfpa.paymentInfo.validityOfQuote,
-            creditPeriod: rfpa.paymentInfo.creditPeriod,
-            dueDate: rfpa.paymentInfo.dueDate,
-          }
-        : null,
-      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
-        grade: product.grade,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        productName: product.productName
-          ? { id: product.productName.id, name: product.productName.name }
-          : null,
-        uom: product.uom
-          ? { id: product.uom.id, unit: product.uom.unit }
-          : null,
-        amount: product.amount,
-        purchaseDate: product.purchaseDate,
-        dispatchDate: product.dispatchDate,
-        deliveryDate: product.deliveryDate,
-        deliveryLocation: product.deliveryLocation,
-        expectedHarvestDate: product.expectedHarvestDate,
-      })),
-    };
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
-  async getRFQByIdForUpdate(id: string): Promise<RfpaUpdateFormDto | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const rfpa = await this.rfpaRepository.findOne({
-      where: { id },
-      relations: [
-        'companyName',
-        'selectedVendor',
-        'selectedFarmer',
-        'rfpaProducts',
-        'rfpaProducts.variant',
-        'rfpaProducts.productName',
-        'rfpaProducts.uom',
-        'paymentInfo',
-        'purchaseForSalesLocation',
-        'purchaseLocation',
-      ],
-    });
-
-    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
-
-    const selectedParty =
-      rfpa.source === 'vendor' && rfpa.selectedVendor
-        ? rfpa.selectedVendor.id
-        : rfpa.source === 'farmer' && rfpa.selectedFarmer
-        ? rfpa.selectedFarmer.id
-        : null;
-    const rawDate = rfpa.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-
-    const result = {
-      rfpaId: rfpa.rfpaId,
-      companyName: rfpa.companyName?.id,
-      createdDate,
-      createdTime,
-      requestingDepartment: rfpa.requestingDepartment,
-      purchaseLocation: rfpa.purchaseLocation?.id || null,
-      purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
-      otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
-      otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
-      remark: rfpa.remark,
-      packingInstruction: rfpa.packingInstruction,
-      specialReq: rfpa.specialReq,
-      source: rfpa.source,
-      selectedParty,
-      paymentInfo: rfpa.paymentInfo
-        ? {
-            paymentMode: rfpa.paymentInfo.paymentMode,
-            paymentDate: rfpa.paymentInfo.paymentDate,
-            advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
-            paymentTerms: rfpa.paymentInfo.paymentTerms,
-            validityOfQuote: rfpa.paymentInfo.validityOfQuote,
-            creditPeriod: rfpa.paymentInfo.creditPeriod,
-            dueDate: rfpa.paymentInfo.dueDate,
-          }
-        : null,
-      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
-        grade: product.grade,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        productName: product.productName?.id || null,
-        variant: product.variant?.id || null,
-        uom: product.uom?.id || null,
-        amount: product.amount,
-        purchaseDate: product.purchaseDate,
-        dispatchDate: product.dispatchDate,
-        deliveryDate: product.deliveryDate,
-        deliveryLocation: product.deliveryLocation,
-        expectedHarvestDate: product.expectedHarvestDate,
-      })),
-    };
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
-  async getRFQByIdByView(id: string): Promise<RfpaViewResponseDto | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
-
-    const rfpa = await this.rfpaRepository.findOne({
-      where: { id },
-      relations: [
-        'companyName',
-        'selectedVendor',
-        'selectedFarmer',
-        'rfpaProducts',
-        'rfpaProducts.variant',
-        'rfpaProducts.productName',
-        'rfpaProducts.uom',
-        'paymentInfo',
-        'purchaseForSalesLocation',
-        'purchaseLocation',
-      ],
-    });
-
-    if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
-
-    const selectedParty =
-      rfpa.source === 'vendor' && rfpa.selectedVendor
-        ? {
-            id: rfpa.selectedVendor.id,
-            vendorCode: rfpa.selectedVendor.vendorCode,
-            companyName: rfpa.selectedVendor.companyName,
-          }
-        : rfpa.source === 'farmer' && rfpa.selectedFarmer
-        ? {
-            id: rfpa.selectedFarmer.id,
-            farmerCode: rfpa.selectedFarmer.farmerCode,
-            name: rfpa.selectedFarmer.farmerfName + ' ' + rfpa.selectedFarmer.farmerlName,
-          }
-        : null;
-
-    const rawDate = rfpa.createdAt;
-    const { createdDate, createdTime } = formatDateTime(rawDate);
-
-    const result = {
-      rfpa: rfpa.rfpaId,
-      companyName: rfpa.companyName.name,
-      createdDate,
-      createdTime,
-      requestingDepartment: rfpa.requestingDepartment,
-      purchaseLocation: rfpa.purchaseLocation?.name || null,
-      purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.name || null,
-      otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
-      otherPurchaseLoc: rfpa.otherPurchaseLoc,
-      deliveryReceivingPerson: rfpa.deliveryReceivingPerson || null,
-      remark: rfpa.remark || null,
-      packingInstruction: rfpa.packingInstruction || null,
-      specialReq: rfpa.specialReq,
-      source: rfpa.source,
-      selectedParty,
-      paymentInfo: rfpa.paymentInfo
-        ? {
-            paymentMode: rfpa.paymentInfo.paymentMode,
-            paymentDate: rfpa.paymentInfo.paymentDate,
-            advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
-            paymentTerms: rfpa.paymentInfo.paymentTerms,
-            validityOfQuote: rfpa.paymentInfo.validityOfQuote,
-            creditPeriod: rfpa.paymentInfo.creditPeriod,
-            dueDate: rfpa.paymentInfo.dueDate,
-          }
-        : null,
-      rfpaProducts: rfpa.rfpaProducts.map((product) => ({
-        grade: product.grade,
-        quantity: product.quantity,
-        unitPrice: product.unitPrice,
-        productName: product.productName?.name || null,
-        variant: product.variant?.variantName || null,
-        uom: product.uom?.unit || null,
-        amount: product.amount,
-        purchaseDate: product.purchaseDate,
-        dispatchDate: product.dispatchDate,
-        deliveryDate: product.deliveryDate,
-        deliveryLocation: product.deliveryLocation,
-        expectedHarvestDate: product.expectedHarvestDate,
-      })),
-    };
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
 
   async generateRFPAId(): Promise<string> {
     const now = new Date();
@@ -589,16 +248,16 @@ export class RfpaService {
     return `${datePrefix}${nextSeq.toString().padStart(5, '0')}`;
   }
 
-  
 
-    
 
-    
-      
 
-    
 
-      
+
+
+
+
+
+
 
   async updateRfpa(id: string, rfpaData: UpdateRfpaDto & Record<string, any>, updatedBy: string): Promise<RFPA | null> {
     return await this.dataSource.transaction(async (manager) => {
@@ -799,9 +458,9 @@ export class RfpaService {
     });
   }
 
-  
 
-   public async getRecycleBinRfpa(queryOptions: PaginationOptions, userId: string): Promise<RfpaRecycleBinResponseDto> {
+
+  public async getRecycleBinRfpa(queryOptions: PaginationOptions, userId: string): Promise<RfpaRecycleBinResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:recycle:${userId}:${JSON.stringify(queryOptions)}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
@@ -823,22 +482,22 @@ export class RfpaService {
 
     const rfpas = rfpaIds.length
       ? await this.rfpaRepository
-          .createQueryBuilder('rfpa')
-          .leftJoinAndSelect('rfpa.selectedVendor', 'selectedVendor')
-          .leftJoinAndSelect('selectedVendor.officeAddress', 'officeAddress')
-          .leftJoinAndSelect('rfpa.selectedFarmer', 'selectedFarmer')
-          .leftJoinAndSelect('selectedFarmer.residensialAddress', 'residensialAddress')
-          .leftJoinAndSelect('selectedFarmer.farmAddress', 'farmAddress')
-          .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
-          .leftJoinAndSelect('rfpa.rfpaProducts', 'rfpaProducts')
-          .leftJoinAndSelect('rfpaProducts.productName', 'productName')
-          .leftJoinAndSelect('rfpaProducts.uom', 'uom')
-          .leftJoinAndSelect('rfpa.companyName', 'companyName')
-          .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
-          .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
-          .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
-          .andWhere('rfpa.isDeleted = true')
-          .getMany()
+        .createQueryBuilder('rfpa')
+        .leftJoinAndSelect('rfpa.selectedVendor', 'selectedVendor')
+        .leftJoinAndSelect('selectedVendor.officeAddress', 'officeAddress')
+        .leftJoinAndSelect('rfpa.selectedFarmer', 'selectedFarmer')
+        .leftJoinAndSelect('selectedFarmer.residensialAddress', 'residensialAddress')
+        .leftJoinAndSelect('selectedFarmer.farmAddress', 'farmAddress')
+        .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
+        .leftJoinAndSelect('rfpa.rfpaProducts', 'rfpaProducts')
+        .leftJoinAndSelect('rfpaProducts.productName', 'productName')
+        .leftJoinAndSelect('rfpaProducts.uom', 'uom')
+        .leftJoinAndSelect('rfpa.companyName', 'companyName')
+        .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
+        .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
+        .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
+        .andWhere('rfpa.isDeleted = true')
+        .getMany()
       : [];
 
     const rfpaMap = new Map(rfpas.map(r => [r.id, r]));
@@ -961,129 +620,129 @@ export class RfpaService {
   }
 
   public async getAllRFPANumbers(
-  filter: {
-    overAllStatus?: string;
-    isDealSlipCreated?: boolean;
-    employeeBaseHirechey?: boolean;
-    page?: number;
-    limit?: number;
-    search?: string;
-  },
-  loginUserId: string
-): Promise<RfpaNumbersResponseDto> {
-  const hash = createHash('md5').update(JSON.stringify({ filter, loginUserId })).digest('hex');
-  const cacheKey = `${this.CACHE_PREFIX}:rfpanumbers:${hash}`;
-  const cached = await this.cacheService.get<any>(cacheKey);
-  if (cached) return cached;
+    filter: {
+      overAllStatus?: string;
+      isDealSlipCreated?: boolean;
+      employeeBaseHirechey?: boolean;
+      page?: number;
+      limit?: number;
+      search?: string;
+    },
+    loginUserId: string
+  ): Promise<RfpaNumbersResponseDto> {
+    const hash = createHash('md5').update(JSON.stringify({ filter, loginUserId })).digest('hex');
+    const cacheKey = `${this.CACHE_PREFIX}:rfpanumbers:${hash}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
 
-  const rfpaWhere: any = { isDeleted: false };
-  if (typeof filter?.isDealSlipCreated === 'boolean') {
-    rfpaWhere.isDealSlipCreated = filter.isDealSlipCreated;
-  }
+    const rfpaWhere: any = { isDeleted: false };
+    if (typeof filter?.isDealSlipCreated === 'boolean') {
+      rfpaWhere.isDealSlipCreated = filter.isDealSlipCreated;
+    }
 
-  const rfpas = await this.rfpaRepository.find({
-    select: ['id', 'rfpaId', 'isDealSlipCreated'],
-    where: rfpaWhere,
-    relations: ['createdBy'],
-    order: { createdAt: 'DESC' },
-  });
+    const rfpas = await this.rfpaRepository.find({
+      select: ['id', 'rfpaId', 'isDealSlipCreated'],
+      where: rfpaWhere,
+      relations: ['createdBy'],
+      order: { createdAt: 'DESC' },
+    });
 
-  const validRfpas = rfpas.filter(r => r.id && r.rfpaId);
-  if (!validRfpas.length) {
-    const empty = { data: [], total: 0, page: filter.page || 1, limit: filter.limit || 10, totalPages: 0 };
-    await this.cacheService.set(cacheKey, empty, this.CACHE_TTL);
-    return empty;
-  }
+    const validRfpas = rfpas.filter(r => r.id && r.rfpaId);
+    if (!validRfpas.length) {
+      const empty = { data: [], total: 0, page: filter.page || 1, limit: filter.limit || 10, totalPages: 0 };
+      await this.cacheService.set(cacheKey, empty, this.CACHE_TTL);
+      return empty;
+    }
 
-  const rfpaIds = validRfpas.map(r => r.id);
-  const documents = await this.documentbRepository
-    .createQueryBuilder('doc')
-    .select(['doc.id', 'doc.status', 'doc.document_type_id'])
-    .where('doc.document_type_id IN (:...ids)', { ids: rfpaIds })
-    .getMany();
-  const docMap = new Map(documents.map(d => [d.document_type_id, d]));
+    const rfpaIds = validRfpas.map(r => r.id);
+    const documents = await this.documentbRepository
+      .createQueryBuilder('doc')
+      .select(['doc.id', 'doc.status', 'doc.document_type_id'])
+      .where('doc.document_type_id IN (:...ids)', { ids: rfpaIds })
+      .getMany();
+    const docMap = new Map(documents.map(d => [d.document_type_id, d]));
 
-  let approvalFlowMap = new Map<string, any>();
-  if (filter?.employeeBaseHirechey) {
-    const creatorIds = [...new Set(validRfpas.map(r => r.createdBy?.id).filter(Boolean))] as string[];
-    if (creatorIds.length) {
-      const flows = await this.approvalFlowRepository
-        .createQueryBuilder('approvalflows')
-        .leftJoinAndSelect('approvalflows.creator', 'creator')
-        .leftJoinAndSelect('approvalflows.verifiers', 'verifiers')
-        .leftJoinAndSelect('approvalflows.approvers', 'approvers')
-        .leftJoinAndSelect('approvers.firstApprover', 'firstApprover')
-        .leftJoinAndSelect('firstApprover.users', 'firstApproverUsers')
-        .leftJoinAndSelect('approvers.secondApprover', 'secondApprover')
-        .leftJoinAndSelect('secondApprover.users', 'secondApproverUsers')
-        .leftJoinAndSelect('approvers.thirdApprover', 'thirdApprover')
-        .leftJoinAndSelect('thirdApprover.users', 'thirdApproverUsers')
-        .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
-        .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
-        .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers')
-        .where('creator.id IN (:...creatorIds)', { creatorIds })
-        .andWhere('approvalflows.type = :documentType', { documentType: 'Procurement' })
-        .getMany();
-      for (const flow of flows) {
-        if (flow.creator?.id) approvalFlowMap.set(flow.creator.id, flow);
+    let approvalFlowMap = new Map<string, any>();
+    if (filter?.employeeBaseHirechey) {
+      const creatorIds = [...new Set(validRfpas.map(r => r.createdBy?.id).filter(Boolean))] as string[];
+      if (creatorIds.length) {
+        const flows = await this.approvalFlowRepository
+          .createQueryBuilder('approvalflows')
+          .leftJoinAndSelect('approvalflows.creator', 'creator')
+          .leftJoinAndSelect('approvalflows.verifiers', 'verifiers')
+          .leftJoinAndSelect('approvalflows.approvers', 'approvers')
+          .leftJoinAndSelect('approvers.firstApprover', 'firstApprover')
+          .leftJoinAndSelect('firstApprover.users', 'firstApproverUsers')
+          .leftJoinAndSelect('approvers.secondApprover', 'secondApprover')
+          .leftJoinAndSelect('secondApprover.users', 'secondApproverUsers')
+          .leftJoinAndSelect('approvers.thirdApprover', 'thirdApprover')
+          .leftJoinAndSelect('thirdApprover.users', 'thirdApproverUsers')
+          .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
+          .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
+          .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers')
+          .where('creator.id IN (:...creatorIds)', { creatorIds })
+          .andWhere('approvalflows.type = :documentType', { documentType: 'Procurement' })
+          .getMany();
+        for (const flow of flows) {
+          if (flow.creator?.id) approvalFlowMap.set(flow.creator.id, flow);
+        }
       }
     }
-  }
 
-  const filteredResults: { id: string; rfpaId: string; documentId: string | null }[] = [];
+    const filteredResults: { id: string; rfpaId: string; documentId: string | null }[] = [];
 
-  for (const rfpa of validRfpas) {
-    const doc = docMap.get(rfpa.id);
-    const documentId = doc?.id || null;
-    const documentStatus = doc?.status;
+    for (const rfpa of validRfpas) {
+      const doc = docMap.get(rfpa.id);
+      const documentId = doc?.id || null;
+      const documentStatus = doc?.status;
 
-    if (filter?.employeeBaseHirechey) {
-      const approvalFlow = approvalFlowMap.get(rfpa.createdBy?.id);
-      if (!approvalFlow) continue;
+      if (filter?.employeeBaseHirechey) {
+        const approvalFlow = approvalFlowMap.get(rfpa.createdBy?.id);
+        if (!approvalFlow) continue;
 
-      let hierarchy = 0;
-      if (approvalFlow.creator?.id === loginUserId) hierarchy = 1;
-      else if (approvalFlow.verifiers?.some((v: any) => v.id === loginUserId)) hierarchy = 2;
-      else if (approvalFlow.approvers?.firstApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 3;
-      else if (approvalFlow.approvers?.secondApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 4;
-      else if (approvalFlow.approvers?.thirdApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 5;
-      else if (approvalFlow.finalizers?.firstFinalizers?.some((u: any) => u.id === loginUserId)) hierarchy = 6;
-      else if (approvalFlow.finalizers?.secondFinalizers?.some((u: any) => u.id === loginUserId)) hierarchy = 7;
+        let hierarchy = 0;
+        if (approvalFlow.creator?.id === loginUserId) hierarchy = 1;
+        else if (approvalFlow.verifiers?.some((v: any) => v.id === loginUserId)) hierarchy = 2;
+        else if (approvalFlow.approvers?.firstApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 3;
+        else if (approvalFlow.approvers?.secondApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 4;
+        else if (approvalFlow.approvers?.thirdApprover?.users?.some((u: any) => u.id === loginUserId)) hierarchy = 5;
+        else if (approvalFlow.finalizers?.firstFinalizers?.some((u: any) => u.id === loginUserId)) hierarchy = 6;
+        else if (approvalFlow.finalizers?.secondFinalizers?.some((u: any) => u.id === loginUserId)) hierarchy = 7;
 
-      if (hierarchy === 0) continue;
-      if (hierarchy === 1 && rfpa.createdBy?.id !== loginUserId) continue;
+        if (hierarchy === 0) continue;
+        if (hierarchy === 1 && rfpa.createdBy?.id !== loginUserId) continue;
+      }
+
+      const matchesStatus = !filter?.overAllStatus || documentStatus === filter.overAllStatus;
+      const matchesDealSlip = typeof filter?.isDealSlipCreated !== 'boolean' || rfpa.isDealSlipCreated === filter.isDealSlipCreated;
+
+      if (matchesStatus && matchesDealSlip) {
+        filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+      }
     }
 
-    const matchesStatus = !filter?.overAllStatus || documentStatus === filter.overAllStatus;
-    const matchesDealSlip = typeof filter?.isDealSlipCreated !== 'boolean' || rfpa.isDealSlipCreated === filter.isDealSlipCreated;
-
-    if (matchesStatus && matchesDealSlip) {
-      filteredResults.push({ id: rfpa.id, rfpaId: rfpa.rfpaId, documentId });
+    let searchedResults = filteredResults;
+    if (filter?.search) {
+      const term = filter.search.toLowerCase();
+      searchedResults = filteredResults.filter(item => item.rfpaId.toLowerCase().includes(term));
     }
+
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const paginatedResults = searchedResults.slice((page - 1) * limit, page * limit);
+
+    const result = {
+      data: paginatedResults,
+      total: searchedResults.length,
+      page,
+      limit,
+      totalPages: Math.ceil(searchedResults.length / limit),
+    };
+    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+    return result;
   }
 
-  let searchedResults = filteredResults;
-  if (filter?.search) {
-    const term = filter.search.toLowerCase();
-    searchedResults = filteredResults.filter(item => item.rfpaId.toLowerCase().includes(term));
-  }
 
-  const page = filter.page || 1;
-  const limit = filter.limit || 10;
-  const paginatedResults = searchedResults.slice((page - 1) * limit, page * limit);
-
-  const result = {
-    data: paginatedResults,
-    total: searchedResults.length,
-    page,
-    limit,
-    totalPages: Math.ceil(searchedResults.length / limit),
-  };
-  await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-  return result;
-}
-
-  
 
   async deleteRfpa(id: string): Promise<boolean> {
     const exists = await this.rfpaRepository.count({ where: { id } });
@@ -1100,15 +759,15 @@ export class RfpaService {
     return true;
   }
 
-  
-  
-  
-  
-      
-  
-          
-  
-        
+
+
+
+
+
+
+
+
+
 
   public async getAllRfpa(queryOptions: PaginationOptions, userId: string): Promise<RfpaListResponseDto> {
     const cacheKey = `${this.CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
@@ -1131,15 +790,15 @@ export class RfpaService {
 
     const rfpas = rfpaIds.length
       ? await this.rfpaRepository
-          .createQueryBuilder('rfpa')
-          .leftJoinAndSelect('rfpa.companyName', 'companyName')
-          .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
-          .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
-          .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
-          .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
-          .andWhere('rfpa.isDeleted = false')
-          .andWhere('rfpa.deletedAt IS NULL')
-          .getMany()
+        .createQueryBuilder('rfpa')
+        .leftJoinAndSelect('rfpa.companyName', 'companyName')
+        .leftJoinAndSelect('rfpa.purchaseLocation', 'purchaseLocation')
+        .leftJoinAndSelect('rfpa.purchaseForSalesLocation', 'purchaseForSalesLocation')
+        .leftJoinAndSelect('rfpa.paymentInfo', 'paymentInfo')
+        .where('rfpa.id IN (:...ids)', { ids: rfpaIds })
+        .andWhere('rfpa.isDeleted = false')
+        .andWhere('rfpa.deletedAt IS NULL')
+        .getMany()
       : [];
 
     const rfpaMap = new Map(rfpas.map(r => [r.id, r]));
@@ -1227,51 +886,50 @@ export class RfpaService {
     return result;
   }
 
-    
-    
 
-public async getRfpaByIdForView(docid: string, userId: string): Promise<RfpaDocumentViewResponseDto | null> {
-    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid,userId)
-    if(!document)
-    {
+
+
+  public async getRfpaByIdForView(docid: string, userId: string): Promise<RfpaDocumentViewResponseDto | null> {
+    const document = await this.docSingalApproverService.getSingleApprovalDocumentById(docid, userId)
+    if (!document) {
       return null;
     }
     const id = document.documentTypeId;
-    
-    
-    
-  if (!id) {
-    throw new Error('Document type ID not found.');
-  }
 
-  const rfpaEntity = await this.rfpaRepository.findOne({
-    where: { id },
-    relations: [
-      'selectedVendor',
-      'selectedVendor.officeAddress',
-      'selectedVendor.vendorSaleInfo',
-      'selectedFarmer',
-      'selectedFarmer.residensialAddress',
-      'selectedFarmer.farmAddress',
-      'paymentInfo',
-      'rfpaProducts',
-      'rfpaProducts.productName',
-      'rfpaProducts.uom',
-      'rfpaProducts.variant',
-      'companyName',
-      'purchaseLocation',
-      'purchaseForSalesLocation',
-    ],
-  });
 
-  if (!rfpaEntity) {
-    throw new Error('RFPA not found');
-  }
 
-  const rawDate = document.createdAt;
-  const { createdDate, createdTime } = formatDateTime(rawDate);
+    if (!id) {
+      throw new Error('Document type ID not found.');
+    }
 
-const selectedVendorInRFPA = rfpaEntity.selectedVendor ? {
+    const rfpaEntity = await this.rfpaRepository.findOne({
+      where: { id },
+      relations: [
+        'selectedVendor',
+        'selectedVendor.officeAddress',
+        'selectedVendor.vendorSaleInfo',
+        'selectedFarmer',
+        'selectedFarmer.residensialAddress',
+        'selectedFarmer.farmAddress',
+        'paymentInfo',
+        'rfpaProducts',
+        'rfpaProducts.productName',
+        'rfpaProducts.uom',
+        'rfpaProducts.variant',
+        'companyName',
+        'purchaseLocation',
+        'purchaseForSalesLocation',
+      ],
+    });
+
+    if (!rfpaEntity) {
+      throw new Error('RFPA not found');
+    }
+
+    const rawDate = document.createdAt;
+    const { createdDate, createdTime } = formatDateTime(rawDate);
+
+    const selectedVendorInRFPA = rfpaEntity.selectedVendor ? {
       companyName: rfpaEntity.selectedVendor.companyName || null,
       vendorCode: rfpaEntity.selectedVendor.vendorCode || null,
       contactPersonName: `${rfpaEntity.selectedVendor?.vendorSaleInfo?.contactFName ?? ''} ${rfpaEntity.selectedVendor?.vendorSaleInfo?.contactLName ?? ''}`.trim() || null,
@@ -1280,7 +938,7 @@ const selectedVendorInRFPA = rfpaEntity.selectedVendor ? {
       officeAddress: rfpaEntity.selectedVendor.officeAddress || null,
     } : null;
 
-const selectedFarmerInRFPA = rfpaEntity.selectedFarmer ? {
+    const selectedFarmerInRFPA = rfpaEntity.selectedFarmer ? {
       fullName: `${rfpaEntity.selectedFarmer.farmerfName ?? ''} ${rfpaEntity.selectedFarmer.farmermName ?? ''} ${rfpaEntity.selectedFarmer.farmerlName ?? ''}`.trim(),
       primaryMobileNo: rfpaEntity.selectedFarmer.primaryMobileNo || null,
       email: rfpaEntity.selectedFarmer.email || null,
@@ -1289,139 +947,62 @@ const selectedFarmerInRFPA = rfpaEntity.selectedFarmer ? {
       farmAddress: rfpaEntity.selectedFarmer.farmAddress || null
     } : null;
 
-const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA : selectedFarmerInRFPA;
+    const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA : selectedFarmerInRFPA;
 
-  return {
-    documentId: document.documentId,
-    overAllStatus: document.status,
-    createdBy: document.createdBy,
-    createdDate: formatDateTime(document.createdAt).createdDate,
-    createdTime: formatDateTime(document.createdAt).createdTime,
-    approvalSummary: document.approvalSummary,
-
-    rfpaId: rfpaEntity.rfpaId || null,
-    remark: rfpaEntity.remark || null,
-    specialReq: rfpaEntity.specialReq || null,
-    requestingDepartment: rfpaEntity.requestingDepartment || null,
-    otherPurchaseLoc: rfpaEntity.otherPurchaseLoc || null,
-    otherPurchaseForSalesLoc: rfpaEntity.otherPurchaseForSalesLoc || null,
-    source: rfpaEntity.source || null,
-    deliveryReceivingPerson: rfpaEntity.deliveryReceivingPerson || null,
-    packingInstruction: rfpaEntity.packingInstruction || null,
-
-    selectedParty: selectedPartyData,
-
-    paymentInfo: rfpaEntity.paymentInfo ? {
-      paymentMode: rfpaEntity.paymentInfo.paymentMode || null,
-      paymentDate: rfpaEntity.paymentInfo.paymentDate || null,
-      advancePaidAmt: rfpaEntity.paymentInfo.advancePaidAmt || null,
-      paymentTerms: rfpaEntity.paymentInfo.paymentTerms || null,
-      dueDate: rfpaEntity.paymentInfo.dueDate || null,
-      creditPeriod: rfpaEntity.paymentInfo.creditPeriod || null,
-      validityOfQuote: rfpaEntity.paymentInfo.validityOfQuote || null,
-    } : null,
-
-    rfpaProducts: rfpaEntity.rfpaProducts ? rfpaEntity.rfpaProducts.map((p: any) => ({
-      productName: p.productName?.name || null,
-      variant: p.variant?.variantName || null,
-      grade: p.grade || null,
-      quantity: p.quantity || null,
-      uom: p.uom?.unit || null,
-      unitPrice: p.unitPrice || null,
-      amount: p.amount || null,
-    
-      purchaseDate: p.purchaseDate || null,
-      expectedHarvestDate: p.expectedHarvestDate || null,
-      dispatchDate: p.dispatchDate || null,
-      deliveryDate: p.deliveryDate || null,
-      deliveryLocation: p.deliveryLocation || null,
-    })) : [],
-
-    companyName: rfpaEntity.companyName?.name || null,
-    purchaseLocation: rfpaEntity.purchaseLocation?.name || null,
-    purchaseForSalesLocation: rfpaEntity.purchaseForSalesLocation?.name || null,
-  }
-
-}
-
-   async filterRfpas(
-    page: number,
-    limit: number,
-    filters: Record<string, any>
-  ) {
-    const queryBuilder: SelectQueryBuilder<RFPA> =
-      this.rfpaRepository.createQueryBuilder("rfpa");
-  
-    queryBuilder.select("rfpa");
-
-    queryBuilder
-      .where("rfpa.isDeleted = false")
-      .andWhere("rfpa.deletedAt IS NULL");
-  
-    queryBuilder
-      .leftJoin("rfpa.companyName", "companyName")
-      .addSelect("companyName.name")
-      .leftJoin("rfpa.purchaseLocation", "purchaseLocation")
-      .addSelect("purchaseLocation.name")
-      .leftJoin("rfpa.purchaseForSalesLocation", "purchaseForSalesLocation")
-      .addSelect("purchaseForSalesLocation.name")
-      .leftJoin("rfpa.selectedVendor", "selectedVendor")
-    .addSelect(["selectedVendor.companyName"])
-    .leftJoin("rfpa.selectedFarmer", "selectedFarmer")
-    .addSelect([
-      "selectedFarmer.farmerlName",
-      "selectedFarmer.farmermName",
-      "selectedFarmer.farmerfName",
-    ])
-    .leftJoin("rfpa.paymentInfo","paymentInfo")
-    .addSelect("paymentInfo.paymentMode")
-    .leftJoinAndSelect("rfpa.rfpaProducts", "rfpaProducts")
-    .leftJoinAndSelect("rfpaProducts.productName", "product")
-    .addSelect(["product.name"]);
-  
-  Object.entries(filters).forEach(([key, value], index) => {
-    const paramKey = `param_${index}`; // avoid param conflicts
-
-    const parts = key.split(".");
-    if (parts.length > 1) {
-      const aliasPath = parts.slice(0, -1).join(".");
-      const field = parts[parts.length - 1];
-      const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
-
-      if (typeof value === "string" && isNaN(Number(value))) {
-        queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
-          [paramKey]: `%${value}%`,
-        });
-      } else {
-        queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
-          [paramKey]: value,
-        });
-      }
-    } else {
-      if (typeof value === "string" && isNaN(Number(value))) {
-        queryBuilder.andWhere(`rfpa.${key} ILIKE :${paramKey}`, {
-          [paramKey]: `%${value}%`,
-        });
-      } else {
-        queryBuilder.andWhere(`rfpa.${key} = :${paramKey}`, {
-          [paramKey]: value,
-        });
-      }
-    }
-  });
-  
-    queryBuilder.skip((page - 1) * limit).take(limit);
-  
-    const [data, total] = await queryBuilder.getManyAndCount();
-  
     return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+      documentId: document.documentId,
+      overAllStatus: document.status,
+      createdBy: document.createdBy,
+      createdDate: formatDateTime(document.createdAt).createdDate,
+      createdTime: formatDateTime(document.createdAt).createdTime,
+      approvalSummary: document.approvalSummary,
+
+      rfpaId: rfpaEntity.rfpaId || null,
+      remark: rfpaEntity.remark || null,
+      specialReq: rfpaEntity.specialReq || null,
+      requestingDepartment: rfpaEntity.requestingDepartment || null,
+      otherPurchaseLoc: rfpaEntity.otherPurchaseLoc || null,
+      otherPurchaseForSalesLoc: rfpaEntity.otherPurchaseForSalesLoc || null,
+      source: rfpaEntity.source || null,
+      deliveryReceivingPerson: rfpaEntity.deliveryReceivingPerson || null,
+      packingInstruction: rfpaEntity.packingInstruction || null,
+
+      selectedParty: selectedPartyData,
+
+      paymentInfo: rfpaEntity.paymentInfo ? {
+        paymentMode: rfpaEntity.paymentInfo.paymentMode || null,
+        paymentDate: rfpaEntity.paymentInfo.paymentDate || null,
+        advancePaidAmt: rfpaEntity.paymentInfo.advancePaidAmt || null,
+        paymentTerms: rfpaEntity.paymentInfo.paymentTerms || null,
+        dueDate: rfpaEntity.paymentInfo.dueDate || null,
+        creditPeriod: rfpaEntity.paymentInfo.creditPeriod || null,
+        validityOfQuote: rfpaEntity.paymentInfo.validityOfQuote || null,
+      } : null,
+
+      rfpaProducts: rfpaEntity.rfpaProducts ? rfpaEntity.rfpaProducts.map((p: any) => ({
+        productName: p.productName?.name || null,
+        variant: p.variant?.variantName || null,
+        grade: p.grade || null,
+        quantity: p.quantity || null,
+        uom: p.uom?.unit || null,
+        unitPrice: p.unitPrice || null,
+        amount: p.amount || null,
+
+        purchaseDate: p.purchaseDate || null,
+        expectedHarvestDate: p.expectedHarvestDate || null,
+        dispatchDate: p.dispatchDate || null,
+        deliveryDate: p.deliveryDate || null,
+        deliveryLocation: p.deliveryLocation || null,
+      })) : [],
+
+      companyName: rfpaEntity.companyName?.name || null,
+      purchaseLocation: rfpaEntity.purchaseLocation?.name || null,
+      purchaseForSalesLocation: rfpaEntity.purchaseForSalesLocation?.name || null,
+    }
+
   }
+
+
 
   async deleteMultipleRFPA(ids: string[]): Promise<BulkDeleteRfpaResultDto> {
     if (!ids.length) return { message: 'No IDs provided' };
@@ -1474,3 +1055,440 @@ const selectedPartyData = rfpaEntity.source === 'vendor' ? selectedVendorInRFPA 
   }
 
 }
+
+
+
+//  async filterRfpas(
+//   page: number,
+//   limit: number,
+//   filters: Record<string, any>
+// ) {
+//   const queryBuilder: SelectQueryBuilder<RFPA> =
+//     this.rfpaRepository.createQueryBuilder("rfpa");
+
+//   queryBuilder.select("rfpa");
+
+//   queryBuilder
+//     .where("rfpa.isDeleted = false")
+//     .andWhere("rfpa.deletedAt IS NULL");
+
+//   queryBuilder
+//     .leftJoin("rfpa.companyName", "companyName")
+//     .addSelect("companyName.name")
+//     .leftJoin("rfpa.purchaseLocation", "purchaseLocation")
+//     .addSelect("purchaseLocation.name")
+//     .leftJoin("rfpa.purchaseForSalesLocation", "purchaseForSalesLocation")
+//     .addSelect("purchaseForSalesLocation.name")
+//     .leftJoin("rfpa.selectedVendor", "selectedVendor")
+//   .addSelect(["selectedVendor.companyName"])
+//   .leftJoin("rfpa.selectedFarmer", "selectedFarmer")
+//   .addSelect([
+//     "selectedFarmer.farmerlName",
+//     "selectedFarmer.farmermName",
+//     "selectedFarmer.farmerfName",
+//   ])
+//   .leftJoin("rfpa.paymentInfo","paymentInfo")
+//   .addSelect("paymentInfo.paymentMode")
+//   .leftJoinAndSelect("rfpa.rfpaProducts", "rfpaProducts")
+//   .leftJoinAndSelect("rfpaProducts.productName", "product")
+//   .addSelect(["product.name"]);
+
+// Object.entries(filters).forEach(([key, value], index) => {
+//   const paramKey = `param_${index}`; // avoid param conflicts
+
+//   const parts = key.split(".");
+//   if (parts.length > 1) {
+//     const aliasPath = parts.slice(0, -1).join(".");
+//     const field = parts[parts.length - 1];
+//     const alias = parts[parts.length - 2]; // e.g. productName -> alias "product"
+
+//     if (typeof value === "string" && isNaN(Number(value))) {
+//       queryBuilder.andWhere(`${alias}.${field} ILIKE :${paramKey}`, {
+//         [paramKey]: `%${value}%`,
+//       });
+//     } else {
+//       queryBuilder.andWhere(`${alias}.${field} = :${paramKey}`, {
+//         [paramKey]: value,
+//       });
+//     }
+//   } else {
+//     if (typeof value === "string" && isNaN(Number(value))) {
+//       queryBuilder.andWhere(`rfpa.${key} ILIKE :${paramKey}`, {
+//         [paramKey]: `%${value}%`,
+//       });
+//     } else {
+//       queryBuilder.andWhere(`rfpa.${key} = :${paramKey}`, {
+//         [paramKey]: value,
+//       });
+//     }
+//   }
+// });
+
+//   queryBuilder.skip((page - 1) * limit).take(limit);
+
+//   const [data, total] = await queryBuilder.getManyAndCount();
+
+//   return {
+//     data,
+//     total,
+//     page,
+//     limit,
+//     totalPages: Math.ceil(total / limit),
+//   };
+// }
+
+
+
+// async getRFQById(id: string) {
+//   const cacheKey = `${this.CACHE_PREFIX}:id:${id}`;
+//   const cached = await this.cacheService.get<any>(cacheKey);
+//   if (cached) return cached;
+
+//   const rfpa = await this.rfpaRepository.findOne({
+//     where: { id },
+//     relations: [
+//       'companyName',
+//       'selectedVendor',
+//       'selectedFarmer',
+//       'rfpaProducts',
+//       'rfpaProducts.productName',
+//       'rfpaProducts.uom',
+//       'paymentInfo',
+//       'purchaseForSalesLocation',
+//       'purchaseLocation',
+//     ],
+//   });
+
+//   if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
+
+//   const selectedParty =
+//     rfpa.source === 'vendor' && rfpa.selectedVendor
+//       ? rfpa.selectedVendor.id
+//       : rfpa.source === 'farmer' && rfpa.selectedFarmer
+//       ? rfpa.selectedFarmer.id
+//       : null;
+//   const rawDate = rfpa.createdAt;
+//   const { createdDate, createdTime } = formatDateTime(rawDate);
+
+//   const result = {
+//     rfpaId: rfpa.rfpaId,
+//     companyName: rfpa.companyName
+//       ? { id: rfpa.companyName.id, companyName: rfpa.companyName.name }
+//       : null,
+//     createdDate,
+//     createdTime,
+//     requestingDepartment: rfpa.requestingDepartment,
+//     purchaseLocation: rfpa.purchaseLocation?.id || null,
+//     purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
+//     otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
+//     otherPurchaseLoc: rfpa.otherPurchaseLoc,
+//     deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
+//     remark: rfpa.remark,
+//     packingInstruction: rfpa.packingInstruction,
+//     specialReq: rfpa.specialReq,
+//     source: rfpa.source,
+//     selectedParty,
+//     paymentInfo: rfpa.paymentInfo
+//       ? {
+//           paymentMode: rfpa.paymentInfo.paymentMode,
+//           paymentDate: rfpa.paymentInfo.paymentDate,
+//           advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
+//           paymentTerms: rfpa.paymentInfo.paymentTerms,
+//           validityOfQuote: rfpa.paymentInfo.validityOfQuote,
+//           creditPeriod: rfpa.paymentInfo.creditPeriod,
+//           dueDate: rfpa.paymentInfo.dueDate,
+//         }
+//       : null,
+//     rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+//       grade: product.grade,
+//       quantity: product.quantity,
+//       unitPrice: product.unitPrice,
+//       productName: product.productName
+//         ? { id: product.productName.id, name: product.productName.name }
+//         : null,
+//       uom: product.uom
+//         ? { id: product.uom.id, unit: product.uom.unit }
+//         : null,
+//       amount: product.amount,
+//       purchaseDate: product.purchaseDate,
+//       dispatchDate: product.dispatchDate,
+//       deliveryDate: product.deliveryDate,
+//       deliveryLocation: product.deliveryLocation,
+//       expectedHarvestDate: product.expectedHarvestDate,
+//     })),
+//   };
+//   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+//   return result;
+// }
+
+
+// async findAllRfpas(
+//   queryOptions: PaginationOptions,
+// ): Promise<{ data: any[]; meta: any }> {
+//   const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
+//   const cacheKey = `${this.CACHE_PREFIX}:all:${hash}`;
+//   const cached = await this.cacheService.get<any>(cacheKey);
+//   if (cached) return cached;
+
+//   const page = queryOptions.page ?? 1;
+//   const limit = queryOptions.limit ?? 10;
+
+//   const skip = (page - 1) * limit;
+
+//   const [rfpas, total] = await this.rfpaRepository.findAndCount({
+//     relations: [
+//       'companyName',
+//       'selectedVendor',
+//       'selectedFarmer',
+//       'rfpaProducts',
+//       'rfpaProducts.productName',
+//       'rfpaProducts.uom',
+//       'paymentInfo',
+//       'purchaseForSalesLocation',
+//       'purchaseLocation',
+//     ],
+//     where: { isDeleted: false },
+//     order: {
+//       createdAt: 'DESC',
+//     },
+//     skip,
+//     take: limit,
+//   });
+
+//   const formattedResponses = rfpas.map((rfpa) => {
+//     const rawDate = rfpa.createdAt;
+//     const { createdDate, createdTime } = formatDateTime(rawDate);
+//     const getSelectedParty = (rfpa: RFPA) => {
+//       return rfpa.source === 'vendor'
+//         ? rfpa.selectedVendor?.id || null
+//         : rfpa.source === 'farmer'
+//         ? rfpa.selectedFarmer?.id || null
+//         : null;
+//     };
+
+//     return {
+//       id: rfpa.id,
+//       companyName: rfpa.companyName?.name || null,
+//       rfpaId: rfpa.rfpaId,
+//       createdTime,
+//       createdDate,
+
+//       requestingDepartment: rfpa.requestingDepartment,
+//       purchaseLocation: rfpa.purchaseLocation?.name || null,
+//       purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.name || null,
+//       deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
+//       packingInstruction: rfpa.packingInstruction,
+//      specialReq: rfpa.specialReq,
+//       source: rfpa.source,
+//       selectedParty: getSelectedParty(rfpa),
+//       paymentInfo: rfpa.paymentInfo
+//         ? {
+//             id: rfpa.paymentInfo.id,
+//             paymentMode: rfpa.paymentInfo.paymentMode,
+//             paymentDate: rfpa.paymentInfo.paymentDate,
+//             advancePaidAmount: rfpa.paymentInfo.advancePaidAmt,
+//             paymentTerms: rfpa.paymentInfo.paymentTerms,
+//             validityOfQuote: rfpa.paymentInfo.validityOfQuote,
+//             creditPeriod: rfpa.paymentInfo.creditPeriod,
+//             dueDate: rfpa.paymentInfo.dueDate,
+//           }
+//         : null,
+//       rfpaProducts: rfpa.rfpaProducts
+//         ? rfpa.rfpaProducts.map((product) => ({
+//             id: product.id,
+//             grade: product.grade,
+//             quantity: product.quantity,
+//             unitPrice: product.unitPrice,
+//             productName: product.productName?.name || null,
+//             uom: product.uom?.unit || null,
+//             amount: product.amount,
+//             purchaseDate: product.purchaseDate,
+//             dispatchDate: product.dispatchDate,
+//             deliveryDate: product.deliveryDate,
+//             deliveryLocation: product.deliveryLocation,
+//             expectedHarvestDate: product.expectedHarvestDate,
+//           }))
+//         : [],
+//     };
+//   });
+
+//   const result = {
+//     data: formattedResponses,
+//     meta: {
+//       total,
+//       page,
+//       pages: Math.ceil(total / limit),
+//     },
+//   };
+//   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+//   return result;
+// }
+
+
+
+// async getRFQByIdForUpdate(id: string): Promise<RfpaUpdateFormDto | null> {
+//   const cacheKey = `${this.CACHE_PREFIX}:update:${id}`;
+//   const cached = await this.cacheService.get<any>(cacheKey);
+//   if (cached) return cached;
+
+//   const rfpa = await this.rfpaRepository.findOne({
+//     where: { id },
+//     relations: [
+//       'companyName',
+//       'selectedVendor',
+//       'selectedFarmer',
+//       'rfpaProducts',
+//       'rfpaProducts.variant',
+//       'rfpaProducts.productName',
+//       'rfpaProducts.uom',
+//       'paymentInfo',
+//       'purchaseForSalesLocation',
+//       'purchaseLocation',
+//     ],
+//   });
+
+//   if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
+
+//   const selectedParty =
+//     rfpa.source === 'vendor' && rfpa.selectedVendor
+//       ? rfpa.selectedVendor.id
+//       : rfpa.source === 'farmer' && rfpa.selectedFarmer
+//       ? rfpa.selectedFarmer.id
+//       : null;
+//   const rawDate = rfpa.createdAt;
+//   const { createdDate, createdTime } = formatDateTime(rawDate);
+
+//   const result = {
+//     rfpaId: rfpa.rfpaId,
+//     companyName: rfpa.companyName?.id,
+//     createdDate,
+//     createdTime,
+//     requestingDepartment: rfpa.requestingDepartment,
+//     purchaseLocation: rfpa.purchaseLocation?.id || null,
+//     purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.id || null,
+//     otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
+//     otherPurchaseLoc: rfpa.otherPurchaseLoc,
+//     deliveryReceivingPerson: rfpa.deliveryReceivingPerson,
+//     remark: rfpa.remark,
+//     packingInstruction: rfpa.packingInstruction,
+//     specialReq: rfpa.specialReq,
+//     source: rfpa.source,
+//     selectedParty,
+//     paymentInfo: rfpa.paymentInfo
+//       ? {
+//           paymentMode: rfpa.paymentInfo.paymentMode,
+//           paymentDate: rfpa.paymentInfo.paymentDate,
+//           advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
+//           paymentTerms: rfpa.paymentInfo.paymentTerms,
+//           validityOfQuote: rfpa.paymentInfo.validityOfQuote,
+//           creditPeriod: rfpa.paymentInfo.creditPeriod,
+//           dueDate: rfpa.paymentInfo.dueDate,
+//         }
+//       : null,
+//     rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+//       grade: product.grade,
+//       quantity: product.quantity,
+//       unitPrice: product.unitPrice,
+//       productName: product.productName?.id || null,
+//       variant: product.variant?.id || null,
+//       uom: product.uom?.id || null,
+//       amount: product.amount,
+//       purchaseDate: product.purchaseDate,
+//       dispatchDate: product.dispatchDate,
+//       deliveryDate: product.deliveryDate,
+//       deliveryLocation: product.deliveryLocation,
+//       expectedHarvestDate: product.expectedHarvestDate,
+//     })),
+//   };
+//   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+//   return result;
+// }
+
+
+
+// async getRFQByIdByView(id: string): Promise<RfpaViewResponseDto | null> {
+//   const cacheKey = `${this.CACHE_PREFIX}:view:${id}`;
+//   const cached = await this.cacheService.get<any>(cacheKey);
+//   if (cached) return cached;
+
+//   const rfpa = await this.rfpaRepository.findOne({
+//     where: { id },
+//     relations: [
+//       'companyName',
+//       'selectedVendor',
+//       'selectedFarmer',
+//       'rfpaProducts',
+//       'rfpaProducts.variant',
+//       'rfpaProducts.productName',
+//       'rfpaProducts.uom',
+//       'paymentInfo',
+//       'purchaseForSalesLocation',
+//       'purchaseLocation',
+//     ],
+//   });
+
+//   if (!rfpa) throw new Error(`RFQ with ID ${id} not found`);
+
+//   const selectedParty =
+//     rfpa.source === 'vendor' && rfpa.selectedVendor
+//       ? {
+//           id: rfpa.selectedVendor.id,
+//           vendorCode: rfpa.selectedVendor.vendorCode,
+//           companyName: rfpa.selectedVendor.companyName,
+//         }
+//       : rfpa.source === 'farmer' && rfpa.selectedFarmer
+//       ? {
+//           id: rfpa.selectedFarmer.id,
+//           farmerCode: rfpa.selectedFarmer.farmerCode,
+//           name: rfpa.selectedFarmer.farmerfName + ' ' + rfpa.selectedFarmer.farmerlName,
+//         }
+//       : null;
+
+//   const rawDate = rfpa.createdAt;
+//   const { createdDate, createdTime } = formatDateTime(rawDate);
+
+//   const result = {
+//     rfpa: rfpa.rfpaId,
+//     companyName: rfpa.companyName.name,
+//     createdDate,
+//     createdTime,
+//     requestingDepartment: rfpa.requestingDepartment,
+//     purchaseLocation: rfpa.purchaseLocation?.name || null,
+//     purchaseForSalesLocation: rfpa.purchaseForSalesLocation?.name || null,
+//     otherPurchaseForSalesLoc: rfpa.otherPurchaseForSalesLoc,
+//     otherPurchaseLoc: rfpa.otherPurchaseLoc,
+//     deliveryReceivingPerson: rfpa.deliveryReceivingPerson || null,
+//     remark: rfpa.remark || null,
+//     packingInstruction: rfpa.packingInstruction || null,
+//     specialReq: rfpa.specialReq,
+//     source: rfpa.source,
+//     selectedParty,
+//     paymentInfo: rfpa.paymentInfo
+//       ? {
+//           paymentMode: rfpa.paymentInfo.paymentMode,
+//           paymentDate: rfpa.paymentInfo.paymentDate,
+//           advancePaidAmt: rfpa.paymentInfo.advancePaidAmt,
+//           paymentTerms: rfpa.paymentInfo.paymentTerms,
+//           validityOfQuote: rfpa.paymentInfo.validityOfQuote,
+//           creditPeriod: rfpa.paymentInfo.creditPeriod,
+//           dueDate: rfpa.paymentInfo.dueDate,
+//         }
+//       : null,
+//     rfpaProducts: rfpa.rfpaProducts.map((product) => ({
+//       grade: product.grade,
+//       quantity: product.quantity,
+//       unitPrice: product.unitPrice,
+//       productName: product.productName?.name || null,
+//       variant: product.variant?.variantName || null,
+//       uom: product.uom?.unit || null,
+//       amount: product.amount,
+//       purchaseDate: product.purchaseDate,
+//       dispatchDate: product.dispatchDate,
+//       deliveryDate: product.deliveryDate,
+//       deliveryLocation: product.deliveryLocation,
+//       expectedHarvestDate: product.expectedHarvestDate,
+//     })),
+//   };
+//   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+//   return result;
+// }

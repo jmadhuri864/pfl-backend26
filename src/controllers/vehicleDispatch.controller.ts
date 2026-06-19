@@ -160,82 +160,8 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
         next(error);
       }
     }
-  @httpGet('/filter')
-public async filterVehicalDispatch(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction,
-) {
-try {
-      // Extract pagination
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-
-      // Remove pagination keys and treat the rest as filters
-      const { page: _p, limit: _l, ...restQuery } = req.query;
-
-      // Always initialize filters as a Record
-      const filters: Record<string, any> = {};
-
-      for (const [key, value] of Object.entries(restQuery ?? {})) {
-        if (value !== undefined && value !== "") {
-          filters[key] = value;
-        }
-      }
-
-      const result = await this.vehicleDispatchService.filterVehicalDispatch(page, limit, filters);
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, message: "Server Error" });
-    }
-}
-
-  @httpGet("/:id")
-  public async getVehicleDispatchById(
-    @requestParam("id") id: string,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      logger.info("Fetching vehicle dispatch details by ID", {
-        vehicleDispatchId: id,
-      });
-      const vehicleDispatch = await this.vehicleDispatchService.findById(id);
-      if (!vehicleDispatch) {
-        logger.warn("Vehicle Dispatch not found", { vehicleDispatchId: id });
-        return next(new AppError(404, "Vehicle Dispatch not found"));
-      }
-      logger.info("Vehicle Dispatch details retrieved successfully", {
-        vehicleDispatch,
-      });
-
-      // Send notification for vehicle dispatch view
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Vehicle Dispatch viewed: ${id}`,
-      //     userId
-      //   );
-      // }
 
 
-      res.status(200).json({
-        status: "success",
-        data: vehicleDispatch,
-      });
-    } catch (err) {
-      logger.error("Error occurred while fetching vehicle dispatch details", {
-        vehicleDispatchId: id,
-        error: err,
-      });
-      next(err);
-    }
-  }
 
   
   @httpPatch("/:id")
@@ -477,3 +403,84 @@ try {
 
 
 }
+
+
+  // @httpGet("/:id")
+  // public async getVehicleDispatchById(
+  //   @requestParam("id") id: string,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     logger.info("Fetching vehicle dispatch details by ID", {
+  //       vehicleDispatchId: id,
+  //     });
+  //     const vehicleDispatch = await this.vehicleDispatchService.findById(id);
+  //     if (!vehicleDispatch) {
+  //       logger.warn("Vehicle Dispatch not found", { vehicleDispatchId: id });
+  //       return next(new AppError(404, "Vehicle Dispatch not found"));
+  //     }
+  //     logger.info("Vehicle Dispatch details retrieved successfully", {
+  //       vehicleDispatch,
+  //     });
+
+  //     // Send notification for vehicle dispatch view
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Vehicle Dispatch viewed: ${id}`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vehicleDispatch,
+  //     });
+  //   } catch (err) {
+  //     logger.error("Error occurred while fetching vehicle dispatch details", {
+  //       vehicleDispatchId: id,
+  //       error: err,
+  //     });
+  //     next(err);
+  //   }
+  // }
+
+
+//   @httpGet('/filter')
+// public async filterVehicalDispatch(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction,
+// ) {
+// try {
+//       // Extract pagination
+//       const page = parseInt(req.query.page as string, 10) || 1;
+//       const limit = parseInt(req.query.limit as string, 10) || 10;
+
+//       // Remove pagination keys and treat the rest as filters
+//       const { page: _p, limit: _l, ...restQuery } = req.query;
+
+//       // Always initialize filters as a Record
+//       const filters: Record<string, any> = {};
+
+//       for (const [key, value] of Object.entries(restQuery ?? {})) {
+//         if (value !== undefined && value !== "") {
+//           filters[key] = value;
+//         }
+//       }
+
+//       const result = await this.vehicleDispatchService.filterVehicalDispatch(page, limit, filters);
+
+//       res.json({
+//         success: true,
+//         ...result,
+//       });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ success: false, message: "Server Error" });
+//     }
+// }
+
+
