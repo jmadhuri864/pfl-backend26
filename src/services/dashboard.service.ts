@@ -16,9 +16,10 @@ import { VendorRepository } from "../repositories/vendor.repository";
 import { Status } from "../utils/status.enum";
 import { CustomerRepository } from "../repositories/customer.repository";
 import { User } from "../entities/user.entity";
+import { GrnProductRepository } from "../repositories/grnProduct.repository";
 import { SalesTargetProduct } from "../entities/salesTargetProduct.entity";
 import { SalesTargetWeek } from "../entities/salesTargetWeek.entity";
-import { GrnProductRepository } from "../repositories/grnProduct.repository";
+import { SalesTargetProductRepository } from "../repositories/salesTargetProduct.repository";
 import { SalesTargetWeekRepository } from "../repositories/salesTargetWeek.repository";
 
 @injectable()
@@ -32,13 +33,16 @@ export class DashboardService {
         @inject(TYPES.UserRepository) private userRepo: UserRepository,
         @inject(TYPES.CustomerRepository) private customerRepo:CustomerRepository,
         @inject(TYPES.VendorRepository)private vendorRepo:VendorRepository,
-        @inject(TYPES.GrnProductRepository)private grnProductRepo:GrnProductRepository,
-        @inject(TYPES.SalesTargetWeekRepository)private salesTargetWeekRepo:SalesTargetWeekRepository,
         @inject(TYPES.FarmerRepository) private farmerRepo:FarmerRepository,
         @inject(TYPES.DataSource) private dataSource: DataSource,
+        @inject(TYPES.GrnProductRepository) private grnProductRepo:GrnProductRepository,
+        @inject(TYPES.SalesTargetRepository) private salesTargetRepo: SalesTargetRepository,
+        @inject(TYPES.SalesTargetProductRepository) private salesTargetProductRepo: SalesTargetProductRepository,
+         @inject(TYPES.SalesTargetWeekRepository) private salesTargetWeekRepo: SalesTargetWeekRepository,
+
     ){}
 
-    //TODO:Get procurement team performance metrics for a manager
+//TODO:Get procurement team performance metrics for a manager
 //   async getProcurementTeamPerformance(userId: string): Promise<any> {
 // const teamMembers = await this.workflowHierarchyRepo.find({
 //   where: {
@@ -52,13 +56,14 @@ export class DashboardService {
 // const memberIds = [
 //   ...new Set(teamMembers.map(t => String(t.descendant.id)))
 // ];
-
+// console.log("Team Member IDs in DashboardService:", memberIds);
 // const totalTeamMembers = memberIds.length;
 
 // const currentMonth = new Date().getMonth();
 // const currentYear = new Date().getFullYear();
 
-
+// console.log("Current Month in DashboardService:", currentMonth);
+// console.log("Current year",currentYear);
 
 // const activeMembers = await this.procurementTargetRepo
 //   .createQueryBuilder("target")
@@ -71,7 +76,9 @@ export class DashboardService {
 //   const activeIds = activeMembers.map(a => a.employeeId);
 //   const activeMemberCount = activeIds.length;
 //   const inactiveMemberCount = memberIds.length - activeMemberCount;
-
+//   console.log("Active Member IDs in DashboardService:", activeIds);
+//   console.log("Active Member Count in DashboardService:", activeMemberCount);
+//   console.log("Inactive Member Count in DashboardService:", inactiveMemberCount);
 
 //    // 👉 Amount query (NO JOIN)
 //   const amountResult = await this.grnRepo
@@ -110,7 +117,8 @@ export class DashboardService {
 
 //  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
 //  const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-
+// console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
+// console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
 
 // const targets = await this.procurementTargetRepo
 //   .createQueryBuilder("target")
@@ -260,7 +268,7 @@ export class DashboardService {
 
   
   //TODO:Get procurement source wise performance metrics for a manager
-async getProcurementSourceWise(userId: string): Promise<any> {
+async getProcurementSourceWise(userId: string, month?: number, year?: number): Promise<any> {
   const teamMembers = await this.workflowHierarchyRepo.find({
     where: {
       ancestor: { id: userId },
@@ -269,6 +277,18 @@ async getProcurementSourceWise(userId: string): Promise<any> {
     },
     relations: ["descendant"]
   });
+
+  //  const teamMembers = await this.workflowHierarchyRepo
+  //   .createQueryBuilder("wh")
+  //   .leftJoinAndSelect("wh.descendant", "descendant")
+  //   .where("wh.ancestor.id = :teamLeaderId", {
+  //     teamLeaderId: userId
+  //   })
+  //   .andWhere("wh.department = :dept", {
+  //     dept: DepartmentEnum.PURCHASE
+  //   })
+  //   .andWhere("wh.depth > 0")
+  //   .getMany();
 
   //const memberIds = teamMembers.map(t => t.descendant.id);
 
@@ -279,10 +299,20 @@ async getProcurementSourceWise(userId: string): Promise<any> {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
+  const currentDate = new Date();
+
+  const selectedMonth =
+    month || currentDate.getMonth() + 1;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
+
+    let currentMonth1=month?selectedMonth+1:selectedMonth;
+
   // 🔥 Parallel execution (performance boost)
   const [vendorData, farmerData] = await Promise.all([
-    this.getProcurementMetrics(memberIds, "vendor", currentMonth, currentYear),
-    this.getProcurementMetrics(memberIds, "farmer", currentMonth, currentYear)
+    this.getProcurementMetrics(memberIds, "vendor", currentMonth1, selectedYear),
+    this.getProcurementMetrics(memberIds, "farmer", currentMonth1, selectedYear)
   ]);
 
   return {
@@ -807,7 +837,7 @@ async getProcurementSourceWise(userId: string): Promise<any> {
   //     top5Vendors: top5,
   //   };
   // }
-  async getFarmerRegistrationOverviewOfTeam(teamLeaderId: string) {
+  async getFarmerRegistrationOverviewOfTeam(teamLeaderId: string,month?: number, year?: number) {
    const teamMembers = await this.workflowHierarchyRepo
   .createQueryBuilder("wh")
   .select("descendant.id", "id")
@@ -830,13 +860,15 @@ const memberIds = [
     // Remove duplicates
     const uniqueIds = [...new Set(memberIds)];
 
-    const currentDate = new Date();
+      const currentDate = new Date();
 
-    const currentMonth =
-      currentDate.getMonth() + 1;
+  let selectedMonth =
+    month || currentDate.getMonth() + 1;
 
-    const currentYear =
-      currentDate.getFullYear();
+    selectedMonth = month?selectedMonth+1:selectedMonth;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
 
     // Get all statistics in single query
   
@@ -904,8 +936,8 @@ const memberIds = [
   )
 
   .setParameters({
-    month: currentMonth,
-    year: currentYear,
+    month: selectedMonth,
+    year: selectedYear,
     approved: Status.APPROVED,
     pending: Status.PENDING,
     rejected: Status.REJECTED,
@@ -935,7 +967,7 @@ const memberIds = [
     };
 }
 
-async getVendorRegistrationOverviewOfTeam(teamLeaderId: string) {
+async getVendorRegistrationOverviewOfTeam(teamLeaderId: string,month?: number, year?: number) {
    const teamMembers = await this.workflowHierarchyRepo
   .createQueryBuilder("wh")
   .select("descendant.id", "id")
@@ -958,13 +990,17 @@ const memberIds = [
     // Remove duplicates
     const uniqueIds = [...new Set(memberIds)];
 
+   
+
     const currentDate = new Date();
 
-    const currentMonth =
-      currentDate.getMonth() + 1;
+  let selectedMonth =
+    month || currentDate.getMonth() + 1;
 
-    const currentYear =
-      currentDate.getFullYear();
+    selectedMonth = month?selectedMonth+1:selectedMonth;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
 
     // Get all statistics in single query
   
@@ -1032,8 +1068,8 @@ const memberIds = [
   )
 
   .setParameters({
-    month: currentMonth,
-    year: currentYear,
+    month: selectedMonth,
+    year: selectedYear,
     approved: Status.APPROVED,
     pending: Status.PENDING,
     rejected: Status.REJECTED,
@@ -1063,7 +1099,7 @@ const memberIds = [
     };
 }
 
-async getCustomerRegistrationOverviewOfTeam(teamLeaderId: string) {
+async getCustomerRegistrationOverviewOfTeam(teamLeaderId: string, month?: number, year?: number) {
    const teamMembers = await this.workflowHierarchyRepo
   .createQueryBuilder("wh")
   .select("descendant.id", "id")
@@ -1086,13 +1122,17 @@ const memberIds = [
     // Remove duplicates
     const uniqueIds = [...new Set(memberIds)];
 
+   
+
     const currentDate = new Date();
 
-    const currentMonth =
-      currentDate.getMonth() + 1;
+  let selectedMonth =
+    month || currentDate.getMonth() + 1;
 
-    const currentYear =
-      currentDate.getFullYear();
+    selectedMonth = month?selectedMonth+1:selectedMonth;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
 
     // Get all statistics in single query
   
@@ -1160,8 +1200,8 @@ const memberIds = [
   )
 
   .setParameters({
-    month: currentMonth,
-    year: currentYear,
+    month: selectedMonth,
+    year: selectedYear,
     approved: Status.APPROVED,
     pending: Status.PENDING,
     rejected: Status.REJECTED,
@@ -1191,295 +1231,320 @@ const memberIds = [
     };
 }
 
-// async getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId: string) {
+async getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId: string,month?: number, year?: number) {
+  // const currentDate = new Date();
+  // const currentMonth = currentDate.getMonth() + 1;
+  // const currentYear = currentDate.getFullYear();
 
-//   const currentDate = new Date();
+  const currentDate = new Date();
 
-//   const currentMonth = currentDate.getMonth() + 1;
-//   const currentYear = currentDate.getFullYear();
+  let selectedMonth =
+    month || currentDate.getMonth() + 1;
 
-//   // Get all members under team leader
-//   const teamMembers = await this.workflowHierarchyRepo
-//     .createQueryBuilder("wh")
-//     .leftJoinAndSelect("wh.descendant", "descendant")
-//     .where("wh.ancestor.id = :teamLeaderId", {
-//       teamLeaderId
-//     })
-//     .andWhere("wh.depth > 0")
-//     .getMany();
+  selectedMonth = month?selectedMonth+1:selectedMonth;
 
-//   // Remove duplicates if same member exists in multiple departments
-//   const uniqueMembers = Array.from(
-//     new Map(
-//       teamMembers.map(
-//         item => [item.descendant.id, item.descendant]
-//       )
-//     ).values()
-//   );
+  const selectedYear =
+    year || currentDate.getFullYear();
 
-//   if (!uniqueMembers.length) {
-//     return {
-//       success: true,
-//       message: "",
-//       data: []
-//     };
-//   }
+  // Get all members under team leader
+  const teamMembers = await this.workflowHierarchyRepo
+    .createQueryBuilder("wh")
+    .leftJoinAndSelect("wh.descendant", "descendant")
+    .where("wh.ancestor.id = :teamLeaderId", {
+      teamLeaderId
+    })
+    .andWhere("wh.depth > 0")
+    .getMany();
 
-//   const memberIds = uniqueMembers.map(
-//     member => member.id
-//   );
+  // Remove duplicates if same member exists in multiple departments
+  const uniqueMembers = Array.from(
+    new Map(
+      teamMembers.map(
+        item => [item.descendant.id, item.descendant]
+      )
+    ).values()
+  );
 
-//   // Single optimized query
-//   const stats = await this.farmerRepo
-//     .createQueryBuilder("farmer")
+   const hasChildNodes = uniqueMembers.length > 0;
+   // Include self + all descendants
+  // If no descendants, use only self
+  const memberIds =
+    uniqueMembers.length > 0
+      ? [
+          teamLeaderId,
+          ...uniqueMembers.map((member) => member.id),
+        ]
+      : [teamLeaderId];
+  // Single optimized query
+  const stats = await this.farmerRepo
+    .createQueryBuilder("farmer")
     
-//     .leftJoin("farmer.createdBy", "user")
+    .leftJoin("farmer.createdBy", "user")
 
-//     .select("user.id", "userId")
+    .select("user.id", "userId")
 
-//     .addSelect(
-//       `CONCAT(
-//         COALESCE(user.firstName,''),
-//         ' ',
-//         COALESCE(user.lastName,'')
-//       )`,
-//       "employeeName"
-//     )
+    .addSelect(
+      `CONCAT(
+        COALESCE(user.firstName,''),
+        ' ',
+        COALESCE(user.lastName,'')
+      )`,
+      "employeeName"
+    )
 
-//     .addSelect(
-//       "COUNT(farmer.id)",
-//       "total"
-//     )
+    .addSelect(
+      "COUNT(farmer.id)",
+      "total"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN farmer.status=:approved
-//         AND EXTRACT(MONTH FROM farmer.createdAt)=:month
-//         AND EXTRACT(YEAR FROM farmer.createdAt)=:year
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "thisMonth"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN farmer.status=:approved
+        AND EXTRACT(MONTH FROM farmer.createdAt)=:month
+        AND EXTRACT(YEAR FROM farmer.createdAt)=:year
+        THEN 1
+        END
+      )
+      `,
+      "thisMonth"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN farmer.status=:approved
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "approved"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN farmer.status=:approved
+        THEN 1
+        END
+      )
+      `,
+      "approved"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN farmer.status=:pending
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "pending"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN farmer.status=:pending
+        THEN 1
+        END
+      )
+      `,
+      "pending"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN farmer.status=:rejected
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "rejected"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN farmer.status=:rejected
+        THEN 1
+        END
+      )
+      `,
+      "rejected"
+    )
 
-//     .where(
-//       "user.id IN (:...memberIds)",
-//       { memberIds }
-//     )
+    .where(
+      "user.id IN (:...memberIds)",
+      { memberIds }
+    )
 
-//     .setParameters({
-//       month: currentMonth,
-//       year: currentYear,
-//       approved: Status.APPROVED,
-//       pending: Status.PENDING,
-//       rejected: Status.REJECTED
-//     })
+    .setParameters({
+      month: selectedMonth,
+      year: selectedYear,
+      approved: Status.APPROVED,
+      pending: Status.PENDING,
+      rejected: Status.REJECTED
+    })
 
-//     .groupBy("user.id")
-//     .addGroupBy("user.firstName")
-//     .addGroupBy("user.lastName")
+    .groupBy("user.id")
+    .addGroupBy("user.firstName")
+    .addGroupBy("user.lastName")
 
-//     .getRawMany();
+    .getRawMany();
 
+    if (!hasChildNodes) {
+  const userData = stats[0];
 
-//   return {
-//     success: true,
-//     message: "",
-//     data: stats.map(item => ({
-//       employeeName: item.employeeName,
-//       total: Number(item.total || 0),
-//       thisMonth: Number(item.thisMonth || 0),
-//       approved: Number(item.approved || 0),
-//       pending: Number(item.pending || 0),
-//       rejected: Number(item.rejected || 0),
-//     }))
-//   };
+  return {
+  
+    data: {
+      totalRegistered: Number(userData?.total || 0),
+      registeredThisMonth: Number(userData?.thisMonth || 0),
+      approved: Number(userData?.approved || 0),
+      pending: Number(userData?.pending || 0),
+      rejected: Number(userData?.rejected || 0),
+    },
+  };
+}
 
-// }
+return {
+ 
+  data: stats.map((item) => ({
+    userId: item.userId,
+    employeeName: item.employeeName,
+    total: Number(item.total || 0),
+    thisMonth: Number(item.thisMonth || 0),
+    approved: Number(item.approved || 0),
+    pending: Number(item.pending || 0),
+    rejected: Number(item.rejected || 0),
+  })),
+};
+}
 
-// async getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId: string) {
+async getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId: string, month?: number, year?: number) {
 
-//   const currentDate = new Date();
+  const currentDate = new Date();
 
-//   const currentMonth = currentDate.getMonth() + 1;
-//   const currentYear = currentDate.getFullYear();
+  let currentMonth = month || currentDate.getMonth() + 1;
+  currentMonth = month?currentMonth+1:currentMonth;
+  const currentYear = year || currentDate.getFullYear();
 
-//   // Get all members under team leader
-//   const teamMembers = await this.workflowHierarchyRepo
-//     .createQueryBuilder("wh")
-//     .leftJoinAndSelect("wh.descendant", "descendant")
-//     .where("wh.ancestor.id = :teamLeaderId", {
-//       teamLeaderId
-//     })
-//     .andWhere("wh.depth > 0")
-//     .getMany();
+  // Get all members under team leader
+  const teamMembers = await this.workflowHierarchyRepo
+    .createQueryBuilder("wh")
+    .leftJoinAndSelect("wh.descendant", "descendant")
+    .where("wh.ancestor.id = :teamLeaderId", {
+      teamLeaderId
+    })
+    .andWhere("wh.depth > 0")
+    .getMany();
 
-//   // Remove duplicates if same member exists in multiple departments
-//   const uniqueMembers = Array.from(
-//     new Map(
-//       teamMembers.map(
-//         item => [item.descendant.id, item.descendant]
-//       )
-//     ).values()
-//   );
+  // Remove duplicates if same member exists in multiple departments
+  const uniqueMembers = Array.from(
+    new Map(
+      teamMembers.map(
+        item => [item.descendant.id, item.descendant]
+      )
+    ).values()
+  );
 
-//   if (!uniqueMembers.length) {
-//     return {
-//       success: true,
-//       message: "",
-//       data: []
-//     };
-//   }
+  const hasChildNodes = uniqueMembers.length > 0;
+  const memberIds =
+    uniqueMembers.length > 0
+      ? [
+          teamLeaderId,
+          ...uniqueMembers.map((member) => member.id),
+        ]
+      : [teamLeaderId];
 
-//   const memberIds = uniqueMembers.map(
-//     member => member.id
-//   );
-
-//   // Single optimized query
-//   const stats = await this.vendorRepo
-//     .createQueryBuilder("vendor")
+  // Single optimized query
+  const stats = await this.vendorRepo
+    .createQueryBuilder("vendor")
     
-//     .leftJoin("vendor.createdBy", "user")
+    .leftJoin("vendor.createdBy", "user")
 
-//     .select("user.id", "userId")
+    .select("user.id", "userId")
 
-//     .addSelect(
-//       `CONCAT(
-//         COALESCE(user.firstName,''),
-//         ' ',
-//         COALESCE(user.lastName,'')
-//       )`,
-//       "employeeName"
-//     )
+    .addSelect(
+      `CONCAT(
+        COALESCE(user.firstName,''),
+        ' ',
+        COALESCE(user.lastName,'')
+      )`,
+      "employeeName"
+    )
 
-//     .addSelect(
-//       "COUNT(vendor.id)",
-//       "total"
-//     )
+    .addSelect(
+      "COUNT(vendor.id)",
+      "total"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN vendor.status=:approved
-//         AND EXTRACT(MONTH FROM vendor.createdAt)=:month
-//         AND EXTRACT(YEAR FROM vendor.createdAt)=:year
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "thisMonth"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN vendor.status=:approved
+        AND EXTRACT(MONTH FROM vendor.createdAt)=:month
+        AND EXTRACT(YEAR FROM vendor.createdAt)=:year
+        THEN 1
+        END
+      )
+      `,
+      "thisMonth"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN vendor.status=:approved
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "approved"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN vendor.status=:approved
+        THEN 1
+        END
+      )
+      `,
+      "approved"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN vendor.status=:pending
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "pending"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN vendor.status=:pending
+        THEN 1
+        END
+      )
+      `,
+      "pending"
+    )
 
-//     .addSelect(
-//       `
-//       COUNT(
-//         CASE
-//         WHEN vendor.status=:rejected
-//         THEN 1
-//         END
-//       )
-//       `,
-//       "rejected"
-//     )
+    .addSelect(
+      `
+      COUNT(
+        CASE
+        WHEN vendor.status=:rejected
+        THEN 1
+        END
+      )
+      `,
+      "rejected"
+    )
 
-//     .where(
-//       "user.id IN (:...memberIds)",
-//       { memberIds }
-//     )
+    .where(
+      "user.id IN (:...memberIds)",
+      { memberIds }
+    )
 
-//     .setParameters({
-//       month: currentMonth,
-//       year: currentYear,
-//       approved: Status.APPROVED,
-//       pending: Status.PENDING,
-//       rejected: Status.REJECTED
-//     })
+    .setParameters({
+      month: currentMonth,
+      year: currentYear,
+      approved: Status.APPROVED,
+      pending: Status.PENDING,
+      rejected: Status.REJECTED
+    })
 
-//     .groupBy("user.id")
-//     .addGroupBy("user.firstName")
-//     .addGroupBy("user.lastName")
+    .groupBy("user.id")
+    .addGroupBy("user.firstName")
+    .addGroupBy("user.lastName")
+    .getRawMany();
+if (!hasChildNodes) {
+  const userData = stats[0];
+  return {
+    data: {
+      totalRegistered: Number(userData?.total || 0),
+      registeredThisMonth: Number(userData?.thisMonth || 0),
+      approved: Number(userData?.approved || 0),
+      pending: Number(userData?.pending || 0),
+      rejected: Number(userData?.rejected || 0),
+    },
+  };
+}
 
-//     .getRawMany();
-
-
-//   return {
-//     success: true,
-//     message: "",
-//     data: stats.map(item => ({
-//       employeeName: item.employeeName,
-//       total: Number(item.total || 0),
-//       thisMonth: Number(item.thisMonth || 0),
-//       approved: Number(item.approved || 0),
-//       pending: Number(item.pending || 0),
-//       rejected: Number(item.rejected || 0),
-//     }))
-//   };
-
-// }
+return {
+  data: stats.map((item) => ({
+    userId: item.userId,
+    employeeName: item.employeeName,
+    total: Number(item.total || 0),
+    thisMonth: Number(item.thisMonth || 0),
+    approved: Number(item.approved || 0),
+    pending: Number(item.pending || 0),
+    rejected: Number(item.rejected || 0),
+  })),
+};
+}
 
 // async getCustomerRegistrationOverviewOfEachTeamMember(teamLeaderId: string) {
 
@@ -1625,6 +1690,165 @@ const memberIds = [
 //   };
 
 // }
+
+async getCustomerRegistrationOverviewOfEachTeamMember(
+  teamLeaderId: string,
+  month?: number,
+  year?: number
+) {
+  const currentDate = new Date();
+
+  let currentMonth = month || currentDate.getMonth() + 1;
+  currentMonth = month?currentMonth+1:currentMonth;
+  const currentYear = year || currentDate.getFullYear();
+
+  // Get all descendants (direct + indirect)
+  const teamMembers = await this.workflowHierarchyRepo
+    .createQueryBuilder("wh")
+    .leftJoinAndSelect("wh.descendant", "descendant")
+    .where("wh.ancestor.id = :teamLeaderId", {
+      teamLeaderId,
+    })
+    .andWhere("wh.depth > 0")
+    .getMany();
+
+  // Remove duplicates
+  const uniqueMembers = Array.from(
+    new Map(
+      teamMembers.map((item) => [
+        item.descendant.id,
+        item.descendant,
+      ])
+    ).values()
+  );
+
+  const hasChildNodes = uniqueMembers.length > 0;
+  // Include self + all descendants
+  // If no descendants, use only self
+  const memberIds =
+    uniqueMembers.length > 0
+      ? [
+          teamLeaderId,
+          ...uniqueMembers.map((member) => member.id),
+        ]
+      : [teamLeaderId];
+
+  const stats = await this.customerRepo
+    .createQueryBuilder("customer")
+    .leftJoin("customer.createdBy", "user")
+
+    .select("user.id", "userId")
+
+    .addSelect(
+      `CONCAT(
+        COALESCE(user.firstName, ''),
+        ' ',
+        COALESCE(user.lastName, '')
+      )`,
+      "employeeName"
+    )
+
+    .addSelect(
+      "COUNT(customer.id)",
+      "total"
+    )
+
+    .addSelect(
+      `
+      COUNT(
+        CASE
+          WHEN customer.status = :approved
+          AND EXTRACT(MONTH FROM customer.createdAt) = :month
+          AND EXTRACT(YEAR FROM customer.createdAt) = :year
+          THEN 1
+        END
+      )
+      `,
+      "thisMonth"
+    )
+
+    .addSelect(
+      `
+      COUNT(
+        CASE
+          WHEN customer.status = :approved
+          THEN 1
+        END
+      )
+      `,
+      "approved"
+    )
+
+    .addSelect(
+      `
+      COUNT(
+        CASE
+          WHEN customer.status = :pending
+          THEN 1
+        END
+      )
+      `,
+      "pending"
+    )
+
+    .addSelect(
+      `
+      COUNT(
+        CASE
+          WHEN customer.status = :rejected
+          THEN 1
+        END
+      )
+      `,
+      "rejected"
+    )
+
+    .where("user.id IN (:...memberIds)", {
+      memberIds,
+    })
+
+    .setParameters({
+      month: currentMonth,
+      year: currentYear,
+      approved: Status.APPROVED,
+      pending: Status.PENDING,
+      rejected: Status.REJECTED,
+    })
+
+    .groupBy("user.id")
+    .addGroupBy("user.firstName")
+    .addGroupBy("user.lastName")
+
+    .getRawMany();
+
+if (!hasChildNodes) {
+  const userData = stats[0];
+
+  return {
+  
+    data: {
+      totalRegistered: Number(userData?.total || 0),
+      registeredThisMonth: Number(userData?.thisMonth || 0),
+      approved: Number(userData?.approved || 0),
+      pending: Number(userData?.pending || 0),
+      rejected: Number(userData?.rejected || 0),
+    },
+  };
+}
+
+return {
+ 
+  data: stats.map((item) => ({
+    userId: item.userId,
+    employeeName: item.employeeName,
+    total: Number(item.total || 0),
+    thisMonth: Number(item.thisMonth || 0),
+    approved: Number(item.approved || 0),
+    pending: Number(item.pending || 0),
+    rejected: Number(item.rejected || 0),
+  })),
+};
+}
 
 public async getEmployeeCountByDept(query: any): Promise<any> {
     const userId:     string | undefined = query.userId     as string | undefined;
@@ -1974,840 +2198,14 @@ public async getEmployeeCountByDept(query: any): Promise<any> {
   // }
 
   //TODO:Get procurement team members performance metrics for a manager
-// async getProcurementTeamMembersPerformance(userId: string): Promise<any> {
-//   const teamMembers = await this.workflowHierarchyRepo.find({
-//   where: {
-//     ancestor: { id: userId },
-//     department: DepartmentEnum.PURCHASE,
-//    //depth: 1 // direct team members
-//   },
-//   relations: ["descendant"]
-// });
-
-// const memberIds = [
-//   ...new Set(teamMembers.map(t => String(t.descendant.id)))
-// ];
-
-// const currentMonth = new Date().getMonth();
-// const newCurrenetMonth=new Date().getMonth()+1;
-// const currentYear = new Date().getFullYear();
-
-// const performanceData = [];
-// for (const memberId of memberIds) {
-
-//   const employee = await this.userRepo.findOne({
-//   where: { id: memberId },
-//   select: ["id", "firstName", "lastName"]
-// });
-
-// const employeeName = employee
-//   ? `${employee.firstName} ${employee.lastName}`
-//   : "Unknown";
-
-//    // 👉 Amount query (NO JOIN)
-// //   const amountResult = await this.grnRepo
-// //     .createQueryBuilder("grn")
-// //     .innerJoin(
-// //       "documents",
-// //       "doc",
-// //       "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-// //       {
-// //         type: "grn",
-// //         status: "COMPLETE"
-// //       }
-// //     )
-// //     .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
-// //     .where("grn.createdby_id::text = :id", { id: memberId })
-// //     .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: newCurrenetMonth })
-// //     .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-// //     .getRawOne();
-
-// //  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
-
-//   // 👉 Quantity query (WITH JOIN)
-//   const qtyResult = await this.grnRepo
-//     .createQueryBuilder("grn")
-//     .innerJoin(
-//       "documents",
-//       "doc",
-//       "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-//       {
-//         type: "grn",
-//         status: "COMPLETE"
-//       }
-//     )
-//     .leftJoin("grn.grnProducts", "product")
-//     .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
-//     .where("grn.createdby_id::text = :id", { id: memberId })
-//     .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: newCurrenetMonth })
-//     .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-//     .getRawOne();
-
-//  const targets = await this.procurementTargetRepo
-//   .createQueryBuilder("target")
-//   .select("SUM(target.monthlyTotalQty)", "totalTarget")
-//   .where("target.employee_id::text = :id", { id: memberId })
-//   .andWhere("target.month = :month", { month: currentMonth })
-//   .andWhere("target.year = :year", { year: currentYear })
-//   .getRawOne();
-//   const assignedTargetQty = Number(targets?.totalTarget || 0);
-
-//   const result1 = await this.grnRepo
-//   .createQueryBuilder("grn")
-//   .innerJoin(
-//     "documents",
-//     "doc",
-//     "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-//     {
-//       type: "grn",
-//       status: "COMPLETE"
-//     }
-//   )
-//   .leftJoin("grn.grnProducts", "product")
-//   .select("SUM(product.netWeight)", "achievedQty")
-//   .where("grn.createdby_id::text = :id", { id: memberId })
-//   .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: newCurrenetMonth })
-//   .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-//   .getRawOne();
-
-//   const achievedQty = Number(result1?.achievedQty || 0);
-
-//   const achievementRate = assignedTargetQty > 0
-//   ? (achievedQty / assignedTargetQty) * 100
-//   : 0;
-
-//    const variance = assignedTargetQty - achievedQty;
-
-//    const grnCountResult = await this.grnRepo
-//   .createQueryBuilder("grn")
-//   .innerJoin(
-//     "documents",
-//     "doc",
-//     "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-//     {
-//       type: "grn",
-//       status: "COMPLETE"
-//     }
-//   )
-//   .select("COUNT(grn.id)", "grnCount")
-//   .where("grn.createdby_id::text = :id", { id: memberId })
-//   .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: newCurrenetMonth })
-//   .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-//   .getRawOne();
-
-// const grnCount = Number(grnCountResult?.grnCount || 0);
-
-//  performanceData.push({
-//   employeeName: employeeName,
-//   //totalProcurementAmount: totalProcurementAmount,
-//   totalProcuredQty: Number(qtyResult?.totalQty || 0),
-//   assignedTargetQty: assignedTargetQty,
-//   achievedQty: achievedQty,
-//   achievementRate: achievementRate,
-//   variance: variance,
-//    totalGRNs: grnCount
-//  });
-// }
-// return performanceData;
-// }
-
-
- 
-
-
-//TODO:Get sale team members performance metrics for a manager
-// async getSaleTeamMembersPerformance(userId: string): Promise<any> {
-//    const teamMembers = await this.workflowHierarchyRepo.find({
-//   where: {
-//     ancestor: { id: userId },
-//     department: DepartmentEnum.SALE,
-//    //depth: 1 // direct team members
-//   },
-//   relations: ["descendant"]
-// });
-
-// const memberIds = [
-//   ...new Set(teamMembers.map(t => String(t.descendant.id)))
-// ];
-
-// const currentMonth = new Date().getMonth();
-// const newCurrenetMonth=new Date().getMonth()+1;
-// const currentYear = new Date().getFullYear();
-
-// const performanceData = [];
-
-// for (const memberId of memberIds) {
-
-//   const employee = await this.userRepo.findOne({
-//   where: { id: memberId },
-//   select: ["id", "firstName", "lastName"]
-// });
-
-// const employeeName = employee
-//   ? `${employee.firstName} ${employee.lastName}`
-//   : "Unknown";
-
-// const targets = await this.saleTargetRepo
-//   .createQueryBuilder("target")
-//   .select("SUM(target.totalMonthlySale)", "totalTarget")
-//   .where("target.employee_id::text =:ids", { ids: memberId })
-//   .andWhere("target.month = :month", { month: currentMonth })
-//   .andWhere("target.year = :year", { year: currentYear })
-//   .getRawOne();
-//   const assignedTargetQty = Number(targets?.totalTarget || 0);
-
-//  const result1 = await this.finalInvoiceRepo
-//   .createQueryBuilder("invoice")
-//   .innerJoin(
-//     "documents",
-//     "doc",
-//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-//     {
-//       type: "final-invoice",
-//       status: "COMPLETE"
-//     }
-//   )
-//   .select("SUM(invoice.netProductWeight)", "totalQty")
-//   .addSelect("SUM(invoice.totalAmount)", "totalAmount")
-//   .where("invoice.created_by::text = :ids", { ids: memberId })
-//   .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: newCurrenetMonth })
-//   .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: currentYear })
-//   .getRawOne();
-
-//   const achievedQty = Number(result1?.totalQty || 0);
-
-
-//   const totalSaleAmount= Number(result1?.totalAmount || 0)
-
-//   const result3 = await this.finalInvoiceRepo
-//   .createQueryBuilder("invoice")
-//   .innerJoin(
-//     "documents",
-//     "doc",
-//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-//     {
-//       type: "final-invoice",
-//       status: "COMPLETE",
-//     }
-//   )
-//   .leftJoin("invoice.invoiceProducts", "invoiceProduct")
-//   .select("SUM(invoiceProduct.grossWeight)", "totalQty")
-//  // .addSelect("SUM(invoice.totalAmount)", "totalAmount")
-//   .where("invoice.created_by::text = :ids", { ids: memberId })
-//   .andWhere(
-//     "EXTRACT(MONTH FROM invoice.createdAt) = :month",
-//     { month: newCurrenetMonth }
-//   )
-//   .andWhere(
-//     "EXTRACT(YEAR FROM invoice.createdAt) = :year",
-//     { year: currentYear }
-//   )
-//   .getRawOne();
-
-//    const totalSaleQty= Number(result3?.totalQty || 0)
-
-//    const achievementRate = assignedTargetQty > 0
-//   ? (achievedQty / assignedTargetQty) * 100
-//   : 0;
-
-//    const variance = assignedTargetQty - achievedQty;
-
-//  const result2 = await this.finalInvoiceRepo
-//   .createQueryBuilder("invoice")
-//   .innerJoin(
-//     "documents",
-//     "doc",
-//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-//     {
-//       type: "final-invoice",
-//       status: "COMPLETE"
-//     }
-//   )
-//   .select("COUNT(invoice.id)", "invoiceCount")
-//   .where("invoice.created_by::text = :ids", { ids: memberId })
-//   .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: newCurrenetMonth })
-//   .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: currentYear })
-//   .getRawOne();
-
-//   const invoiceCount = Number(result2?.invoiceCount || 0);
-
-//   performanceData.push({
-//   employeeName: employeeName,
-//  // totalSaleAmount: totalSaleAmount,
-//  totalSoldQty: totalSaleQty,
-//   assignedTargetQty: assignedTargetQty,
-//   achievedQty: achievedQty,
-//   achievementRate: achievementRate,
-//   variance: variance,
-//   totalInvoices: invoiceCount
-//  });
-// }
-// return performanceData; 
-// }
-//TODO:Get sale team members performance metrics for a manager
-async getSaleTeamMembersPerformance(
+  async getProcurementTeamMembersPerformance(
   userId: string,
   month?: number,  // 1-indexed (January = 1); optional — defaults to current month
   year?: number,   // 4-digit year; optional — defaults to current year
 ): Promise<any> {
   // Resolve month/year
-  const resolvedMonth = month ?? (new Date().getMonth() + 1); // 1-indexed
-  const resolvedYear  = year  ?? new Date().getFullYear();
-  const targetMonth   = resolvedMonth - 1; // target table is 0-indexed
-
-  // Get all descendants (direct + indirect)
-  const teamMembers = await this.workflowHierarchyRepo
-    .createQueryBuilder("wh")
-    .leftJoinAndSelect("wh.descendant", "descendant")
-    .where("wh.ancestor.id = :userId", { userId })
-    .andWhere("wh.department = :dept", { dept: DepartmentEnum.SALE })
-    .andWhere("wh.depth > 0")
-    .getMany();
-
-  // Remove duplicates
-  const uniqueMembers = Array.from(
-    new Map(teamMembers.map((item) => [item.descendant.id, item.descendant])).values()
-  );
-
-  const hasChildNodes = uniqueMembers.length > 0;
-
-  // If no descendants → scope to self only; otherwise include self + all descendants
-  const memberIds = hasChildNodes
-    ? [userId, ...uniqueMembers.map((m) => m.id)]
-    : [userId];
-
-  const performanceData = [];
-
-  for (const memberId of memberIds) {
-    const employee = await this.userRepo.findOne({
-      where: { id: memberId },
-      select: ["id", "firstName", "lastName"],
-    });
-    const employeeName = employee
-      ? `${employee.firstName} ${employee.lastName}`
-      : "Unknown";
-
-    // Assigned target
-    const targets = await this.saleTargetRepo
-      .createQueryBuilder("target")
-      .select("SUM(target.totalMonthlySale)", "totalTarget")
-      .where("target.employee_id::text = :ids", { ids: memberId })
-      .andWhere("target.month = :targetMonth", { targetMonth })
-      .andWhere("target.year = :year", { year: resolvedYear })
-      .getRawOne();
-
-    const assignedTargetQty = Number(targets?.totalTarget || 0);
-
-    // Total sale amount + achieved qty (netProductWeight)
-    const result1 = await this.finalInvoiceRepo
-      .createQueryBuilder("invoice")
-      .innerJoin("documents", "doc",
-        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-        { type: "final-invoice", status: "COMPLETE" })
-      .select("COALESCE(SUM(invoice.netProductWeight), 0)", "achievedQty")
-      .addSelect("COALESCE(SUM(invoice.totalAmount), 0)", "totalAmount")
-      .where("invoice.created_by::text = :ids", { ids: memberId })
-      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
-      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
-      .getRawOne();
-
-    const achievedQty     = Number(result1?.achievedQty || 0);
-    const totalSaleAmount = Number(result1?.totalAmount || 0);
-
-    // Total sale qty (gross weight from invoice products)
-    const result3 = await this.finalInvoiceRepo
-      .createQueryBuilder("invoice")
-      .innerJoin("documents", "doc",
-        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-        { type: "final-invoice", status: "COMPLETE" })
-      .leftJoin("invoice.invoiceProducts", "invoiceProduct")
-      .select("COALESCE(SUM(invoiceProduct.grossWeight), 0)", "totalQty")
-      .where("invoice.created_by::text = :ids", { ids: memberId })
-      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
-      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
-      .getRawOne();
-
-    const totalSaleQty = Number(result3?.totalQty || 0);
-
-    const achievementRate = assignedTargetQty > 0
-      ? (achievedQty / assignedTargetQty) * 100
-      : 0;
-    const variance = assignedTargetQty - achievedQty;
-
-    // Invoice count
-    const result2 = await this.finalInvoiceRepo
-      .createQueryBuilder("invoice")
-      .innerJoin("documents", "doc",
-        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-        { type: "final-invoice", status: "COMPLETE" })
-      .select("COUNT(invoice.id)", "invoiceCount")
-      .where("invoice.created_by::text = :ids", { ids: memberId })
-      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
-      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
-      .getRawOne();
-
-    const noOfInvoices = Number(result2?.invoiceCount || 0);
-
-    performanceData.push({
-      employeeName,
-      totalSaleAmount,
-      totalSaleQty,
-      noOfInvoices,
-      assignedTargetQty,
-      achievedQty,
-      achievementRate,
-      variance,
-    });
-  }
-
-  // No children → return single object (self only)
-  if (!hasChildNodes) {
-    return performanceData[0];
-  }
-
-  // Has children → return array
-  return performanceData;
-}
-
-
-//procurement team performance api replace
- //TODO:Get procurement team performance metrics for a manager
-  async getProcurementTeamPerformance(userId: string, queryMonth?: number, queryYear?: number): Promise<any> {
-const teamMembers = await this.workflowHierarchyRepo.find({
-  where: {
-    ancestor: { id: userId },
-    department: DepartmentEnum.PURCHASE,
-    //depth: 1 // direct team members
-  },
-  relations: ["descendant"]
-});
-
-const memberIds = [
-  ...new Set(teamMembers.map(t => String(t.descendant.id)))
-];
-const totalTeamMembers = memberIds.length;
-
-// Frontend sends month as 0-11 (JS convention). Fall back to current month/year if not provided.
-const now = new Date();
-// currentMonth: 0-11 (for procurementTarget queries which use 0-based month)
-const currentMonth = queryMonth !== undefined ? queryMonth : now.getMonth();
-const currentYear  = queryYear  !== undefined ? queryYear  : now.getFullYear();
-// sqlMonth: 1-12 (for EXTRACT(MONTH FROM ...) in SQL which is 1-based)
-const sqlMonth = currentMonth + 1;
-
-const activeMembers = await this.procurementTargetRepo
-  .createQueryBuilder("target")
-  .select("DISTINCT target.employee_id", "employeeId")
-  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
-  .andWhere("target.month = :month", { month: currentMonth })
-  .andWhere("target.year = :year", { year: currentYear })
-  .getRawMany();
-
-  const activeIds = activeMembers.map(a => a.employeeId);
-  const activeMemberCount = activeIds.length;
-  const inactiveMemberCount = memberIds.length - activeMemberCount;
-
-   // 👉 Amount query (NO JOIN)
-  const amountResult = await this.grnRepo
-    .createQueryBuilder("grn")
-    .innerJoin(
-      "documents",
-      "doc",
-      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-      {
-        type: "grn",
-        status: "COMPLETE"
-      }
-    )
-    .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
-    .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
-    .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: sqlMonth })
-    .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-    .getRawOne();
-
-  // 👉 Quantity query (WITH JOIN)
-  const qtyResult = await this.grnRepo
-    .createQueryBuilder("grn")
-    .innerJoin(
-      "documents",
-      "doc",
-      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-      {
-        type: "grn",
-        status: "COMPLETE"
-      }
-    )
-    .leftJoin("grn.grnProducts", "product")
-    .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
-    .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
-    .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: sqlMonth })
-    .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-    .getRawOne();
-
- const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
- const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-
-const targets = await this.procurementTargetRepo
-  .createQueryBuilder("target")
-  .select("SUM(target.monthlyTotalQty)", "totalTarget")
-  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
-  .andWhere("target.month = :month", { month: currentMonth })
-  .andWhere("target.year = :year", { year: currentYear })
-  .getRawOne();
-  const assignedTargetQty = Number(targets?.totalTarget || 0);
-
-  const result1 = await this.grnRepo
-  .createQueryBuilder("grn")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-    {
-      type: "grn",
-      status: "COMPLETE"
-    }
-  )
-  .leftJoin("grn.grnProducts", "product")
-  .select("SUM(product.netWeight)", "achievedQty")
-  .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
-  .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: sqlMonth })
-  .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
-  .getRawOne();
-
-  const achievedQty = Number(result1?.achievedQty || 0);
-
-  const achievementRate = assignedTargetQty > 0
-  ? (achievedQty / assignedTargetQty) * 100
-  : 0;
-
-   const variance = assignedTargetQty - achievedQty;
-
-   const totalRegisteredFarmers = await this.farmerRepo
-  .createQueryBuilder("farmer")
-  .select("COUNT(farmer.id)", "count")
-  .where(
-    "farmer.created_by::text IN (:...ids)",
-    { ids: memberIds }
-  )
-  .andWhere(
-    "farmer.status = :status",
-    { status: "approved" }
-  )
-  .andWhere(
-    "EXTRACT(MONTH FROM farmer.createdAt)=:month",
-    { month: sqlMonth }
-  )
-  .andWhere(
-    "EXTRACT(YEAR FROM farmer.createdAt)=:year",
-    { year: currentYear }
-  )
-  .getRawOne();
-
-
-const totalRegisteredVendors = await this.vendorRepo
-  .createQueryBuilder("vendor")
-  .select("COUNT(vendor.id)", "count")
-  .where(
-    "vendor.created_by::text IN (:...ids)",
-    { ids: memberIds }
-  )
-  .andWhere(
-    "vendor.status = :status",
-    { status: "approved" }
-  )
-  .andWhere(
-    "EXTRACT(MONTH FROM vendor.createdAt)=:month",
-    { month: sqlMonth }
-  )
-  .andWhere(
-    "EXTRACT(YEAR FROM vendor.createdAt)=:year",
-    { year: currentYear }
-  )
-  .getRawOne();
-
-  const farmerCount =
-  Number(totalRegisteredFarmers?.count || 0);
-
-const vendorCount =
-  Number(totalRegisteredVendors?.count || 0);
-
-   return{
-    // totalTeamMembers:totalTeamMembers,
-    // activeMembers:activeMemberCount,
-    // inactiveMembers:inactiveMemberCount,
-    totalProcurementAmount:totalProcurementAmount,  
-    totalProcurementQty:totalProcurementQty,
-    assignedTargetQty:assignedTargetQty,
-    achievedQty:achievedQty,
-    achievementRate:achievementRate,
-    variance:variance,
-    totalRegisteredFarmers: farmerCount,
-   totalRegisteredVendors: vendorCount
-   }
-  }
-
-//sale team performance api replace
- //TODO:Get Sale team performance metrics for a manager
-async getSaleTeamPerformance(userId: string): Promise<any> {
-const teamMembers = await this.workflowHierarchyRepo.find({
-  where: {
-    ancestor: { id: userId },
-    department: DepartmentEnum.SALE,
-    //depth: 1 // direct team members
-  },
-  relations: ["descendant"]
-});
-
-const memberIds = [
-  ...new Set(teamMembers.map(t => String(t.descendant.id)))
-];
-//const memberIds = teamMembers.map(t => t.descendant.id);
-const totalTeamMembers = memberIds.length;
-
-const currentMonth = new Date().getMonth();
-const currentYear = new Date().getFullYear();
-const activeMembers = await this.saleTargetRepo
-  .createQueryBuilder("target")
-  .select("DISTINCT target.employee_id", "employeeId")
-  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
-  .andWhere("target.month = :month", { month: currentMonth })
-  .andWhere("target.year = :year", { year: currentYear })
-  .getRawMany();
-
-  const activeIds = activeMembers.map(a => a.employeeId);
-  const activeMemberCount = activeIds.length;
-  const inactiveMemberCount = memberIds.length - activeMemberCount;
-
-  const result = await this.finalInvoiceRepo
-  .createQueryBuilder("invoice")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-    {
-      type: "final-invoice",
-      status: "COMPLETE"
-    }
-  )
-  .select("SUM(invoice.totalAmount)", "totalAmount")
-  .addSelect("SUM(invoice.netProductWeight)", "totalQty")
-  .where("invoice.created_by::text IN (:...ids)", { ids: memberIds })
-  .andWhere("invoice.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
- const totalSaleAmount= Number(result?.totalAmount || 0)
- const totalSaleQty= Number(result?.totalQty || 0)
-
-const targets = await this.saleTargetRepo
-  .createQueryBuilder("target")
-  .select("SUM(target.totalMonthlySale)", "totalTarget")
-  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
-  .andWhere("target.month = :month", { month: currentMonth })
-  .andWhere("target.year = :year", { year: currentYear })
-  .getRawOne();
-  const assignedTargetQty = Number(targets?.totalTarget || 0);
-
-  const newCurrentMnth=new Date().getMonth()+1;
-  const result1 = await this.finalInvoiceRepo
-  .createQueryBuilder("invoice")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-    {
-      type: "final-invoice",
-      status: "COMPLETE"
-    }
-  )
-  .select("SUM(invoice.netProductWeight)", "totalQty")
-  .where("invoice.created_by::text IN (:...ids)", { ids: memberIds })
-  .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: newCurrentMnth })
-  .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: currentYear })
-  .getRawOne();
-
-  const achievedQty = Number(result1?.totalQty || 0);
-
-  const achievementRate = assignedTargetQty > 0
-  ? (achievedQty / assignedTargetQty) * 100
-  : 0;
-
-   const variance = assignedTargetQty - achievedQty;
-
-   const totalRegisteredCustomersResult = await this.customerRepo
-  .createQueryBuilder("customer")
-  .select("COUNT(customer.id)", "count")
-  .where(
-    "customer.created_by::text IN (:...ids)",
-    { ids: memberIds }
-  )
-  .andWhere(
-    "customer.status = :status",
-    { status: "approved" }
-  )
-  .andWhere(
-    "EXTRACT(MONTH FROM customer.createdAt)=:month",
-    { month: currentMonth + 1 }
-  )
-  .andWhere(
-    "EXTRACT(YEAR FROM customer.createdAt)=:year",
-    { year: currentYear }
-  )
-  .getRawOne();
-  
-  const customerCount =
-  Number(totalRegisteredCustomersResult?.count || 0);
-
-   return{
-    // totalTeamMembers:totalTeamMembers,
-    // activeMembers:activeMemberCount,
-    // inactiveMembers:inactiveMemberCount,
-    totalSaleAmount:totalSaleAmount,  
-    totalSaleQty:totalSaleQty,
-    assignedTargetQty:assignedTargetQty,
-    achievedQty:achievedQty,
-    achievementRate:achievementRate,
-    variance:variance,
-    totalRegisteredCustomers: customerCount,
-   }
-  }
-
-  //TODO:Get Procurement Overview for all team in dashboard
-async getProcurementOverview(): Promise<any> {
-     // 👉 Amount query (NO JOIN)
-  const amountResult = await this.grnRepo
-    .createQueryBuilder("grn")
-    .innerJoin(
-      "documents",
-      "doc",
-      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-      {
-        type: "grn",
-        status: "COMPLETE"
-      }
-    )
-    .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
-    .andWhere("grn.createdAt <= :today", { today: new Date() })
-    .getRawOne();
-
-    // 👉 Quantity query (WITH JOIN)
-  const qtyResult = await this.grnRepo
-    .createQueryBuilder("grn")
-    .innerJoin(
-      "documents",
-      "doc",
-      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
-      {
-        type: "grn",
-        status: "COMPLETE"
-      }
-    )
-    .leftJoin("grn.grnProducts", "product")
-    .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
-    .andWhere("grn.createdAt <= :today", { today: new Date() })
-    .getRawOne();
-
- const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
- const totalProcurementQty= Number(qtyResult?.totalQty || 0)
-
-return{
-  procurementQuantity: totalProcurementQty,
-  procurementAmount: totalProcurementAmount
-}
-}
-
-//TODO:Get Sale Overview for all team in Dashboard
-async getSaleOverview(): Promise<any> {
-  const result = await this.finalInvoiceRepo
-  .createQueryBuilder("invoice")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
-    {
-      type: "final-invoice",
-      status: "COMPLETE"
-    }
-  )
-  .select("SUM(invoice.totalAmount)", "totalAmount")
-  .addSelect("SUM(invoice.netProductWeight)", "totalQty")
-  .andWhere("invoice.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
- const totalSaleAmount= Number(result?.totalAmount || 0)
- const totalSaleQty= Number(result?.totalQty || 0)
-
- return{
-  saleQuantity: totalSaleQty,
-  saleAmount: totalSaleAmount
- }
-}
-
-//TODO:Get GRN Overview for all team in Dashboard
-async getGRNOverview(): Promise<any> {
-  const grnCountResult = await this.grnRepo
-  .createQueryBuilder("grn")
-  .select("COUNT(grn.id)", "grnCount")
-  .andWhere("grn.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
-const totalGrnCount = Number(grnCountResult?.grnCount || 0);
-
-const pendingGrnCountResult = await this.grnRepo
-  .createQueryBuilder("grn")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = grn.id::text AND doc.type = :type",
-    { type: "grn" }
-  )
-  .select("COUNT(grn.id)", "grnCount")
-  .where("doc.status != :status", { status: "COMPLETE" })
-  .andWhere("grn.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
-  return{
-    totalGrnCount: totalGrnCount,
-    pendingGrnCount: Number(pendingGrnCountResult?.grnCount || 0)
-  }
-}
-
-//TODO:Get Invoice Overview for all team in Dashboard
-async getInvoiceOverview(): Promise<any> {
-const result2 = await this.finalInvoiceRepo
-  .createQueryBuilder("invoice")
-  .select("COUNT(invoice.id)", "invoiceCount")
-  .andWhere("invoice.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
-  const invoiceCount = Number(result2?.invoiceCount || 0);
-
-  const pendingInvoiceCount = await this.finalInvoiceRepo
-  .createQueryBuilder("invoice")
-  .innerJoin(
-    "documents",
-    "doc",
-    "doc.document_type_id = invoice.id::text AND doc.type = :type",
-    {
-      type: "final-invoice",
-    }
-  )
-  .select("COUNT(invoice.id)", "invoiceCount")
-  .where("doc.status != :status", { status: "COMPLETE" })
-  .andWhere("invoice.createdAt <= :today", { today: new Date() })
-  .getRawOne();
-
-  return {
-    totalInvoicesCount: invoiceCount,
-    pendingInvoiceCount: Number(pendingInvoiceCount?.invoiceCount || 0)
-  };
-}
-async getProcurementTeamMembersPerformance(
-  userId: string,
-  month?: number,  // 1-indexed (January = 1); optional — defaults to current month
-  year?: number,   // 4-digit year; optional — defaults to current year
-): Promise<any> {
-  // Resolve month/year
-  const resolvedMonth = month ?? (new Date().getMonth() + 1); // 1-indexed
+  let resolvedMonth = month ?? (new Date().getMonth() + 1); // 1-indexed
+  resolvedMonth = month ? resolvedMonth + 1 : resolvedMonth; // If month provided, increment by 1 to align with target table
   const resolvedYear  = year  ?? new Date().getFullYear();
   const targetMonth   = resolvedMonth - 1; // target table is 0-indexed
 
@@ -2934,6 +2332,867 @@ async getProcurementTeamMembersPerformance(
 }
 
 
+// async getProcurementTeamMembersPerformance(userId: string, month?: number, year?: number): Promise<any> {
+//   const teamMembers = await this.workflowHierarchyRepo.find({
+//   where: {
+//     ancestor: { id: userId },
+//     department: DepartmentEnum.PURCHASE,
+//    //depth: 1 // direct team members
+//   },
+//   relations: ["descendant"]
+// });
+
+// const memberIds = [
+//   ...new Set(teamMembers.map(t => String(t.descendant.id)))
+// ];
+
+// const currentMonth = new Date().getMonth();
+// const newCurrenetMonth=new Date().getMonth()+1;
+// const currentYear = new Date().getFullYear();
+
+// const currentDate = new Date();
+
+//   const selectedMonth =
+//     month || currentDate.getMonth() + 1;
+
+//   const selectedYear =
+//     year || currentDate.getFullYear();
+
+// const performanceData = [];
+// for (const memberId of memberIds) {
+
+//   const employee = await this.userRepo.findOne({
+//   where: { id: memberId },
+//   select: ["id", "firstName", "lastName"]
+// });
+
+// const employeeName = employee
+//   ? `${employee.firstName} ${employee.lastName}`
+//   : "Unknown";
+
+//    // 👉 Amount query (NO JOIN)
+// //   const amountResult = await this.grnRepo
+// //     .createQueryBuilder("grn")
+// //     .innerJoin(
+// //       "documents",
+// //       "doc",
+// //       "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+// //       {
+// //         type: "grn",
+// //         status: "COMPLETE"
+// //       }
+// //     )
+// //     .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
+// //     .where("grn.createdby_id::text = :id", { id: memberId })
+// //     .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: newCurrenetMonth })
+// //     .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: currentYear })
+// //     .getRawOne();
+
+// //  const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
+
+//   // 👉 Quantity query (WITH JOIN)
+//   const qtyResult = await this.grnRepo
+//     .createQueryBuilder("grn")
+//     .innerJoin(
+//       "documents",
+//       "doc",
+//       "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+//       {
+//         type: "grn",
+//         status: "COMPLETE"
+//       }
+//     )
+//     .leftJoin("grn.grnProducts", "product")
+//     .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
+//     .where("grn.createdby_id::text = :id", { id: memberId })
+//     .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: selectedMonth })
+//     .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: selectedYear })
+//     .getRawOne();
+
+//  const targets = await this.procurementTargetRepo
+//   .createQueryBuilder("target")
+//   .select("SUM(target.monthlyTotalQty)", "totalTarget")
+//   .where("target.employee_id::text = :id", { id: memberId })
+//   .andWhere("target.month = :month", { month: selectedMonth })
+//   .andWhere("target.year = :year", { year: selectedYear })
+//   .getRawOne();
+//   const AsignedTargetQty = Number(targets?.totalTarget || 0);
+
+//   const result1 = await this.grnRepo
+//   .createQueryBuilder("grn")
+//   .innerJoin(
+//     "documents",
+//     "doc",
+//     "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+//     {
+//       type: "grn",
+//       status: "COMPLETE"
+//     }
+//   )
+//   .leftJoin("grn.grnProducts", "product")
+//   .select("SUM(product.netWeight)", "achievedQty")
+//   .where("grn.createdby_id::text = :id", { id: memberId })
+//   .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: selectedMonth })
+//   .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: selectedYear })
+//   .getRawOne();
+
+//   const achievedQty = Number(result1?.achievedQty || 0);
+
+//   const achievementRate = AsignedTargetQty > 0
+//   ? (achievedQty / AsignedTargetQty) * 100
+//   : 0;
+
+//    const variance = AsignedTargetQty - achievedQty;
+
+//    const grnCountResult = await this.grnRepo
+//   .createQueryBuilder("grn")
+//   .innerJoin(
+//     "documents",
+//     "doc",
+//     "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+//     {
+//       type: "grn",
+//       status: "COMPLETE"
+//     }
+//   )
+//   .select("COUNT(grn.id)", "grnCount")
+//   .where("grn.createdby_id::text = :id", { id: memberId })
+//   .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: selectedMonth })
+//   .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: selectedYear })
+//   .getRawOne();
+
+// const grnCount = Number(grnCountResult?.grnCount || 0);
+
+//  performanceData.push({
+//   employeeName: employeeName,
+//   //totalProcurementAmount: totalProcurementAmount,
+//   totalProcuredQty: Number(qtyResult?.totalQty || 0),
+//   AsignedTargetQty: AsignedTargetQty,
+//   achievedQty: achievedQty,
+//   achievementRate: achievementRate,
+//   variance: variance,
+//    totalGRNs: grnCount
+//  });
+// }
+// return performanceData;
+// }
+
+
+ 
+
+
+//TODO:Get sale team members performance metrics for a manager
+async getSaleTeamMembersPerformance(
+  userId: string,
+  month?: number,  // 1-indexed (January = 1); optional — defaults to current month
+  year?: number,   // 4-digit year; optional — defaults to current year
+): Promise<any> {
+  // Resolve month/year
+  let resolvedMonth = month ?? (new Date().getMonth() + 1); // 1-indexed
+    resolvedMonth = month ? resolvedMonth + 1 : resolvedMonth; // If month provided, increment by 1 to align with target table
+  const resolvedYear  = year  ?? new Date().getFullYear();
+  const targetMonth   = resolvedMonth - 1; // target table is 0-indexed
+
+  // Get all descendants (direct + indirect)
+  const teamMembers = await this.workflowHierarchyRepo
+    .createQueryBuilder("wh")
+    .leftJoinAndSelect("wh.descendant", "descendant")
+    .where("wh.ancestor.id = :userId", { userId })
+    .andWhere("wh.department = :dept", { dept: DepartmentEnum.SALE })
+    .andWhere("wh.depth > 0")
+    .getMany();
+
+  // Remove duplicates
+  const uniqueMembers = Array.from(
+    new Map(teamMembers.map((item) => [item.descendant.id, item.descendant])).values()
+  );
+
+  const hasChildNodes = uniqueMembers.length > 0;
+
+  // If no descendants → scope to self only; otherwise include self + all descendants
+  const memberIds = hasChildNodes
+    ? [userId, ...uniqueMembers.map((m) => m.id)]
+    : [userId];
+
+  const performanceData = [];
+
+  for (const memberId of memberIds) {
+    const employee = await this.userRepo.findOne({
+      where: { id: memberId },
+      select: ["id", "firstName", "lastName"],
+    });
+    const employeeName = employee
+      ? `${employee.firstName} ${employee.lastName}`
+      : "Unknown";
+
+    // Assigned target
+    const targets = await this.saleTargetRepo
+      .createQueryBuilder("target")
+      .select("SUM(target.totalMonthlySale)", "totalTarget")
+      .where("target.employee_id::text = :ids", { ids: memberId })
+      .andWhere("target.month = :targetMonth", { targetMonth })
+      .andWhere("target.year = :year", { year: resolvedYear })
+      .getRawOne();
+
+    const assignedTargetQty = Number(targets?.totalTarget || 0);
+
+    // Total sale amount + achieved qty (netProductWeight)
+    const result1 = await this.finalInvoiceRepo
+      .createQueryBuilder("invoice")
+      .innerJoin("documents", "doc",
+        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+        { type: "final-invoice", status: "COMPLETE" })
+      .select("COALESCE(SUM(invoice.netProductWeight), 0)", "achievedQty")
+      .addSelect("COALESCE(SUM(invoice.totalAmount), 0)", "totalAmount")
+      .where("invoice.created_by::text = :ids", { ids: memberId })
+      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
+      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
+      .getRawOne();
+
+    const achievedQty     = Number(result1?.achievedQty || 0);
+    const totalSaleAmount = Number(result1?.totalAmount || 0);
+
+    // Total sale qty (gross weight from invoice products)
+    const result3 = await this.finalInvoiceRepo
+      .createQueryBuilder("invoice")
+      .innerJoin("documents", "doc",
+        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+        { type: "final-invoice", status: "COMPLETE" })
+      .leftJoin("invoice.invoiceProducts", "invoiceProduct")
+      .select("COALESCE(SUM(invoiceProduct.grossWeight), 0)", "totalQty")
+      .where("invoice.created_by::text = :ids", { ids: memberId })
+      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
+      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
+      .getRawOne();
+
+    const totalSaleQty = Number(result3?.totalQty || 0);
+
+    const achievementRate = assignedTargetQty > 0
+      ? (achievedQty / assignedTargetQty) * 100
+      : 0;
+    const variance = assignedTargetQty - achievedQty;
+
+    // Invoice count
+    const result2 = await this.finalInvoiceRepo
+      .createQueryBuilder("invoice")
+      .innerJoin("documents", "doc",
+        "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+        { type: "final-invoice", status: "COMPLETE" })
+      .select("COUNT(invoice.id)", "invoiceCount")
+      .where("invoice.created_by::text = :ids", { ids: memberId })
+      .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: resolvedMonth })
+      .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: resolvedYear })
+      .getRawOne();
+
+    const noOfInvoices = Number(result2?.invoiceCount || 0);
+
+    performanceData.push({
+      employeeName,
+      totalSaleAmount,
+      totalSaleQty,
+      noOfInvoices,
+      assignedTargetQty,
+      achievedQty,
+      achievementRate,
+      variance,
+    });
+  }
+
+  // No children → return single object (self only)
+  if (!hasChildNodes) {
+    return performanceData[0];
+  }
+
+  // Has children → return array
+  return performanceData;
+}
+// async getSaleTeamMembersPerformance(userId: string, month?: number, year?: number): Promise<any> {
+//   const currentDate = new Date();
+  
+//   const selectedMonth =
+//     month || currentDate.getMonth() + 1;
+  
+//   const selectedYear =
+//     year || currentDate.getFullYear();
+
+//    const teamMembers = await this.workflowHierarchyRepo.find({
+//   where: {
+//     ancestor: { id: userId },
+//     department: DepartmentEnum.SALE,
+//    //depth: 1 // direct team members
+//   },
+//   relations: ["descendant"]
+// });
+
+// const memberIds = [
+//   ...new Set(teamMembers.map(t => String(t.descendant.id)))
+// ];
+
+// const currentMonth = new Date().getMonth();
+// const newCurrenetMonth=new Date().getMonth()+1;
+// const currentYear = new Date().getFullYear();
+
+// const performanceData = [];
+
+// for (const memberId of memberIds) {
+
+//   const employee = await this.userRepo.findOne({
+//   where: { id: memberId },
+//   select: ["id", "firstName", "lastName"]
+// });
+
+// const employeeName = employee
+//   ? `${employee.firstName} ${employee.lastName}`
+//   : "Unknown";
+
+// const targets = await this.saleTargetRepo
+//   .createQueryBuilder("target")
+//   .select("SUM(target.totalMonthlySale)", "totalTarget")
+//   .where("target.employee_id::text =:ids", { ids: memberId })
+//   .andWhere("target.month = :month", { month: selectedMonth })
+//   .andWhere("target.year = :year", { year: selectedYear })
+//   .getRawOne();
+//   const AsignedTargetQty = Number(targets?.totalTarget || 0);
+
+//  const result1 = await this.finalInvoiceRepo
+//   .createQueryBuilder("invoice")
+//   .innerJoin(
+//     "documents",
+//     "doc",
+//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+//     {
+//       type: "final-invoice",
+//       status: "COMPLETE"
+//     }
+//   )
+//   .select("SUM(invoice.netProductWeight)", "totalQty")
+//   .addSelect("SUM(invoice.totalAmount)", "totalAmount")
+//   .where("invoice.created_by::text = :ids", { ids: memberId })
+//   .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: selectedMonth })
+//   .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: selectedYear })
+//   .getRawOne();
+
+//   const achievedQty = Number(result1?.totalQty || 0);
+
+
+//   const totalSaleAmount= Number(result1?.totalAmount || 0)
+
+//   const result3 = await this.finalInvoiceRepo
+//   .createQueryBuilder("invoice")
+//   .innerJoin(
+//     "documents",
+//     "doc",
+//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+//     {
+//       type: "final-invoice",
+//       status: "COMPLETE",
+//     }
+//   )
+//   .leftJoin("invoice.invoiceProducts", "invoiceProduct")
+//   .select("SUM(invoiceProduct.grossWeight)", "totalQty")
+//  // .addSelect("SUM(invoice.totalAmount)", "totalAmount")
+//   .where("invoice.created_by::text = :ids", { ids: memberId })
+//   .andWhere(
+//     "EXTRACT(MONTH FROM invoice.createdAt) = :month",
+//     { month: selectedMonth }
+//   )
+//   .andWhere(
+//     "EXTRACT(YEAR FROM invoice.createdAt) = :year",
+//     { year: selectedYear }
+//   )
+//   .getRawOne();
+
+//    const totalSaleQty= Number(result3?.totalQty || 0)
+
+//    const achievementRate = AsignedTargetQty > 0
+//   ? (achievedQty / AsignedTargetQty) * 100
+//   : 0;
+
+//    const variance = AsignedTargetQty - achievedQty;
+
+//  const result2 = await this.finalInvoiceRepo
+//   .createQueryBuilder("invoice")
+//   .innerJoin(
+//     "documents",
+//     "doc",
+//     "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+//     {
+//       type: "final-invoice",
+//       status: "COMPLETE"
+//     }
+//   )
+//   .select("COUNT(invoice.id)", "invoiceCount")
+//   .where("invoice.created_by::text = :ids", { ids: memberId })
+//   .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: selectedMonth })
+//   .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: selectedYear })
+//   .getRawOne();
+
+//   const invoiceCount = Number(result2?.invoiceCount || 0);
+
+//   performanceData.push({
+//   employeeName: employeeName,
+//  // totalSaleAmount: totalSaleAmount,
+//  totalSoldQty: totalSaleQty,
+//   AsignedTargetQty: AsignedTargetQty,
+//   achievedQty: achievedQty,
+//   achievementRate: achievementRate,
+//   variance: variance,
+//   totalInvoices: invoiceCount
+//  });
+// }
+// return performanceData; 
+// }
+
+
+//procurement team performance api replace
+ //TODO:Get procurement team performance metrics for a manager
+  async getProcurementTeamPerformance(userId: string, month?: number, year?: number): Promise<any> {
+const teamMembers = await this.workflowHierarchyRepo.find({
+  where: {
+    ancestor: { id: userId },
+    department: DepartmentEnum.PURCHASE,
+    //depth: 1 // direct team members
+  },
+  relations: ["descendant"]
+});
+
+console.log("Team Members in DashboardService:", teamMembers.length);
+const memberIds = [
+  ...new Set(teamMembers.map(t => String(t.descendant.id)))
+];
+console.log("Team Member IDs in DashboardService:", memberIds);
+const totalTeamMembers = memberIds.length;
+
+// const currentMonth = new Date().getMonth();
+// const currentYear = new Date().getFullYear();
+
+const currentDate = new Date();
+
+  const selectedMonth =
+    month || currentDate.getMonth() + 1;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
+
+console.log("Current Month in DashboardService:", selectedMonth);
+console.log("Current year",selectedYear);
+
+const activeMembers = await this.procurementTargetRepo
+  .createQueryBuilder("target")
+  .select("DISTINCT target.employee_id", "employeeId")
+  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
+  .andWhere("target.month = :month", { month: selectedMonth })
+  .andWhere("target.year = :year", { year: selectedYear })
+  .getRawMany();
+
+  const activeIds = activeMembers.map(a => a.employeeId);
+  const activeMemberCount = activeIds.length;
+  const inactiveMemberCount = memberIds.length - activeMemberCount;
+  console.log("Active Member IDs in DashboardService:", activeIds);
+  console.log("Active Member Count in DashboardService:", activeMemberCount);
+  console.log("Inactive Member Count in DashboardService:", inactiveMemberCount);
+
+   // 👉 Amount query (NO JOIN)
+  const amountResult = await this.grnRepo
+    .createQueryBuilder("grn")
+    .innerJoin(
+      "documents",
+      "doc",
+      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+      {
+        type: "grn",
+        status: "COMPLETE"
+      }
+    )
+    .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
+    .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
+     .andWhere("grn.createdAt <= :today", { today: new Date() })
+    .getRawOne();
+
+  // 👉 Quantity query (WITH JOIN)
+  const qtyResult = await this.grnRepo
+    .createQueryBuilder("grn")
+    .innerJoin(
+      "documents",
+      "doc",
+      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+      {
+        type: "grn",
+        status: "COMPLETE"
+      }
+    )
+    .leftJoin("grn.grnProducts", "product")
+    .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
+    .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
+    .andWhere("grn.createdAt <= :today", { today: new Date() })
+    .getRawOne();
+
+ const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
+ const totalProcurementQty= Number(qtyResult?.totalQty || 0)
+console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
+console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
+
+const targets = await this.procurementTargetRepo
+  .createQueryBuilder("target")
+  .select("SUM(target.monthlyTotalQty)", "totalTarget")
+  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
+  .andWhere("target.month = :month", { month: month?selectedMonth:selectedMonth-1 })  ////
+  .andWhere("target.year = :year", { year: selectedYear })
+  .getRawOne();
+  const AsignedTargetQty = Number(targets?.totalTarget || 0);
+
+const newCurrentMnth=new Date().getMonth()+1;
+  const result1 = await this.grnRepo
+  .createQueryBuilder("grn")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+    {
+      type: "grn",
+      status: "COMPLETE"
+    }
+  )
+  .leftJoin("grn.grnProducts", "product")
+  .select("SUM(product.netWeight)", "achievedQty")
+  .where("grn.createdby_id::text IN (:...ids)", { ids: memberIds })
+  .andWhere("EXTRACT(MONTH FROM grn.createdAt) = :month", { month: month?selectedMonth+1:selectedMonth })  ////
+  .andWhere("EXTRACT(YEAR FROM grn.createdAt) = :year", { year: selectedYear })
+  .getRawOne();
+
+  const achievedQty = Number(result1?.achievedQty || 0);
+
+  const achievementRate = AsignedTargetQty > 0
+  ? (achievedQty / AsignedTargetQty) * 100
+  : 0;
+
+   const variance = AsignedTargetQty - achievedQty;
+
+   const totalRegisteredFarmers = await this.farmerRepo
+  .createQueryBuilder("farmer")
+  .select("COUNT(farmer.id)", "count")
+  .where(
+    "farmer.created_by::text IN (:...ids)",
+    { ids: memberIds }
+  )
+  .andWhere(
+    "farmer.status = :status",
+    { status: "approved" }
+  )
+  .andWhere(
+    "EXTRACT(MONTH FROM farmer.createdAt)=:month",
+    { month: month?selectedMonth+1:selectedMonth}
+  )
+  .andWhere(
+    "EXTRACT(YEAR FROM farmer.createdAt)=:year",
+    { year: selectedYear }
+  )
+  .getRawOne();
+
+
+const totalRegisteredVendors = await this.vendorRepo
+  .createQueryBuilder("vendor")
+  .select("COUNT(vendor.id)", "count")
+  .where(
+    "vendor.created_by::text IN (:...ids)",
+    { ids: memberIds }
+  )
+  .andWhere(
+    "vendor.status = :status",
+    { status: "approved" }
+  )
+  .andWhere(
+    "EXTRACT(MONTH FROM vendor.createdAt)=:month",
+    { month: month?selectedMonth+1:selectedMonth}
+  )
+  .andWhere(
+    "EXTRACT(YEAR FROM vendor.createdAt)=:year",
+    { year: selectedYear }
+  )
+  .getRawOne();
+
+  const farmerCount =
+  Number(totalRegisteredFarmers?.count || 0);
+
+const vendorCount =
+  Number(totalRegisteredVendors?.count || 0);
+
+   return{
+    totalProcurementAmount:totalProcurementAmount,  
+    totalProcurementQty:totalProcurementQty,
+    AsignedTargetQty:AsignedTargetQty,
+    achievedQty:achievedQty,
+    achievementRate:achievementRate,
+    variance:variance,
+    totalRegisteredFarmers: farmerCount,
+   totalRegisteredVendors: vendorCount
+   }
+  }
+
+//sale team performance api replace
+ //TODO:Get Sale team performance metrics for a manager
+async getSaleTeamPerformance(userId: string, month?: number, year?: number): Promise<any> {
+const teamMembers = await this.workflowHierarchyRepo.find({
+  where: {
+    ancestor: { id: userId },
+    department: DepartmentEnum.SALE,
+    //depth: 1 // direct team members
+  },
+  relations: ["descendant"]
+});
+
+const memberIds = [
+  ...new Set(teamMembers.map(t => String(t.descendant.id)))
+];
+//const memberIds = teamMembers.map(t => t.descendant.id);
+const totalTeamMembers = memberIds.length;
+
+const currentMonth = new Date().getMonth();
+const currentYear = new Date().getFullYear();
+
+const currentDate = new Date();
+
+  const selectedMonth =
+    month || currentDate.getMonth() + 1;
+
+  const selectedYear =
+    year || currentDate.getFullYear();
+
+const activeMembers = await this.saleTargetRepo
+  .createQueryBuilder("target")
+  .select("DISTINCT target.employee_id", "employeeId")
+  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
+  .andWhere("target.month = :month", { month: selectedMonth })
+  .andWhere("target.year = :year", { year: selectedYear })
+  .getRawMany();
+
+  const activeIds = activeMembers.map(a => a.employeeId);
+  const activeMemberCount = activeIds.length;
+  const inactiveMemberCount = memberIds.length - activeMemberCount;
+
+  const result = await this.finalInvoiceRepo
+  .createQueryBuilder("invoice")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+    {
+      type: "final-invoice",
+      status: "COMPLETE"
+    }
+  )
+  .select("SUM(invoice.totalAmount)", "totalAmount")
+  .addSelect("SUM(invoice.netProductWeight)", "totalQty")
+  .where("invoice.created_by::text IN (:...ids)", { ids: memberIds })
+  .andWhere("invoice.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+ const totalSaleAmount= Number(result?.totalAmount || 0)
+ const totalSaleQty= Number(result?.totalQty || 0)
+
+const targets = await this.saleTargetRepo
+  .createQueryBuilder("target")
+  .select("SUM(target.totalMonthlySale)", "totalTarget")
+  .where("target.employee_id::text IN (:...ids)", { ids: memberIds })
+  .andWhere("target.month = :month", { month: month?selectedMonth:selectedMonth-1 })
+  .andWhere("target.year = :year", { year: selectedYear })
+  .getRawOne();
+  const AsignedTargetQty = Number(targets?.totalTarget || 0);
+
+  const newCurrentMnth=new Date().getMonth()+1;
+  const result1 = await this.finalInvoiceRepo
+  .createQueryBuilder("invoice")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+    {
+      type: "final-invoice",
+      status: "COMPLETE"
+    }
+  )
+  .select("SUM(invoice.netProductWeight)", "totalQty")
+  .where("invoice.created_by::text IN (:...ids)", { ids: memberIds })
+  .andWhere("EXTRACT(MONTH FROM invoice.createdAt) = :month", { month: month?selectedMonth+1:selectedMonth })
+  .andWhere("EXTRACT(YEAR FROM invoice.createdAt) = :year", { year: selectedYear })
+  .getRawOne();
+
+  const achievedQty = Number(result1?.totalQty || 0);
+
+  const achievementRate = AsignedTargetQty > 0
+  ? (achievedQty / AsignedTargetQty) * 100
+  : 0;
+
+   const variance = AsignedTargetQty - achievedQty;
+
+   const totalRegisteredCutomers = await this.customerRepo
+  .createQueryBuilder("customer")
+  .select("COUNT(customer.id)", "count")
+  .where(
+    "customer.created_by::text IN (:...ids)",
+    { ids: memberIds }
+  )
+  .andWhere(
+    "customer.status = :status",
+    { status: "approved" }
+  )
+  .andWhere(
+    "EXTRACT(MONTH FROM customer.createdAt)=:month",
+    { month: month?selectedMonth+1:selectedMonth }
+  )
+  .andWhere(
+    "EXTRACT(YEAR FROM customer.createdAt)=:year",
+    { year: selectedYear }
+  )
+  .getRawOne();
+  
+  const cutomerCount =
+  Number(totalRegisteredCutomers?.count || 0);
+
+   return{
+    totalSaleAmount:totalSaleAmount,  
+    totalSaleQty:totalSaleQty,
+    AsignedTargetQty:AsignedTargetQty,
+    achievedQty:achievedQty,
+    achievementRate:achievementRate,
+    variance:variance,
+    totalRegisteredCutomers: cutomerCount,
+   }
+  }
+
+  //TODO:Get Procurement Overview for all team in dashboard
+async getProcurementOverview(): Promise<any> {
+     // 👉 Amount query (NO JOIN)
+  const amountResult = await this.grnRepo
+    .createQueryBuilder("grn")
+    .innerJoin(
+      "documents",
+      "doc",
+      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+      {
+        type: "grn",
+        status: "COMPLETE"
+      }
+    )
+    .select("COALESCE(SUM(grn.totalAmt), 0)", "totalAmount")
+    .andWhere("grn.createdAt <= :today", { today: new Date() })
+    .getRawOne();
+
+    // 👉 Quantity query (WITH JOIN)
+  const qtyResult = await this.grnRepo
+    .createQueryBuilder("grn")
+    .innerJoin(
+      "documents",
+      "doc",
+      "doc.document_type_id = grn.id::text AND doc.type = :type AND doc.status = :status",
+      {
+        type: "grn",
+        status: "COMPLETE"
+      }
+    )
+    .leftJoin("grn.grnProducts", "product")
+    .select("COALESCE(SUM(product.netWeight), 0)", "totalQty")
+    .andWhere("grn.createdAt <= :today", { today: new Date() })
+    .getRawOne();
+
+ const totalProcurementAmount= Number(amountResult?.totalAmount || 0)
+ const totalProcurementQty= Number(qtyResult?.totalQty || 0)
+console.log("Total Procurement Amount in DashboardService:", totalProcurementAmount);
+console.log("Total Procurement Quantity in DashboardService:", totalProcurementQty);
+
+return{
+  procurementQuantity: totalProcurementQty,
+  procurementAmount: totalProcurementAmount
+}
+}
+
+//TODO:Get Sale Overview for all team in Dashboard
+async getSaleOverview(): Promise<any> {
+  const result = await this.finalInvoiceRepo
+  .createQueryBuilder("invoice")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = invoice.id::text AND doc.type = :type AND doc.status = :status",
+    {
+      type: "final-invoice",
+      status: "COMPLETE"
+    }
+  )
+  .select("SUM(invoice.totalAmount)", "totalAmount")
+  .addSelect("SUM(invoice.netProductWeight)", "totalQty")
+  .andWhere("invoice.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+ const totalSaleAmount= Number(result?.totalAmount || 0)
+ const totalSaleQty= Number(result?.totalQty || 0)
+
+ return{
+  saleQuantity: totalSaleQty,
+  saleAmount: totalSaleAmount
+ }
+}
+
+//TODO:Get GRN Overview for all team in Dashboard
+async getGRNOverview(): Promise<any> {
+  const grnCountResult = await this.grnRepo
+  .createQueryBuilder("grn")
+  .select("COUNT(grn.id)", "grnCount")
+  .andWhere("grn.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+const totalGrnCount = Number(grnCountResult?.grnCount || 0);
+
+const pendingGrnCountResult = await this.grnRepo
+  .createQueryBuilder("grn")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = grn.id::text AND doc.type = :type",
+    { type: "grn" }
+  )
+  .select("COUNT(grn.id)", "grnCount")
+  .where("doc.status != :status", { status: "COMPLETE" })
+  .andWhere("grn.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+  return{
+    totalGrnCount: totalGrnCount,
+    pendingGrnCount: Number(pendingGrnCountResult?.grnCount || 0)
+  }
+}
+
+//TODO:Get Invoice Overview for all team in Dashboard
+async getInvoiceOverview(): Promise<any> {
+const result2 = await this.finalInvoiceRepo
+  .createQueryBuilder("invoice")
+  .select("COUNT(invoice.id)", "invoiceCount")
+  .andWhere("invoice.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+  const invoiceCount = Number(result2?.invoiceCount || 0);
+
+  const pendingInvoiceCount = await this.finalInvoiceRepo
+  .createQueryBuilder("invoice")
+  .innerJoin(
+    "documents",
+    "doc",
+    "doc.document_type_id = invoice.id::text AND doc.type = :type",
+    {
+      type: "final-invoice",
+    }
+  )
+  .select("COUNT(invoice.id)", "invoiceCount")
+  .where("doc.status != :status", { status: "COMPLETE" })
+  .andWhere("invoice.createdAt <= :today", { today: new Date() })
+  .getRawOne();
+
+  return {
+    totalInvoicesCount: invoiceCount,
+    pendingInvoiceCount: Number(pendingInvoiceCount?.invoiceCount || 0)
+  };
+}
+
 //TODO:Get sale overview by customer type wise in Dashboard
 async getCustomerTypeWiseSaleOverview(): Promise<any> {
   const result = await this.finalInvoiceRepo
@@ -3028,6 +3287,7 @@ async getVendorCategoryWiseProcurementOverview(): Promise<any> {
   .where("DATE(grn.createdAt) <= CURRENT_DATE")
   .getRawMany();
 
+console.log("RAW DATA:", result);
 //return result;
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
@@ -3090,6 +3350,7 @@ async getVendorSubcategoryWiseProcurementOverview(): Promise<any> {
   .where("DATE(grn.createdAt) <= CURRENT_DATE")
   .getRawMany();
 
+console.log("RAW DATA:", result);
 //return result;
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
@@ -3149,6 +3410,8 @@ async getLocationWiseSaleOverview(): Promise<any> {
   ])
   .getRawMany();
 
+console.log("RAW:", result);
+
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
     const key = row.locationid || "UNKNOWN";
@@ -3207,6 +3470,8 @@ async getLocationWiseProcurementOverview(): Promise<any> {
     "product.netWeight AS netWeight",
   ])
   .getRawMany();
+
+console.log("RAW:", result);
 
 const aggregated = Object.values(
   result.reduce((acc: any, row: any) => {
@@ -3490,465 +3755,7 @@ private async getEmployeeIds(teamLeaderId: string): Promise<string[]> {
     };
   }
 
-  async getFarmerRegistrationOverviewOfEachTeamMember(teamLeaderId: string) {
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-
-  // Get all members under team leader
-  const teamMembers = await this.workflowHierarchyRepo
-    .createQueryBuilder("wh")
-    .leftJoinAndSelect("wh.descendant", "descendant")
-    .where("wh.ancestor.id = :teamLeaderId", {
-      teamLeaderId
-    })
-    .andWhere("wh.depth > 0")
-    .getMany();
-
-  // Remove duplicates if same member exists in multiple departments
-  const uniqueMembers = Array.from(
-    new Map(
-      teamMembers.map(
-        item => [item.descendant.id, item.descendant]
-      )
-    ).values()
-  );
-
-   const hasChildNodes = uniqueMembers.length > 0;
-   // Include self + all descendants
-  // If no descendants, use only self
-  const memberIds =
-    uniqueMembers.length > 0
-      ? [
-          teamLeaderId,
-          ...uniqueMembers.map((member) => member.id),
-        ]
-      : [teamLeaderId];
-  // Single optimized query
-  const stats = await this.farmerRepo
-    .createQueryBuilder("farmer")
-   
-    .leftJoin("farmer.createdBy", "user")
-
-    .select("user.id", "userId")
-
-    .addSelect(
-      `CONCAT(
-        COALESCE(user.firstName,''),
-        ' ',
-        COALESCE(user.lastName,'')
-      )`,
-      "employeeName"
-    )
-
-    .addSelect(
-      "COUNT(farmer.id)",
-      "total"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN farmer.status=:approved
-        AND EXTRACT(MONTH FROM farmer.createdAt)=:month
-        AND EXTRACT(YEAR FROM farmer.createdAt)=:year
-        THEN 1
-        END
-      )
-      `,
-      "thisMonth"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN farmer.status=:approved
-        THEN 1
-        END
-      )
-      `,
-      "approved"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN farmer.status=:pending
-        THEN 1
-        END
-      )
-      `,
-      "pending"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN farmer.status=:rejected
-        THEN 1
-        END
-      )
-      `,
-      "rejected"
-    )
-
-    .where(
-      "user.id IN (:...memberIds)",
-      { memberIds }
-    )
-
-    .setParameters({
-      month: currentMonth,
-      year: currentYear,
-      approved: Status.APPROVED,
-      pending: Status.PENDING,
-      rejected: Status.REJECTED
-    })
-
-    .groupBy("user.id")
-    .addGroupBy("user.firstName")
-    .addGroupBy("user.lastName")
-
-    .getRawMany();
-
-    if (!hasChildNodes) {
-  const userData = stats[0];
-
-  return {
- 
-    data: {
-      totalRegistered: Number(userData?.total || 0),
-      registeredThisMonth: Number(userData?.thisMonth || 0),
-      approved: Number(userData?.approved || 0),
-      pending: Number(userData?.pending || 0),
-      rejected: Number(userData?.rejected || 0),
-    },
-  };
-}
-
-return {
- 
-  data: stats.map((item) => ({
-    userId: item.userId,
-    employeeName: item.employeeName,
-    total: Number(item.total || 0),
-    thisMonth: Number(item.thisMonth || 0),
-    approved: Number(item.approved || 0),
-    pending: Number(item.pending || 0),
-    rejected: Number(item.rejected || 0),
-  })),
-};
-}
-
-async getVendorRegistrationOverviewOfEachTeamMember(teamLeaderId: string) {
-
-  const currentDate = new Date();
-
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-
-  // Get all members under team leader
-  const teamMembers = await this.workflowHierarchyRepo
-    .createQueryBuilder("wh")
-    .leftJoinAndSelect("wh.descendant", "descendant")
-    .where("wh.ancestor.id = :teamLeaderId", {
-      teamLeaderId
-    })
-    .andWhere("wh.depth > 0")
-    .getMany();
-
-  // Remove duplicates if same member exists in multiple departments
-  const uniqueMembers = Array.from(
-    new Map(
-      teamMembers.map(
-        item => [item.descendant.id, item.descendant]
-      )
-    ).values()
-  );
-
-  const hasChildNodes = uniqueMembers.length > 0;
-  const memberIds =
-    uniqueMembers.length > 0
-      ? [
-          teamLeaderId,
-          ...uniqueMembers.map((member) => member.id),
-        ]
-      : [teamLeaderId];
-
-  // Single optimized query
-  const stats = await this.vendorRepo
-    .createQueryBuilder("vendor")
-   
-    .leftJoin("vendor.createdBy", "user")
-
-    .select("user.id", "userId")
-
-    .addSelect(
-      `CONCAT(
-        COALESCE(user.firstName,''),
-        ' ',
-        COALESCE(user.lastName,'')
-      )`,
-      "employeeName"
-    )
-
-    .addSelect(
-      "COUNT(vendor.id)",
-      "total"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN vendor.status=:approved
-        AND EXTRACT(MONTH FROM vendor.createdAt)=:month
-        AND EXTRACT(YEAR FROM vendor.createdAt)=:year
-        THEN 1
-        END
-      )
-      `,
-      "thisMonth"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN vendor.status=:approved
-        THEN 1
-        END
-      )
-      `,
-      "approved"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN vendor.status=:pending
-        THEN 1
-        END
-      )
-      `,
-      "pending"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-        WHEN vendor.status=:rejected
-        THEN 1
-        END
-      )
-      `,
-      "rejected"
-    )
-
-    .where(
-      "user.id IN (:...memberIds)",
-      { memberIds }
-    )
-
-    .setParameters({
-      month: currentMonth,
-      year: currentYear,
-      approved: Status.APPROVED,
-      pending: Status.PENDING,
-      rejected: Status.REJECTED
-    })
-
-    .groupBy("user.id")
-    .addGroupBy("user.firstName")
-    .addGroupBy("user.lastName")
-    .getRawMany();
-if (!hasChildNodes) {
-  const userData = stats[0];
-  return {
-    data: {
-      totalRegistered: Number(userData?.total || 0),
-      registeredThisMonth: Number(userData?.thisMonth || 0),
-      approved: Number(userData?.approved || 0),
-      pending: Number(userData?.pending || 0),
-      rejected: Number(userData?.rejected || 0),
-    },
-  };
-}
-
-return {
-  data: stats.map((item) => ({
-    userId: item.userId,
-    employeeName: item.employeeName,
-    total: Number(item.total || 0),
-    thisMonth: Number(item.thisMonth || 0),
-    approved: Number(item.approved || 0),
-    pending: Number(item.pending || 0),
-    rejected: Number(item.rejected || 0),
-  })),
-};
-}
-async getCustomerRegistrationOverviewOfEachTeamMember(
-  teamLeaderId: string
-) {
-  const currentDate = new Date();
-
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
-
-  // Get all descendants (direct + indirect)
-  const teamMembers = await this.workflowHierarchyRepo
-    .createQueryBuilder("wh")
-    .leftJoinAndSelect("wh.descendant", "descendant")
-    .where("wh.ancestor.id = :teamLeaderId", {
-      teamLeaderId,
-    })
-    .andWhere("wh.depth > 0")
-    .getMany();
-
-  // Remove duplicates
-  const uniqueMembers = Array.from(
-    new Map(
-      teamMembers.map((item) => [
-        item.descendant.id,
-        item.descendant,
-      ])
-    ).values()
-  );
-
-  const hasChildNodes = uniqueMembers.length > 0;
-  // Include self + all descendants
-  // If no descendants, use only self
-  const memberIds =
-    uniqueMembers.length > 0
-      ? [
-          teamLeaderId,
-          ...uniqueMembers.map((member) => member.id),
-        ]
-      : [teamLeaderId];
-
-  const stats = await this.customerRepo
-    .createQueryBuilder("customer")
-    .leftJoin("customer.createdBy", "user")
-
-    .select("user.id", "userId")
-
-    .addSelect(
-      `CONCAT(
-        COALESCE(user.firstName, ''),
-        ' ',
-        COALESCE(user.lastName, '')
-      )`,
-      "employeeName"
-    )
-
-    .addSelect(
-      "COUNT(customer.id)",
-      "total"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-          WHEN customer.status = :approved
-          AND EXTRACT(MONTH FROM customer.createdAt) = :month
-          AND EXTRACT(YEAR FROM customer.createdAt) = :year
-          THEN 1
-        END
-      )
-      `,
-      "thisMonth"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-          WHEN customer.status = :approved
-          THEN 1
-        END
-      )
-      `,
-      "approved"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-          WHEN customer.status = :pending
-          THEN 1
-        END
-      )
-      `,
-      "pending"
-    )
-
-    .addSelect(
-      `
-      COUNT(
-        CASE
-          WHEN customer.status = :rejected
-          THEN 1
-        END
-      )
-      `,
-      "rejected"
-    )
-
-    .where("user.id IN (:...memberIds)", {
-      memberIds,
-    })
-
-    .setParameters({
-      month: currentMonth,
-      year: currentYear,
-      approved: Status.APPROVED,
-      pending: Status.PENDING,
-      rejected: Status.REJECTED,
-    })
-
-    .groupBy("user.id")
-    .addGroupBy("user.firstName")
-    .addGroupBy("user.lastName")
-
-    .getRawMany();
-
-if (!hasChildNodes) {
-  const userData = stats[0];
-
-  return {
-  
-    data: {
-      totalRegistered: Number(userData?.total || 0),
-      registeredThisMonth: Number(userData?.thisMonth || 0),
-      approved: Number(userData?.approved || 0),
-      pending: Number(userData?.pending || 0),
-      rejected: Number(userData?.rejected || 0),
-    },
-  };
-}
-
-return {
- 
-  data: stats.map((item) => ({
-    userId: item.userId,
-    employeeName: item.employeeName,
-    total: Number(item.total || 0),
-    thisMonth: Number(item.thisMonth || 0),
-    approved: Number(item.approved || 0),
-    pending: Number(item.pending || 0),
-    rejected: Number(item.rejected || 0),
-  })),
-};
-}
- async getWeeklyProcurementPerformance(
+  async getWeeklyProcurementPerformance(
   userId: string,
   month?: number,
   year?: number
@@ -4088,7 +3895,7 @@ async getWeeklySalesPerformance(
   const selectedYear =
     year || currentDate.getFullYear();
 
-  const target = await this.saleTargetRepo
+  const target = await this.salesTargetRepo
     .createQueryBuilder("st")
     .leftJoinAndSelect(
       "st.employee",
@@ -4227,6 +4034,5 @@ async getWeeklySalesPerformance(
 
   return weeklyPerformance;
 }
-
 
 }
