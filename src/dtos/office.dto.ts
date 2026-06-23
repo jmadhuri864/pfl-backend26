@@ -116,7 +116,7 @@ export interface OfficeSearchItemDto {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BulkDeleteOfficeDto {
-  officeIds: string[];
+  ids: string[];
 }
 
 export interface BulkDeleteOfficeResultDto {

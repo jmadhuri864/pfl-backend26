@@ -577,7 +577,8 @@ export class FarmerController {
   ) {
     try {
   
-      const { farmerIds } = req.body;
+      const { ids } = req.body;
+      const farmerIds=ids;
   
       if (!Array.isArray(farmerIds) || farmerIds.length === 0) {
         ControllerLogger.logError(

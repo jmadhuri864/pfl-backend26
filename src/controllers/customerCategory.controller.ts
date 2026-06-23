@@ -273,7 +273,8 @@ public async softDeleteMultipleCustomerCategory(
 ) {
   try {
 
-    const { customerCategoryIds } = req.body;
+    const { ids } = req.body;
+    const customerCategoryIds=ids;
 
     if (!Array.isArray(customerCategoryIds) || customerCategoryIds.length === 0) {
       ControllerLogger.logError(

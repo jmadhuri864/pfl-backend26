@@ -206,7 +206,7 @@ export class PackingMaterialService {
 
     for (const id of ids) {
       try {
-        const material = await this.packingMaterialRepository.findOne({ where: { id } });
+        const material = await this.packingMaterialRepository.findOne({ where: {id:id} });
         if (!material) {
           failed.push({ id, reason: 'Packing material not found' });
           continue;

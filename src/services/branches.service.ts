@@ -103,7 +103,7 @@ export class BranchessService {
   async softDeleteBranches(ids: string[], branchType: BranchType): Promise<BulkDeleteBranchResultDto> {
     const result = await this.branchesRepository.softDelete({
       id: In(ids),
-      type: branchType,
+      //type: branchType,
     });
     await this.invalidateBranchCache();
     return result;

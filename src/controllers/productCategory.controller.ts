@@ -240,7 +240,8 @@ public async softDeleteMultipleProductCategory(
 ) {
   try {
 
-    const { productCategoryIds } = req.body;
+    const { ids } = req.body;
+    const productCategoryIds=ids;
 
     if (!Array.isArray(productCategoryIds) || productCategoryIds.length === 0) {
       ControllerLogger.logError(

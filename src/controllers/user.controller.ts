@@ -633,7 +633,8 @@ public async softDeleteMultipleEmployees(
 ) {
   try {
 
-    const { userIds }: BulkDeleteUsersDto = req.body;
+    const { ids }: BulkDeleteUsersDto = req.body;
+    const userIds=ids;
 
     if (!Array.isArray(userIds) || userIds.length === 0) {
       ControllerLogger.logError(

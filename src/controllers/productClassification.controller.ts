@@ -212,7 +212,8 @@ public async softDeleteMultipleProductClassification(
 ) {
   try {
 
-    const { productClassificationIds } = req.body;
+    const { ids } = req.body;
+    const productClassificationIds=ids;
 
     if (!Array.isArray(productClassificationIds) || productClassificationIds.length === 0) {
       ControllerLogger.logError(

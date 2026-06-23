@@ -251,7 +251,7 @@ export interface UpdateUserStatusDto {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BulkDeleteUsersDto {
-  userIds: string[];
+  ids: string[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
