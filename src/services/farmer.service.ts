@@ -64,222 +64,13 @@ export class FarmerService {
     await Promise.all(tasks);
   }
 
-  // public async getAllFarmers(queryOptions: PaginationOptions): Promise<any> {
-  //   const queryBuilder = this.farmerRepository.createQueryBuilder('farmer')
-  //     .leftJoinAndSelect('farmer.crops', 'crops')
-  //     .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-  //     .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
-  //      // Default sorting by createdAt
-
-  //   // Return paginated results using the paginateQuery utility
-  //   return await paginateQuery(queryBuilder, queryOptions);
-  // }
-
-  //   async getAllFarmers(options: PaginationOptions) {
-  //     // Removed invalid paginate method call
-  //     const queryBuilder = this.farmerRepository.createQueryBuilder('farmer')
-  //       .leftJoinAndSelect('farmer.crops', 'crops')
-  //       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-  //       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
-  //       .paginate()
-  // // Applying pagination, filtering, and sorting
-  // return await paginateQuery(queryBuilder, options);
-  //     // return await paginate(queryBuilder, options);
-  //   }
-
-async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
-  const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
-  const cached = await this.cacheService.get<FarmerListResponseDto>(key);
-  if (cached) return cached;
-
-  const queryBuilder = this.farmerRepository
-    .createQueryBuilder('farmer')
-    .leftJoin('farmer.createdBy', 'createdBy')
-    .leftJoin('farmer.residensialAddress', 'residensialAddress')
-    .leftJoin('farmer.farmAddress', 'farmAddress')
-    .select([
-      'farmer.id', 'farmer.status', 'farmer.farmerCode',
-      'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
-      'farmer.primaryMobileNo', 'farmer.secondaryMobileNo', 'farmer.email',
-      'farmer.gender', 'farmer.dob', 'farmer.totalLandArea', 'farmer.cultivationArea',
-      'farmer.landHoldingStatus', 'farmer.landStatus', 'farmer.idProofNo', 'farmer.createdAt',
-      'createdBy.firstName', 'createdBy.lastName',
-      'residensialAddress.address1', 'residensialAddress.address2', 'residensialAddress.location',
-      'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
-      'farmAddress.address1', 'farmAddress.address2', 'farmAddress.location',
-      'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
-    ])
-    .orderBy('farmer.createdAt', 'DESC');
-
-  const farmers = await buildQuery(queryBuilder, options, 'farmer');
-
-  const formatAddr = (addr: any): string => addr
-    ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
-        .filter(Boolean).join(' ')
-    : '';
-
-  const response: FarmerListResponseDto = {
-    data: farmers.data.map((farmer: any): FarmerListItemDto => {
-      const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-      return {
-        id: farmer.id,
-        status: farmer.status,
-        farmerCode: farmer.farmerCode?.toUpperCase() ?? '',
-        farmerfName: farmer.farmerfName,
-        farmermName: farmer.farmermName,
-        farmerlName: farmer.farmerlName,
-        primaryMobileNo: farmer.primaryMobileNo,
-        secondaryMobileNo: farmer.secondaryMobileNo,
-        email: farmer.email,
-        gender: farmer.gender,
-        dob: farmer.dob,
-        totalLandArea: farmer.totalLandArea,
-        cultivationArea: farmer.cultivationArea,
-        landHoldingStatus: farmer.landHoldingStatus,
-        landStatus: farmer.landStatus,
-        idProofNo: farmer.idProofNo,
-        residensialAddress: formatAddr(farmer.residensialAddress),
-        farmAddress: formatAddr(farmer.farmAddress),
-        createdBy: farmer.createdBy
-          ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
-          : null,
-        createdDate,
-        createdTime,
-        
-      };
-    }),
-    meta: farmers.meta,
-  };
-
-  await this.cacheService.set(key, response, CACHE_TTL);
-  return response;
-}
 
 
 
-  public async getAllFarmerCodes(): Promise<string[]> {
-    const key = `${CACHE_PREFIX}:codes:all`;
-    const cached = await this.cacheService.get<string[]>(key);
-    if (cached) return cached;
-
-    const farmers = await this.farmerRepository.find({
-      select: ['farmerCode'], 
-      order: {
-        createdAt: 'DESC', 
-      },
-    });
-
-    const result = farmers.map((farmer) => farmer.farmerCode);
-    await this.cacheService.set(key, result, CACHE_TTL);
-    return result;
-  }
- public async getFarmersWithFilters(queryOptions: PaginationOptions) {
-    const key = `${CACHE_PREFIX}:filtered:${JSON.stringify(queryOptions)}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
-
-    const queryBuilder = this.farmerRepository
-      .createQueryBuilder('farmer')
-      .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
-      .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
-      .leftJoinAndSelect('farmer.crops', 'crops')
-      .orderBy('farmer.createdAt', 'DESC');
-
-       const { filters = {} } = queryOptions;
-
-  
-  for (const [key, value] of Object.entries(filters)) {
-    if (!value) continue;
-
-    if (['totalLandArea', 'cultivationArea'].includes(key)) continue;
-
-   
-    if (key.includes('.')) {
-      const [alias, column] = key.split('.');
-
-      if (alias === 'farmAddress' || alias === 'residensialAddress') {
-       
-        if (column === 'pincode') {
-          queryBuilder.andWhere(`"${alias}"."${column}" = :${alias}_${column}`, { [`${alias}_${column}`]: value });
-        } else {
-         
-          queryBuilder.andWhere(`LOWER("${alias}"."${column}") LIKE LOWER(:${alias}_${column})`, { [`${alias}_${column}`]: `%${value}%` });
-        }
-      }
 
 
-      if (alias === 'crops' && column === 'crop') {
-        queryBuilder.andWhere(qb => {
-          const subQuery = qb
-            .subQuery()
-            .select('1')
-            .from('crop', 'c')
-            .where('"c"."farmerId" = "farmer"."id"')
-            .andWhere('LOWER(c.crop) = LOWER(:crop)')
-            .getQuery();
-          return `EXISTS ${subQuery}`;
-        }, { crop: value });
-      }
-    } else {
-      
-      queryBuilder.andWhere(`farmer.${key} = :${key}`, { [key]: value });
-    }
-  }
 
-    const {
-      status,
-      landStatus,
-      landHoldingStatus,
-      totalLandArea,
-      cultivationArea,
 
-    } = queryOptions.filters || {};
-
-    
-
-   
-    if (status) queryBuilder.andWhere('farmer.status = :status', { status });
-    if (landStatus) queryBuilder.andWhere('farmer.landStatus = :landStatus', { landStatus });
-    if (landHoldingStatus) queryBuilder.andWhere('farmer.landHoldingStatus = :landHoldingStatus', { landHoldingStatus });
-
-   
-    applyNumericFilter(queryBuilder, 'farmer', 'totalLandArea', totalLandArea);
-    applyNumericFilter(queryBuilder, 'farmer', 'cultivationArea', cultivationArea);
-
-    const [sql, params] = queryBuilder.getQueryAndParameters();
-    
-   
-    const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'farmer');
-
-   
-    const formattedData = data.map((farmer) => ({
-      id: farmer.id,
-      fullName: [farmer.farmerfName, farmer.farmermName, farmer.farmerlName]
-        .filter(Boolean)
-        .join(' '),
-      primaryMobileNo: farmer.primaryMobileNo,
-      secondaryMobileNo: farmer.secondaryMobileNo,
-      status: farmer.status,
-      email: farmer.email,
-      farmerCode: farmer.farmerCode,
-      totalLandArea: farmer.totalLandArea,
-      cultivationArea: farmer.cultivationArea,
-      landHoldingStatus: farmer.landHoldingStatus,
-      landStatus: farmer.landStatus,
-      residensialAddress: farmer.residensialAddress || null,
-      farmAddress: farmer.farmAddress || null,
-      crops: farmer.crops || [],
-    }));
-
-    const response = {
-      data: formattedData,
-      total: meta.total,
-      currentPage: meta.page,
-      totalPages: meta.pages,
-    };
-    await this.cacheService.set(key, response, CACHE_TTL);
-    return response;
-  }
 
   public async getAllFarmer(
     queryOptions: PaginationOptions,
@@ -795,34 +586,7 @@ async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> 
     if (farmer) await this.cacheService.set(key, farmer, CACHE_TTL_DETAIL);
     return farmer;
   }
-  async getFarmerByIdForUpdate(id: string) {
-    const key = `${CACHE_PREFIX}:idForUpdate:${id}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const farmer = await this.farmerRepository
-      .createQueryBuilder("farmer")
-      .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
-      .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
-      .leftJoinAndSelect("farmer.crops", "crops")
-      .where("farmer.id = :id", { id })
-      .getOne();
-
-    if (!farmer) throw new Error("Farmer not found");
-
-    const result = {
-      id: farmer.id,
-      farmerfName: farmer.farmerfName,
-      farmerlName: farmer.farmerlName,
-      primaryMobileNo: farmer.primaryMobileNo,
-      dob: farmer.dob,
-      residensialAddress: farmer.residensialAddress?.id || null,
-      farmAddress: farmer.farmAddress?.id || null,
-      crop: farmer.crops,
-    };
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
 
   public async createFarmer(farmerData: CreateFarmerDto): Promise<Farmer> {
     const user = await this.userRepository.findOneBy({
@@ -855,161 +619,6 @@ async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> 
     return saved;
   }
 
-  // public async updateFarmer(
-  //   farmerId: string,
-  //   updateData: any
-  // ): Promise<Farmer | null> {
-  //   const farmer = await this.farmerRepository.findOne({
-  //     where: { id: farmerId },
-  //     relations: ["crops"],
-  //   });
-  //   if (!farmer) {
-  //     return null;
-  //   }
-
-  //   const { crops: updatedCrops, ...outerFields } = updateData;
-  //   Object.assign(farmer, outerFields);
-
-  //   if (updatedCrops) {
-  //     updatedCrops.forEach((updatedCrop: any) => {
-  //       const existingCrop = farmer.crops.find(
-  //         (crop) => crop.id === updatedCrop.id
-  //       );
-  //       if (existingCrop) {
-  //         for (const key in updatedCrop) {
-  //           if (updatedCrop.hasOwnProperty(key)) {
-  //             (existingCrop as any)[key] = updatedCrop[key];
-  //           }
-  //         }
-  //       }
-  //     });
-  //   }
-
-  //   await this.farmerRepository.save(farmer);
-  //   return farmer;
-  // }
-  // public async updateFarmer(
-  //   farmerId: string,
-  //   updateData: any,
-  //   updatedBy: string,
-  // ): Promise<Farmer | null> {
-  //   // Step 1: Fetch the existing Farmer with relations to "crops"
-  //   const farmer = await this.farmerRepository.findOne({
-  //     where: { id: farmerId },
-  //     relations: ['crops'],
-  //   });
-
-  //   if (!farmer) {
-  //     return null; // If Farmer doesn't exist, return null
-  //   }
-
-  //   // Step 2: Prepare the data for audit logging (before update)
-  //   const { crops: updatedCrops, ...outerFields } = updateData;
-  //   const previousFarmerData = { ...farmer };
-
-  //   // Log changes for the Farmer fields (excluding crops)
-  //   await this.auditLogService.logChange(
-  //     'Farmer',
-  //     farmerId,
-  //     previousFarmerData,
-  //     { ...outerFields },
-  //     updatedBy,
-  //   );
-
-  //   Object.assign(farmer, outerFields);
-
-  //   if (updatedCrops) {
-
-  //     updatedCrops.forEach((updatedCrop: Partial<Crop>) => {
-  //       const existingCrop = farmer.crops.find(
-  //         (crop) => crop.id === updatedCrop.id,
-  //       );
-  //       if (existingCrop) {
-
-  //         this.auditLogService.logChange(
-  //           'Crop',
-  //           updatedCrop.id!,
-  //           existingCrop,
-  //           updatedCrop,
-  //           updatedBy,
-  //         );
-
-  //         for (const key in updatedCrop) {
-  //           if (Object.prototype.hasOwnProperty.call(updatedCrop, key)) {
-  //             (existingCrop as any)[key] = updatedCrop[key as keyof Crop]!;
-  //           }
-  //         }
-  //       }
-  //     });
-  //   }
-
-  //   // Step 5: Save the updated Farmer (and related crops)
-  //   await this.farmerRepository.save(farmer);
-
-  //   return farmer; // Return the updated Farmer entity
-  // }
-
-  //   public async updateFarmer(
-  //   farmerId: string,
-  //   updateData: any,
-  //   updatedBy: string
-  // ): Promise<Farmer | null> {
-  //   const farmer = await this.farmerRepository.findOne({
-  //     where: { id: farmerId },
-  //     relations: ["crops"],
-  //   });
-
-  //   if (!farmer) return null;
-
-  //   const { crops: updatedCrops, ...outerFields } = updateData;
-
-  //   // Audit farmer outer fields
-  //   await this.auditLogService.logChange(
-  //     "Farmer",
-  //     farmerId,
-  //     { ...farmer },
-  //     { ...outerFields },
-  //     updatedBy
-  //   );
-
-  //   // Update outer fields
-  //   Object.assign(farmer, outerFields);
-
-  //   if (updatedCrops) {
-  //     const updatedCropIds = updatedCrops.filter((c: { id: any }) => c.id).map((c: { id: any }) => c.id);
-
-  //     // Keep only crops that still exist in request (others will be deleted by orphanedRowAction)
-  //     farmer.crops = farmer.crops.filter(c => updatedCropIds.includes(c.id));
-
-  //     for (const updatedCrop of updatedCrops) {
-  //       if (updatedCrop.id) {
-  //         // Update existing crop
-  //         const existingCrop = farmer.crops.find(c => c.id === updatedCrop.id);
-  //         if (existingCrop) {
-  //           await this.auditLogService.logChange(
-  //             "Crop",
-  //             updatedCrop.id,
-  //             existingCrop,
-  //             updatedCrop,
-  //             updatedBy
-  //           );
-  //           Object.assign(existingCrop, updatedCrop);
-  //         }
-  //       } else {
-  //         // Add new crop
-  //         const newCrop = this.cropRepository.create(updatedCrop);
-  //         if (Array.isArray(newCrop)) {
-  //           farmer.crops.push(...newCrop);
-  //         } else {
-  //           farmer.crops.push(newCrop);
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   await this.farmerRepository.save(farmer);
-  //   return farmer;
-  // }
 
   public async updateFarmer(
     farmerId: string,
@@ -1376,32 +985,7 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     }
   }
 
-  async getFarmerDetails(farmerId: string): Promise<Farmer | null> {
-    const key = `${CACHE_PREFIX}:details:${farmerId}`;
-    const cached = await this.cacheService.get<Farmer>(key);
-    if (cached) return cached;
 
-    const farmer = await this.farmerRepository
-      .createQueryBuilder("farmer")
-      .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
-      .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
-      .select([
-        "farmer.id",
-        "farmer.farmerCode",
-        "farmer.farmerfName",
-        "farmer.farmerlName",
-        "farmer.farmermName",
-        "farmer.primaryMobileNo",
-        "farmer.email",
-        "residensialAddress",
-        "farmAddress",
-      ])
-      .where("farmer.id = :farmerId", { farmerId })
-      .getOne();
-
-    if (farmer) await this.cacheService.set(key, farmer, CACHE_TTL_DETAIL);
-    return farmer;
-  }
   async softDeleteFarmers(farmerIds: string[]) {
     // Null out farmerCode before soft-deleting so the unique constraint
     // slot is freed and the code is never re-blocked.
@@ -1420,4 +1004,441 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
   }
     
   }
+
+
+    // public async getAllFarmers(queryOptions: PaginationOptions): Promise<any> {
+  //   const queryBuilder = this.farmerRepository.createQueryBuilder('farmer')
+  //     .leftJoinAndSelect('farmer.crops', 'crops')
+  //     .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
+  //     .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+  //      // Default sorting by createdAt
+
+  //   // Return paginated results using the paginateQuery utility
+  //   return await paginateQuery(queryBuilder, queryOptions);
+  // }
+
+  //   async getAllFarmers(options: PaginationOptions) {
+  //     // Removed invalid paginate method call
+  //     const queryBuilder = this.farmerRepository.createQueryBuilder('farmer')
+  //       .leftJoinAndSelect('farmer.crops', 'crops')
+  //       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
+  //       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+  //       .paginate()
+  // // Applying pagination, filtering, and sorting
+  // return await paginateQuery(queryBuilder, options);
+  //     // return await paginate(queryBuilder, options);
+  //   }
+
+
+
+    // public async updateFarmer(
+  //   farmerId: string,
+  //   updateData: any
+  // ): Promise<Farmer | null> {
+  //   const farmer = await this.farmerRepository.findOne({
+  //     where: { id: farmerId },
+  //     relations: ["crops"],
+  //   });
+  //   if (!farmer) {
+  //     return null;
+  //   }
+
+  //   const { crops: updatedCrops, ...outerFields } = updateData;
+  //   Object.assign(farmer, outerFields);
+
+  //   if (updatedCrops) {
+  //     updatedCrops.forEach((updatedCrop: any) => {
+  //       const existingCrop = farmer.crops.find(
+  //         (crop) => crop.id === updatedCrop.id
+  //       );
+  //       if (existingCrop) {
+  //         for (const key in updatedCrop) {
+  //           if (updatedCrop.hasOwnProperty(key)) {
+  //             (existingCrop as any)[key] = updatedCrop[key];
+  //           }
+  //         }
+  //       }
+  //     });
+  //   }
+
+  //   await this.farmerRepository.save(farmer);
+  //   return farmer;
+  // }
+  // public async updateFarmer(
+  //   farmerId: string,
+  //   updateData: any,
+  //   updatedBy: string,
+  // ): Promise<Farmer | null> {
+  //   // Step 1: Fetch the existing Farmer with relations to "crops"
+  //   const farmer = await this.farmerRepository.findOne({
+  //     where: { id: farmerId },
+  //     relations: ['crops'],
+  //   });
+
+  //   if (!farmer) {
+  //     return null; // If Farmer doesn't exist, return null
+  //   }
+
+  //   // Step 2: Prepare the data for audit logging (before update)
+  //   const { crops: updatedCrops, ...outerFields } = updateData;
+  //   const previousFarmerData = { ...farmer };
+
+  //   // Log changes for the Farmer fields (excluding crops)
+  //   await this.auditLogService.logChange(
+  //     'Farmer',
+  //     farmerId,
+  //     previousFarmerData,
+  //     { ...outerFields },
+  //     updatedBy,
+  //   );
+
+  //   Object.assign(farmer, outerFields);
+
+  //   if (updatedCrops) {
+
+  //     updatedCrops.forEach((updatedCrop: Partial<Crop>) => {
+  //       const existingCrop = farmer.crops.find(
+  //         (crop) => crop.id === updatedCrop.id,
+  //       );
+  //       if (existingCrop) {
+
+  //         this.auditLogService.logChange(
+  //           'Crop',
+  //           updatedCrop.id!,
+  //           existingCrop,
+  //           updatedCrop,
+  //           updatedBy,
+  //         );
+
+  //         for (const key in updatedCrop) {
+  //           if (Object.prototype.hasOwnProperty.call(updatedCrop, key)) {
+  //             (existingCrop as any)[key] = updatedCrop[key as keyof Crop]!;
+  //           }
+  //         }
+  //       }
+  //     });
+  //   }
+
+  //   // Step 5: Save the updated Farmer (and related crops)
+  //   await this.farmerRepository.save(farmer);
+
+  //   return farmer; // Return the updated Farmer entity
+  // }
+
+  //   public async updateFarmer(
+  //   farmerId: string,
+  //   updateData: any,
+  //   updatedBy: string
+  // ): Promise<Farmer | null> {
+  //   const farmer = await this.farmerRepository.findOne({
+  //     where: { id: farmerId },
+  //     relations: ["crops"],
+  //   });
+
+  //   if (!farmer) return null;
+
+  //   const { crops: updatedCrops, ...outerFields } = updateData;
+
+  //   // Audit farmer outer fields
+  //   await this.auditLogService.logChange(
+  //     "Farmer",
+  //     farmerId,
+  //     { ...farmer },
+  //     { ...outerFields },
+  //     updatedBy
+  //   );
+
+  //   // Update outer fields
+  //   Object.assign(farmer, outerFields);
+
+  //   if (updatedCrops) {
+  //     const updatedCropIds = updatedCrops.filter((c: { id: any }) => c.id).map((c: { id: any }) => c.id);
+
+  //     // Keep only crops that still exist in request (others will be deleted by orphanedRowAction)
+  //     farmer.crops = farmer.crops.filter(c => updatedCropIds.includes(c.id));
+
+  //     for (const updatedCrop of updatedCrops) {
+  //       if (updatedCrop.id) {
+  //         // Update existing crop
+  //         const existingCrop = farmer.crops.find(c => c.id === updatedCrop.id);
+  //         if (existingCrop) {
+  //           await this.auditLogService.logChange(
+  //             "Crop",
+  //             updatedCrop.id,
+  //             existingCrop,
+  //             updatedCrop,
+  //             updatedBy
+  //           );
+  //           Object.assign(existingCrop, updatedCrop);
+  //         }
+  //       } else {
+  //         // Add new crop
+  //         const newCrop = this.cropRepository.create(updatedCrop);
+  //         if (Array.isArray(newCrop)) {
+  //           farmer.crops.push(...newCrop);
+  //         } else {
+  //           farmer.crops.push(newCrop);
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   await this.farmerRepository.save(farmer);
+  //   return farmer;
+  // }
+
+
+
+  //  public async getFarmersWithFilters(queryOptions: PaginationOptions) {
+//     const key = `${CACHE_PREFIX}:filtered:${JSON.stringify(queryOptions)}`;
+//     const cached = await this.cacheService.get<any>(key);
+//     if (cached) return cached;
+
+//     const queryBuilder = this.farmerRepository
+//       .createQueryBuilder('farmer')
+//       .leftJoinAndSelect('farmer.residensialAddress', 'residensialAddress')
+//       .leftJoinAndSelect('farmer.farmAddress', 'farmAddress')
+//       .leftJoinAndSelect('farmer.crops', 'crops')
+//       .orderBy('farmer.createdAt', 'DESC');
+
+//        const { filters = {} } = queryOptions;
+
+  
+//   for (const [key, value] of Object.entries(filters)) {
+//     if (!value) continue;
+
+//     if (['totalLandArea', 'cultivationArea'].includes(key)) continue;
+
+   
+//     if (key.includes('.')) {
+//       const [alias, column] = key.split('.');
+
+//       if (alias === 'farmAddress' || alias === 'residensialAddress') {
+       
+//         if (column === 'pincode') {
+//           queryBuilder.andWhere(`"${alias}"."${column}" = :${alias}_${column}`, { [`${alias}_${column}`]: value });
+//         } else {
+         
+//           queryBuilder.andWhere(`LOWER("${alias}"."${column}") LIKE LOWER(:${alias}_${column})`, { [`${alias}_${column}`]: `%${value}%` });
+//         }
+//       }
+
+
+//       if (alias === 'crops' && column === 'crop') {
+//         queryBuilder.andWhere(qb => {
+//           const subQuery = qb
+//             .subQuery()
+//             .select('1')
+//             .from('crop', 'c')
+//             .where('"c"."farmerId" = "farmer"."id"')
+//             .andWhere('LOWER(c.crop) = LOWER(:crop)')
+//             .getQuery();
+//           return `EXISTS ${subQuery}`;
+//         }, { crop: value });
+//       }
+//     } else {
+      
+//       queryBuilder.andWhere(`farmer.${key} = :${key}`, { [key]: value });
+//     }
+//   }
+
+//     const {
+//       status,
+//       landStatus,
+//       landHoldingStatus,
+//       totalLandArea,
+//       cultivationArea,
+
+//     } = queryOptions.filters || {};
+
+    
+
+   
+//     if (status) queryBuilder.andWhere('farmer.status = :status', { status });
+//     if (landStatus) queryBuilder.andWhere('farmer.landStatus = :landStatus', { landStatus });
+//     if (landHoldingStatus) queryBuilder.andWhere('farmer.landHoldingStatus = :landHoldingStatus', { landHoldingStatus });
+
+   
+//     applyNumericFilter(queryBuilder, 'farmer', 'totalLandArea', totalLandArea);
+//     applyNumericFilter(queryBuilder, 'farmer', 'cultivationArea', cultivationArea);
+
+//     const [sql, params] = queryBuilder.getQueryAndParameters();
+    
+   
+//     const { data, meta } = await buildQuery(queryBuilder, queryOptions, 'farmer');
+
+   
+//     const formattedData = data.map((farmer) => ({
+//       id: farmer.id,
+//       fullName: [farmer.farmerfName, farmer.farmermName, farmer.farmerlName]
+//         .filter(Boolean)
+//         .join(' '),
+//       primaryMobileNo: farmer.primaryMobileNo,
+//       secondaryMobileNo: farmer.secondaryMobileNo,
+//       status: farmer.status,
+//       email: farmer.email,
+//       farmerCode: farmer.farmerCode,
+//       totalLandArea: farmer.totalLandArea,
+//       cultivationArea: farmer.cultivationArea,
+//       landHoldingStatus: farmer.landHoldingStatus,
+//       landStatus: farmer.landStatus,
+//       residensialAddress: farmer.residensialAddress || null,
+//       farmAddress: farmer.farmAddress || null,
+//       crops: farmer.crops || [],
+//     }));
+
+//     const response = {
+//       data: formattedData,
+//       total: meta.total,
+//       currentPage: meta.page,
+//       totalPages: meta.pages,
+//     };
+//     await this.cacheService.set(key, response, CACHE_TTL);
+//     return response;
+//   }
+
+
+    // async getFarmerDetails(farmerId: string): Promise<Farmer | null> {
+  //   const key = `${CACHE_PREFIX}:details:${farmerId}`;
+  //   const cached = await this.cacheService.get<Farmer>(key);
+  //   if (cached) return cached;
+
+  //   const farmer = await this.farmerRepository
+  //     .createQueryBuilder("farmer")
+  //     .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
+  //     .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
+  //     .select([
+  //       "farmer.id",
+  //       "farmer.farmerCode",
+  //       "farmer.farmerfName",
+  //       "farmer.farmerlName",
+  //       "farmer.farmermName",
+  //       "farmer.primaryMobileNo",
+  //       "farmer.email",
+  //       "residensialAddress",
+  //       "farmAddress",
+  //     ])
+  //     .where("farmer.id = :farmerId", { farmerId })
+  //     .getOne();
+
+  //   if (farmer) await this.cacheService.set(key, farmer, CACHE_TTL_DETAIL);
+  //   return farmer;
+  // }
+
+
+    // public async getAllFarmerCodes(): Promise<string[]> {
+  //   const key = `${CACHE_PREFIX}:codes:all`;
+  //   const cached = await this.cacheService.get<string[]>(key);
+  //   if (cached) return cached;
+
+  //   const farmers = await this.farmerRepository.find({
+  //     select: ['farmerCode'], 
+  //     order: {
+  //       createdAt: 'DESC', 
+  //     },
+  //   });
+
+  //   const result = farmers.map((farmer) => farmer.farmerCode);
+  //   await this.cacheService.set(key, result, CACHE_TTL);
+  //   return result;
+  // }
+
+
+  // async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
+//   const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
+//   const cached = await this.cacheService.get<FarmerListResponseDto>(key);
+//   if (cached) return cached;
+
+//   const queryBuilder = this.farmerRepository
+//     .createQueryBuilder('farmer')
+//     .leftJoin('farmer.createdBy', 'createdBy')
+//     .leftJoin('farmer.residensialAddress', 'residensialAddress')
+//     .leftJoin('farmer.farmAddress', 'farmAddress')
+//     .select([
+//       'farmer.id', 'farmer.status', 'farmer.farmerCode',
+//       'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
+//       'farmer.primaryMobileNo', 'farmer.secondaryMobileNo', 'farmer.email',
+//       'farmer.gender', 'farmer.dob', 'farmer.totalLandArea', 'farmer.cultivationArea',
+//       'farmer.landHoldingStatus', 'farmer.landStatus', 'farmer.idProofNo', 'farmer.createdAt',
+//       'createdBy.firstName', 'createdBy.lastName',
+//       'residensialAddress.address1', 'residensialAddress.address2', 'residensialAddress.location',
+//       'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+//       'farmAddress.address1', 'farmAddress.address2', 'farmAddress.location',
+//       'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+//     ])
+//     .orderBy('farmer.createdAt', 'DESC');
+
+//   const farmers = await buildQuery(queryBuilder, options, 'farmer');
+
+//   const formatAddr = (addr: any): string => addr
+//     ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+//         .filter(Boolean).join(' ')
+//     : '';
+
+//   const response: FarmerListResponseDto = {
+//     data: farmers.data.map((farmer: any): FarmerListItemDto => {
+//       const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+//       return {
+//         id: farmer.id,
+//         status: farmer.status,
+//         farmerCode: farmer.farmerCode?.toUpperCase() ?? '',
+//         farmerfName: farmer.farmerfName,
+//         farmermName: farmer.farmermName,
+//         farmerlName: farmer.farmerlName,
+//         primaryMobileNo: farmer.primaryMobileNo,
+//         secondaryMobileNo: farmer.secondaryMobileNo,
+//         email: farmer.email,
+//         gender: farmer.gender,
+//         dob: farmer.dob,
+//         totalLandArea: farmer.totalLandArea,
+//         cultivationArea: farmer.cultivationArea,
+//         landHoldingStatus: farmer.landHoldingStatus,
+//         landStatus: farmer.landStatus,
+//         idProofNo: farmer.idProofNo,
+//         residensialAddress: formatAddr(farmer.residensialAddress),
+//         farmAddress: formatAddr(farmer.farmAddress),
+//         createdBy: farmer.createdBy
+//           ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
+//           : null,
+//         createdDate,
+//         createdTime,
+        
+//       };
+//     }),
+//     meta: farmers.meta,
+//   };
+
+//   await this.cacheService.set(key, response, CACHE_TTL);
+//   return response;
+// }
+
+
+  // async getFarmerByIdForUpdate(id: string) {
+  //   const key = `${CACHE_PREFIX}:idForUpdate:${id}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const farmer = await this.farmerRepository
+  //     .createQueryBuilder("farmer")
+  //     .leftJoinAndSelect("farmer.residensialAddress", "residensialAddress")
+  //     .leftJoinAndSelect("farmer.farmAddress", "farmAddress")
+  //     .leftJoinAndSelect("farmer.crops", "crops")
+  //     .where("farmer.id = :id", { id })
+  //     .getOne();
+
+  //   if (!farmer) throw new Error("Farmer not found");
+
+  //   const result = {
+  //     id: farmer.id,
+  //     farmerfName: farmer.farmerfName,
+  //     farmerlName: farmer.farmerlName,
+  //     primaryMobileNo: farmer.primaryMobileNo,
+  //     dob: farmer.dob,
+  //     residensialAddress: farmer.residensialAddress?.id || null,
+  //     farmAddress: farmer.farmAddress?.id || null,
+  //     crop: farmer.crops,
+  //   };
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
 

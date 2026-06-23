@@ -1033,91 +1033,30 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
     }
   }
 
-  /**
-   * Get available vendor categories for reference when uploading vendor data
-   */
-  async getAvailableVendorCategories(): Promise<{ id: string; name: string }[]> {
-    const key = `${CACHE_PREFIX}:ref:categories`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const categories = await this.vendorCategoryRepository
-      .createQueryBuilder('category')
-      .select(['category.id', 'category.name'])
-      .orderBy('category.name', 'ASC')
-      .getMany();
-    
-    const result = categories.map(category => ({ id: category.id, name: category.name }));
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
 
-  /**
-   * Get available vendor subcategories for reference when uploading vendor data
-   */
-  async getAvailableVendorSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
-    const key = `${CACHE_PREFIX}:ref:subcategories:${categoryId || 'all'}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const queryBuilder = this.vendorSubcategoryRepository
-      .createQueryBuilder('subcategory')
-      .leftJoinAndSelect('subcategory.category', 'category')
-      .select(['subcategory.id', 'subcategory.name', 'category.name'])
-      .orderBy('category.name', 'ASC')
-      .addOrderBy('subcategory.name', 'ASC');
-    
-    if (categoryId) {
-      queryBuilder.where('category.id = :categoryId', { categoryId });
-    }
-    
-    const subcategories = await queryBuilder.getMany();
-    const result = subcategories.map(subcategory => ({
-      id: subcategory.id,
-      name: subcategory.name,
-      categoryName: subcategory.category?.name || 'Unknown'
-    }));
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
 
-  /**
-   * Get available products for reference when uploading vendor data
-   */
-  async getAvailableProducts(): Promise<{ id: string; name: string }[]> {
-    const key = `${CACHE_PREFIX}:ref:products`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const products = await this.productRepository
-      .createQueryBuilder('product')
-      .select(['product.id', 'product.name'])
-      .orderBy('product.name', 'ASC')
-      .getMany();
-    
-    const result = products.map(product => ({ id: product.id, name: product.name }));
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
 
   /**
    * Get available users for reference when uploading vendor data
    */
-  async getAvailableUsers(): Promise<{ id: string; name: string }[]> {
-    const key = `${CACHE_PREFIX}:ref:users`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const users = await this.userRepository
-      .createQueryBuilder('user')
-      .select(['user.id', 'user.firstName', 'user.lastName'])
-      .orderBy('user.firstName', 'ASC')
-      .getMany();
+  //   const key = `${CACHE_PREFIX}:ref:users`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const users = await this.userRepository
+  //     .createQueryBuilder('user')
+  //     .select(['user.id', 'user.firstName', 'user.lastName'])
+  //     .orderBy('user.firstName', 'ASC')
+  //     .getMany();
     
-    const result = users.map(user => ({ id: user.id, name: `${user.firstName} ${user.lastName}` }));
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
+  //   const result = users.map(user => ({ id: user.id, name: `${user.firstName} ${user.lastName}` }));
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
 
 
 //  public async getAllVendors1(queryOptions: PaginationOptions): Promise<any> {
@@ -1299,108 +1238,11 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
     await this.cacheService.set(key, result, CACHE_TTL);
     return result;
   }
-  public async getvendorwithid(id?: string): Promise<any> {
-    const key = `${CACHE_PREFIX}:withid:${id || 'all'}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const queryBuilder = this.vendorRepository
-      .createQueryBuilder("vendor")
-      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
-      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
-      .leftJoinAndSelect("vendor.category", "category")
-      .leftJoinAndSelect("vendor.subcategory", "subcategory")
-      .select([
-        "vendor.id",
-        "vendor.companyName",
-        "vendor.officeContactNo",
-        "vendor.email",
-        "vendor.vendorCode",
-        "officeAddress.id",
-        "officeAddress.address1",
-        "officeAddress.address2",
-        "officeAddress.location",
-        "officeAddress.city",
-        "officeAddress.state",
-        "officeAddress.pincode",
-        "vendorSaleInfo.contactFName",
-        "vendorSaleInfo.contactMName",
-        "vendorSaleInfo.contactLName",
-        "category.id",
-        "subcategory.id",
-      ]);
 
-    if (id) {
-      queryBuilder.where("vendor.id = :id", { id });
-    }
 
-    const vendor = await queryBuilder.getOne();
-    if (!vendor) return null;
 
-    const result = {
-      id: vendor.id,
-      companyName: vendor.companyName,
-      officeContactNo: vendor.officeContactNo,
-      email: vendor.officeEmail,
-      vendorCode: vendor.vendorCode,
-      officeAddress: vendor.officeAddress
-        ? {
-            id: vendor.officeAddress.id,
-            address1: vendor.officeAddress.address1,
-            address2: vendor.officeAddress.address2,
-            location: vendor.officeAddress.location,
-            city: vendor.officeAddress.city,
-            state: vendor.officeAddress.state,
-            pincode: vendor.officeAddress.pincode,
-          }
-        : null,
-      contactPersonName: vendor.vendorSaleInfo
-        ? `${vendor.vendorSaleInfo.contactFName || ""} ${
-            vendor.vendorSaleInfo.contactMName || ""
-          } ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
-        : null,
-      category: vendor.category?.id || null,
-      subcategory: vendor.subcategory?.id || null,
-    };
-    await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
-    return result;
-  }
 
-  async getVendorByVendorCode(vendorCode: string): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository
-      .createQueryBuilder("vendor")
-      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
-      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
-      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
-      .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
-      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
-      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
-      .leftJoinAndSelect("vendor.subcategory", "subcategory")
-      .leftJoinAndSelect("vendor.category", "category")
-      .where("vendor.vendorCode = :vendorCode", { vendorCode })
-      .getOne();
-
-    if (!vendor) throw new AppError(404, "Vendor not found");
-    return vendor;
-  }
-
-  async getVendorByVendorName(companyName: string): Promise<Vendor | null> {
-    const vendor = await this.vendorRepository
-      .createQueryBuilder("vendor")
-      .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
-      .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
-      .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
-      .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
-      .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
-      .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
-      .leftJoinAndSelect("vendor.subcategory", "subcategory")
-      .leftJoinAndSelect("vendor.category", "category")
-      .where("vendor.companyName = :companyName", { companyName })
-      .getOne();
-
-    if (!vendor) throw new AppError(404, "Vendor not found");
-    return vendor;
-  }
 
   async getAllVendors(): Promise<Vendor[]> {
     return this.vendorRepository
@@ -1411,69 +1253,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
       .getMany();
   }
 
-  // async createVendor(vendorDto: any): Promise<any> {
-  //   // Create the new Vendor entity
-  //   //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
-  //   const newVendor = this.vendorRepository.create(vendorDto);
-  //   // Save the new Vendor to the database
-  //   return await this.vendorRepository.save(newVendor);
-  // }
 
-  // async updateVendor(
-  //   id: string,
-  //   vendorData: UpdateVendor,
-  //   updatedBy: string
-  // ): Promise<Vendor | null> {
-  //   // Step 1: Retrieve the existing vendor to capture the original data
-  //   const vendor = await this.vendorRepository.findOne({
-  //     where: { id },
-  //     relations: [
-  //       "officeAddress",
-  //       "vendorSaleInfo",
-  //       "vendorBankDetails",
-  //       "ref1Address",
-  //       "ref2Address",
-  //       "subcategory",
-  //       "category",
-  //     ],
-  //   });
-
-  //   if (!vendor) {
-  //     throw new AppError(404, "Vendor not found");
-  //   }
-
-  //   // Step 2: Capture the original vendor data for audit purposes
-  //   const originalVendor = { ...vendor };
-
-  //   // Step 3: Update the address if provided
-  //   if (vendorData.address) {
-  //     if (vendor.officeAddress) {
-  //       // Update existing address
-  //       const updatedAddress = await this.addressService.update(
-  //         vendor.officeAddress.id,
-  //         vendorData.address
-  //       );
-  //     }
-  //   }
-
-  //   // Step 4: Update vendor fields
-  //   Object.assign(vendor, vendorData);
-
-  //   // Step 5: Save the updated vendor
-  //   const updatedVendor = await this.vendorRepository.save(vendor);
-
-  //   // Step 6: Log the change using the audit log service
-  //   await this.auditLogService.logChange(
-  //     "Vendor", // Entity name
-  //     id, // Entity ID
-  //     originalVendor, // Original data (before update)
-  //     updatedVendor, // Updated data (after update)
-  //     updatedBy // User who made the update
-  //   );
-
-  //   // Step 7: Return the updated vendor
-  //   return updatedVendor;
-  // }
 
 
   public async updateVendor(
@@ -1634,50 +1414,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
     return true;
   }
 
-  // async getAllVendorsbyfilter(): Promise<any[]> {
-  //   const vendors = await this.vendorRepository
-  //     .createQueryBuilder("vendor")
-  //     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo") // Fixed alias
-  //     .leftJoinAndSelect("vendor.officeAddress", "officeAddress") // Fixed alias
-  //     .leftJoinAndSelect("vendor.category", "category") // Fixed alias
-  //     .leftJoinAndSelect("vendor.subcategory", "subcategory") // Fixed alias
-  //     .select([
-  //       "vendor.id",
-  //       "vendor.companyName",
-  //       "vendor.vendorCode",
-  //       "vendor.officeContactNo",
-  //       "vendor.officeEmail",
-  //       "category.name",
-  //       "subcategory.name",
-  //       "vendorSaleInfo.contactFName",
-  //       "vendorSaleInfo.contactMName",
-  //       "vendorSaleInfo.contactLName",
-  //       "officeAddress.id", // Ensure this alias matches the join
-  //       "officeAddress.address1",
-  //       "officeAddress.address2",
-  //       "officeAddress.location",
-  //       "officeAddress.city",
-  //       "officeAddress.state",
-  //       "officeAddress.pincode",
-  //     ])
-  //     .getMany();
 
-  //   return vendors.map((vendor) => ({
-  //     id: vendor.id,
-  //     companyName: vendor.companyName,
-  //     vendorCode: vendor.vendorCode,
-  //     officeContactNo: vendor.officeContactNo,
-  //     officeEmail: vendor.officeEmail,
-  //     contactPersonName: vendor.vendorSaleInfo
-  //       ? `${vendor.vendorSaleInfo.contactFName || ""} ${
-  //           vendor.vendorSaleInfo.contactMName || ""
-  //         } ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
-  //       : null,
-  //     officeAddress: vendor.officeAddress,
-  //     category: vendor.category || null,
-  //     subcategory: vendor.subcategory?.name || null,
-  //   }));
-  // }
 
 
   async getAllVendorsbyfilter(queryOptions: PaginationOptions): Promise<any> {
@@ -1867,59 +1604,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
       subcategory: vendor.subcategory?.name || null,
     }));
   }
-  async filterVendors(filters: VendorFilterDto) {
-  const {
-    classification,
-    categoryId,
-    subcategoryId,
-    pincode,
-    city,
-    state,
-    productId,
-    page,
-    limit,
-  } = filters;
 
-  const query = this.vendorRepository
-    .createQueryBuilder('vendor')
-    .leftJoinAndSelect('vendor.category', 'category')
-    .leftJoinAndSelect('vendor.subcategory', 'subcategory')
-    .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
-    .leftJoinAndSelect('vendor.mainProduct', 'mainProduct')
-    .leftJoinAndSelect('vendor.listOfAllProducts', 'listOfAllProducts')
-    .where('1=1');
-
-  // ✅ Apply filters dynamically
-  if (classification) query.andWhere('vendor.classification = :classification', { classification });
-  if (categoryId) query.andWhere('category.id = :categoryId', { categoryId });
-  if (subcategoryId) query.andWhere('subcategory.id = :subcategoryId', { subcategoryId });
-  if (pincode) query.andWhere('officeAddress.pincode ILIKE :pincode', { pincode: `%${pincode}%` });
-  if (city) query.andWhere('officeAddress.city ILIKE :city', { city: `%${city}%` });
-  if (state) query.andWhere('officeAddress.state ILIKE :state', { state: `%${state}%` });
-  if (productId) {
-    query.andWhere('(mainProduct.id = :productId OR listOfAllProducts.id = :productId)', { productId });
-  }
-
-  query.orderBy('vendor.createdAt', 'DESC');
-
-  // ✅ If pagination params are provided
-  if (page && limit) {
-    const skip = (page - 1) * limit;
-    const [vendors, total] = await query.skip(skip).take(limit).getManyAndCount();
-
-    return {
-      data: vendors,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  
-}
 
 async softDeleteVendors(vendorIds: string[]) {
   // Null out vendorCode before soft-deleting so the unique constraint
@@ -1941,4 +1626,349 @@ async softDeleteVendors(vendorIds: string[]) {
 
 
 }
+
+
+  // async getAllVendorsbyfilter(): Promise<any[]> {
+  //   const vendors = await this.vendorRepository
+  //     .createQueryBuilder("vendor")
+  //     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo") // Fixed alias
+  //     .leftJoinAndSelect("vendor.officeAddress", "officeAddress") // Fixed alias
+  //     .leftJoinAndSelect("vendor.category", "category") // Fixed alias
+  //     .leftJoinAndSelect("vendor.subcategory", "subcategory") // Fixed alias
+  //     .select([
+  //       "vendor.id",
+  //       "vendor.companyName",
+  //       "vendor.vendorCode",
+  //       "vendor.officeContactNo",
+  //       "vendor.officeEmail",
+  //       "category.name",
+  //       "subcategory.name",
+  //       "vendorSaleInfo.contactFName",
+  //       "vendorSaleInfo.contactMName",
+  //       "vendorSaleInfo.contactLName",
+  //       "officeAddress.id", // Ensure this alias matches the join
+  //       "officeAddress.address1",
+  //       "officeAddress.address2",
+  //       "officeAddress.location",
+  //       "officeAddress.city",
+  //       "officeAddress.state",
+  //       "officeAddress.pincode",
+  //     ])
+  //     .getMany();
+
+  //   return vendors.map((vendor) => ({
+  //     id: vendor.id,
+  //     companyName: vendor.companyName,
+  //     vendorCode: vendor.vendorCode,
+  //     officeContactNo: vendor.officeContactNo,
+  //     officeEmail: vendor.officeEmail,
+  //     contactPersonName: vendor.vendorSaleInfo
+  //       ? `${vendor.vendorSaleInfo.contactFName || ""} ${
+  //           vendor.vendorSaleInfo.contactMName || ""
+  //         } ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
+  //       : null,
+  //     officeAddress: vendor.officeAddress,
+  //     category: vendor.category || null,
+  //     subcategory: vendor.subcategory?.name || null,
+  //   }));
+  // }
+
+
+  // async createVendor(vendorDto: any): Promise<any> {
+  //   // Create the new Vendor entity
+  //   //vendorDto.officeAddress = JSON.parse(vendorDto.officeAddress);
+  //   const newVendor = this.vendorRepository.create(vendorDto);
+  //   // Save the new Vendor to the database
+  //   return await this.vendorRepository.save(newVendor);
+  // }
+
+  // async updateVendor(
+  //   id: string,
+  //   vendorData: UpdateVendor,
+  //   updatedBy: string
+  // ): Promise<Vendor | null> {
+  //   // Step 1: Retrieve the existing vendor to capture the original data
+  //   const vendor = await this.vendorRepository.findOne({
+  //     where: { id },
+  //     relations: [
+  //       "officeAddress",
+  //       "vendorSaleInfo",
+  //       "vendorBankDetails",
+  //       "ref1Address",
+  //       "ref2Address",
+  //       "subcategory",
+  //       "category",
+  //     ],
+  //   });
+
+  //   if (!vendor) {
+  //     throw new AppError(404, "Vendor not found");
+  //   }
+
+  //   // Step 2: Capture the original vendor data for audit purposes
+  //   const originalVendor = { ...vendor };
+
+  //   // Step 3: Update the address if provided
+  //   if (vendorData.address) {
+  //     if (vendor.officeAddress) {
+  //       // Update existing address
+  //       const updatedAddress = await this.addressService.update(
+  //         vendor.officeAddress.id,
+  //         vendorData.address
+  //       );
+  //     }
+  //   }
+
+  //   // Step 4: Update vendor fields
+  //   Object.assign(vendor, vendorData);
+
+  //   // Step 5: Save the updated vendor
+  //   const updatedVendor = await this.vendorRepository.save(vendor);
+
+  //   // Step 6: Log the change using the audit log service
+  //   await this.auditLogService.logChange(
+  //     "Vendor", // Entity name
+  //     id, // Entity ID
+  //     originalVendor, // Original data (before update)
+  //     updatedVendor, // Updated data (after update)
+  //     updatedBy // User who made the update
+  //   );
+
+  //   // Step 7: Return the updated vendor
+  //   return updatedVendor;
+  // }
+
+
+  // async getAvailableUsers(): Promise<{ id: string; name: string }[]> {
+
+
+  // /**
+  //  * Get available products for reference when uploading vendor data
+  //  */
+  // async getAvailableProducts(): Promise<{ id: string; name: string }[]> {
+  //   const key = `${CACHE_PREFIX}:ref:products`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const products = await this.productRepository
+  //     .createQueryBuilder('product')
+  //     .select(['product.id', 'product.name'])
+  //     .orderBy('product.name', 'ASC')
+  //     .getMany();
+    
+  //   const result = products.map(product => ({ id: product.id, name: product.name }));
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
+
+
+  // /**
+  //  * Get available vendor subcategories for reference when uploading vendor data
+  //  */
+  // async getAvailableVendorSubcategories(categoryId?: string): Promise<{ id: string; name: string; categoryName: string }[]> {
+  //   const key = `${CACHE_PREFIX}:ref:subcategories:${categoryId || 'all'}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const queryBuilder = this.vendorSubcategoryRepository
+  //     .createQueryBuilder('subcategory')
+  //     .leftJoinAndSelect('subcategory.category', 'category')
+  //     .select(['subcategory.id', 'subcategory.name', 'category.name'])
+  //     .orderBy('category.name', 'ASC')
+  //     .addOrderBy('subcategory.name', 'ASC');
+    
+  //   if (categoryId) {
+  //     queryBuilder.where('category.id = :categoryId', { categoryId });
+  //   }
+    
+  //   const subcategories = await queryBuilder.getMany();
+  //   const result = subcategories.map(subcategory => ({
+  //     id: subcategory.id,
+  //     name: subcategory.name,
+  //     categoryName: subcategory.category?.name || 'Unknown'
+  //   }));
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
+
+
+  // /**
+  //  * Get available vendor categories for reference when uploading vendor data
+  //  */
+  // async getAvailableVendorCategories(): Promise<{ id: string; name: string }[]> {
+  //   const key = `${CACHE_PREFIX}:ref:categories`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const categories = await this.vendorCategoryRepository
+  //     .createQueryBuilder('category')
+  //     .select(['category.id', 'category.name'])
+  //     .orderBy('category.name', 'ASC')
+  //     .getMany();
+    
+  //   const result = categories.map(category => ({ id: category.id, name: category.name }));
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
+
+
+//   async filterVendors(filters: VendorFilterDto) {
+//   const {
+//     classification,
+//     categoryId,
+//     subcategoryId,
+//     pincode,
+//     city,
+//     state,
+//     productId,
+//     page,
+//     limit,
+//   } = filters;
+
+//   const query = this.vendorRepository
+//     .createQueryBuilder('vendor')
+//     .leftJoinAndSelect('vendor.category', 'category')
+//     .leftJoinAndSelect('vendor.subcategory', 'subcategory')
+//     .leftJoinAndSelect('vendor.officeAddress', 'officeAddress')
+//     .leftJoinAndSelect('vendor.mainProduct', 'mainProduct')
+//     .leftJoinAndSelect('vendor.listOfAllProducts', 'listOfAllProducts')
+//     .where('1=1');
+
+//   // ✅ Apply filters dynamically
+//   if (classification) query.andWhere('vendor.classification = :classification', { classification });
+//   if (categoryId) query.andWhere('category.id = :categoryId', { categoryId });
+//   if (subcategoryId) query.andWhere('subcategory.id = :subcategoryId', { subcategoryId });
+//   if (pincode) query.andWhere('officeAddress.pincode ILIKE :pincode', { pincode: `%${pincode}%` });
+//   if (city) query.andWhere('officeAddress.city ILIKE :city', { city: `%${city}%` });
+//   if (state) query.andWhere('officeAddress.state ILIKE :state', { state: `%${state}%` });
+//   if (productId) {
+//     query.andWhere('(mainProduct.id = :productId OR listOfAllProducts.id = :productId)', { productId });
+//   }
+
+//   query.orderBy('vendor.createdAt', 'DESC');
+
+//   // ✅ If pagination params are provided
+//   if (page && limit) {
+//     const skip = (page - 1) * limit;
+//     const [vendors, total] = await query.skip(skip).take(limit).getManyAndCount();
+
+//     return {
+//       data: vendors,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(total / limit),
+//       },
+//     };
+//   }
+
+  
+// }
+
+
+  // public async getvendorwithid(id?: string): Promise<any> {
+  //   const key = `${CACHE_PREFIX}:withid:${id || 'all'}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const queryBuilder = this.vendorRepository
+  //     .createQueryBuilder("vendor")
+  //     .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+  //     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+  //     .leftJoinAndSelect("vendor.category", "category")
+  //     .leftJoinAndSelect("vendor.subcategory", "subcategory")
+  //     .select([
+  //       "vendor.id",
+  //       "vendor.companyName",
+  //       "vendor.officeContactNo",
+  //       "vendor.email",
+  //       "vendor.vendorCode",
+  //       "officeAddress.id",
+  //       "officeAddress.address1",
+  //       "officeAddress.address2",
+  //       "officeAddress.location",
+  //       "officeAddress.city",
+  //       "officeAddress.state",
+  //       "officeAddress.pincode",
+  //       "vendorSaleInfo.contactFName",
+  //       "vendorSaleInfo.contactMName",
+  //       "vendorSaleInfo.contactLName",
+  //       "category.id",
+  //       "subcategory.id",
+  //     ]);
+
+  //   if (id) {
+  //     queryBuilder.where("vendor.id = :id", { id });
+  //   }
+
+  //   const vendor = await queryBuilder.getOne();
+  //   if (!vendor) return null;
+
+  //   const result = {
+  //     id: vendor.id,
+  //     companyName: vendor.companyName,
+  //     officeContactNo: vendor.officeContactNo,
+  //     email: vendor.officeEmail,
+  //     vendorCode: vendor.vendorCode,
+  //     officeAddress: vendor.officeAddress
+  //       ? {
+  //           id: vendor.officeAddress.id,
+  //           address1: vendor.officeAddress.address1,
+  //           address2: vendor.officeAddress.address2,
+  //           location: vendor.officeAddress.location,
+  //           city: vendor.officeAddress.city,
+  //           state: vendor.officeAddress.state,
+  //           pincode: vendor.officeAddress.pincode,
+  //         }
+  //       : null,
+  //     contactPersonName: vendor.vendorSaleInfo
+  //       ? `${vendor.vendorSaleInfo.contactFName || ""} ${
+  //           vendor.vendorSaleInfo.contactMName || ""
+  //         } ${vendor.vendorSaleInfo.contactLName || ""}`.trim()
+  //       : null,
+  //     category: vendor.category?.id || null,
+  //     subcategory: vendor.subcategory?.id || null,
+  //   };
+  //   await this.cacheService.set(key, result, CACHE_TTL_DETAIL);
+  //   return result;
+  // }
+
+
+  // async getVendorByVendorName(companyName: string): Promise<Vendor | null> {
+  //   const vendor = await this.vendorRepository
+  //     .createQueryBuilder("vendor")
+  //     .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+  //     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+  //     .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+  //     .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+  //     .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+  //     .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+  //     .leftJoinAndSelect("vendor.subcategory", "subcategory")
+  //     .leftJoinAndSelect("vendor.category", "category")
+  //     .where("vendor.companyName = :companyName", { companyName })
+  //     .getOne();
+
+  //   if (!vendor) throw new AppError(404, "Vendor not found");
+  //   return vendor;
+  // }
+
+
+  // async getVendorByVendorCode(vendorCode: string): Promise<Vendor | null> {
+  //   const vendor = await this.vendorRepository
+  //     .createQueryBuilder("vendor")
+  //     .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
+  //     .leftJoinAndSelect("vendor.vendorSaleInfo", "vendorSaleInfo")
+  //     .leftJoinAndSelect("vendor.vendorBankDetails", "vendorBankDetails")
+  //     .leftJoinAndSelect("vendorBankDetails.branchAddress", "branchAddress")
+  //     .leftJoinAndSelect("vendor.ref1Address", "ref1Address")
+  //     .leftJoinAndSelect("vendor.ref2Address", "ref2Address")
+  //     .leftJoinAndSelect("vendor.subcategory", "subcategory")
+  //     .leftJoinAndSelect("vendor.category", "category")
+  //     .where("vendor.vendorCode = :vendorCode", { vendorCode })
+  //     .getOne();
+
+  //   if (!vendor) throw new AppError(404, "Vendor not found");
+  //   return vendor;
+  // }
 
