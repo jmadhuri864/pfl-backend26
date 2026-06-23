@@ -322,49 +322,7 @@ export class ProductController {
     }
   }
 
-  // @httpPatch('/:id', uploadFile.single('image'), captureUser)
-  // public async update(
-  //   @requestParam('id') id: string,
-  //   @requestBody() productData: any,
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     //console.log(productData);
-  //     if (req.file) {
-  //       const imageUrl = req.file.path;
-  //       productData.image = imageUrl;
-  //     }
-  //     const updatedData = {
-  //       ...productData,
-  //       //   qualityParameters: Array.isArray(productData.qualityParameters)
-  //       // ? productData.qualityParameters
-  //       // : JSON.parse(productData.qualityParameters), // Convert back to array
-  //     };
-
-  //     logger.info(`Updating product with ID`);
-  //     const updatedBy = res.locals.updatedBy;
-  //     const product = await this.productService.update(
-  //       id,
-  //       updatedData,
-  //       updatedBy,
-  //     );
-  //     if (!product) {
-  //       logger.warn(`Product with ID not found or update failed`);
-  //       return next(new AppError(404, 'Product not found or update failed'));
-  //     }
-  //     res.status(200).json({
-  //       status: 'success',
-  //       message: 'Product updated successfully',
-  //       data: product,
-  //     });
-  //   } catch (err) {
-  //     logger.error(`Error updating product with ID: ${id}`, { error: err });
-  //     console.log(err);
-  //     next(err);
-  //   }
-  // }
+  
   @httpPut('/:id', uploadSingle.single('image'), captureUser)
   public async update(
     @requestParam('id') id: string,
@@ -597,22 +555,7 @@ public async softDeleteMultipleProducts(
       next(err);
     }
   }
-  // @httpPost("/uploadcsv",upload.single('file'))
-  // public async postallproduct(
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction
-  // ){
-  //   try{
-  //     const file=req.file?.path
-  //     if (!file) {
-  //       return next(new AppError(400, "File path is required"));
-  //     }
-  //     const success = await this.productService.uploadProducts(file);
-  //   }catch{
 
-  //   }
-  // }
   
 
   
@@ -629,3 +572,67 @@ function jsonStringify(data: any): string {
   }
 
 }
+
+
+  // @httpPost("/uploadcsv",upload.single('file'))
+  // public async postallproduct(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ){
+  //   try{
+  //     const file=req.file?.path
+  //     if (!file) {
+  //       return next(new AppError(400, "File path is required"));
+  //     }
+  //     const success = await this.productService.uploadProducts(file);
+  //   }catch{
+
+  //   }
+  // }
+
+
+// @httpPatch('/:id', uploadFile.single('image'), captureUser)
+  // public async update(
+  //   @requestParam('id') id: string,
+  //   @requestBody() productData: any,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     //console.log(productData);
+  //     if (req.file) {
+  //       const imageUrl = req.file.path;
+  //       productData.image = imageUrl;
+  //     }
+  //     const updatedData = {
+  //       ...productData,
+  //       //   qualityParameters: Array.isArray(productData.qualityParameters)
+  //       // ? productData.qualityParameters
+  //       // : JSON.parse(productData.qualityParameters), // Convert back to array
+  //     };
+
+  //     logger.info(`Updating product with ID`);
+  //     const updatedBy = res.locals.updatedBy;
+  //     const product = await this.productService.update(
+  //       id,
+  //       updatedData,
+  //       updatedBy,
+  //     );
+  //     if (!product) {
+  //       logger.warn(`Product with ID not found or update failed`);
+  //       return next(new AppError(404, 'Product not found or update failed'));
+  //     }
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: 'Product updated successfully',
+  //       data: product,
+  //     });
+  //   } catch (err) {
+  //     logger.error(`Error updating product with ID: ${id}`, { error: err });
+  //     console.log(err);
+  //     next(err);
+  //   }
+  // }
+

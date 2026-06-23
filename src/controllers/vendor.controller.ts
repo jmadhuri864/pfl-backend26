@@ -119,45 +119,8 @@ export class VendorController {
   }
 
 
-  @httpGet("/vendorcode/:vendorCode")
-  public async getVendorByVendorCode(
-    @requestParam("vendorCode") vendorCode: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const vendor = await this.vendorService.getVendorByVendorCode(vendorCode);
-      ControllerLogger.logView('Vendor by code', vendorCode, req, res);
-      res.status(200).json({
-        status: "success",
-        data: vendor,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Vendor by code', error, req, res);
-      next(error);
-    }
-  }
 
-  @httpGet("/vendorname/:companyName")
-  public async getVendorBycompanyName(
-    @requestParam("companyName") companyName: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const vendor = await this.vendorService.getVendorByVendorName(companyName);
-      ControllerLogger.logView('Vendor by name', companyName, req, res);
-      res.status(200).json({
-        status: "success",
-        data: vendor,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Vendor by name', error, req, res);
-      next(error);
-    }
-  }
+
 
   @httpGet("/")
 public async getAllVendors(
@@ -247,23 +210,7 @@ public async getAllVendorsWithselectedSub(
     next(error);
   }
 }
-@httpGet("/byquery/getvendor")
-public async getVendorsWithId(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    const id = req.query.search as string; // Extract subcategoryId from query
-    const vendors = await this.vendorService.getvendorwithid(id); // Correct method name
-    res.status(200).json({
-      status: "success",
-      data: vendors,
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+
 
 
   
@@ -642,52 +589,7 @@ public async getVendorsWithId(
   }
 
 
-  @httpGet("/filter/vendors")
-public async filterVendors(req: Request, res: Response, next: NextFunction) {
-    try {
 
-      const {
-        classification,
-        category,
-        subcategory,
-        pincode,
-        city,
-        state,
-        product,
-        page,
-        limit,
-      } = req.query;
-
-      const filters: VendorFilterDto = {
-        classification: classification as string,
-        categoryId: category as string,
-        subcategoryId: subcategory as string,
-        pincode: pincode as string,
-        city: city as string,
-        state: state as string,
-        productId: product as string,
-        page: page ? Number(page) : 1,
-        limit: limit ? Number(limit) : 10,
-      };
-
-      const vendors = await this.vendorService.filterVendors(filters);
-      if(!vendors){
-        return next(new AppError(404, "No vendors found with the given filters"));
-      }
-
-      return res.status(200).json({
-       
-        status: "success",
-      data:vendors.data,
-      allRecords: vendors.pagination?.total,
-      totalPages: vendors.pagination?.totalPages,
-      page: vendors.pagination?.page,
-      });
-    } catch (error) {
-      console.error('Error filtering vendors:', error);
-      return next(error);
-    }
-  }
 
   @httpGet('/download/template')
   public async downloadExcelTemplate(
@@ -786,3 +688,114 @@ public async softDeleteMultipleVendors(
   }
 }
 }
+
+
+//   @httpGet("/filter/vendors")
+// public async filterVendors(req: Request, res: Response, next: NextFunction) {
+//     try {
+
+//       const {
+//         classification,
+//         category,
+//         subcategory,
+//         pincode,
+//         city,
+//         state,
+//         product,
+//         page,
+//         limit,
+//       } = req.query;
+
+//       const filters: VendorFilterDto = {
+//         classification: classification as string,
+//         categoryId: category as string,
+//         subcategoryId: subcategory as string,
+//         pincode: pincode as string,
+//         city: city as string,
+//         state: state as string,
+//         productId: product as string,
+//         page: page ? Number(page) : 1,
+//         limit: limit ? Number(limit) : 10,
+//       };
+
+//       const vendors = await this.vendorService.filterVendors(filters);
+//       if(!vendors){
+//         return next(new AppError(404, "No vendors found with the given filters"));
+//       }
+
+//       return res.status(200).json({
+       
+//         status: "success",
+//       data:vendors.data,
+//       allRecords: vendors.pagination?.total,
+//       totalPages: vendors.pagination?.totalPages,
+//       page: vendors.pagination?.page,
+//       });
+//     } catch (error) {
+//       console.error('Error filtering vendors:', error);
+//       return next(error);
+//     }
+//   }
+
+
+// @httpGet("/byquery/getvendor")
+// public async getVendorsWithId(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+//     const id = req.query.search as string; // Extract subcategoryId from query
+//     const vendors = await this.vendorService.getvendorwithid(id); // Correct method name
+//     res.status(200).json({
+//       status: "success",
+//       data: vendors,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// }
+
+
+  // @httpGet("/vendorname/:companyName")
+  // public async getVendorBycompanyName(
+  //   @requestParam("companyName") companyName: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const vendor = await this.vendorService.getVendorByVendorName(companyName);
+  //     ControllerLogger.logView('Vendor by name', companyName, req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vendor,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Vendor by name', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+  // @httpGet("/vendorcode/:vendorCode")
+  // public async getVendorByVendorCode(
+  //   @requestParam("vendorCode") vendorCode: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const vendor = await this.vendorService.getVendorByVendorCode(vendorCode);
+  //     ControllerLogger.logView('Vendor by code', vendorCode, req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: vendor,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Vendor by code', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+

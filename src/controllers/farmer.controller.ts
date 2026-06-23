@@ -213,36 +213,7 @@ export class FarmerController {
     }
   }
 
-  @httpGet('/:id')
-  public async getFarmerById(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const farmer = await this.farmerService.getFarmerById(id);
-      
-      if (!farmer) {
-        ControllerLogger.logNotFound('Farmer', id, req, res);
-        return next(new AppError(404, 'Farmer not found'));
-      }
-      
-      // await this.notificationService.createNoti(
-      //   `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
-      //   res.locals.user.id,
-      // );
-      
-      ControllerLogger.logView('Farmer', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmer,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Farmer by ID', err, req, res);
-      next(err);
-    }
-  }
+
 
   @httpGet('/view/:id')
   public async getFarmerByIdforview(
@@ -328,81 +299,9 @@ export class FarmerController {
     }
   }
 
-  @httpGet('/getFarmer/all/:id')
-  public async getFarmerByIdForUpdate(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const farmer = await this.farmerService.getFarmerByIdForUpdate(id);
-      
-      if (!farmer) {
-        ControllerLogger.logNotFound('Farmer', id, req, res);
-        return next(new AppError(404, 'Farmer not found'));
-      }
 
-      ControllerLogger.logView('Farmer (for update)', id, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmer,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Farmer by ID for update', err, req, res);
-      next(err);
-    }
-  }
 
-  @httpGet('/')
-  public async getAllFarmers(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const { page, limit, search, sort } = req.query;
 
-      const queryOptions: PaginationOptions = {
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
-        filters: {},
-        sort: (sort as string) || undefined,
-        search: (search as string) || '',
-      };
-      
-      const farmers = await this.farmerService.getAllFarmers(queryOptions);
-
-      if (!farmers) {
-        ControllerLogger.logOperationFailed('Get All', 'Farmers', 'No records found', req, res);
-        return next(new AppError(404, 'No farmers found'));
-      }
-      
-      // 🔔 Send notification for get all farmers
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Retrieved ${farmers.meta.total} farmers`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      // }
-      
-      ControllerLogger.logGetAllRecords('Farmers', req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmers.data,
-        allRecords: farmers.meta.total,
-        totalPages: farmers.meta.pages,
-        page: farmers.meta.page,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get All Farmers', err, req, res);
-      next(err);
-    }
-  }
 
   @httpGet('/filterFarmer/all')
   public async getAllFarmer(
@@ -467,30 +366,7 @@ export class FarmerController {
     }
   }
 
-  @httpGet('/getfarmerCode/getnos')
-  public async getAllFarmersCode(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const farmers = await this.farmerService.getAllFarmerCodes();
-      
-      if (!farmers) {
-        ControllerLogger.logOperationFailed('Get All', 'Farmer Codes', 'No records found', req, res);
-        return next(new AppError(404, 'No farmers found'));
-      }
-      
-      ControllerLogger.logList('Farmer Codes', req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmers,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get All Farmer Codes', err, req, res);
-      next(err);
-    }
-  }
+
 
   @httpPut(
     '/:id',
@@ -613,57 +489,9 @@ export class FarmerController {
     }
   }
 
-  @httpGet('/forRfpa/:farmerId')
-  public async getFarmerDetails(
-    @requestParam('farmerId') farmerId: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      const farmer = await this.farmerService.getFarmerDetails(farmerId);
 
-      if (!farmer) {
-        ControllerLogger.logNotFound('Farmer', farmerId, req, res);
-        return next(new AppError(404, 'Farmer not found'));
-      }
 
-      ControllerLogger.logView('Farmer Details', farmerId, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmer,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Get Farmer Details', error, req, res);
-      next(error);
-    }
-  }
 
-  @httpGet('/bySearch/farmer')
-  public async getFarmerbyid(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      const farmerId = req.query.search as string;
-      const farmer = await this.farmerService.getFarmerDetails(farmerId);
-
-      if (!farmer) {
-        ControllerLogger.logNotFound('Farmer', farmerId, req, res);
-        return next(new AppError(404, 'Farmer not found'));
-      }
-
-      ControllerLogger.logView('Farmer by Search', farmerId, req, res);
-      res.status(200).json({
-        status: 'success',
-        data: farmer,
-      });
-    } catch (error) {
-      ControllerLogger.logError('Get Farmer by Search', error, req, res);
-      next(error);
-    }
-  }
 
   @httpGet('/filterFarmer/search/withfilter')
   public async getAllFarmersWithQuery(
@@ -738,46 +566,7 @@ export class FarmerController {
 
  
 
-  @httpGet('/multifilter')
-  public async getFilteredFarmers(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const { page, limit, search, sort, ...filters } = req.query;
-      
-      const queryOptions: PaginationOptions = {
-        page: page ? Number(page) : 1,
-        limit: limit ? Number(limit) : 10,
-        search: (search as string) || '',
-        sort: (sort as string) || 'farmer.createdAt:DESC',
-        filters: { ...filters },
-      };
 
-      const result = await this.farmerService.getFarmersWithFilters(queryOptions);
-
-      if (!result || result.data.length === 0) {
-        ControllerLogger.logOperationFailed('Get', 'Farmers (multi-filter)', 'No records found', req, res);
-        return res.status(404).json({
-          status: 'fail',
-          message: 'No farmers found for the provided filters',
-        });
-      }
-
-      ControllerLogger.logList('Farmers (multi-filter)', req, res);
-      res.status(200).json({
-        status: 'success',
-        total: result.total,
-        currentPage: result.currentPage,
-        totalPages: result.totalPages,
-        data: result.data,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get Filtered Farmers', err, req, res);
-      next(err);
-    }
-  }
 
   //TODO:Delete Mutilple
    @httpDelete("/delete/multiple")
@@ -830,3 +619,236 @@ export class FarmerController {
     }
   }
 }
+
+
+  // @httpGet('/multifilter')
+  // public async getFilteredFarmers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const { page, limit, search, sort, ...filters } = req.query;
+      
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : 1,
+  //       limit: limit ? Number(limit) : 10,
+  //       search: (search as string) || '',
+  //       sort: (sort as string) || 'farmer.createdAt:DESC',
+  //       filters: { ...filters },
+  //     };
+
+  //     const result = await this.farmerService.getFarmersWithFilters(queryOptions);
+
+  //     if (!result || result.data.length === 0) {
+  //       ControllerLogger.logOperationFailed('Get', 'Farmers (multi-filter)', 'No records found', req, res);
+  //       return res.status(404).json({
+  //         status: 'fail',
+  //         message: 'No farmers found for the provided filters',
+  //       });
+  //     }
+
+  //     ControllerLogger.logList('Farmers (multi-filter)', req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       total: result.total,
+  //       currentPage: result.currentPage,
+  //       totalPages: result.totalPages,
+  //       data: result.data,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Filtered Farmers', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet('/bySearch/farmer')
+  // public async getFarmerbyid(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ): Promise<void> {
+  //   try {
+  //     const farmerId = req.query.search as string;
+  //     const farmer = await this.farmerService.getFarmerDetails(farmerId);
+
+  //     if (!farmer) {
+  //       ControllerLogger.logNotFound('Farmer', farmerId, req, res);
+  //       return next(new AppError(404, 'Farmer not found'));
+  //     }
+
+  //     ControllerLogger.logView('Farmer by Search', farmerId, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmer,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Get Farmer by Search', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+  // @httpGet('/forRfpa/:farmerId')
+  // public async getFarmerDetails(
+  //   @requestParam('farmerId') farmerId: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ): Promise<void> {
+  //   try {
+  //     const farmer = await this.farmerService.getFarmerDetails(farmerId);
+
+  //     if (!farmer) {
+  //       ControllerLogger.logNotFound('Farmer', farmerId, req, res);
+  //       return next(new AppError(404, 'Farmer not found'));
+  //     }
+
+  //     ControllerLogger.logView('Farmer Details', farmerId, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmer,
+  //     });
+  //   } catch (error) {
+  //     ControllerLogger.logError('Get Farmer Details', error, req, res);
+  //     next(error);
+  //   }
+  // }
+
+
+  // @httpGet('/getfarmerCode/getnos')
+  // public async getAllFarmersCode(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const farmers = await this.farmerService.getAllFarmerCodes();
+      
+  //     if (!farmers) {
+  //       ControllerLogger.logOperationFailed('Get All', 'Farmer Codes', 'No records found', req, res);
+  //       return next(new AppError(404, 'No farmers found'));
+  //     }
+      
+  //     ControllerLogger.logList('Farmer Codes', req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmers,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get All Farmer Codes', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet('/')
+  // public async getAllFarmers(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const { page, limit, search, sort } = req.query;
+
+  //     const queryOptions: PaginationOptions = {
+  //       page: page ? Number(page) : undefined,
+  //       limit: limit ? Number(limit) : undefined,
+  //       filters: {},
+  //       sort: (sort as string) || undefined,
+  //       search: (search as string) || '',
+  //     };
+      
+  //     const farmers = await this.farmerService.getAllFarmers(queryOptions);
+
+  //     if (!farmers) {
+  //       ControllerLogger.logOperationFailed('Get All', 'Farmers', 'No records found', req, res);
+  //       return next(new AppError(404, 'No farmers found'));
+  //     }
+      
+  //     // 🔔 Send notification for get all farmers
+  //     // try {
+  //     //   const userId = res.locals.user?.id;
+  //     //   if (userId) {
+  //     //     await this.notificationService.createNoti(
+  //     //       `Retrieved ${farmers.meta.total} farmers`,
+  //     //       userId
+  //     //     );
+  //     //   }
+  //     // } catch (notifError) {
+  //     // }
+      
+  //     ControllerLogger.logGetAllRecords('Farmers', req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmers.data,
+  //       allRecords: farmers.meta.total,
+  //       totalPages: farmers.meta.pages,
+  //       page: farmers.meta.page,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get All Farmers', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet('/getFarmer/all/:id')
+  // public async getFarmerByIdForUpdate(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const farmer = await this.farmerService.getFarmerByIdForUpdate(id);
+      
+  //     if (!farmer) {
+  //       ControllerLogger.logNotFound('Farmer', id, req, res);
+  //       return next(new AppError(404, 'Farmer not found'));
+  //     }
+
+  //     ControllerLogger.logView('Farmer (for update)', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmer,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Farmer by ID for update', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+  // @httpGet('/:id')
+  // public async getFarmerById(
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const farmer = await this.farmerService.getFarmerById(id);
+      
+  //     if (!farmer) {
+  //       ControllerLogger.logNotFound('Farmer', id, req, res);
+  //       return next(new AppError(404, 'Farmer not found'));
+  //     }
+      
+  //     // await this.notificationService.createNoti(
+  //     //   `Farmer details retrieved successfully ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
+  //     //   res.locals.user.id,
+  //     // );
+      
+  //     ControllerLogger.logView('Farmer', id, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: farmer,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('Get Farmer by ID', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

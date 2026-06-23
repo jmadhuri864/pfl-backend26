@@ -734,6 +734,282 @@ export class ProductService {
     return result;
   }
 
+
+  async update(id: string, productData: CreateProductDto, updatedBy: string): Promise<any> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: [
+        'qualityParameters',
+        'category',
+        'subcategory',
+        'uom',
+        'variant',
+      ],
+    });
+
+    if (!product) {
+      throw new Error(`Product with ID ${id} not found`);
+    }
+
+    const oldData = { ...product };
+    const existingVariants = product.variant ?? [];
+
+    if (productData?.qualityParameters) {
+      await this.qualityParameterRepository.save(
+        productData.qualityParameters.map((qp: any) => ({
+          ...qp,
+          product,
+        })),
+      );
+    }
+
+    console.log('existing product variants are:', product.variant);
+
+
+    console.log("product data received for update is ", productData.prefix);
+
+
+    const prefix = productData.prefix;
+
+if (prefix && prefix !== product.prefix) {
+  const productCode = await this.generateProductCode(prefix);
+  productCode.toUpperCase();
+  product.productCode = productCode;
+}
+
+    // if (productData.prefix !== product.prefix) {
+    //   const productCode = await this.generateProductCode(productData.prefix);
+    //   productCode.toUpperCase();
+    //   product.productCode = productCode;
+    // }
+
+  oldData.productCode =
+  productData.productCode ?? oldData.productCode;
+    //oldData.productCode = productData.productCode;
+    // strip variant to prevent TypeORM cascade re-inserting them
+    const { variant, ...cleanProductData } = productData;
+    product.variant = [];
+
+    const updatedProduct = await this.productRepository.save({
+      ...product,
+      ...cleanProductData,
+    });
+    console.log('product id is ', updatedProduct.id);
+
+    const incomingVariants: any[] = variant ?? variant ?? [];
+
+    for (const variantData of incomingVariants) {
+      // match by id if present, otherwise fall back to field values
+      const existingVariant = variantData.id
+        ? (existingVariants).find((v: any) => v.id === variantData.id)
+        : (existingVariants).find((v: any) =>
+          v.count === variantData.count &&
+          v.size === variantData.size &&
+          v.variety === variantData.variety &&
+          v.origin === variantData.origin &&
+          v.brand === variantData.brand
+        );
+
+      if (existingVariant) {
+        await this.productVarientsRepository.save({
+          ...existingVariant,
+          ...variantData,
+          id: existingVariant.id,
+          product: updatedProduct,
+          productName: updatedProduct.name,
+          variantName: await getVariantIdentifier(
+            updatedProduct.name,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+          variantCode: await generateVariantCode(
+            updatedProduct.id,
+            updatedProduct.prefix,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+        });
+      } else {
+        const { id: _id, ...itemData } = variantData;
+        const newVariant = this.productVarientsRepository.create({
+          ...itemData,
+          product: updatedProduct,
+          productName: updatedProduct.name,
+          variantName: await getVariantIdentifier(
+            updatedProduct.name,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+          variantCode: await generateVariantCode(
+            updatedProduct.id,
+            updatedProduct.prefix,
+            variantData.count,
+            variantData.size,
+            variantData.variety,
+            variantData.origin,
+            variantData.brand,
+          ),
+        });
+        await this.productVarientsRepository.save(newVariant);
+      }
+    }
+
+    await this.auditLogService.logChange('Product', id, oldData, updatedProduct, updatedBy);
+    await this.invalidateProductCache(id);
+    return updatedProduct;
+  }
+
+
+  async delete(id: string): Promise<boolean> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new Error(`Product with ID ${id} not found`);
+    }
+
+    const now = new Date();
+    const sixMonthsFromNow = new Date(now);
+    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
+    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
+
+    // Log the scheduled deletion
+    console.log(
+      `Product with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
+    );
+
+    // Set the deletionScheduledAt field for the product
+    product.deletionScheduledAt = sixMonthsFromNow;
+    await this.productRepository.save(product);
+    await this.invalidateProductCache(id);
+    return true;
+  }
+
+
+
+  async getVarientsByProductId(id: string): Promise<any> {
+    const key = `${CACHE_PREFIX}:variants:full:${id}`;
+    const cached = await this.cacheService.get<any>(key);
+    if (cached) return cached;
+
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['variant'],
+    });
+    if (!product) throw new Error('Product not found');
+
+    const formattedproduct = {
+      id: product.id,
+      name: product.name,
+      variant: product.variant.map((v) => ({
+        id: v.id,
+        variantName: v.variantName,
+        variantCode: v.variantCode,
+        count: v.count,
+        size: v.size,
+        variety: v.variety,
+        origin: v.origin,
+        brand: v.brand,
+        thresholdStock: v.thresholdStock,
+      })),
+    };
+    await this.cacheService.set(key, formattedproduct, CACHE_TTL_DETAIL);
+    return formattedproduct;
+  }
+  async softDeleteProducts(userIds: string[]) {
+    const result = await this.productRepository.softDelete({ id: In(userIds) });
+    await this.invalidateProductCache();
+    return result;
+  }
+
+  async getProductsByIds(ids: string[]): Promise<any[]> {
+    if (!ids || ids.length === 0) return [];
+
+    return await this.productRepository
+      .createQueryBuilder('product')
+      .select(['product.id', 'product.name', 'product.productCode'])
+      .where('product.id IN (:...ids)', { ids })
+      .getMany();
+  }
+}
+
+
+  //   async uploadProducts(filePath: string): Promise<void> {
+  //     const products: Product[] = [];
+  //     let sequenceNumber = await this.productRepository.count(); // Get initial count once
+
+  //     await new Promise<void>((resolve, reject) => {
+  //       fs.createReadStream(filePath)
+  //         .pipe(csvParser())
+  //         .on("data", async (row) => {
+  //           try {
+  //             console.log("Row Data:", row);
+
+  //             // Fetch related entities
+  //             const [category, subcategory, classification, uom] = await Promise.all([
+  //               row["Category"] ? this.categoryRepository.findOne({ where: { name: row["Category"] } }):null ,
+  //               row["Subcategory"] ? this.subcategoryRepository.findOne({ where: { name: row["Subcategory"] } }):null,
+  //               row["Classification"] ? this.classificationRepository.findOne({ where: { name: row["Classification"] } }):null,
+  //               row["UOM"] ? this.uomRepository.findOne({ where: { unit: row["UOM"] } }) : null,
+  //             ]);
+
+  //             // Create a new Product instance
+  //             const product = new Product();
+  //             product.name = row["Product Name"];
+  //             product.description = row["Description"];
+  //             product.productOrigin = row["Origin"];
+  //             product.brand = row["Brand"];
+  //             product.packingType = row["Packing Type"];
+  //             product.shelfLife = row["Shelf Life"] ? parseInt(row["Shelf Life"]) : 0;
+  //             product.storageTemp = row["Storage Temp"] ? parseFloat(row["Storage Temp"]) : 0;
+  //             product.count = row["Count"] ? row["Count"].split(",").map((item: string) => item.trim()) : [];
+  //             product.size = row["Size"] ? row["Size"].split(",").map((item: string) => item.trim()) : [];
+  //             product.variety = row["Variety"] ? row["Variety"].split(",").map((item: string) => item.trim()) : [];
+
+  // // Assign relations (ensure they are either null or an entity, not undefined)
+  // product.category = category;
+  // product.subcategory = subcategory ;
+  // product.classification = classification
+  // product.uom = uom ;
+
+  //             // Generate product code
+  //             product.productCode = await this.getNextProductCode("ARG", product.name);
+
+  //             // Add product to the batch list
+  //             products.push(product);
+  //           } catch (error) {
+  //             console.error("Error processing row:", row, error);
+  //           }
+  //         })
+  //         .on("end", async () => {
+  //           try {
+  //             // Save all products in a batch
+  //             await this.productRepository.save(products);
+  //             resolve();
+  //           } catch (error) {
+  //             console.error("Error saving products:", error);
+  //             reject(error);
+  //           }
+  //         })
+  //         .on("error", (error) => reject(error));
+  //     });
+
+  //     // Cleanup the uploaded file
+  //     fs.unlinkSync(filePath);
+  //   }
+
+
+
   //   async update(id: string, productData: any, updatedBy: string): Promise<any> {
   //     const product = await this.productRepository.findOne({
   //       where: { id },
@@ -981,273 +1257,4 @@ export class ProductService {
 
   //   return updatedProduct;
   // }
-  async update(id: string, productData: CreateProductDto, updatedBy: string): Promise<any> {
-    const product = await this.productRepository.findOne({
-      where: { id },
-      relations: [
-        'qualityParameters',
-        'category',
-        'subcategory',
-        'uom',
-        'variant',
-      ],
-    });
 
-    if (!product) {
-      throw new Error(`Product with ID ${id} not found`);
-    }
-
-    const oldData = { ...product };
-    const existingVariants = product.variant ?? [];
-
-    if (productData?.qualityParameters) {
-      await this.qualityParameterRepository.save(
-        productData.qualityParameters.map((qp: any) => ({
-          ...qp,
-          product,
-        })),
-      );
-    }
-
-    console.log('existing product variants are:', product.variant);
-
-
-    console.log("product data received for update is ", productData.prefix);
-
-
-    const prefix = productData.prefix;
-
-if (prefix && prefix !== product.prefix) {
-  const productCode = await this.generateProductCode(prefix);
-  productCode.toUpperCase();
-  product.productCode = productCode;
-}
-
-    // if (productData.prefix !== product.prefix) {
-    //   const productCode = await this.generateProductCode(productData.prefix);
-    //   productCode.toUpperCase();
-    //   product.productCode = productCode;
-    // }
-
-  oldData.productCode =
-  productData.productCode ?? oldData.productCode;
-    //oldData.productCode = productData.productCode;
-    // strip variant to prevent TypeORM cascade re-inserting them
-    const { variant, ...cleanProductData } = productData;
-    product.variant = [];
-
-    const updatedProduct = await this.productRepository.save({
-      ...product,
-      ...cleanProductData,
-    });
-    console.log('product id is ', updatedProduct.id);
-
-    const incomingVariants: any[] = variant ?? variant ?? [];
-
-    for (const variantData of incomingVariants) {
-      // match by id if present, otherwise fall back to field values
-      const existingVariant = variantData.id
-        ? (existingVariants).find((v: any) => v.id === variantData.id)
-        : (existingVariants).find((v: any) =>
-          v.count === variantData.count &&
-          v.size === variantData.size &&
-          v.variety === variantData.variety &&
-          v.origin === variantData.origin &&
-          v.brand === variantData.brand
-        );
-
-      if (existingVariant) {
-        await this.productVarientsRepository.save({
-          ...existingVariant,
-          ...variantData,
-          id: existingVariant.id,
-          product: updatedProduct,
-          productName: updatedProduct.name,
-          variantName: await getVariantIdentifier(
-            updatedProduct.name,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-          variantCode: await generateVariantCode(
-            updatedProduct.id,
-            updatedProduct.prefix,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-        });
-      } else {
-        const { id: _id, ...itemData } = variantData;
-        const newVariant = this.productVarientsRepository.create({
-          ...itemData,
-          product: updatedProduct,
-          productName: updatedProduct.name,
-          variantName: await getVariantIdentifier(
-            updatedProduct.name,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-          variantCode: await generateVariantCode(
-            updatedProduct.id,
-            updatedProduct.prefix,
-            variantData.count,
-            variantData.size,
-            variantData.variety,
-            variantData.origin,
-            variantData.brand,
-          ),
-        });
-        await this.productVarientsRepository.save(newVariant);
-      }
-    }
-
-    await this.auditLogService.logChange('Product', id, oldData, updatedProduct, updatedBy);
-    await this.invalidateProductCache(id);
-    return updatedProduct;
-  }
-
-
-  async delete(id: string): Promise<boolean> {
-    const product = await this.productRepository.findOne({
-      where: { id },
-    });
-
-    if (!product) {
-      throw new Error(`Product with ID ${id} not found`);
-    }
-
-    const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(now.getMonth() + 6); // Adds 6 months to the current date
-    sixMonthsFromNow.setHours(0, 0, 0, 0); // Optionally, set the time to midnight (00:00:00)
-
-    // Log the scheduled deletion
-    console.log(
-      `Product with ID ${id} marked for deletion in 6 months at ${sixMonthsFromNow}`,
-    );
-
-    // Set the deletionScheduledAt field for the product
-    product.deletionScheduledAt = sixMonthsFromNow;
-    await this.productRepository.save(product);
-    await this.invalidateProductCache(id);
-    return true;
-  }
-
-  //   async uploadProducts(filePath: string): Promise<void> {
-  //     const products: Product[] = [];
-  //     let sequenceNumber = await this.productRepository.count(); // Get initial count once
-
-  //     await new Promise<void>((resolve, reject) => {
-  //       fs.createReadStream(filePath)
-  //         .pipe(csvParser())
-  //         .on("data", async (row) => {
-  //           try {
-  //             console.log("Row Data:", row);
-
-  //             // Fetch related entities
-  //             const [category, subcategory, classification, uom] = await Promise.all([
-  //               row["Category"] ? this.categoryRepository.findOne({ where: { name: row["Category"] } }):null ,
-  //               row["Subcategory"] ? this.subcategoryRepository.findOne({ where: { name: row["Subcategory"] } }):null,
-  //               row["Classification"] ? this.classificationRepository.findOne({ where: { name: row["Classification"] } }):null,
-  //               row["UOM"] ? this.uomRepository.findOne({ where: { unit: row["UOM"] } }) : null,
-  //             ]);
-
-  //             // Create a new Product instance
-  //             const product = new Product();
-  //             product.name = row["Product Name"];
-  //             product.description = row["Description"];
-  //             product.productOrigin = row["Origin"];
-  //             product.brand = row["Brand"];
-  //             product.packingType = row["Packing Type"];
-  //             product.shelfLife = row["Shelf Life"] ? parseInt(row["Shelf Life"]) : 0;
-  //             product.storageTemp = row["Storage Temp"] ? parseFloat(row["Storage Temp"]) : 0;
-  //             product.count = row["Count"] ? row["Count"].split(",").map((item: string) => item.trim()) : [];
-  //             product.size = row["Size"] ? row["Size"].split(",").map((item: string) => item.trim()) : [];
-  //             product.variety = row["Variety"] ? row["Variety"].split(",").map((item: string) => item.trim()) : [];
-
-  // // Assign relations (ensure they are either null or an entity, not undefined)
-  // product.category = category;
-  // product.subcategory = subcategory ;
-  // product.classification = classification
-  // product.uom = uom ;
-
-  //             // Generate product code
-  //             product.productCode = await this.getNextProductCode("ARG", product.name);
-
-  //             // Add product to the batch list
-  //             products.push(product);
-  //           } catch (error) {
-  //             console.error("Error processing row:", row, error);
-  //           }
-  //         })
-  //         .on("end", async () => {
-  //           try {
-  //             // Save all products in a batch
-  //             await this.productRepository.save(products);
-  //             resolve();
-  //           } catch (error) {
-  //             console.error("Error saving products:", error);
-  //             reject(error);
-  //           }
-  //         })
-  //         .on("error", (error) => reject(error));
-  //     });
-
-  //     // Cleanup the uploaded file
-  //     fs.unlinkSync(filePath);
-  //   }
-
-
-  async getVarientsByProductId(id: string): Promise<any> {
-    const key = `${CACHE_PREFIX}:variants:full:${id}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
-
-    const product = await this.productRepository.findOne({
-      where: { id },
-      relations: ['variant'],
-    });
-    if (!product) throw new Error('Product not found');
-
-    const formattedproduct = {
-      id: product.id,
-      name: product.name,
-      variant: product.variant.map((v) => ({
-        id: v.id,
-        variantName: v.variantName,
-        variantCode: v.variantCode,
-        count: v.count,
-        size: v.size,
-        variety: v.variety,
-        origin: v.origin,
-        brand: v.brand,
-        thresholdStock: v.thresholdStock,
-      })),
-    };
-    await this.cacheService.set(key, formattedproduct, CACHE_TTL_DETAIL);
-    return formattedproduct;
-  }
-  async softDeleteProducts(userIds: string[]) {
-    const result = await this.productRepository.softDelete({ id: In(userIds) });
-    await this.invalidateProductCache();
-    return result;
-  }
-
-  async getProductsByIds(ids: string[]): Promise<any[]> {
-    if (!ids || ids.length === 0) return [];
-
-    return await this.productRepository
-      .createQueryBuilder('product')
-      .select(['product.id', 'product.name', 'product.productCode'])
-      .where('product.id IN (:...ids)', { ids })
-      .getMany();
-  }
-}
