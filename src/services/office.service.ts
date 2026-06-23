@@ -105,7 +105,7 @@ export class OfficesService {
   async softDeleteOffices(userIds: string[], officeType: OFFICE_TYPE): Promise<BulkDeleteOfficeResultDto> {
     const result = await this.officesRepository.softDelete({
       id: In(userIds),
-      type: officeType,
+      //type: officeType,
     });
     await this.invalidateCache();
     return result;
@@ -200,11 +200,8 @@ export class OfficesService {
         'offices.cLastName',
         'offices.notes',
         'offices.type',
-        'address.id',
-        'address.location',
-        'address.city',
-        'address.state',
-        'address.pincode',
+        'address.id', 'address.address1', 'address.address2',
+        'address.city', 'address.location', 'address.pincode', 'address.state',
       ])
       .where('offices.type = :officeType', { officeType })
       .orderBy('offices.createdAt', 'DESC');

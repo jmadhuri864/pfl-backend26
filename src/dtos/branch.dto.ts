@@ -103,7 +103,7 @@ export interface BranchFilterItemDto {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BulkDeleteBranchDto {
-  branchIds: string[];
+  ids: string[];
 }
 
 export interface BulkDeleteBranchResultDto {

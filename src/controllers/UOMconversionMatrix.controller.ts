@@ -271,7 +271,8 @@ export class UOMConversionMatrixController {
   ) {
     try {
   
-      const { uomConversionIds }: BulkDeleteUOMConversionMatrixDto = req.body;
+      const { ids }: BulkDeleteUOMConversionMatrixDto = req.body;
+      const uomConversionIds=ids;
   
       if (!Array.isArray(uomConversionIds) || uomConversionIds.length === 0) {
         ControllerLogger.logError(

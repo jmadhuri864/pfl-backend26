@@ -234,7 +234,7 @@ export class ProductService {
         storageTemp: pro.storageTemp,
         category: { id: pro.category?.id, name: pro.category?.name },
         classification: { id: pro.classification?.id, name: pro.classification?.name },
-        uom: { id: pro.uom?.id, unit: pro.uom?.name },
+        uom: { id: pro.uom?.id, name: pro.uom?.unit },
         subcategory: { id: pro.subcategory?.id, name: pro.subcategory?.name },
       })),
       meta: data1.meta,

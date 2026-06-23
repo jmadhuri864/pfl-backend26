@@ -232,7 +232,8 @@ export class BranchessController {
     @next() next: NextFunction,
   ) {
     try {
-      const { branchIds }: BulkDeleteBranchDto = req.body;
+      const { ids }: BulkDeleteBranchDto = req.body;
+      const branchIds=ids;
       const branchType = req.query.branchType as BranchType;
 
       if (!Array.isArray(branchIds) || branchIds.length === 0) {

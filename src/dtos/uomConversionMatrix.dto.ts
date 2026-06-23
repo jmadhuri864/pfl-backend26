@@ -66,7 +66,7 @@ export type UOMConversionMatrixUpdateFormDto = UOMConversionMatrixDetailDto;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BulkDeleteUOMConversionMatrixDto {
-  uomConversionIds: string[];
+  ids: string[];
 }
 
 export interface BulkDeleteUOMConversionMatrixResultDto {

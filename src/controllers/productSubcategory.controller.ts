@@ -232,7 +232,8 @@ export class ProductSubcategoryController {
   ) {
     try {
 
-      const { productSubcategoryIds } = req.body;
+      const {ids} = req.body;
+      const productSubcategoryIds=ids; 
 
       if (!Array.isArray(productSubcategoryIds) || productSubcategoryIds.length === 0) {
         ControllerLogger.logError(
