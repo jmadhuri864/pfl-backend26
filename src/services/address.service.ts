@@ -26,56 +26,6 @@ export class AddressService {
     this.addressRepository = this.dataSource.getRepository(Address);
   }
 
-  // ─── Create ───────────────────────────────────────────────────────────────
-
-  public async create(addressData: Partial<Address>): Promise<Address> {
-    const address = this.addressRepository.create(addressData);
-    return this.addressRepository.save(address);
-  }
-
-  // ─── Update ───────────────────────────────────────────────────────────────
-
-  public async update(id: string, addressData: Partial<Address>): Promise<Address> {
-    let address = await this.addressRepository.findOneBy({ id });
-
-    if (address) {
-      Object.assign(address, addressData);
-      const saved = await this.addressRepository.save(address);
-      await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
-      return saved;
-    }
-
-    return this.create(addressData);
-  }
-
-  // ─── Find By ID ───────────────────────────────────────────────────────────
-
-  public async findById(id: string): Promise<Address | null> {
-    const key = `${CACHE_PREFIX}:id:${id}`;
-    const cached = await this.cacheService.get<Address>(key);
-    if (cached) return cached;
-
-    const address = await this.addressRepository.findOneBy({ id });
-    if (address) await this.cacheService.set(key, address, CACHE_TTL_ADDRESS);
-    return address;
-  }
-
-  // ─── Delete (schedule) ────────────────────────────────────────────────────
-
-  public async deleteAddress(id: string): Promise<boolean> {
-    const address = await this.addressRepository.findOne({ where: { id } });
-    if (!address) throw new AppError(404, `Address with ID ${id} not found`);
-
-    const sixMonthsFromNow = new Date();
-    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-    sixMonthsFromNow.setHours(0, 0, 0, 0);
-
-    address.deletionScheduledAt = sixMonthsFromNow;
-    await this.addressRepository.save(address);
-    await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
-
-    return true;
-  }
 
   // ─── Fetch By Pincode (cached) ────────────────────────────────────────────
 
@@ -103,3 +53,57 @@ export class AddressService {
     throw new Error('Invalid pincode or no data found');
   }
 }
+
+
+  // // ─── Create ───────────────────────────────────────────────────────────────
+
+  // public async create(addressData: Partial<Address>): Promise<Address> {
+  //   const address = this.addressRepository.create(addressData);
+  //   return this.addressRepository.save(address);
+  // }
+
+  // // ─── Update ───────────────────────────────────────────────────────────────
+
+  // public async update(id: string, addressData: Partial<Address>): Promise<Address> {
+  //   let address = await this.addressRepository.findOneBy({ id });
+
+  //   if (address) {
+  //     Object.assign(address, addressData);
+  //     const saved = await this.addressRepository.save(address);
+  //     await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
+  //     return saved;
+  //   }
+
+  //   return this.create(addressData);
+  // }
+
+  // // ─── Find By ID ───────────────────────────────────────────────────────────
+
+  // public async findById(id: string): Promise<Address | null> {
+  //   const key = `${CACHE_PREFIX}:id:${id}`;
+  //   const cached = await this.cacheService.get<Address>(key);
+  //   if (cached) return cached;
+
+  //   const address = await this.addressRepository.findOneBy({ id });
+  //   if (address) await this.cacheService.set(key, address, CACHE_TTL_ADDRESS);
+  //   return address;
+  // }
+
+  // // ─── Delete (schedule) ────────────────────────────────────────────────────
+
+  // public async deleteAddress(id: string): Promise<boolean> {
+  //   const address = await this.addressRepository.findOne({ where: { id } });
+  //   if (!address) throw new AppError(404, `Address with ID ${id} not found`);
+
+  //   const sixMonthsFromNow = new Date();
+  //   sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+  //   sixMonthsFromNow.setHours(0, 0, 0, 0);
+
+  //   address.deletionScheduledAt = sixMonthsFromNow;
+  //   await this.addressRepository.save(address);
+  //   await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
+
+  //   return true;
+  // }
+
+

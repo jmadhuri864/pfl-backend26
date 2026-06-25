@@ -165,75 +165,9 @@ export class WorkflowHierarchyController {
   }
 
   
-  @httpGet("/managers/:subordinateId/:department")
-  async getManagers(req: Request, res: Response) {
-    try {
-      const { subordinateId, department: rawDepartment } = req.params;
 
-      if (!subordinateId || !rawDepartment) {
-        return res.status(400).json({
-          status: "fail",
-          message: "SubordinateId and department are required"
-        });
-      }
 
-      const department = normalizeDepartment(rawDepartment);
 
-      const managers = await this.workflowService.getManagers(
-        subordinateId,
-        department
-      );
-
-      ControllerLogger.logList('Workflow managers', req, res);
-      return res.status(200).json({
-        status: "success",
-        data: managers
-      });
-    } catch (error: any) {
-      ControllerLogger.logError('Workflow managers retrieval', error, req, res);
-      return res.status(500).json({
-        status: "error",
-        message: error.message
-      });
-    }
-  }
-
-  /**
-   * Get the tree structure for a specific manager
-   * GET /workflow/manager-tree/:managerId/:department
-   */
-  @httpGet("/manager-tree/:managerId/:department")
-  async getManagerTree(req: Request, res: Response) {
-    try {
-      const { managerId, department: rawDepartment } = req.params;
-
-      if (!managerId || !rawDepartment) {
-        return res.status(400).json({
-          status: "fail",
-          message: "ManagerId and department are required"
-        });
-      }
-
-      const department = normalizeDepartment(rawDepartment);
-
-      const tree = await this.workflowService.getManagerTree(
-        managerId,
-        department
-      );
-
-      ControllerLogger.logView('Manager tree', managerId, req, res);
-      return res.status(200).json({
-        status: "success",
-        data: tree
-      });
-    } catch (error: any) {
-      ControllerLogger.logError('Manager tree retrieval', error, req, res);
-      return res.status(500).json({
-        status: "error",
-        message: error.message
-      });
-    }
-  }
 
 @httpPut("/update-one")
 async updateOneNode(req: Request, res: Response) {
@@ -326,35 +260,7 @@ const newSubordinateId=newSubordinate;
     }
   }
 
-  /**
-   * Check for duplicate entries in workflow hierarchy
-   * GET /workflow/check-duplicates/:department? (department is optional)
-   */
-  @httpGet("/check-duplicates/:department?")
-  async checkDuplicates(req: Request, res: Response) {
-    try {
-      const { department: rawDepartment } = req.params;
 
-      const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
-
-      const result = await this.workflowService.checkDuplicates(
-        department
-      );
-
-      ControllerLogger.logList('Workflow duplicates check', req, res);
-
-      return res.status(200).json({
-        status: "success",
-        data: result
-      });
-    } catch (error: any) {
-      ControllerLogger.logError('Workflow duplicates check', error, req, res);
-      return res.status(500).json({
-        status: "error",
-        message: error.message
-      });
-    }
-  }
 
   /**
    * Clean duplicate entries from workflow hierarchy
@@ -394,33 +300,140 @@ const newSubordinateId=newSubordinate;
       });
     }
   }
-@httpGet("/user/details/:id")
-  async getUserWorkflows(req: Request, res: Response) {
-    try {
-      const userId = req.params.id;
 
-      if (!userId) {
-        return res.status(400).json({
-          status: "fail",
-          message: "userId is required",
-        });
-      }
-
-      const data = await this.workflowService.getUserWorkflowsByDepartment(userId);
-
-      ControllerLogger.logView("User workflows by department", userId, req, res);
-
-      return res.status(200).json({
-        status: "success",
-        data,
-      });
-    } catch (error: any) {
-      ControllerLogger.logError("User workflows retrieval", error, req, res);
-      return res.status(500).json({
-        status: "error",
-        message: error.message,
-      });
-    }
-  }
 
 }
+
+
+// @httpGet("/user/details/:id")
+//   async getUserWorkflows(req: Request, res: Response) {
+//     try {
+//       const userId = req.params.id;
+
+//       if (!userId) {
+//         return res.status(400).json({
+//           status: "fail",
+//           message: "userId is required",
+//         });
+//       }
+
+//       const data = await this.workflowService.getUserWorkflowsByDepartment(userId);
+
+//       ControllerLogger.logView("User workflows by department", userId, req, res);
+
+//       return res.status(200).json({
+//         status: "success",
+//         data,
+//       });
+//     } catch (error: any) {
+//       ControllerLogger.logError("User workflows retrieval", error, req, res);
+//       return res.status(500).json({
+//         status: "error",
+//         message: error.message,
+//       });
+//     }
+//   }
+
+
+  // /**
+  //  * Check for duplicate entries in workflow hierarchy
+  //  * GET /workflow/check-duplicates/:department? (department is optional)
+  //  */
+  // @httpGet("/check-duplicates/:department?")
+  // async checkDuplicates(req: Request, res: Response) {
+  //   try {
+  //     const { department: rawDepartment } = req.params;
+
+  //     const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
+
+  //     const result = await this.workflowService.checkDuplicates(
+  //       department
+  //     );
+
+  //     ControllerLogger.logList('Workflow duplicates check', req, res);
+
+  //     return res.status(200).json({
+  //       status: "success",
+  //       data: result
+  //     });
+  //   } catch (error: any) {
+  //     ControllerLogger.logError('Workflow duplicates check', error, req, res);
+  //     return res.status(500).json({
+  //       status: "error",
+  //       message: error.message
+  //     });
+  //   }
+  // }
+
+
+  // /**
+  //  * Get the tree structure for a specific manager
+  //  * GET /workflow/manager-tree/:managerId/:department
+  //  */
+  // @httpGet("/manager-tree/:managerId/:department")
+  // async getManagerTree(req: Request, res: Response) {
+  //   try {
+  //     const { managerId, department: rawDepartment } = req.params;
+
+  //     if (!managerId || !rawDepartment) {
+  //       return res.status(400).json({
+  //         status: "fail",
+  //         message: "ManagerId and department are required"
+  //       });
+  //     }
+
+  //     const department = normalizeDepartment(rawDepartment);
+
+  //     const tree = await this.workflowService.getManagerTree(
+  //       managerId,
+  //       department
+  //     );
+
+  //     ControllerLogger.logView('Manager tree', managerId, req, res);
+  //     return res.status(200).json({
+  //       status: "success",
+  //       data: tree
+  //     });
+  //   } catch (error: any) {
+  //     ControllerLogger.logError('Manager tree retrieval', error, req, res);
+  //     return res.status(500).json({
+  //       status: "error",
+  //       message: error.message
+  //     });
+  //   }
+  // }
+
+
+  // @httpGet("/managers/:subordinateId/:department")
+  // async getManagers(req: Request, res: Response) {
+  //   try {
+  //     const { subordinateId, department: rawDepartment } = req.params;
+
+  //     if (!subordinateId || !rawDepartment) {
+  //       return res.status(400).json({
+  //         status: "fail",
+  //         message: "SubordinateId and department are required"
+  //       });
+  //     }
+
+  //     const department = normalizeDepartment(rawDepartment);
+
+  //     const managers = await this.workflowService.getManagers(
+  //       subordinateId,
+  //       department
+  //     );
+
+  //     ControllerLogger.logList('Workflow managers', req, res);
+  //     return res.status(200).json({
+  //       status: "success",
+  //       data: managers
+  //     });
+  //   } catch (error: any) {
+  //     ControllerLogger.logError('Workflow managers retrieval', error, req, res);
+  //     return res.status(500).json({
+  //       status: "error",
+  //       message: error.message
+  //     });
+  //   }
+  // }
+

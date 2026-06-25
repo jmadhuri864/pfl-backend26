@@ -129,47 +129,10 @@ export class AdminDashboardController {
       next(error);
     }
   }
-  @httpGet('/purchase/top5product')
-  public async getTop5Products(
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const topProducts = await this.adminDashboardService.getTop5Products();
-      res.status(200).json({ status: 'success', data: topProducts });
-    }
-    catch (error) {
-      next(error);
-    }
-  }
-  @httpGet('/summary')
-  public async summary(@request() req: Request, @response() res: Response) {
-    const data = await this.adminDashboardService.getSummary();
-    return res.json(data);
-  }
 
-  @httpGet('/registrations')
-  public async registrations(
-    @request() req: Request,
-    @response() res: Response,
-  ) {
-    const { entity, from, to, search, page, limit } = req.query;
-    if (!entity)
-      return res
-        .status(400)
-        .json({
-          message: 'entity is required (farmer|vendor|supplier|customer)',
-        });
-    const data = await this.adminDashboardService.listRegistrations({
-      entity: entity as any,
-      from: from as string,
-      to: to as string,
-      search: search as string,
-      page: Number(page) || 1,
-      limit: Number(limit) || 20,
-    });
-    return res.json(data);
-  }
+
+
+
    @httpGet('/top5/customer')
   public async getTop5CustomersByNetProductWeight(
     @request() req: Request,
@@ -211,33 +174,7 @@ export class AdminDashboardController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
-  @httpGet('/document/total-count/:documentType')
-  public async getDocumentStats(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const documentType = req.params.documentType;
-      if (!documentType) {
-        return res.status(400).json({ message: 'Document type is required' });
-      }
-      if (
-        !Object.values(DocumentTypeEnum).includes(
-          documentType as DocumentTypeEnum,
-        )
-      ) {
-        return res.status(400).json({ message: 'Invalid document type' });
-      }
-      const stats = await this.adminDashboardService.getDocumentStats(
-        documentType as DocumentTypeEnum,
-      );
-      return res.status(200).json(stats);
-    } catch (error) {
-      console.error('Error fetching document stats:', error);
-      return res.status(500).json({ message: 'Internal server error' });
-    }
-  }
+
   @httpGet('/sale/top5products')
   public async getTop5ProductsByNetWeight(
     @request() req: Request,
@@ -259,3 +196,79 @@ export class AdminDashboardController {
       }
   }
 }
+
+
+  // @httpGet('/document/total-count/:documentType')
+  // public async getDocumentStats(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const documentType = req.params.documentType;
+  //     if (!documentType) {
+  //       return res.status(400).json({ message: 'Document type is required' });
+  //     }
+  //     if (
+  //       !Object.values(DocumentTypeEnum).includes(
+  //         documentType as DocumentTypeEnum,
+  //       )
+  //     ) {
+  //       return res.status(400).json({ message: 'Invalid document type' });
+  //     }
+  //     const stats = await this.adminDashboardService.getDocumentStats(
+  //       documentType as DocumentTypeEnum,
+  //     );
+  //     return res.status(200).json(stats);
+  //   } catch (error) {
+  //     console.error('Error fetching document stats:', error);
+  //     return res.status(500).json({ message: 'Internal server error' });
+  //   }
+  // }
+
+
+  // @httpGet('/registrations')
+  // public async registrations(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  // ) {
+  //   const { entity, from, to, search, page, limit } = req.query;
+  //   if (!entity)
+  //     return res
+  //       .status(400)
+  //       .json({
+  //         message: 'entity is required (farmer|vendor|supplier|customer)',
+  //       });
+  //   const data = await this.adminDashboardService.listRegistrations({
+  //     entity: entity as any,
+  //     from: from as string,
+  //     to: to as string,
+  //     search: search as string,
+  //     page: Number(page) || 1,
+  //     limit: Number(limit) || 20,
+  //   });
+  //   return res.json(data);
+  // }
+
+
+  // @httpGet('/summary')
+  // public async summary(@request() req: Request, @response() res: Response) {
+  //   const data = await this.adminDashboardService.getSummary();
+  //   return res.json(data);
+  // }
+
+
+  // @httpGet('/purchase/top5product')
+  // public async getTop5Products(
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const topProducts = await this.adminDashboardService.getTop5Products();
+  //     res.status(200).json({ status: 'success', data: topProducts });
+  //   }
+  //   catch (error) {
+  //     next(error);
+  //   }
+  // }
+

@@ -46,10 +46,10 @@ const TYPES = {
   CustomerCategoryController: Symbol.for("CustomerCategoryController"),
 
   //-------------bankdeatilsconst----------------------
-  BankDetailsCustService: Symbol.for("BankDetailsCustService"),
-  BankDetailsCustRepository: Symbol.for("BankDetailsCustRepository"),
-  BankDetailsCustController: Symbol.for("BankDetailsCustController"),
-  //--------------farmer-------------------
+  // BankDetailsCustService: Symbol.for("BankDetailsCustService"),
+   BankDetailsCustRepository: Symbol.for("BankDetailsCustRepository"),
+  // BankDetailsCustController: Symbol.for("BankDetailsCustController"),
+  // //--------------farmer-------------------
   FarmerService: Symbol.for("FarmerService"),
   FarmerRepository: Symbol.for("FarmerRepository"),
   FarmerController: Symbol.for("FarmerController"),
@@ -98,9 +98,9 @@ const TYPES = {
   ),
   //---------------------billingdetailscust--------------------------------
 
-  BillingDetailsCustService: Symbol.for("BillingDetailsCustService"),
-  BillingDetailsCustRepository: Symbol.for("BillingDetailsCustRepository"),
-  BillingDetailsCustController: Symbol.for("BillingDetailsCustController"),
+  // BillingDetailsCustService: Symbol.for("BillingDetailsCustService"),
+   BillingDetailsCustRepository: Symbol.for("BillingDetailsCustRepository"),
+  // BillingDetailsCustController: Symbol.for("BillingDetailsCustController"),
 
   //---------------------billingdetailscust--------------------------------
 
@@ -127,12 +127,12 @@ const TYPES = {
   ProductSpecificationCustRepository: Symbol.for(
     "ProductSpecificationCustRepository"
   ),
-  ProductSpecificationCustService: Symbol.for(
-    "ProductSpecificationCustService"
-  ),
-  ProductSpecificationCustController: Symbol.for(
-    "ProductSpecificationCustController"
-  ),
+  // ProductSpecificationCustService: Symbol.for(
+  //   "ProductSpecificationCustService"
+  // ),
+  // ProductSpecificationCustController: Symbol.for(
+  //   "ProductSpecificationCustController"
+  // ),
 
   //---------------------vendorSaleinfo-----------
   VendorSaleInfoRepository: Symbol.for("VendorSaleInfoRepository"),

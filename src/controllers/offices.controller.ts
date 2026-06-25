@@ -152,38 +152,7 @@ export class OfficesController {
     }
   }
 
- @httpGet('/get/all/offices')
-  public async getAllOffice(
-    @request() req: Request<{}, {}, any>,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const office: OfficeSearchItemDto[] | null = await this.officesService.getAllOffice();
-      if (!office) {
-        return next(new AppError(404, 'Office not found'));
-      }
 
-      ControllerLogger.logList('Office (All)', req, res);
-
-      // Send notification for all offices list access
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     'All offices list accessed successfully',
-      //     userId
-      //   );
-      // }
-
-      res.status(200).json({
-        status: 'success',
-        data: office,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Office list retrieval', err, req, res);
-      next(err);
-    }
-  }
 
   @httpGet('/:officeType')
   public async getOfficesByType(
@@ -311,43 +280,7 @@ export class OfficesController {
     }
   }
 
-  // @httpDelete('/:officeType/:id')
-  // public async deleteOffice(
-  //   @requestParam('officeType') officeType: OFFICE_TYPE,
-  //   @requestParam('id') id: string,
-  //   @request() req: Request,
-  //   @response() res: Response,
-  //   @next() next: NextFunction,
-  // ) {
-  //   try {
-  //     const result = await this.officesService.deleteOffice(id, officeType);
-  //     if (!result) {
-  //       return next(
-  //         new AppError(404, 'Office not found or could not be deleted'),
-  //       );
-  //     }
-
-  //     ControllerLogger.logSuccess('Office deleted', id, req, res);
-
-  //     // Send notification for office deletion
-  //     // const userId = res.locals.user?.id;
-  //     // if (userId) {
-  //     //   await this.notificationService.createNoti(
-  //     //     `Office ${officeType} deleted successfully`,
-  //     //     userId
-  //     //   );
-  //     // }
-
-  //     res.status(200).json({
-  //       status: 'success',
-  //       message: 'Office deleted successfully',
-  //     });
-  //     // res.status(204).send(); // No content
-  //   } catch (err) {
-  //     ControllerLogger.logError('Office deletion', err, req, res);
-  //     next(err);
-  //   }
-  // }
+  
    @httpDelete("/delete/multiple")
 public async softDeleteMultipleOffices(
   @request() req: Request,
@@ -400,3 +333,77 @@ public async softDeleteMultipleOffices(
   }
 }
 }
+
+
+// @httpDelete('/:officeType/:id')
+  // public async deleteOffice(
+  //   @requestParam('officeType') officeType: OFFICE_TYPE,
+  //   @requestParam('id') id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ) {
+  //   try {
+  //     const result = await this.officesService.deleteOffice(id, officeType);
+  //     if (!result) {
+  //       return next(
+  //         new AppError(404, 'Office not found or could not be deleted'),
+  //       );
+  //     }
+
+  //     ControllerLogger.logSuccess('Office deleted', id, req, res);
+
+  //     // Send notification for office deletion
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Office ${officeType} deleted successfully`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: 'Office deleted successfully',
+  //     });
+  //     // res.status(204).send(); // No content
+  //   } catch (err) {
+  //     ControllerLogger.logError('Office deletion', err, req, res);
+  //     next(err);
+  //   }
+  // }
+
+
+//  @httpGet('/get/all/offices')
+//   public async getAllOffice(
+//     @request() req: Request<{}, {}, any>,
+//     @response() res: Response,
+//     @next() next: NextFunction,
+//   ) {
+//     try {
+//       const office: OfficeSearchItemDto[] | null = await this.officesService.getAllOffice();
+//       if (!office) {
+//         return next(new AppError(404, 'Office not found'));
+//       }
+
+//       ControllerLogger.logList('Office (All)', req, res);
+
+//       // Send notification for all offices list access
+//       // const userId = res.locals.user?.id;
+//       // if (userId) {
+//       //   await this.notificationService.createNoti(
+//       //     'All offices list accessed successfully',
+//       //     userId
+//       //   );
+//       // }
+
+//       res.status(200).json({
+//         status: 'success',
+//         data: office,
+//       });
+//     } catch (err) {
+//       ControllerLogger.logError('Office list retrieval', err, req, res);
+//       next(err);
+//     }
+//   }
+

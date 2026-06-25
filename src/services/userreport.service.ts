@@ -94,113 +94,7 @@ export class UserReportService {
 }
 
 
-// async totalPurchase(filters?: {
-//   createdBy?: string;
-//   date?: string;
-//   month?: number;
-//   year?: number;
-//   startDate?: string;
-//   endDate?: string;
-//   productId?: string;
-//   source?: string;
-//   farmer?: string;
-//   vendor?: string;
-//   companyId?: string;
-//   fromLocationId?: string;
-//   page?: number;
-//   limit?: number;
-// }): Promise<{
-//   overallTotalQty: number;
-//   overallTotalAmount: number;
-//   dateWise: { date: string; totalQty: number; totalAmount: number }[];
-// }> {
-//   // 1️⃣ Get overall totals (no filters)
-//   const totalQb = this.grnProductRepository
-//     .createQueryBuilder('grnProduct')
-//     .leftJoin('grnProduct.grn', 'grn');
 
-//   totalQb
-//     .select('SUM(grnProduct.netWeight)', 'overallTotalQty')
-//     .addSelect('SUM(grnProduct.amount)', 'overallTotalAmount');
-
-//   const totalResult = await totalQb.getRawOne();
-
-//   // 2️⃣ Get date-wise totals (with filters)
-//   const qb = this.grnProductRepository
-//     .createQueryBuilder('grnProduct')
-//     .leftJoin('grnProduct.grn', 'grn')
-//     .leftJoin('grn.companyName', 'company')
-//     .leftJoin('grnProduct.productName', 'product')
-//     .leftJoin('grn.selectedFarmer', 'farmer')
-//     .leftJoin('grn.selectedVendor', 'vendor')
-//     .leftJoin('grn.purchaseLocation', 'location');
-
-//   qb.select("TO_CHAR(grn.createdAt, 'DD-MM-YYYY')", 'date')
-//     .addSelect('SUM(grnProduct.netWeight)', 'totalQty')
-//     .addSelect('SUM(grnProduct.amount)', 'totalAmount')
-//     .groupBy("TO_CHAR(grn.createdAt, 'DD-MM-YYYY')")
-//     .orderBy('MIN(grn.createdAt)', 'ASC');
-
-//   // Apply filters for date-wise data
-//   if (filters?.createdBy) {
-//     qb.andWhere('grn.createdBy = :createdBy', { createdBy: filters.createdBy });
-//   }
-
-//   if (filters?.date) {
-//     qb.andWhere('DATE(grn.createdAt) = :date', { date: filters.date });
-//   }
-
-//   if (filters?.month) {
-//     qb.andWhere('EXTRACT(MONTH FROM grn.createdAt) = :month', { month: filters.month });
-//   }
-
-//   if (filters?.year) {
-//     qb.andWhere('EXTRACT(YEAR FROM grn.createdAt) = :year', { year: filters.year });
-//   }
-
-//   if (filters?.startDate && filters?.endDate) {
-//     qb.andWhere('DATE(grn.createdAt) BETWEEN :startDate AND :endDate', {
-//       startDate: filters.startDate,
-//       endDate: filters.endDate,
-//     });
-//   }
-
-//   if (filters?.productId) {
-//     qb.andWhere('grnProduct.productName = :productId', { productId: filters.productId });
-//   }
-
-//   if (filters?.source) {
-//     qb.andWhere('grn.source = :source', { source: filters.source });
-//   }
-
-//   if (filters?.companyId) {
-//     qb.andWhere('grn.companyName = :companyId', { companyId: filters.companyId });
-//   }
-
-//   if (filters?.farmer) {
-//     qb.andWhere('grn.selectedFarmer = :farmer', { farmer: filters.farmer });
-//   }
-
-//   if (filters?.vendor) {
-//     qb.andWhere('grn.selectedVendor = :vendor', { vendor: filters.vendor });
-//   }
-
-//   if (filters?.fromLocationId) {
-//     qb.andWhere('grn.purchaseLocation = :fromLocationId', { fromLocationId: filters.fromLocationId });
-//   }
-
-//   const dateWiseResult = await qb.getRawMany();
-
-//   return {
-//     overallTotalQty: Number(totalResult?.overallTotalQty || 0),
-//     overallTotalAmount: Number(totalResult?.overallTotalAmount || 0),
-//     dateWise: dateWiseResult.map((row) => ({
-//       date: row.date,
-//       totalQty: Number(row.totalQty || 0),
-//       totalAmount: Number(row.totalAmount || 0),
-//     })),
-//   };
-// }
 
 async totalPurchase(filters?: {
   createdBy?: string;
@@ -446,64 +340,7 @@ if (filters?.createdBy) {
 
 
 
-//TODO:Get Count of All Documents By It's Status In Given Date Range
-// async getCountOfAllDocumentsByStatus(startDate?: Date, endDate?: Date): Promise<any> {
-//   try {
-    
-//     const queryBuilder = await this.documentbRepository
-//       .createQueryBuilder("doc")
-//       .select("doc.type", "type")
-//       .addSelect("doc.status", "status")
-//       .addSelect("COUNT(doc.id)", "count")
-//       .groupBy("doc.type")
-//       .addGroupBy("doc.status");
 
-//     if (startDate && endDate) {
-//       queryBuilder.where("doc.createdAt BETWEEN :startDate AND :endDate", { startDate, endDate });
-//     }
-
-//     const queryResult = await queryBuilder.getRawMany();
-
-//     const resultMap: Record<string, Record<string, number>> = {};
-//     queryResult.forEach(row => {
-//       if (!resultMap[row.type]) resultMap[row.type] = {};
-//       resultMap[row.type][row.status] = parseInt(row.count, 10);
-//     });
-// let STATUSES = ["hold", "approved", "rejected","COMPLETE"];
-//     const finalResult: Record<string, Record<string, number>> = {};
-//     for (const type in resultMap) {
-//       const statusCounts: Record<string, number> = {};
-//       STATUSES.forEach(status => {
-//         statusCounts[status] = resultMap[type][status] || 0;
-//       });
-
-//       // Calculate total
-//       const total = Object.values(statusCounts).reduce((sum, val) => sum + val, 0);
-
-//       // Insert total first, then other statuses
-//       finalResult[type] = { total, ...statusCounts };
-//     }
-
-//     // Include types with no documents at all
-//     const typesInDB = await this.documentbRepository
-//       .createQueryBuilder("doc")
-//       .select("DISTINCT doc.type", "type")
-//       .getRawMany();
-
-//     typesInDB.forEach(({ type }) => {
-//       if (!finalResult[type]) {
-//         const emptyStatuses: Record<string, number> = {};
-//         STATUSES.forEach(status => (emptyStatuses[status] = 0));
-//         finalResult[type] = { total: 0, ...emptyStatuses };
-//       }
-//     });
-
-//     return finalResult;
-//   } catch (error) {
-//     console.error("Error fetching total count by status:", error);
-//     throw new Error("Failed to fetch document status counts");
-//   }
-// }
 
 
 
@@ -569,4 +406,173 @@ async getCountOfAllDocumentsByStatus(startDate?: Date, endDate?: Date): Promise<
 
 
 }
+
+
+//TODO:Get Count of All Documents By It's Status In Given Date Range
+// async getCountOfAllDocumentsByStatus(startDate?: Date, endDate?: Date): Promise<any> {
+//   try {
+    
+//     const queryBuilder = await this.documentbRepository
+//       .createQueryBuilder("doc")
+//       .select("doc.type", "type")
+//       .addSelect("doc.status", "status")
+//       .addSelect("COUNT(doc.id)", "count")
+//       .groupBy("doc.type")
+//       .addGroupBy("doc.status");
+
+//     if (startDate && endDate) {
+//       queryBuilder.where("doc.createdAt BETWEEN :startDate AND :endDate", { startDate, endDate });
+//     }
+
+//     const queryResult = await queryBuilder.getRawMany();
+
+//     const resultMap: Record<string, Record<string, number>> = {};
+//     queryResult.forEach(row => {
+//       if (!resultMap[row.type]) resultMap[row.type] = {};
+//       resultMap[row.type][row.status] = parseInt(row.count, 10);
+//     });
+// let STATUSES = ["hold", "approved", "rejected","COMPLETE"];
+//     const finalResult: Record<string, Record<string, number>> = {};
+//     for (const type in resultMap) {
+//       const statusCounts: Record<string, number> = {};
+//       STATUSES.forEach(status => {
+//         statusCounts[status] = resultMap[type][status] || 0;
+//       });
+
+//       // Calculate total
+//       const total = Object.values(statusCounts).reduce((sum, val) => sum + val, 0);
+
+//       // Insert total first, then other statuses
+//       finalResult[type] = { total, ...statusCounts };
+//     }
+
+//     // Include types with no documents at all
+//     const typesInDB = await this.documentbRepository
+//       .createQueryBuilder("doc")
+//       .select("DISTINCT doc.type", "type")
+//       .getRawMany();
+
+//     typesInDB.forEach(({ type }) => {
+//       if (!finalResult[type]) {
+//         const emptyStatuses: Record<string, number> = {};
+//         STATUSES.forEach(status => (emptyStatuses[status] = 0));
+//         finalResult[type] = { total: 0, ...emptyStatuses };
+//       }
+//     });
+
+//     return finalResult;
+//   } catch (error) {
+//     console.error("Error fetching total count by status:", error);
+//     throw new Error("Failed to fetch document status counts");
+//   }
+// }
+
+
+// async totalPurchase(filters?: {
+//   createdBy?: string;
+//   date?: string;
+//   month?: number;
+//   year?: number;
+//   startDate?: string;
+//   endDate?: string;
+//   productId?: string;
+//   source?: string;
+//   farmer?: string;
+//   vendor?: string;
+//   companyId?: string;
+//   fromLocationId?: string;
+//   page?: number;
+//   limit?: number;
+// }): Promise<{
+//   overallTotalQty: number;
+//   overallTotalAmount: number;
+//   dateWise: { date: string; totalQty: number; totalAmount: number }[];
+// }> {
+//   // 1️⃣ Get overall totals (no filters)
+//   const totalQb = this.grnProductRepository
+//     .createQueryBuilder('grnProduct')
+//     .leftJoin('grnProduct.grn', 'grn');
+
+//   totalQb
+//     .select('SUM(grnProduct.netWeight)', 'overallTotalQty')
+//     .addSelect('SUM(grnProduct.amount)', 'overallTotalAmount');
+
+//   const totalResult = await totalQb.getRawOne();
+
+//   // 2️⃣ Get date-wise totals (with filters)
+//   const qb = this.grnProductRepository
+//     .createQueryBuilder('grnProduct')
+//     .leftJoin('grnProduct.grn', 'grn')
+//     .leftJoin('grn.companyName', 'company')
+//     .leftJoin('grnProduct.productName', 'product')
+//     .leftJoin('grn.selectedFarmer', 'farmer')
+//     .leftJoin('grn.selectedVendor', 'vendor')
+//     .leftJoin('grn.purchaseLocation', 'location');
+
+//   qb.select("TO_CHAR(grn.createdAt, 'DD-MM-YYYY')", 'date')
+//     .addSelect('SUM(grnProduct.netWeight)', 'totalQty')
+//     .addSelect('SUM(grnProduct.amount)', 'totalAmount')
+//     .groupBy("TO_CHAR(grn.createdAt, 'DD-MM-YYYY')")
+//     .orderBy('MIN(grn.createdAt)', 'ASC');
+
+//   // Apply filters for date-wise data
+//   if (filters?.createdBy) {
+//     qb.andWhere('grn.createdBy = :createdBy', { createdBy: filters.createdBy });
+//   }
+
+//   if (filters?.date) {
+//     qb.andWhere('DATE(grn.createdAt) = :date', { date: filters.date });
+//   }
+
+//   if (filters?.month) {
+//     qb.andWhere('EXTRACT(MONTH FROM grn.createdAt) = :month', { month: filters.month });
+//   }
+
+//   if (filters?.year) {
+//     qb.andWhere('EXTRACT(YEAR FROM grn.createdAt) = :year', { year: filters.year });
+//   }
+
+//   if (filters?.startDate && filters?.endDate) {
+//     qb.andWhere('DATE(grn.createdAt) BETWEEN :startDate AND :endDate', {
+//       startDate: filters.startDate,
+//       endDate: filters.endDate,
+//     });
+//   }
+
+//   if (filters?.productId) {
+//     qb.andWhere('grnProduct.productName = :productId', { productId: filters.productId });
+//   }
+
+//   if (filters?.source) {
+//     qb.andWhere('grn.source = :source', { source: filters.source });
+//   }
+
+//   if (filters?.companyId) {
+//     qb.andWhere('grn.companyName = :companyId', { companyId: filters.companyId });
+//   }
+
+//   if (filters?.farmer) {
+//     qb.andWhere('grn.selectedFarmer = :farmer', { farmer: filters.farmer });
+//   }
+
+//   if (filters?.vendor) {
+//     qb.andWhere('grn.selectedVendor = :vendor', { vendor: filters.vendor });
+//   }
+
+//   if (filters?.fromLocationId) {
+//     qb.andWhere('grn.purchaseLocation = :fromLocationId', { fromLocationId: filters.fromLocationId });
+//   }
+
+//   const dateWiseResult = await qb.getRawMany();
+
+//   return {
+//     overallTotalQty: Number(totalResult?.overallTotalQty || 0),
+//     overallTotalAmount: Number(totalResult?.overallTotalAmount || 0),
+//     dateWise: dateWiseResult.map((row) => ({
+//       date: row.date,
+//       totalQty: Number(row.totalQty || 0),
+//       totalAmount: Number(row.totalAmount || 0),
+//     })),
+//   };
+// }
 

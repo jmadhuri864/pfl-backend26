@@ -193,144 +193,10 @@ export class AdminDashboardService{
  
   }
 
-  // ---------- Summary KPIs ----------
-  async getSummary(): Promise<any> {
-    // today counts
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
 
-    const [
-      farmersToday,
-      vendorsToday,
-      
-      customersToday,
-      //pendingApprovals,
-      activeUsersCount,
-      // lowStockCount,
-    ] = await Promise.all([
-      this.farmerRepository
-        .createQueryBuilder("f")
-        .where("DATE(f.createdAt) = CURRENT_DATE")
-        .getCount(),
-      this.vendorRepository
-        .createQueryBuilder("v")
-        .where("DATE(v.createdAt) = CURRENT_DATE")
-        .getCount()
-        .catch(() => 0), // in case vendor has different field/nullable
-     this.customerRepository
-        .createQueryBuilder("c")
-        .where("DATE(c.createdAt) = CURRENT_DATE")
-        .getCount()
-        .catch(() => 0),
-      // this.approvalFlowRepository
-      //   .createQueryBuilder("af")
-      //   .where("af.status = :status", { status: "PENDING" })
-      //   .getCount(),
-      this.userRepository
-        .createQueryBuilder("u")
-        // active definition: lastActivityAt within last 15 minutes OR isOnline flag
-        .where("u.isOnline = true OR u.lastActivityAt > (NOW() - INTERVAL '15 minutes')")
-        .getCount(),
-      // this.inventoryRepository
-      //   .createQueryBuilder("inv")
-      //   .where("inv.quantity <= inv.reorderLevel") // fields assumed
-      //   .getCount()
-    ]);
 
-    return {
-      today: {
-        farmers: farmersToday,
-        vendors: vendorsToday,
-       
-        customers: customersToday,
-      },
-      //pendingApprovals,
-      activeUsers: activeUsersCount,
-     
-    };
-  }
 
-  // ---------- Registrations list (generic for entities) ----------
-  async listRegistrations(opts: {
-    entity: "farmer" | "vendor" | "supplier" | "customer";
-    from?: string;
-    to?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    const page = Math.max(1, opts.page || 1);
-    const limit = Math.max(1, opts.limit || 20);
-    const skip = (page - 1) * limit;
 
-    let repo: Repository<any>;
-    switch (opts.entity) {
-      case "farmer":
-        repo = this.farmerRepository;
-        break;
-      case "vendor":
-        repo = this.vendorRepository;
-        break;
-     
-      case "customer":
-        repo = this.customerRepository;
-        break;
-      default:
-        throw new Error("Invalid entity");
-    }
-
-    const qb = repo.createQueryBuilder(opts.entity[0]); // f/v/s/c
-
-    if (opts.from) qb.andWhere(`DATE(${opts.entity[0]}.registerDate) >= :from`, { from: opts.from });
-    if (opts.to) qb.andWhere(`DATE(${opts.entity[0]}.registerDate) <= :to`, { to: opts.to });
-
-    if (opts.search) {
-      // Search across some common fields — adjust per entity
-      qb.andWhere(
-        `(${opts.entity[0]}.farmerfName ILIKE :s OR ${opts.entity[0]}.farmerlName ILIKE :s OR ${opts.entity[0]}.primaryMobileNo ILIKE :s OR ${opts.entity[0]}.email ILIKE :s)`,
-        { s: `%${opts.search}%` }
-      ).cache(() => {}); // vendor/customer may have different column names; adjust per entity
-    }
-
-    qb.orderBy(`${opts.entity[0]}.registerDate`, "DESC")
-      .skip(skip)
-      .take(limit);
-
-    const [data, total] = await qb.getManyAndCount();
-    return {
-      data,
-      total,
-      page,
-      limit,
-    };
-  }
-  async getDocumentStats(documentType: DocumentTypeEnum) {
-    try {
-      const [holdCount, approvedCount, rejectedCount] = await Promise.all([
-        this.documentRepository.count({
-          where: { type: documentType, status: DocumentStatus.HOLD },
-        }),
-        this.documentRepository.count({
-          where: { type: documentType, status: DocumentStatus.APPROVED },
-        }),
-        this.documentRepository.count({
-          where: { type: documentType, status: DocumentStatus.DISAPPROVED }, // or REJECT depending on your workflow
-        }),
-      ]);
-
-      return {
-        documentType,
-        hold: holdCount,
-        approved: approvedCount,
-        rejected: rejectedCount,
-      };
-    } catch (error) {
-      console.error("Error in getDocumentStats:", error);
-      throw new Error("Failed to fetch document stats");
-    }
-  }
 public async getTop5Farmers(): Promise<any> {
     const topFarmers = await this.grnRepository
       .createQueryBuilder('grn')
@@ -345,22 +211,7 @@ public async getTop5Farmers(): Promise<any> {
       .getRawMany();
     return topFarmers;
   }
-public async getTop5Products(): Promise<any> {
-  const topProducts = await this.grnRepository
-    .createQueryBuilder('grn')
-    .leftJoin('grn.grnProducts', 'grnProducts')
-    .leftJoin('grnProducts.productName', 'productName')
-    .select('productName.id', 'id')
-    .addSelect('productName.name', 'productName')
-    .addSelect('COALESCE(SUM(grnProducts.netWeight), 0)', 'totalQty')
-    .groupBy('productName.id')
-    .addGroupBy('productName.name')
-    .orderBy('"totalQty"', 'DESC')
-    .limit(5)
-    .getRawMany();
 
-  return topProducts;
-}
 
 async getTop5CustomersByNetProductWeight(limit = 5): Promise<any[]> {
   const rows = await this.challanRepository
@@ -491,3 +342,165 @@ async getTopProductsByWeight(limit = 5): Promise<any[]> {
 
 
 }
+
+
+  // async getDocumentStats(documentType: DocumentTypeEnum) {
+  //   try {
+  //     const [holdCount, approvedCount, rejectedCount] = await Promise.all([
+  //       this.documentRepository.count({
+  //         where: { type: documentType, status: DocumentStatus.HOLD },
+  //       }),
+  //       this.documentRepository.count({
+  //         where: { type: documentType, status: DocumentStatus.APPROVED },
+  //       }),
+  //       this.documentRepository.count({
+  //         where: { type: documentType, status: DocumentStatus.DISAPPROVED }, // or REJECT depending on your workflow
+  //       }),
+  //     ]);
+
+  //     return {
+  //       documentType,
+  //       hold: holdCount,
+  //       approved: approvedCount,
+  //       rejected: rejectedCount,
+  //     };
+  //   } catch (error) {
+  //     console.error("Error in getDocumentStats:", error);
+  //     throw new Error("Failed to fetch document stats");
+  //   }
+  // }
+
+
+  // // ---------- Registrations list (generic for entities) ----------
+  // async listRegistrations(opts: {
+  //   entity: "farmer" | "vendor" | "supplier" | "customer";
+  //   from?: string;
+  //   to?: string;
+  //   search?: string;
+  //   page?: number;
+  //   limit?: number;
+  // }) {
+  //   const page = Math.max(1, opts.page || 1);
+  //   const limit = Math.max(1, opts.limit || 20);
+  //   const skip = (page - 1) * limit;
+
+  //   let repo: Repository<any>;
+  //   switch (opts.entity) {
+  //     case "farmer":
+  //       repo = this.farmerRepository;
+  //       break;
+  //     case "vendor":
+  //       repo = this.vendorRepository;
+  //       break;
+     
+  //     case "customer":
+  //       repo = this.customerRepository;
+  //       break;
+  //     default:
+  //       throw new Error("Invalid entity");
+  //   }
+
+  //   const qb = repo.createQueryBuilder(opts.entity[0]); // f/v/s/c
+
+  //   if (opts.from) qb.andWhere(`DATE(${opts.entity[0]}.registerDate) >= :from`, { from: opts.from });
+  //   if (opts.to) qb.andWhere(`DATE(${opts.entity[0]}.registerDate) <= :to`, { to: opts.to });
+
+  //   if (opts.search) {
+  //     // Search across some common fields — adjust per entity
+  //     qb.andWhere(
+  //       `(${opts.entity[0]}.farmerfName ILIKE :s OR ${opts.entity[0]}.farmerlName ILIKE :s OR ${opts.entity[0]}.primaryMobileNo ILIKE :s OR ${opts.entity[0]}.email ILIKE :s)`,
+  //       { s: `%${opts.search}%` }
+  //     ).cache(() => {}); // vendor/customer may have different column names; adjust per entity
+  //   }
+
+  //   qb.orderBy(`${opts.entity[0]}.registerDate`, "DESC")
+  //     .skip(skip)
+  //     .take(limit);
+
+  //   const [data, total] = await qb.getManyAndCount();
+  //   return {
+  //     data,
+  //     total,
+  //     page,
+  //     limit,
+  //   };
+  // }
+
+
+  // // ---------- Summary KPIs ----------
+  // async getSummary(): Promise<any> {
+  //   // today counts
+  //   const todayStart = new Date();
+  //   todayStart.setHours(0, 0, 0, 0);
+  //   const todayEnd = new Date();
+  //   todayEnd.setHours(23, 59, 59, 999);
+
+  //   const [
+  //     farmersToday,
+  //     vendorsToday,
+      
+  //     customersToday,
+  //     //pendingApprovals,
+  //     activeUsersCount,
+  //     // lowStockCount,
+  //   ] = await Promise.all([
+  //     this.farmerRepository
+  //       .createQueryBuilder("f")
+  //       .where("DATE(f.createdAt) = CURRENT_DATE")
+  //       .getCount(),
+  //     this.vendorRepository
+  //       .createQueryBuilder("v")
+  //       .where("DATE(v.createdAt) = CURRENT_DATE")
+  //       .getCount()
+  //       .catch(() => 0), // in case vendor has different field/nullable
+  //    this.customerRepository
+  //       .createQueryBuilder("c")
+  //       .where("DATE(c.createdAt) = CURRENT_DATE")
+  //       .getCount()
+  //       .catch(() => 0),
+  //     // this.approvalFlowRepository
+  //     //   .createQueryBuilder("af")
+  //     //   .where("af.status = :status", { status: "PENDING" })
+  //     //   .getCount(),
+  //     this.userRepository
+  //       .createQueryBuilder("u")
+  //       // active definition: lastActivityAt within last 15 minutes OR isOnline flag
+  //       .where("u.isOnline = true OR u.lastActivityAt > (NOW() - INTERVAL '15 minutes')")
+  //       .getCount(),
+  //     // this.inventoryRepository
+  //     //   .createQueryBuilder("inv")
+  //     //   .where("inv.quantity <= inv.reorderLevel") // fields assumed
+  //     //   .getCount()
+  //   ]);
+
+  //   return {
+  //     today: {
+  //       farmers: farmersToday,
+  //       vendors: vendorsToday,
+       
+  //       customers: customersToday,
+  //     },
+  //     //pendingApprovals,
+  //     activeUsers: activeUsersCount,
+     
+  //   };
+  // }
+
+
+// public async getTop5Products(): Promise<any> {
+//   const topProducts = await this.grnRepository
+//     .createQueryBuilder('grn')
+//     .leftJoin('grn.grnProducts', 'grnProducts')
+//     .leftJoin('grnProducts.productName', 'productName')
+//     .select('productName.id', 'id')
+//     .addSelect('productName.name', 'productName')
+//     .addSelect('COALESCE(SUM(grnProducts.netWeight), 0)', 'totalQty')
+//     .groupBy('productName.id')
+//     .addGroupBy('productName.name')
+//     .orderBy('"totalQty"', 'DESC')
+//     .limit(5)
+//     .getRawMany();
+
+//   return topProducts;
+// }
+

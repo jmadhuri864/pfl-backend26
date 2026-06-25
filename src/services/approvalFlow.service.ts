@@ -430,79 +430,7 @@ export class ApprovalFlowService {
     return formattedResponse;
   }
 
-  // async getById(id: String): Promise<any> {
-  //   const data = await this.approvalFlowRepository
-  //     .createQueryBuilder('approvalflows')
-  //     .leftJoinAndSelect('approvalflows.creator', 'creator')
-  //     .leftJoinAndSelect('approvalflows.verifiers', 'verifiers')
-  //     .leftJoinAndSelect('approvalflows.approvers', 'approvers')
-  //     .leftJoinAndSelect('approvers.firstApprover', 'firstApprover')
-  //     .leftJoinAndSelect('firstApprover.users', 'firstApproverUsers')
-  //     .leftJoinAndSelect('approvers.secondApprover', 'secondApprover')
-  //     .leftJoinAndSelect('secondApprover.users', 'secondApproverUsers')
-  //     .leftJoinAndSelect('approvers.thirdApprover', 'thirdApprover')
-  //     .leftJoinAndSelect('thirdApprover.users', 'thirdApproverUsers')
-  //     .leftJoinAndSelect('approvers.fourthApprover', 'fourthApprover')
-  //     .leftJoinAndSelect('fourthApprover.users', 'fourthApproverUsers')
-  //     .leftJoinAndSelect('approvers.fifthApprover', 'fifthApprover')
-  //     .leftJoinAndSelect('fifthApprover.users', 'fifthApproverUsers')
-  //     .leftJoinAndSelect('approvers.sixthApprover', 'sixthApprover')
-  //     .leftJoinAndSelect('sixthApprover.users', 'sixthApproverUsers')
-  //     .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
-  //     .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
-  //     .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers')
-  //     .getOne();
-
-  //   // return data;
-  //   const mapApprover = (approver:any) =>
-  // approver
-  //   ? {
-  //       id: approver.id || null,
-  //       hierarchy: approver.hierarchy || null,
-  //       minAmtCanApprove: approver.minAmtCanApprove,
-  //       maxAmtCanApprove: approver.maxAmtCanApprove,
-  //       users: approver.users?.map((user:any) => user.id),
-  //     }
-  //   : null;
-
-  //   const formattedResponse =  {
-  //       id: data?.id,
-  //       creator: data?.creator.id,
-  //       verifiers: data?.verifiers.map((verifier) => verifier.id),
-  //      approvers: data?.approvers !== null
-  // ? {
-  //     firstApprover: data?.approvers.firstApprover
-  //       ? mapApprover(data?.approvers.firstApprover)
-  //       : null,
-  //     secondApprover: data?.approvers.secondApprover
-  //       ? mapApprover(data?.approvers.secondApprover)
-  //       : null,
-  //     thirdApprover: data?.approvers.thirdApprover
-  //       ? mapApprover(data?.approvers.thirdApprover)
-  //       : null,
-  //     fourthApprover: data?.approvers.fourthApprover
-  //       ? mapApprover(data?.approvers.fourthApprover)
-  //       : null,
-  //     fifthApprover: data?.approvers.fifthApprover
-  //       ? mapApprover(data?.approvers.fifthApprover)
-  //       : null,
-  //     sixthApprover: data?.approvers.sixthApprover
-  //       ? mapApprover(data?.approvers.sixthApprover)
-  //       : null,
-  //   }
-  // : null,
-
-  //       finalizers:
-  //       {
-  //        firstFinalizers: data?.finalizers.firstFinalizers
-  //          ? data?.finalizers?.firstFinalizers.map((firstFinalizer) => firstFinalizer.id) : [],
-  //          secondFinalizers: data?.finalizers.secondFinalizers
-  //          ? data?.finalizers?.secondFinalizers.map((secondFinalizers) => secondFinalizers.id) : [],
-  //       }
-  //     };
-  //   return formattedResponse;
-
-  // }
+  
 
   //TODO: Approval Flow Update
   async update(id: string, data: any): Promise<any> {
@@ -796,3 +724,79 @@ export class ApprovalFlowService {
   }
 
 }
+
+
+// async getById(id: String): Promise<any> {
+  //   const data = await this.approvalFlowRepository
+  //     .createQueryBuilder('approvalflows')
+  //     .leftJoinAndSelect('approvalflows.creator', 'creator')
+  //     .leftJoinAndSelect('approvalflows.verifiers', 'verifiers')
+  //     .leftJoinAndSelect('approvalflows.approvers', 'approvers')
+  //     .leftJoinAndSelect('approvers.firstApprover', 'firstApprover')
+  //     .leftJoinAndSelect('firstApprover.users', 'firstApproverUsers')
+  //     .leftJoinAndSelect('approvers.secondApprover', 'secondApprover')
+  //     .leftJoinAndSelect('secondApprover.users', 'secondApproverUsers')
+  //     .leftJoinAndSelect('approvers.thirdApprover', 'thirdApprover')
+  //     .leftJoinAndSelect('thirdApprover.users', 'thirdApproverUsers')
+  //     .leftJoinAndSelect('approvers.fourthApprover', 'fourthApprover')
+  //     .leftJoinAndSelect('fourthApprover.users', 'fourthApproverUsers')
+  //     .leftJoinAndSelect('approvers.fifthApprover', 'fifthApprover')
+  //     .leftJoinAndSelect('fifthApprover.users', 'fifthApproverUsers')
+  //     .leftJoinAndSelect('approvers.sixthApprover', 'sixthApprover')
+  //     .leftJoinAndSelect('sixthApprover.users', 'sixthApproverUsers')
+  //     .leftJoinAndSelect('approvalflows.finalizers', 'finalizers')
+  //     .leftJoinAndSelect('finalizers.firstFinalizers', 'firstFinalizers')
+  //     .leftJoinAndSelect('finalizers.secondFinalizers', 'secondFinalizers')
+  //     .getOne();
+
+  //   // return data;
+  //   const mapApprover = (approver:any) =>
+  // approver
+  //   ? {
+  //       id: approver.id || null,
+  //       hierarchy: approver.hierarchy || null,
+  //       minAmtCanApprove: approver.minAmtCanApprove,
+  //       maxAmtCanApprove: approver.maxAmtCanApprove,
+  //       users: approver.users?.map((user:any) => user.id),
+  //     }
+  //   : null;
+
+  //   const formattedResponse =  {
+  //       id: data?.id,
+  //       creator: data?.creator.id,
+  //       verifiers: data?.verifiers.map((verifier) => verifier.id),
+  //      approvers: data?.approvers !== null
+  // ? {
+  //     firstApprover: data?.approvers.firstApprover
+  //       ? mapApprover(data?.approvers.firstApprover)
+  //       : null,
+  //     secondApprover: data?.approvers.secondApprover
+  //       ? mapApprover(data?.approvers.secondApprover)
+  //       : null,
+  //     thirdApprover: data?.approvers.thirdApprover
+  //       ? mapApprover(data?.approvers.thirdApprover)
+  //       : null,
+  //     fourthApprover: data?.approvers.fourthApprover
+  //       ? mapApprover(data?.approvers.fourthApprover)
+  //       : null,
+  //     fifthApprover: data?.approvers.fifthApprover
+  //       ? mapApprover(data?.approvers.fifthApprover)
+  //       : null,
+  //     sixthApprover: data?.approvers.sixthApprover
+  //       ? mapApprover(data?.approvers.sixthApprover)
+  //       : null,
+  //   }
+  // : null,
+
+  //       finalizers:
+  //       {
+  //        firstFinalizers: data?.finalizers.firstFinalizers
+  //          ? data?.finalizers?.firstFinalizers.map((firstFinalizer) => firstFinalizer.id) : [],
+  //          secondFinalizers: data?.finalizers.secondFinalizers
+  //          ? data?.finalizers?.secondFinalizers.map((secondFinalizers) => secondFinalizers.id) : [],
+  //       }
+  //     };
+  //   return formattedResponse;
+
+  // }
+

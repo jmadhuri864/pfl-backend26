@@ -211,17 +211,7 @@ export class OfficesService {
     return result as unknown as OfficeListResponseDto;
   }
 
-  async getAllOffice(): Promise<OfficeSearchItemDto[]> {
-    const cacheKey = `${this.CACHE_PREFIX}:all`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
 
-    const result = await this.officesRepository.find({
-      relations: ['address'],
-    });
-    await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result as unknown as OfficeSearchItemDto[];
-  }
 
   async deleteOffice(id: string, officeType: OFFICE_TYPE): Promise<boolean> {
     const office = await this.officesRepository.findOne({
@@ -244,3 +234,17 @@ export class OfficesService {
     return true;
   }
 }
+
+
+  // async getAllOffice(): Promise<OfficeSearchItemDto[]> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:all`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const result = await this.officesRepository.find({
+  //     relations: ['address'],
+  //   });
+  //   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //   return result as unknown as OfficeSearchItemDto[];
+  // }
+
