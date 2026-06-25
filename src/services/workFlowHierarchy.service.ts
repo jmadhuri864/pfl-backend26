@@ -179,29 +179,6 @@ export class WorkflowHierarchyService {
     return this.buildManagerTree(rows, managerId);
   }
 
-  /**
-   * Get all managers for a subordinate (direct and indirect)
-   */
-  async getManagers(subordinateId: string, department: DepartmentEnum) {
-    const managers = await this.workflowHierarchyRepository.query(
-      `
-      SELECT 
-        wh.ancestor_id AS id,
-        CONCAT(u."firstName", ' ', u."lastName") AS name,
-        wh.depth,
-        CASE WHEN wh.depth = 1 THEN 'Direct Manager' ELSE 'Higher Management' END AS relationship_type
-      FROM workflow_hierarchy wh
-      JOIN employees u ON wh.ancestor_id = u.id
-      WHERE wh.descendant_id = $1 
-        AND wh.department = $2 
-        AND wh.depth > 0
-      ORDER BY wh.depth ASC;
-      `,
-      [subordinateId, department]
-    );
-
-    return managers;
-  }
 
   /**
    * Get full workflow tree for department
@@ -227,36 +204,7 @@ export class WorkflowHierarchyService {
     return this.buildTree(rows);
   }
 
-  /**
-   * Get the tree structure for a specific manager
-   */
-  async getManagerTree(managerId: string, department: DepartmentEnum) {
-    // Get all relationships where this manager is an ancestor
-    const rows = await this.workflowHierarchyRepository.query(
-      `
-      SELECT 
-        wh.ancestor_id,
-        wh.descendant_id,
-        wh.depth,
-        CONCAT(u1."firstName", ' ', u1."lastName") AS ancestor_name,
-        CONCAT(u2."firstName", ' ', u2."lastName") AS descendant_name
-      FROM workflow_hierarchy wh
-      JOIN employees u1 ON wh.ancestor_id = u1.id
-      JOIN employees u2 ON wh.descendant_id = u2.id
-      WHERE wh.ancestor_id = $1 
-        AND wh.department = $2 
-        AND wh.depth >= 0
-      ORDER BY wh.depth ASC;
-      `,
-      [managerId, department]
-    );
 
-    if (rows.length === 0) {
-      return null;
-    }
-
-    return this.buildManagerTree(rows, managerId);
-  }
 
   /**
    * Build tree structure starting from a specific manager
@@ -336,25 +284,6 @@ export class WorkflowHierarchyService {
     return { message: 'Node updated successfully.' };
   }
 
-  /**
-   * Check for duplicate entries in workflow hierarchy
-   */
-  async checkDuplicates(department?: DepartmentEnum) {
-    const query = department
-      ? `SELECT ancestor_id, descendant_id, department, depth, COUNT(*) as count
-         FROM workflow_hierarchy
-         WHERE department = $1
-         GROUP BY ancestor_id, descendant_id, department, depth
-         HAVING COUNT(*) > 1`
-      : `SELECT ancestor_id, descendant_id, department, depth, COUNT(*) as count
-         FROM workflow_hierarchy
-         GROUP BY ancestor_id, descendant_id, department, depth
-         HAVING COUNT(*) > 1`;
-
-    const params = department ? [department] : [];
-    const duplicates = await this.workflowHierarchyRepository.query(query, params);
-    return { duplicates, count: duplicates.length };
-  }
 
   /**
    * Clean duplicate entries from workflow hierarchy
@@ -568,105 +497,189 @@ async updateBranch(
   }
 }
 
-async getUserWorkflowsByDepartment(userId: string) {
-    // Find every department this user participates in (as ancestor OR descendant)
-    const departmentRows: { department: DepartmentEnum }[] =
-      await this.workflowHierarchyRepository.query(
-        `
-        SELECT DISTINCT department
-        FROM workflow_hierarchy
-        WHERE ancestor_id = $1 OR descendant_id = $1
-        `,
-        [userId],
-      );
 
-    if (departmentRows.length === 0) {
-      return [];
-    }
-
-    const result: { department: DepartmentEnum; hierarchy: any }[] = [];
-
-    for (const { department } of departmentRows) {
-      // Pull all depth-1 edges for this department so we can build the full tree
-      const rows: {
-        ancestor_id: string;
-        descendant_id: string;
-        depth: number;
-        ancestor_name: string;
-        descendant_name: string;
-      }[] = await this.workflowHierarchyRepository.query(
-        `
-        SELECT
-          wh.ancestor_id,
-          wh.descendant_id,
-          wh.depth,
-          CONCAT(u1."firstName", ' ', u1."lastName") AS ancestor_name,
-          CONCAT(u2."firstName", ' ', u2."lastName") AS descendant_name
-        FROM workflow_hierarchy wh
-        JOIN employees u1 ON wh.ancestor_id = u1.id
-        JOIN employees u2 ON wh.descendant_id = u2.id
-        WHERE wh.department = $1
-          AND wh.depth = 1
-        ORDER BY wh.depth ASC;
-        `,
-        [department],
-      );
-
-      if (rows.length === 0) {
-        // User exists only as a self-reference — return a single node
-        const selfRow: { id: string; name: string }[] =
-          await this.workflowHierarchyRepository.query(
-            `
-            SELECT
-              u.id,
-              CONCAT(u."firstName", ' ', u."lastName") AS name
-            FROM employees u
-            WHERE u.id = $1
-            `,
-            [userId],
-          );
-
-        result.push({
-          department,
-          hierarchy: selfRow.length > 0
-            ? { id: selfRow[0].id, name: selfRow[0].name, children: [] }
-            : null,
-        });
-        continue;
-      }
-
-      // Build the full tree for this department, then find the root(s)
-      const nodeMap: Record<string, { id: string; name: string; children: any[] }> = {};
-
-      for (const row of rows) {
-        if (!nodeMap[row.ancestor_id]) {
-          nodeMap[row.ancestor_id] = { id: row.ancestor_id, name: row.ancestor_name, children: [] };
-        }
-        if (!nodeMap[row.descendant_id]) {
-          nodeMap[row.descendant_id] = { id: row.descendant_id, name: row.descendant_name, children: [] };
-        }
-      }
-
-      for (const row of rows) {
-        const parent = nodeMap[row.ancestor_id];
-        const child = nodeMap[row.descendant_id];
-        if (parent && child && parent.id !== child.id) {
-          if (!parent.children.find((c) => c.id === child.id)) {
-            parent.children.push(child);
-          }
-        }
-      }
-
-      // Root nodes = nodes that never appear as a descendant in depth-1 rows
-      const descendantIds = new Set(rows.map((r) => r.descendant_id));
-      const roots = Object.values(nodeMap).filter((n) => !descendantIds.has(n.id));
-
-      result.push({
-        department,
-        hierarchy: roots.length === 1 ? roots[0] : roots,
-      });
-    }
-
-    return result;
-  }
 }
+
+
+// async getUserWorkflowsByDepartment(userId: string) {
+//     // Find every department this user participates in (as ancestor OR descendant)
+//     const departmentRows: { department: DepartmentEnum }[] =
+//       await this.workflowHierarchyRepository.query(
+//         `
+//         SELECT DISTINCT department
+//         FROM workflow_hierarchy
+//         WHERE ancestor_id = $1 OR descendant_id = $1
+//         `,
+//         [userId],
+//       );
+
+//     if (departmentRows.length === 0) {
+//       return [];
+//     }
+
+//     const result: { department: DepartmentEnum; hierarchy: any }[] = [];
+
+//     for (const { department } of departmentRows) {
+//       // Pull all depth-1 edges for this department so we can build the full tree
+//       const rows: {
+//         ancestor_id: string;
+//         descendant_id: string;
+//         depth: number;
+//         ancestor_name: string;
+//         descendant_name: string;
+//       }[] = await this.workflowHierarchyRepository.query(
+//         `
+//         SELECT
+//           wh.ancestor_id,
+//           wh.descendant_id,
+//           wh.depth,
+//           CONCAT(u1."firstName", ' ', u1."lastName") AS ancestor_name,
+//           CONCAT(u2."firstName", ' ', u2."lastName") AS descendant_name
+//         FROM workflow_hierarchy wh
+//         JOIN employees u1 ON wh.ancestor_id = u1.id
+//         JOIN employees u2 ON wh.descendant_id = u2.id
+//         WHERE wh.department = $1
+//           AND wh.depth = 1
+//         ORDER BY wh.depth ASC;
+//         `,
+//         [department],
+//       );
+
+//       if (rows.length === 0) {
+//         // User exists only as a self-reference — return a single node
+//         const selfRow: { id: string; name: string }[] =
+//           await this.workflowHierarchyRepository.query(
+//             `
+//             SELECT
+//               u.id,
+//               CONCAT(u."firstName", ' ', u."lastName") AS name
+//             FROM employees u
+//             WHERE u.id = $1
+//             `,
+//             [userId],
+//           );
+
+//         result.push({
+//           department,
+//           hierarchy: selfRow.length > 0
+//             ? { id: selfRow[0].id, name: selfRow[0].name, children: [] }
+//             : null,
+//         });
+//         continue;
+//       }
+
+//       // Build the full tree for this department, then find the root(s)
+//       const nodeMap: Record<string, { id: string; name: string; children: any[] }> = {};
+
+//       for (const row of rows) {
+//         if (!nodeMap[row.ancestor_id]) {
+//           nodeMap[row.ancestor_id] = { id: row.ancestor_id, name: row.ancestor_name, children: [] };
+//         }
+//         if (!nodeMap[row.descendant_id]) {
+//           nodeMap[row.descendant_id] = { id: row.descendant_id, name: row.descendant_name, children: [] };
+//         }
+//       }
+
+//       for (const row of rows) {
+//         const parent = nodeMap[row.ancestor_id];
+//         const child = nodeMap[row.descendant_id];
+//         if (parent && child && parent.id !== child.id) {
+//           if (!parent.children.find((c) => c.id === child.id)) {
+//             parent.children.push(child);
+//           }
+//         }
+//       }
+
+//       // Root nodes = nodes that never appear as a descendant in depth-1 rows
+//       const descendantIds = new Set(rows.map((r) => r.descendant_id));
+//       const roots = Object.values(nodeMap).filter((n) => !descendantIds.has(n.id));
+
+//       result.push({
+//         department,
+//         hierarchy: roots.length === 1 ? roots[0] : roots,
+//       });
+//     }
+
+//     return result;
+//   }
+
+
+  // /**
+  //  * Check for duplicate entries in workflow hierarchy
+  //  */
+  // async checkDuplicates(department?: DepartmentEnum) {
+  //   const query = department
+  //     ? `SELECT ancestor_id, descendant_id, department, depth, COUNT(*) as count
+  //        FROM workflow_hierarchy
+  //        WHERE department = $1
+  //        GROUP BY ancestor_id, descendant_id, department, depth
+  //        HAVING COUNT(*) > 1`
+  //     : `SELECT ancestor_id, descendant_id, department, depth, COUNT(*) as count
+  //        FROM workflow_hierarchy
+  //        GROUP BY ancestor_id, descendant_id, department, depth
+  //        HAVING COUNT(*) > 1`;
+
+  //   const params = department ? [department] : [];
+  //   const duplicates = await this.workflowHierarchyRepository.query(query, params);
+  //   return { duplicates, count: duplicates.length };
+  // }
+
+
+
+  // /**
+  //  * Get the tree structure for a specific manager
+  //  */
+  // async getManagerTree(managerId: string, department: DepartmentEnum) {
+  //   // Get all relationships where this manager is an ancestor
+  //   const rows = await this.workflowHierarchyRepository.query(
+  //     `
+  //     SELECT 
+  //       wh.ancestor_id,
+  //       wh.descendant_id,
+  //       wh.depth,
+  //       CONCAT(u1."firstName", ' ', u1."lastName") AS ancestor_name,
+  //       CONCAT(u2."firstName", ' ', u2."lastName") AS descendant_name
+  //     FROM workflow_hierarchy wh
+  //     JOIN employees u1 ON wh.ancestor_id = u1.id
+  //     JOIN employees u2 ON wh.descendant_id = u2.id
+  //     WHERE wh.ancestor_id = $1 
+  //       AND wh.department = $2 
+  //       AND wh.depth >= 0
+  //     ORDER BY wh.depth ASC;
+  //     `,
+  //     [managerId, department]
+  //   );
+
+  //   if (rows.length === 0) {
+  //     return null;
+  //   }
+
+  //   return this.buildManagerTree(rows, managerId);
+  // }
+
+
+  // /**
+  //  * Get all managers for a subordinate (direct and indirect)
+  //  */
+  // async getManagers(subordinateId: string, department: DepartmentEnum) {
+  //   const managers = await this.workflowHierarchyRepository.query(
+  //     `
+  //     SELECT 
+  //       wh.ancestor_id AS id,
+  //       CONCAT(u."firstName", ' ', u."lastName") AS name,
+  //       wh.depth,
+  //       CASE WHEN wh.depth = 1 THEN 'Direct Manager' ELSE 'Higher Management' END AS relationship_type
+  //     FROM workflow_hierarchy wh
+  //     JOIN employees u ON wh.ancestor_id = u.id
+  //     WHERE wh.descendant_id = $1 
+  //       AND wh.department = $2 
+  //       AND wh.depth > 0
+  //     ORDER BY wh.depth ASC;
+  //     `,
+  //     [subordinateId, department]
+  //   );
+
+  //   return managers;
+  // }
+
+

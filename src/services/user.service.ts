@@ -522,78 +522,7 @@ isAddressSame:user.isAddressSame,
     return true;
   }
 
-  // async updateUser(id: string, userData: any, updatedBy: string): Promise<any> {
-  //   const user = await this.userRepository.findOne({
-  //     where: { id: id },
-  //     relations: [
-  //       'permanentAddress',
-  //       'companyName',
-  //       'residentialAddress',
-  //       //'reportingManagers',
-  //       //'currentLevel',
-  //       'permissions',
-  //       // 'reportingManagers.level',
-  //       // 'reportingManagers.reportingTo',
-  //       'permissions.documentDefinition',
-  //       'joiningLocation',
-  //       'joiningOffice',
-  //       'currentOfficeLocation',
-  //       'currentWorkLocation',
-  //       'accessLocation',
-  //     ],
-  //   });
-  //   if (!user) {
-  //     throw new AppError(404, 'User not found');
-  //   }
 
-  //   // Step 1: Nullify OneToOne relations if they are being updated
-  //   const needsNullUpdate =
-  //     userData.joiningLocation !== undefined ||
-  //     userData.joiningOffice !== undefined ||
-  //     userData.currentWorkLocation !== undefined ||
-  //     userData.currentOfficeLocation !== undefined;
-
-  //   if (needsNullUpdate) {
-  //     user.joiningLocation = null;
-  //     user.joiningOffice = null;
-  //     user.currentWorkLocation = null;
-  //     user.currentOfficeLocation = null;
-  //     await this.userRepository.save(user);
-  //   }
-
-  //   // Step 2: Reassign updated values
-  //   if (userData.joiningLocation !== undefined) {
-  //     user.joiningLocation = userData.joiningLocation;
-  //   }
-
-  //   if (userData.joiningOffice !== undefined) {
-  //     user.joiningOffice = userData.joiningOffice;
-  //   }
-
-  //   if (userData.currentWorkLocation !== undefined) {
-  //     user.currentWorkLocation = userData.currentWorkLocation;
-  //   }
-
-  //   if (userData.currentOfficeLocation !== undefined) {
-  //     user.currentOfficeLocation = userData.currentOfficeLocation;
-  //   }
-
-  //   const originalUser = { ...user };
-
-  //   Object.assign(user, userData);
-
-  //   const updatedUser = await this.userRepository.save(user);
-
-  //   await this.auditLogService.logChange(
-  //     'User',
-  //     id,
-  //     originalUser,
-  //     updatedUser,
-  //     updatedBy,
-  //   );
-
-  //   return updatedUser;
-  // }
   async updateUser(id: string, userData: UpdateUserDto & Record<string, any>, updatedBy: string): Promise<User | null> {
     
     const user = await this.userRepository.findOne({
@@ -713,26 +642,7 @@ isAddressSame:user.isAddressSame,
     return updatedUser;
   }
 
-  // async filteruser(queryOptions:PaginationOptions): Promise<any> {
-  //   const user = await this.userRepository.find({
-  //     //where: { status: 'ACTIVE' },
-  //     select: {
-  //       id: true,
-  //       firstName: true,
-  //       middleName: true,
-  //       lastName: true,
-  //       employeeId: true,
-  //     },
-  //   });
-  //   const formattedUsers = user.map((user) => ({
-  //     id: user.id,
 
-  //     fullName: `${user.firstName} ${user.middleName || ''} ${user.lastName}`,
-
-  //     employeeId: user.employeeId,
-  //   }));
-  //   return formattedUsers;
-  // }
 
   async filterUser(options: PaginationOptions): Promise<UserPartialResponseDto> {
     const key = `${CACHE_PREFIX}:filter:${JSON.stringify(options)}`;
@@ -869,18 +779,7 @@ isAddressSame:user.isAddressSame,
     }
   };
 
-  updateEmployeeIdRoleCode(employeeId: string, newRoleCode: string): string {
-    const companyCode = employeeId.slice(2, 4);
-    const serialNumber = employeeId.slice(-4);
-
-    const oldRoleCode = employeeId.charAt(4);
-
-    if (oldRoleCode === newRoleCode) {
-      return employeeId;
-    }
-
-    return `PF${companyCode}${newRoleCode}${serialNumber}`;
-  }
+ 
 
   async createUsersWithRelations(usersData: any[]) {
     const userRepo = this.dataSource.getRepository(User);
@@ -1075,3 +974,114 @@ async softDeleteEmployees(userIds: string[]) {
 }
   
 }
+
+
+ // updateEmployeeIdRoleCode(employeeId: string, newRoleCode: string): string {
+  //   const companyCode = employeeId.slice(2, 4);
+  //   const serialNumber = employeeId.slice(-4);
+
+  //   const oldRoleCode = employeeId.charAt(4);
+
+  //   if (oldRoleCode === newRoleCode) {
+  //     return employeeId;
+  //   }
+
+  //   return `PF${companyCode}${newRoleCode}${serialNumber}`;
+  // }
+
+
+  // async filteruser(queryOptions:PaginationOptions): Promise<any> {
+  //   const user = await this.userRepository.find({
+  //     //where: { status: 'ACTIVE' },
+  //     select: {
+  //       id: true,
+  //       firstName: true,
+  //       middleName: true,
+  //       lastName: true,
+  //       employeeId: true,
+  //     },
+  //   });
+  //   const formattedUsers = user.map((user) => ({
+  //     id: user.id,
+
+  //     fullName: `${user.firstName} ${user.middleName || ''} ${user.lastName}`,
+
+  //     employeeId: user.employeeId,
+  //   }));
+  //   return formattedUsers;
+  // }
+
+
+  // async updateUser(id: string, userData: any, updatedBy: string): Promise<any> {
+  //   const user = await this.userRepository.findOne({
+  //     where: { id: id },
+  //     relations: [
+  //       'permanentAddress',
+  //       'companyName',
+  //       'residentialAddress',
+  //       //'reportingManagers',
+  //       //'currentLevel',
+  //       'permissions',
+  //       // 'reportingManagers.level',
+  //       // 'reportingManagers.reportingTo',
+  //       'permissions.documentDefinition',
+  //       'joiningLocation',
+  //       'joiningOffice',
+  //       'currentOfficeLocation',
+  //       'currentWorkLocation',
+  //       'accessLocation',
+  //     ],
+  //   });
+  //   if (!user) {
+  //     throw new AppError(404, 'User not found');
+  //   }
+
+  //   // Step 1: Nullify OneToOne relations if they are being updated
+  //   const needsNullUpdate =
+  //     userData.joiningLocation !== undefined ||
+  //     userData.joiningOffice !== undefined ||
+  //     userData.currentWorkLocation !== undefined ||
+  //     userData.currentOfficeLocation !== undefined;
+
+  //   if (needsNullUpdate) {
+  //     user.joiningLocation = null;
+  //     user.joiningOffice = null;
+  //     user.currentWorkLocation = null;
+  //     user.currentOfficeLocation = null;
+  //     await this.userRepository.save(user);
+  //   }
+
+  //   // Step 2: Reassign updated values
+  //   if (userData.joiningLocation !== undefined) {
+  //     user.joiningLocation = userData.joiningLocation;
+  //   }
+
+  //   if (userData.joiningOffice !== undefined) {
+  //     user.joiningOffice = userData.joiningOffice;
+  //   }
+
+  //   if (userData.currentWorkLocation !== undefined) {
+  //     user.currentWorkLocation = userData.currentWorkLocation;
+  //   }
+
+  //   if (userData.currentOfficeLocation !== undefined) {
+  //     user.currentOfficeLocation = userData.currentOfficeLocation;
+  //   }
+
+  //   const originalUser = { ...user };
+
+  //   Object.assign(user, userData);
+
+  //   const updatedUser = await this.userRepository.save(user);
+
+  //   await this.auditLogService.logChange(
+  //     'User',
+  //     id,
+  //     originalUser,
+  //     updatedUser,
+  //     updatedBy,
+  //   );
+
+  //   return updatedUser;
+  // }
+

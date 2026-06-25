@@ -121,28 +121,7 @@ export class PackingMaterialService {
     return formatted;
   }
 
-  async findAllPackingMaterial(): Promise<PackingMaterialDropdownDto[]> {
-    const key = `${CACHE_PREFIX}:dropdown`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
 
-    const materials = await this.packingMaterialRepository
-      .createQueryBuilder('post_packaging_material')
-      .select([
-        'post_packaging_material.id',
-        'post_packaging_material.packagingMaterialName',
-      ])
-      .orderBy('post_packaging_material.packagingMaterialName', 'ASC')
-      .getMany();
-
-    const formatted = materials.map((mat) => ({
-      id: mat.id,
-      name: mat.packagingMaterialName,
-    }));
-
-    await this.cacheService.set(key, formatted, CACHE_TTL);
-    return formatted;
-  }
 
   async getAllPartial(): Promise<PackingMaterialPartialDto[]> {
     const key = `${CACHE_PREFIX}:partial`;
@@ -224,3 +203,28 @@ export class PackingMaterialService {
     return { success, failed, message };
   }
 }
+
+
+  // async findAllPackingMaterial(): Promise<PackingMaterialDropdownDto[]> {
+  //   const key = `${CACHE_PREFIX}:dropdown`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
+
+  //   const materials = await this.packingMaterialRepository
+  //     .createQueryBuilder('post_packaging_material')
+  //     .select([
+  //       'post_packaging_material.id',
+  //       'post_packaging_material.packagingMaterialName',
+  //     ])
+  //     .orderBy('post_packaging_material.packagingMaterialName', 'ASC')
+  //     .getMany();
+
+  //   const formatted = materials.map((mat) => ({
+  //     id: mat.id,
+  //     name: mat.packagingMaterialName,
+  //   }));
+
+  //   await this.cacheService.set(key, formatted, CACHE_TTL);
+  //   return formatted;
+  // }
+

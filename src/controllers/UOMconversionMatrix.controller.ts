@@ -121,30 +121,7 @@ export class UOMConversionMatrixController {
   }
 
 
-  @httpGet("/getAllForUpate/:id")
-  public async getByIdForUpdate(
-    @requestParam("id") id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const conversion: UOMConversionMatrixUpdateFormDto | null = await this.uomConversionMatrixService.getByIdForUpdate(id);
-      if (!conversion) {
-        ControllerLogger.logError('UOM Conversion Matrix retrieval for update', new AppError(404, "UOM conversion data not found"), req, res);
-        return next(new AppError(404, "UOM conversion data not found"));
-      }
 
-      ControllerLogger.logView('UOM Conversion Matrix (for update)', id, req, res);
-      res.status(200).json({
-        status: "success",
-        data: conversion,
-      });
-    } catch (err) {
-      ControllerLogger.logError('UOM Conversion Matrix retrieval for update', err, req, res);
-      next(err);
-    }
-  }
 
 
   @httpPost("/")
@@ -314,3 +291,30 @@ export class UOMConversionMatrixController {
     }
   }
 }
+
+
+  // @httpGet("/getAllForUpate/:id")
+  // public async getByIdForUpdate(
+  //   @requestParam("id") id: string,
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const conversion: UOMConversionMatrixUpdateFormDto | null = await this.uomConversionMatrixService.getByIdForUpdate(id);
+  //     if (!conversion) {
+  //       ControllerLogger.logError('UOM Conversion Matrix retrieval for update', new AppError(404, "UOM conversion data not found"), req, res);
+  //       return next(new AppError(404, "UOM conversion data not found"));
+  //     }
+
+  //     ControllerLogger.logView('UOM Conversion Matrix (for update)', id, req, res);
+  //     res.status(200).json({
+  //       status: "success",
+  //       data: conversion,
+  //     });
+  //   } catch (err) {
+  //     ControllerLogger.logError('UOM Conversion Matrix retrieval for update', err, req, res);
+  //     next(err);
+  //   }
+  // }
+

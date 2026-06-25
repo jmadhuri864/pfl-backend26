@@ -115,36 +115,36 @@ export class UOMConversionMatrixService {
     return formatted;
   }
 
-  public async getByIdForUpdate(id: string): Promise<UOMConversionMatrixUpdateFormDto | null> {
-    const key = `${CACHE_PREFIX}:update:${id}`;
-    const cached = await this.cacheService.get<any>(key);
-    if (cached) return cached;
+  // public async getByIdForUpdate(id: string): Promise<UOMConversionMatrixUpdateFormDto | null> {
+  //   const key = `${CACHE_PREFIX}:update:${id}`;
+  //   const cached = await this.cacheService.get<any>(key);
+  //   if (cached) return cached;
 
-    const result = await this.uomConversionMatrixRepository
-      .createQueryBuilder("uomConversionMatrix")
-      .leftJoin("uomConversionMatrix.fromUOM", "fromUOM")
-      .leftJoin("uomConversionMatrix.toUOM", "toUOM")
-      .select([
-        "uomConversionMatrix.id",
-        "uomConversionMatrix.conversionFactor",
-        "fromUOM.id",
-        "toUOM.id",
-      ])
-      .where("uomConversionMatrix.id = :id", { id })
-      .getOne();
+  //   const result = await this.uomConversionMatrixRepository
+  //     .createQueryBuilder("uomConversionMatrix")
+  //     .leftJoin("uomConversionMatrix.fromUOM", "fromUOM")
+  //     .leftJoin("uomConversionMatrix.toUOM", "toUOM")
+  //     .select([
+  //       "uomConversionMatrix.id",
+  //       "uomConversionMatrix.conversionFactor",
+  //       "fromUOM.id",
+  //       "toUOM.id",
+  //     ])
+  //     .where("uomConversionMatrix.id = :id", { id })
+  //     .getOne();
 
-    if (!result) return null;
+  //   if (!result) return null;
 
-    const formatted = {
-      id: result.id,
-      conversionFactor: result.conversionFactor,
-      fromUOM: result.fromUOM?.id ?? null,
-      toUOM: result.toUOM?.id ?? null,
-    };
+  //   const formatted = {
+  //     id: result.id,
+  //     conversionFactor: result.conversionFactor,
+  //     fromUOM: result.fromUOM?.id ?? null,
+  //     toUOM: result.toUOM?.id ?? null,
+  //   };
 
-    await this.cacheService.set(key, formatted, CACHE_TTL);
-    return formatted;
-  }
+  //   await this.cacheService.set(key, formatted, CACHE_TTL);
+  //   return formatted;
+  // }
 
   public async create(conversionData: CreateUOMConversionMatrixDto): Promise<UOMConversionMatrix> {
     const conversion = this.uomConversionMatrixRepository.create(conversionData as any) as unknown as UOMConversionMatrix;

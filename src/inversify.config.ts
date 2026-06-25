@@ -59,14 +59,12 @@ import { ProductClassificationController } from "./controllers/productClassifica
 import { ProductRepository } from "./repositories/product.repository";
 
 import { BankDetailsCustRepository } from "./repositories/bank-detailsCust.repository";
-import { BankDetailsCustService } from "./services/bank-deatilsCust.service";
-import { BankDetailsCustController } from "./controllers/bankDetailsCust.controller";
+
 import { BankDetailsCust } from "./entities/bankDetailsCust.entity";
 
 import { BillingDetailsCustRepository } from "./repositories/billingDetailsCust.repository";
 import { BillingDetailsCust } from "./entities/billingdetailsCust.entity";
-import { BillingDetailsCustController } from "./controllers/billingDetailsCust.controller";
-import { BillingDetailsCustService } from "./services/billing-detailsCust.service";
+
 import { BranchessRepository } from "./repositories/branches.repository";
 import { Branches } from "./entities/branches.entity";
 import { BranchessService } from "./services/branches.service";
@@ -92,8 +90,7 @@ import { StatutoryDetailsCustService } from "./services/statutoryDetails.service
 import { StatutoryDetailsCustController } from "./controllers/statutoryDetails.controller";
 import { ProductSpecification} from "./entities/productSpecificationCust.entity";
 import { ProductSpecificationCustRepository } from "./repositories/productspecification.repository";
-import { ProductSpecificationCustService } from "./services/productSpecification.service";
-import { ProductSpecificationCustController } from "./controllers/productSpecificationCust.controller";
+
 import { BankDetailsvendRepository } from "./repositories/vendorBankDetails.repository";
 import { BankDetailsvend } from "./entities/bankDetailsVend.entity";
 import { VendorSaleInfo } from "./entities/vendorsaleinfo.entity";
@@ -703,8 +700,7 @@ container.bind<BankDetailsCustRepository>(TYPES.BankDetailsCustRepository).toDyn
   return dataSource.getRepository(BankDetailsCust).extend(BankDetailsCustRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 //container.bind<BankDetailsCustRepository>(TYPES.BankDetailsCustRepository).to(BankDetailsCustRepository);
-container.bind<BankDetailsCustService>(TYPES.BankDetailsCustService).to(BankDetailsCustService);
-container.bind<BankDetailsCustController>(TYPES.BankDetailsCustController).to(BankDetailsCustController);
+
 
 //-----------------------------------billingDetailsCust----------------------------
 // Assuming TYPES.BillingDetailsCustRepository is a symbol or string used to identify the repository
@@ -713,8 +709,7 @@ container.bind<BillingDetailsCustRepository>(TYPES.BillingDetailsCustRepository)
   return dataSource.getRepository(BillingDetailsCust).extend(BillingDetailsCustRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 
-container.bind<BillingDetailsCustService>(TYPES.BillingDetailsCustService).to(BillingDetailsCustService);
-container.bind<BillingDetailsCustController>(TYPES.BillingDetailsCustController).to(BillingDetailsCustController);
+
 
 // Assuming TYPES.BillingDetailsCustRepository is a symbol or string used to identify the repository
 container.bind<BranchessRepository>(TYPES.BranchessRepository).toDynamicValue((context) => {
@@ -764,8 +759,7 @@ container.bind<ProductSpecificationCustRepository>(TYPES.ProductSpecificationCus
   return dataSource.getRepository(ProductSpecification).extend(ProductSpecificationCustRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 
-container.bind<ProductSpecificationCustService>(TYPES.ProductSpecificationCustService).to(ProductSpecificationCustService);
-container.bind<ProductSpecificationCustController>(TYPES.ProductSpecificationCustController).to(ProductSpecificationCustController);
+
 //--------------------------------keyMobileNumber-----------------------------------------
 container.bind<KeyMobileNoDataRepository>(TYPES.KeyMobileNoDataRepository).toDynamicValue((context) => {
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
