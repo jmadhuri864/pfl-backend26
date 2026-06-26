@@ -75,8 +75,7 @@ import { OfficesData } from "./entities/offices.entity";
 import { OfficesService } from "./services/office.service";
 import { OfficesController } from "./controllers/offices.controller";
 import { Vendor } from "./entities/vendor.entity";
-import { CropService } from "./services/crop.service";
-import { CropController } from "./controllers/crop.controller";
+
 import { Crop } from "./entities/crop.entity";
 import { CropRepository } from "./repositories/crop.repository";
 import { Farmer } from "./entities/farmer.entity";
@@ -590,10 +589,7 @@ container
   .inSingletonScope();
 //----------------------Crop-----------------------------
 
-container
-  .bind<CropService>(TYPES.CropService)
-  .to(CropService)
-  .inSingletonScope();
+
 
 
   container.bind<CropRepository>(TYPES.CropRepository).toDynamicValue((context) => {
@@ -601,10 +597,7 @@ container
     return dataSource.getRepository(Crop).extend(CropRepository);
   }).inRequestScope(); // or .singletonScope() depending on your scope requirements
   
-container
-  .bind<CropController>(TYPES.CropController)
-  .to(CropController)
-  .inSingletonScope();
+
 
 //------------------------UOMconversionMatrix-----------------------------
 container

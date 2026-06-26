@@ -55,9 +55,9 @@ const TYPES = {
   FarmerController: Symbol.for("FarmerController"),
 
   //--------------Crop-------------------
-  CropService: Symbol.for("CropService"),
+ 
   CropRepository: Symbol.for("CropRepository"),
-  CropController: Symbol.for("CropController"),
+
   //---------------UOM------------------------
   UOMService: Symbol.for("UOMService"),
   UOMRepository: Symbol.for("UOMRepository"),
