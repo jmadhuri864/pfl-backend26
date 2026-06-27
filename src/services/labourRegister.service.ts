@@ -60,24 +60,6 @@ export class LaborRegisterService {
     return saved;
   }
 
-  /**
-   * Find a laborer by name, contact, and location.
-   * @param name - Labor name
-   * @param contactNo - Contact number
-   * @param location - Location
-   * @returns Found labor record or null
-   */
-  async findLaborByNameAndContact(laborName: string, contactNo: string): Promise<LaborRegister | null> {
-    const cacheKey = `${this.CACHE_PREFIX}:search:${laborName}:${contactNo}`;
-    const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
-
-    const result = await this.laborRepository.findOne({
-      where: { laborName, contactNo },
-    });
-    if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
-    return result;
-  }
 
   /**
    * Update an existing labor record.
@@ -222,3 +204,25 @@ public async deleteMultipleLabourRegister(ids: string[]): Promise<{ success: str
 
 
 }
+
+
+  // /**
+  //  * Find a laborer by name, contact, and location.
+  //  * @param name - Labor name
+  //  * @param contactNo - Contact number
+  //  * @param location - Location
+  //  * @returns Found labor record or null
+  //  */
+  // async findLaborByNameAndContact(laborName: string, contactNo: string): Promise<LaborRegister | null> {
+  //   const cacheKey = `${this.CACHE_PREFIX}:search:${laborName}:${contactNo}`;
+  //   const cached = await this.cacheService.get<any>(cacheKey);
+  //   if (cached) return cached;
+
+  //   const result = await this.laborRepository.findOne({
+  //     where: { laborName, contactNo },
+  //   });
+  //   if (result) await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
+  //   return result;
+  // }
+
+

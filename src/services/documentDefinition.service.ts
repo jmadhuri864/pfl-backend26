@@ -22,19 +22,7 @@ export class  DocumentDefinitionService {
         return formatResponse
     }
 
-    async getDocumentDefinitionById(id:string):Promise<any>{
-        const result = await this.documentDefinitionRepository.findOne({ where: { id } })
-        if(!result){
-            return null
-        }
-        const formatResponse = {
-            id: result.id,
-            uniqueKey: result.uniqueKey,
-            name: result.name,
-            documentType: result.documentType,
-        }
-        return formatResponse
-    }
+
 
     async createDocumentDefinition(data:any):Promise<any>{
         const result = await this.documentDefinitionRepository.create(data)
@@ -42,12 +30,31 @@ export class  DocumentDefinitionService {
     
     }
 
-    async updateDocumentDefinition(id:string, data:any):Promise<any>{
-        const result = await this.documentDefinitionRepository.findOne({ where: { id } })
-        if(!result){
-            return null
-        }
-        this.documentDefinitionRepository.merge(result, data)
-        return await this.documentDefinitionRepository.save(result)
-    }
+
 }
+
+
+    // async updateDocumentDefinition(id:string, data:any):Promise<any>{
+    //     const result = await this.documentDefinitionRepository.findOne({ where: { id } })
+    //     if(!result){
+    //         return null
+    //     }
+    //     this.documentDefinitionRepository.merge(result, data)
+    //     return await this.documentDefinitionRepository.save(result)
+    // }
+
+
+    // async getDocumentDefinitionById(id:string):Promise<any>{
+    //     const result = await this.documentDefinitionRepository.findOne({ where: { id } })
+    //     if(!result){
+    //         return null
+    //     }
+    //     const formatResponse = {
+    //         id: result.id,
+    //         uniqueKey: result.uniqueKey,
+    //         name: result.name,
+    //         documentType: result.documentType,
+    //     }
+    //     return formatResponse
+    // }
+

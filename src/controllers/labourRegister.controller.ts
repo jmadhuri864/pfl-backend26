@@ -233,41 +233,7 @@ import { NotificationService } from "../services/notification.service";
       }
     }
   
-    /**
-     * Check if a laborer exists by name, contact, and location
-     */
-    @httpGet("/find")
-    public async findLabor(
-      @request() req: Request,
-      @response() res: Response,
-      @next() next: NextFunction
-    ) {
-      const { laborName, contactNo, location } = req.query;
-      try {
-        logger.info("Checking laborer existence", { laborName, contactNo, location });
-  
-        const labor = await this.laborRegisterService.findLaborByNameAndContact(
-          String(laborName), 
-          String(contactNo), 
-         
-        );
-  
-        if (labor) {
-          return res.status(200).json({
-            status: "success",
-            data: labor,
-          });
-        } else {
-          return res.status(404).json({
-            status: "error",
-            message: "Laborer not found.",
-          });
-        }
-      } catch (error) {
-        logger.error("Error occurred while checking laborer existence", { error });
-        next(error);
-      }
-    }
+
     @httpDelete('/delete/multiple')
   public async deleteMultipleLabourRegister(
     @request() req: Request,
@@ -294,3 +260,40 @@ import { NotificationService } from "../services/notification.service";
 
   }
   
+
+      // /**
+    //  * Check if a laborer exists by name, contact, and location
+    //  */
+    // @httpGet("/find")
+    // public async findLabor(
+    //   @request() req: Request,
+    //   @response() res: Response,
+    //   @next() next: NextFunction
+    // ) {
+    //   const { laborName, contactNo, location } = req.query;
+    //   try {
+    //     logger.info("Checking laborer existence", { laborName, contactNo, location });
+  
+    //     const labor = await this.laborRegisterService.findLaborByNameAndContact(
+    //       String(laborName), 
+    //       String(contactNo), 
+         
+    //     );
+  
+    //     if (labor) {
+    //       return res.status(200).json({
+    //         status: "success",
+    //         data: labor,
+    //       });
+    //     } else {
+    //       return res.status(404).json({
+    //         status: "error",
+    //         message: "Laborer not found.",
+    //       });
+    //     }
+    //   } catch (error) {
+    //     logger.error("Error occurred while checking laborer existence", { error });
+    //     next(error);
+    //   }
+    // }
+

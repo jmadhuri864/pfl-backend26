@@ -48,46 +48,7 @@ export class VarientsController {
     }
   }
 
-  @httpPost('/')
-  public async createVarient(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ): Promise<void> {
-    try {
-      logger.info(`Creating new variants`);
 
-      const { product, variants } = req.body;
-
-      if (!product) {
-        throw new AppError(400, 'productId is required');
-      }
-
-      if (!Array.isArray(variants)) {
-        throw new AppError(400, 'variants should be an array');
-      }
-
-      const newVariants = await this.productVarientService.createVarient(
-        product,
-        variants,
-      );
-
-      if (!newVariants || newVariants.length === 0) {
-        throw new AppError(400, 'No variants were created');
-      }
-
-      ControllerLogger.logSuccess('Variants created', `${newVariants.length} variants`, req, res);
-      res.status(200).json({
-        status: 'success',
-        message: 'Variants created successfully',
-        //data: newVariants,
-      });
-    } catch (error) {
-      logger.error(`Error creating variants:`, error);
-      ControllerLogger.logError('Variants creation', error, req, res);
-      next(error);
-    }
-  }
 
   @httpGet('/partial/data')
     public async getAllPartial(
@@ -124,3 +85,46 @@ export class VarientsController {
       }
     }
 }
+
+
+  // @httpPost('/')
+  // public async createVarient(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction,
+  // ): Promise<void> {
+  //   try {
+  //     logger.info(`Creating new variants`);
+
+  //     const { product, variants } = req.body;
+
+  //     if (!product) {
+  //       throw new AppError(400, 'productId is required');
+  //     }
+
+  //     if (!Array.isArray(variants)) {
+  //       throw new AppError(400, 'variants should be an array');
+  //     }
+
+  //     const newVariants = await this.productVarientService.createVarient(
+  //       product,
+  //       variants,
+  //     );
+
+  //     if (!newVariants || newVariants.length === 0) {
+  //       throw new AppError(400, 'No variants were created');
+  //     }
+
+  //     ControllerLogger.logSuccess('Variants created', `${newVariants.length} variants`, req, res);
+  //     res.status(200).json({
+  //       status: 'success',
+  //       message: 'Variants created successfully',
+  //       //data: newVariants,
+  //     });
+  //   } catch (error) {
+  //     logger.error(`Error creating variants:`, error);
+  //     ControllerLogger.logError('Variants creation', error, req, res);
+  //     next(error);
+  //   }
+  // }
+

@@ -125,40 +125,7 @@ export class ProcurementTargetService {
 
     return targetRepo.save(target);
   }
-    // Get targets for manager approval
-    async getTargetsForManagerApproval(managerId: string, department: DepartmentEnum) {
-        try {
-            // Get all subordinates for this manager
-            const subordinates = await this.workflowHierarchyRepo
-                .createQueryBuilder('wh')
-                .select('wh.descendant_id')
-                .where('wh.ancestor_id = :managerId', { managerId })
-                .andWhere('wh.department = :department', { department })
-                .andWhere('wh.depth > 0')
-                .getRawMany();
-
-            const subordinateIds = subordinates.map(s => s.descendant_id);
-
-            if (subordinateIds.length === 0) {
-                return [];
-            }
-
-            // Get pending targets for these subordinates
-            const targets = await this.procurementTargetRepository
-                .createQueryBuilder('target')
-                .leftJoinAndSelect('target.employee', 'employee')
-                .leftJoinAndSelect('target.products', 'products')
-                .leftJoinAndSelect('products.product', 'product')
-                .where('target.employee.id IN (:...subordinateIds)', { subordinateIds })
-                .andWhere('target.status = :status', { status: ProcurementStatus.SUBMITTED })
-                .orderBy('target.createdAt', 'DESC')
-                .getMany();
-
-            return targets;
-        } catch (error) {
-            throw error;
-        }
-    }
+ 
 
     // Get all targets with pagination
     async getalltargets(employeeId: string, page: number = 1, limit: number = 10) {
@@ -241,36 +208,9 @@ export class ProcurementTargetService {
         }
     }
 
-    // Get all targets simple (no pagination)
-    async getAllTargetsSimple(employeeId: string) {
-        try {
-            const targets = await this.procurementTargetRepository
-                .createQueryBuilder('target')
-                .leftJoinAndSelect('target.employee', 'employee')
-                .where('target.employee.id = :employeeId', { employeeId })
-                .orderBy('target.createdAt', 'DESC')
-                .getMany();
 
-            return { targets };
-        } catch (error) {
-            throw error;
-        }
-    }
 
-    // Debug endpoint - get all targets
-    async getAllTargetsDebug() {
-        try {
-            const targets = await this.procurementTargetRepository
-                .createQueryBuilder('target')
-                .leftJoinAndSelect('target.employee', 'employee')
-                .orderBy('target.createdAt', 'DESC')
-                .getMany();
 
-            return targets;
-        } catch (error) {
-            throw error;
-        }
-    }
 
     // Get monthly plan view
     async getMonthlyPlanView(employeeId: string, month: number, year: number) {
@@ -519,28 +459,7 @@ async getMonthlyPlanUpdateStructured(
   };
 }
 
-    // Update status
-    async updateStatus(id: string, payload: any) {
-        try {
-            const target = await this.procurementTargetRepository.findOne({
-                where: { id }
-            });
 
-            if (!target) {
-                throw new Error("Procurement target not found");
-            }
-
-            if (payload.status) {
-                target.status = payload.status;
-            }
-
-            await this.procurementTargetRepository.save(target);
-
-            return target;
-        } catch (error) {
-            throw error;
-        }
-    }
 
     // Generate plan in brief Excel
     async generatePlanInBriefExcel(filters: any) {
@@ -998,3 +917,97 @@ async getMonthlyPlanUpdateStructured(
         }
     }
 }
+
+
+    // // Update status
+    // async updateStatus(id: string, payload: any) {
+    //     try {
+    //         const target = await this.procurementTargetRepository.findOne({
+    //             where: { id }
+    //         });
+
+    //         if (!target) {
+    //             throw new Error("Procurement target not found");
+    //         }
+
+    //         if (payload.status) {
+    //             target.status = payload.status;
+    //         }
+
+    //         await this.procurementTargetRepository.save(target);
+
+    //         return target;
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+    // // Debug endpoint - get all targets
+    // async getAllTargetsDebug() {
+    //     try {
+    //         const targets = await this.procurementTargetRepository
+    //             .createQueryBuilder('target')
+    //             .leftJoinAndSelect('target.employee', 'employee')
+    //             .orderBy('target.createdAt', 'DESC')
+    //             .getMany();
+
+    //         return targets;
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+    // // Get all targets simple (no pagination)
+    // async getAllTargetsSimple(employeeId: string) {
+    //     try {
+    //         const targets = await this.procurementTargetRepository
+    //             .createQueryBuilder('target')
+    //             .leftJoinAndSelect('target.employee', 'employee')
+    //             .where('target.employee.id = :employeeId', { employeeId })
+    //             .orderBy('target.createdAt', 'DESC')
+    //             .getMany();
+
+    //         return { targets };
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+   // // Get targets for manager approval
+    // async getTargetsForManagerApproval(managerId: string, department: DepartmentEnum) {
+    //     try {
+    //         // Get all subordinates for this manager
+    //         const subordinates = await this.workflowHierarchyRepo
+    //             .createQueryBuilder('wh')
+    //             .select('wh.descendant_id')
+    //             .where('wh.ancestor_id = :managerId', { managerId })
+    //             .andWhere('wh.department = :department', { department })
+    //             .andWhere('wh.depth > 0')
+    //             .getRawMany();
+
+    //         const subordinateIds = subordinates.map(s => s.descendant_id);
+
+    //         if (subordinateIds.length === 0) {
+    //             return [];
+    //         }
+
+    //         // Get pending targets for these subordinates
+    //         const targets = await this.procurementTargetRepository
+    //             .createQueryBuilder('target')
+    //             .leftJoinAndSelect('target.employee', 'employee')
+    //             .leftJoinAndSelect('target.products', 'products')
+    //             .leftJoinAndSelect('products.product', 'product')
+    //             .where('target.employee.id IN (:...subordinateIds)', { subordinateIds })
+    //             .andWhere('target.status = :status', { status: ProcurementStatus.SUBMITTED })
+    //             .orderBy('target.createdAt', 'DESC')
+    //             .getMany();
+
+    //         return targets;
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+

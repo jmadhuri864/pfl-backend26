@@ -115,13 +115,9 @@ const TYPES = {
   OfficesController: Symbol.for("OfficesController"),
 
   //-----------------------delivery-details--------------
-  DeliveryDetailsCustService: Symbol.for("DeliveryDetailsCustService"),
   DeliveryDetailsCustRepository: Symbol.for(" DeliveryDetailsCustRepository"),
-  DeliveryDetailsCustController: Symbol.for("DeliveryDetailsCustController"),
   //-------------------statutoryDeatils----------------------
-  StatutoryDetailsCustService: Symbol.for("StatutoryDetailsCustService"),
   StatutoryDetailsCustRepository: Symbol.for("StatutoryDetailsCustRepository"),
-  StatutoryDetailsCustController: Symbol.for("StatutoryDetailsCustController"),
 
   //------------------------productspecificationcustomer-------------
   ProductSpecificationCustRepository: Symbol.for(
@@ -250,9 +246,7 @@ OtherDeliveryChallanController:Symbol.for("OtherDeliveryChallanController"),
   InwardRegisterService: Symbol.for("InwardRegisterService"),
   InwardRepository: Symbol.for("InwardRepository"),
   //department to approve
-  DepartmentforApproveService: Symbol.for("DepartmentforApproveService"),
   DepartmentforApproveRepository: Symbol.for("DepartmentforApproveRepository"),
-  DepartmentforApproveController: Symbol.for("DepartmentforApproveController"),
 
   //labour register
   LaborRegisterRepository: Symbol.for("LaborRegisterRepository"),
@@ -462,9 +456,7 @@ RegistrationReportsController:Symbol.for("RegistrationReportsController"),
   FinalInvoiceReportService:Symbol.for("FinalInvoiceReportService"),
 
   //role
-  RoleService: Symbol.for("RoleService"),
   RoleRepository: Symbol.for("RoleRepository"),
-  RoleController: Symbol.for("RoleController"),
 
   // stockCorrection
   StockCorrectionRepository: Symbol.for("StockCorrectionRepository"),

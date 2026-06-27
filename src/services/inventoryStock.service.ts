@@ -74,353 +74,21 @@ export class InventoryStockService {
     private readonly tpVoucherRepository: TPVoucherRepository,
   ) {}
 
-  //-----------------------------------------------------------------------
-  // ✔ Get All Inventory Stock
-  //-----------------------------------------------------------------------
-  async getAllInventoryStocks(queryOptions: PaginationOptions) {
-    // First, let's check what's actually in the database with a raw query
-    const rawData = await this.inventoryStockRepository.query(`
-      SELECT * FROM inventory_stock LIMIT 1
-    `);
-    console.log('🔍 RAW DATABASE DATA:', rawData[0]);
-    
-    const qb = this.inventoryStockRepository
-      .createQueryBuilder('inventory')
-      .leftJoinAndSelect('inventory.location', 'location')
-      .leftJoinAndSelect('inventory.product', 'product')
-      .leftJoinAndSelect('inventory.variant', 'variant')
-      .leftJoinAndSelect('inventory.company', 'company')
-      .orderBy(
-        'inventory.createdAt',
-        queryOptions.sort?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
-      );
 
-    // Check if pagination is requested
-    const page = queryOptions.page;
-    const limit = queryOptions.limit;
-    const isPaginationRequested = page && limit;
 
-    let data;
-    let totalCount;
 
-    if (isPaginationRequested) {
-      // Apply pagination
-      const skip = (page - 1) * limit;
-      
-      // Get total count for pagination metadata
-      totalCount = await qb.getCount();
 
-      // Apply pagination
-      qb.skip(skip).take(limit);
-      data = await qb.getMany();
-    } else {
-      // Return all results without pagination
-      data = await qb.getMany();
-      totalCount = data.length;
-    }
 
-    // Debug logging
-    if (data.length > 0) {
-      console.log('🔍 Sample stock data:', {
-        id: data[0].id,
-        inwardQty: data[0].inwardQty,
-        inwardAmt: data[0].inwardAmt,
-        rawKeys: Object.keys(data[0])
-      });
-    }
 
-    const mappedData = data.map((s: any) => this.formatInventoryStock(s));
 
-    // Debug logging for mapped data
-    if (mappedData.length > 0) {
-      console.log('🔍 Sample mapped data:', mappedData[0]);
-    }
 
-    return { 
-      data: mappedData, 
-      meta: {
-        total: totalCount,
-        page: page || 1,
-        pages: isPaginationRequested ? Math.ceil(totalCount / limit) : 1,
-        limit: limit || totalCount,
-      }
-    };
-  }
 
-  //-----------------------------------------------------------------------
-  // ✔ Get Stock By ID
-  //-----------------------------------------------------------------------
-  async getInventoryStockById(id: string) {
-    const stock = await this.inventoryStockRepository.findOne({
-      where: { id },
-      relations: ['location', 'product', 'variant', 'company'],
-    });
 
-    if (!stock) throw new Error('Inventory Stock not found');
 
-    return this.formatInventoryStock(stock);
-  }
 
-  //-----------------------------------------------------------------------
-  // ✔ Search stock (ID + filters)
-  //-----------------------------------------------------------------------
-  async searchStock(id?: string, varientId?: string, productId?: string, locationId?: string, companyId?: string) {
-    const qb = this.inventoryStockRepository
-      .createQueryBuilder('inventory')
-      .leftJoinAndSelect('inventory.location', 'location')
-      .leftJoinAndSelect('inventory.product', 'product')
-      .leftJoinAndSelect('inventory.variant', 'variant')
-      .leftJoinAndSelect('inventory.company', 'company')
-      .where('inventory.id = :id', { id });
 
-    if (locationId) qb.andWhere('location.id = :locationId', { locationId });
-    if (productId) qb.andWhere('product.id = :productId', { productId });
-    if (companyId) qb.andWhere('company.id = :companyId', { companyId });
-    if (varientId) qb.andWhere('variant.id = :varientId', { varientId });
 
-    const stock = await qb.getOne();
 
-    if (!stock) throw new Error('Stock not found with given filters');
-
-    return this.formatInventoryStock(stock);
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Filter Stock (Your main filter API)
-  //-----------------------------------------------------------------------
-  async filterStock(data: any) {
-    console.log("Filters:", data);
-
-    const qb = this.inventoryStockRepository
-      .createQueryBuilder("inventory")
-      .leftJoinAndSelect("inventory.location", "location")
-      .leftJoinAndSelect("inventory.product", "product")
-      .leftJoinAndSelect("inventory.variant", "variant")
-      .leftJoinAndSelect("inventory.company", "company");
-
-    if (data.id)
-      qb.andWhere("inventory.id = :id", { id: data.id });
-
-    if (data.location)
-      qb.andWhere("location.id = :location", { location: data.location });
-
-    if (data.product)
-      qb.andWhere("product.id = :product", { product: data.product });
-
-    if (data.companyName)
-      qb.andWhere("company.id = :company", { company: data.companyName });
-
-    if (data.varientId)
-      qb.andWhere("variant.id = :variantId", { variantId: data.varientId });
-
-    if (data.origin)
-      qb.andWhere("LOWER(variant.origin) LIKE LOWER(:origin)", { origin: `%${data.origin}%` });
-
-    if (data.size)
-      qb.andWhere("LOWER(variant.size) LIKE LOWER(:size)", { size: `%${data.size}%` });
-
-    if (data.count)
-      qb.andWhere("LOWER(variant.count) LIKE LOWER(:count)", { count: `%${data.count}%` });
-
-    if (data.variety)
-      qb.andWhere("LOWER(variant.variety) LIKE LOWER(:variety)", { variety: `%${data.variety}%` });
-
-    const stock = await qb.getMany();
-
-    if (!stock.length)
-      throw new Error("Stock not found with given filters");
-
-    let totalqty = 0;
-    let totalamount = 0;
-
-    stock.forEach((s) => {
-      s.inwardQty = Number(s.inwardQty || 0);
-      s.inwardAmt = Number(s.inwardAmt || 0);
-
-      totalqty += s.inwardQty;
-      totalamount += s.inwardAmt;
-    });
-
-    return {
-      stock: stock.map((s) => this.formatInventoryStock(s)),
-      totalqty,
-      totalamount,
-    };
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Get Stock Grouped by Location/Company/Product
-  //-----------------------------------------------------------------------
-  async getProductGroupedInventoryStock(locationName?: string, companyName?: string) {
-    const query = this.inventoryStockRepository
-      .createQueryBuilder('stock')
-      .leftJoin('stock.company', 'company')
-      .leftJoin('stock.location', 'location')
-      .leftJoin('stock.product', 'product')
-      .select([
-        'company.name AS companyName',
-        'location.name AS locationName',
-        'product.name AS productName',
-      ])
-      .addSelect('SUM(stock.inwardQty)', 'inwardQty')
-      .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
-      .groupBy('company.name')
-      .addGroupBy('location.name')
-      .addGroupBy('product.name');
-
-    if (locationName)
-      query.andWhere('location.name ILIKE :loc', { loc: `%${locationName}%` });
-
-    if (companyName)
-      query.andWhere('company.name ILIKE :com', { com: `%${companyName}%` });
-
-    const stock = await query.getRawMany();
-
-    if (!stock.length) throw new Error("Stock not found");
-
-    return stock.map(this.formatProductInventoryStock);
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Get Stock based on user's Access Location
-  //-----------------------------------------------------------------------
-  async getInventoryStockbyuserAccesslocation(id: string) {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['accessLocation'],
-    });
-
-    const accessLocationIds = user?.accessLocation?.map(l => l.id) || [];
-
-    const data = await this.inventoryStockRepository
-      .createQueryBuilder('stock')
-      .leftJoin('stock.company', 'company')
-      .leftJoin('stock.location', 'location')
-      .leftJoin('stock.product', 'product')
-      .select([
-        'company.id AS companyId',
-        'company.name AS companyName',
-        'location.id AS locationId',
-        'location.name AS locationName',
-      ])
-      .addSelect('SUM(stock.inwardQty)', 'inwardQty')
-      .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
-      .where('location.id IN (:...accessLocationIds)', { accessLocationIds })
-      .groupBy('company.id')
-      .addGroupBy('location.id')
-      .getRawMany();
-
-    return data;
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Get Grouped Inventory Stock (Location/Company)
-  //-----------------------------------------------------------------------
-  async getGroupedInventoryStock() {
-    const stock = await this.inventoryStockRepository
-      .createQueryBuilder('stock')
-      .leftJoin('stock.company', 'company')
-      .leftJoin('stock.location', 'location')
-      .select([
-        'company.id AS companyId',
-        'company.name AS companyName',
-        'location.id AS locationId',
-        'location.name AS locationName',
-      ])
-      .addSelect('SUM(stock.inwardQty)', 'inwardQty')
-      .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
-      .groupBy('company.id')
-      .addGroupBy('location.id')
-      .getRawMany();
-
-    if (!stock.length) throw new Error("Stock not found");
-
-    return stock;
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Get Product by Access Location
-  //-----------------------------------------------------------------------
-  async getProductByAccessLocation(location?: string, userId?: string) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['accessLocation'],
-    });
-
-    const accessLocationIds = user?.accessLocation?.map(l => l.id) || [];
-
-    const query = this.inventoryStockRepository
-      .createQueryBuilder('stock')
-      .leftJoin('stock.company', 'company')
-      .leftJoin('stock.location', 'location')
-      .leftJoin('stock.product', 'product')
-      .leftJoin('stock.variant', 'variant')
-      .select([
-        'company.id AS companyId',
-        'company.name AS companyName',
-        'location.id AS locationId',
-        'location.name AS locationName',
-        'product.id AS productId',
-        'product.name AS productName',
-        'variant.id AS variantId',
-        'variant.variantName AS variantName',
-      ])
-      .addSelect('SUM(stock.inwardQty)', 'inwardQty')
-      .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
-      .where('location.id IN (:...accessLocationIds)', { accessLocationIds });
-
-    if (location) {
-      query.andWhere('location.id = :location', { location });
-    }
-
-    const stock = await query
-      .groupBy('company.id')
-      .addGroupBy('location.id')
-      .addGroupBy('product.id')
-      .addGroupBy('variant.id')
-      .getRawMany();
-
-    return stock;
-  }
-
-  //-----------------------------------------------------------------------
-  // ✔ Get Variant Grouped Inventory Stock
-  //-----------------------------------------------------------------------
-  async getVariantGroupedInventoryStock(locationName?: string, companyName?: string, productName?: string) {
-    const query = this.inventoryStockRepository
-      .createQueryBuilder('stock')
-      .leftJoin('stock.company', 'company')
-      .leftJoin('stock.location', 'location')
-      .leftJoin('stock.product', 'product')
-      .leftJoin('stock.variant', 'variant')
-      .select([
-        'company.name AS companyName',
-        'location.name AS locationName',
-        'product.name AS productName',
-        'variant.variantName AS variantName',
-      ])
-      .addSelect('SUM(stock.inwardQty)', 'inwardQty')
-      .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
-      .groupBy('company.name')
-      .addGroupBy('location.name')
-      .addGroupBy('product.name')
-      .addGroupBy('variant.variantName');
-
-    if (locationName)
-      query.andWhere('location.name ILIKE :loc', { loc: `%${locationName}%` });
-
-    if (companyName)
-      query.andWhere('company.name ILIKE :com', { com: `%${companyName}%` });
-
-    if (productName)
-      query.andWhere('product.name ILIKE :prod', { prod: `%${productName}%` });
-
-    const stock = await query.getRawMany();
-
-    if (!stock.length) throw new Error("Stock not found");
-
-    return stock;
-  }
 
   async getStockReport(companyId?: string, locationId?: string, startDate?: string, endDate?: string) {
 
@@ -1389,3 +1057,363 @@ async getlocationcompanywisestock(
 }
 
 }
+
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Variant Grouped Inventory Stock
+  // //-----------------------------------------------------------------------
+  // async getVariantGroupedInventoryStock(locationName?: string, companyName?: string, productName?: string) {
+  //   const query = this.inventoryStockRepository
+  //     .createQueryBuilder('stock')
+  //     .leftJoin('stock.company', 'company')
+  //     .leftJoin('stock.location', 'location')
+  //     .leftJoin('stock.product', 'product')
+  //     .leftJoin('stock.variant', 'variant')
+  //     .select([
+  //       'company.name AS companyName',
+  //       'location.name AS locationName',
+  //       'product.name AS productName',
+  //       'variant.variantName AS variantName',
+  //     ])
+  //     .addSelect('SUM(stock.inwardQty)', 'inwardQty')
+  //     .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
+  //     .groupBy('company.name')
+  //     .addGroupBy('location.name')
+  //     .addGroupBy('product.name')
+  //     .addGroupBy('variant.variantName');
+
+  //   if (locationName)
+  //     query.andWhere('location.name ILIKE :loc', { loc: `%${locationName}%` });
+
+  //   if (companyName)
+  //     query.andWhere('company.name ILIKE :com', { com: `%${companyName}%` });
+
+  //   if (productName)
+  //     query.andWhere('product.name ILIKE :prod', { prod: `%${productName}%` });
+
+  //   const stock = await query.getRawMany();
+
+  //   if (!stock.length) throw new Error("Stock not found");
+
+  //   return stock;
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Stock Grouped by Location/Company/Product
+  // //-----------------------------------------------------------------------
+  // async getProductGroupedInventoryStock(locationName?: string, companyName?: string) {
+  //   const query = this.inventoryStockRepository
+  //     .createQueryBuilder('stock')
+  //     .leftJoin('stock.company', 'company')
+  //     .leftJoin('stock.location', 'location')
+  //     .leftJoin('stock.product', 'product')
+  //     .select([
+  //       'company.name AS companyName',
+  //       'location.name AS locationName',
+  //       'product.name AS productName',
+  //     ])
+  //     .addSelect('SUM(stock.inwardQty)', 'inwardQty')
+  //     .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
+  //     .groupBy('company.name')
+  //     .addGroupBy('location.name')
+  //     .addGroupBy('product.name');
+
+  //   if (locationName)
+  //     query.andWhere('location.name ILIKE :loc', { loc: `%${locationName}%` });
+
+  //   if (companyName)
+  //     query.andWhere('company.name ILIKE :com', { com: `%${companyName}%` });
+
+  //   const stock = await query.getRawMany();
+
+  //   if (!stock.length) throw new Error("Stock not found");
+
+  //   return stock.map(this.formatProductInventoryStock);
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Product by Access Location
+  // //-----------------------------------------------------------------------
+  // async getProductByAccessLocation(location?: string, userId?: string) {
+  //   const user = await this.userRepository.findOne({
+  //     where: { id: userId },
+  //     relations: ['accessLocation'],
+  //   });
+
+  //   const accessLocationIds = user?.accessLocation?.map(l => l.id) || [];
+
+  //   const query = this.inventoryStockRepository
+  //     .createQueryBuilder('stock')
+  //     .leftJoin('stock.company', 'company')
+  //     .leftJoin('stock.location', 'location')
+  //     .leftJoin('stock.product', 'product')
+  //     .leftJoin('stock.variant', 'variant')
+  //     .select([
+  //       'company.id AS companyId',
+  //       'company.name AS companyName',
+  //       'location.id AS locationId',
+  //       'location.name AS locationName',
+  //       'product.id AS productId',
+  //       'product.name AS productName',
+  //       'variant.id AS variantId',
+  //       'variant.variantName AS variantName',
+  //     ])
+  //     .addSelect('SUM(stock.inwardQty)', 'inwardQty')
+  //     .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
+  //     .where('location.id IN (:...accessLocationIds)', { accessLocationIds });
+
+  //   if (location) {
+  //     query.andWhere('location.id = :location', { location });
+  //   }
+
+  //   const stock = await query
+  //     .groupBy('company.id')
+  //     .addGroupBy('location.id')
+  //     .addGroupBy('product.id')
+  //     .addGroupBy('variant.id')
+  //     .getRawMany();
+
+  //   return stock;
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Stock based on user's Access Location
+  // //-----------------------------------------------------------------------
+  // async getInventoryStockbyuserAccesslocation(id: string) {
+  //   const user = await this.userRepository.findOne({
+  //     where: { id },
+  //     relations: ['accessLocation'],
+  //   });
+
+  //   const accessLocationIds = user?.accessLocation?.map(l => l.id) || [];
+
+  //   const data = await this.inventoryStockRepository
+  //     .createQueryBuilder('stock')
+  //     .leftJoin('stock.company', 'company')
+  //     .leftJoin('stock.location', 'location')
+  //     .leftJoin('stock.product', 'product')
+  //     .select([
+  //       'company.id AS companyId',
+  //       'company.name AS companyName',
+  //       'location.id AS locationId',
+  //       'location.name AS locationName',
+  //     ])
+  //     .addSelect('SUM(stock.inwardQty)', 'inwardQty')
+  //     .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
+  //     .where('location.id IN (:...accessLocationIds)', { accessLocationIds })
+  //     .groupBy('company.id')
+  //     .addGroupBy('location.id')
+  //     .getRawMany();
+
+  //   return data;
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Grouped Inventory Stock (Location/Company)
+  // //-----------------------------------------------------------------------
+  // async getGroupedInventoryStock() {
+  //   const stock = await this.inventoryStockRepository
+  //     .createQueryBuilder('stock')
+  //     .leftJoin('stock.company', 'company')
+  //     .leftJoin('stock.location', 'location')
+  //     .select([
+  //       'company.id AS companyId',
+  //       'company.name AS companyName',
+  //       'location.id AS locationId',
+  //       'location.name AS locationName',
+  //     ])
+  //     .addSelect('SUM(stock.inwardQty)', 'inwardQty')
+  //     .addSelect('SUM(stock.inwardAmt)', 'inwardAmt')
+  //     .groupBy('company.id')
+  //     .addGroupBy('location.id')
+  //     .getRawMany();
+
+  //   if (!stock.length) throw new Error("Stock not found");
+
+  //   return stock;
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Filter Stock (Your main filter API)
+  // //-----------------------------------------------------------------------
+  // async filterStock(data: any) {
+  //   console.log("Filters:", data);
+
+  //   const qb = this.inventoryStockRepository
+  //     .createQueryBuilder("inventory")
+  //     .leftJoinAndSelect("inventory.location", "location")
+  //     .leftJoinAndSelect("inventory.product", "product")
+  //     .leftJoinAndSelect("inventory.variant", "variant")
+  //     .leftJoinAndSelect("inventory.company", "company");
+
+  //   if (data.id)
+  //     qb.andWhere("inventory.id = :id", { id: data.id });
+
+  //   if (data.location)
+  //     qb.andWhere("location.id = :location", { location: data.location });
+
+  //   if (data.product)
+  //     qb.andWhere("product.id = :product", { product: data.product });
+
+  //   if (data.companyName)
+  //     qb.andWhere("company.id = :company", { company: data.companyName });
+
+  //   if (data.varientId)
+  //     qb.andWhere("variant.id = :variantId", { variantId: data.varientId });
+
+  //   if (data.origin)
+  //     qb.andWhere("LOWER(variant.origin) LIKE LOWER(:origin)", { origin: `%${data.origin}%` });
+
+  //   if (data.size)
+  //     qb.andWhere("LOWER(variant.size) LIKE LOWER(:size)", { size: `%${data.size}%` });
+
+  //   if (data.count)
+  //     qb.andWhere("LOWER(variant.count) LIKE LOWER(:count)", { count: `%${data.count}%` });
+
+  //   if (data.variety)
+  //     qb.andWhere("LOWER(variant.variety) LIKE LOWER(:variety)", { variety: `%${data.variety}%` });
+
+  //   const stock = await qb.getMany();
+
+  //   if (!stock.length)
+  //     throw new Error("Stock not found with given filters");
+
+  //   let totalqty = 0;
+  //   let totalamount = 0;
+
+  //   stock.forEach((s) => {
+  //     s.inwardQty = Number(s.inwardQty || 0);
+  //     s.inwardAmt = Number(s.inwardAmt || 0);
+
+  //     totalqty += s.inwardQty;
+  //     totalamount += s.inwardAmt;
+  //   });
+
+  //   return {
+  //     stock: stock.map((s) => this.formatInventoryStock(s)),
+  //     totalqty,
+  //     totalamount,
+  //   };
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Search stock (ID + filters)
+  // //-----------------------------------------------------------------------
+  // async searchStock(id?: string, varientId?: string, productId?: string, locationId?: string, companyId?: string) {
+  //   const qb = this.inventoryStockRepository
+  //     .createQueryBuilder('inventory')
+  //     .leftJoinAndSelect('inventory.location', 'location')
+  //     .leftJoinAndSelect('inventory.product', 'product')
+  //     .leftJoinAndSelect('inventory.variant', 'variant')
+  //     .leftJoinAndSelect('inventory.company', 'company')
+  //     .where('inventory.id = :id', { id });
+
+  //   if (locationId) qb.andWhere('location.id = :locationId', { locationId });
+  //   if (productId) qb.andWhere('product.id = :productId', { productId });
+  //   if (companyId) qb.andWhere('company.id = :companyId', { companyId });
+  //   if (varientId) qb.andWhere('variant.id = :varientId', { varientId });
+
+  //   const stock = await qb.getOne();
+
+  //   if (!stock) throw new Error('Stock not found with given filters');
+
+  //   return this.formatInventoryStock(stock);
+  // }
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get Stock By ID
+  // //-----------------------------------------------------------------------
+  // async getInventoryStockById(id: string) {
+  //   const stock = await this.inventoryStockRepository.findOne({
+  //     where: { id },
+  //     relations: ['location', 'product', 'variant', 'company'],
+  //   });
+
+  //   if (!stock) throw new Error('Inventory Stock not found');
+
+  //   return this.formatInventoryStock(stock);
+  // }
+
+
+
+  // //-----------------------------------------------------------------------
+  // // ✔ Get All Inventory Stock
+  // //-----------------------------------------------------------------------
+  // async getAllInventoryStocks(queryOptions: PaginationOptions) {
+  //   // First, let's check what's actually in the database with a raw query
+  //   const rawData = await this.inventoryStockRepository.query(`
+  //     SELECT * FROM inventory_stock LIMIT 1
+  //   `);
+  //   console.log('🔍 RAW DATABASE DATA:', rawData[0]);
+    
+  //   const qb = this.inventoryStockRepository
+  //     .createQueryBuilder('inventory')
+  //     .leftJoinAndSelect('inventory.location', 'location')
+  //     .leftJoinAndSelect('inventory.product', 'product')
+  //     .leftJoinAndSelect('inventory.variant', 'variant')
+  //     .leftJoinAndSelect('inventory.company', 'company')
+  //     .orderBy(
+  //       'inventory.createdAt',
+  //       queryOptions.sort?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
+  //     );
+
+  //   // Check if pagination is requested
+  //   const page = queryOptions.page;
+  //   const limit = queryOptions.limit;
+  //   const isPaginationRequested = page && limit;
+
+  //   let data;
+  //   let totalCount;
+
+  //   if (isPaginationRequested) {
+  //     // Apply pagination
+  //     const skip = (page - 1) * limit;
+      
+  //     // Get total count for pagination metadata
+  //     totalCount = await qb.getCount();
+
+  //     // Apply pagination
+  //     qb.skip(skip).take(limit);
+  //     data = await qb.getMany();
+  //   } else {
+  //     // Return all results without pagination
+  //     data = await qb.getMany();
+  //     totalCount = data.length;
+  //   }
+
+  //   // Debug logging
+  //   if (data.length > 0) {
+  //     console.log('🔍 Sample stock data:', {
+  //       id: data[0].id,
+  //       inwardQty: data[0].inwardQty,
+  //       inwardAmt: data[0].inwardAmt,
+  //       rawKeys: Object.keys(data[0])
+  //     });
+  //   }
+
+  //   const mappedData = data.map((s: any) => this.formatInventoryStock(s));
+
+  //   // Debug logging for mapped data
+  //   if (mappedData.length > 0) {
+  //     console.log('🔍 Sample mapped data:', mappedData[0]);
+  //   }
+
+  //   return { 
+  //     data: mappedData, 
+  //     meta: {
+  //       total: totalCount,
+  //       page: page || 1,
+  //       pages: isPaginationRequested ? Math.ceil(totalCount / limit) : 1,
+  //       limit: limit || totalCount,
+  //     }
+  //   };
+  // }
+

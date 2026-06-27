@@ -41,31 +41,7 @@ export class  DocumentDefinitionController {
         }
       }
     
-    @httpGet('/:id')
-    public async getDocumentDefById(
-        @requestParam('id') id: string,
-        @request() req: Request,
-        @response() res: Response,
-        @next() next: NextFunction
-      ) {
-        try {
-          const document = await this.documentDefinitionService.getDocumentDefinitionById(id);
-          
-          if (!document) {
-            ControllerLogger.logNotFound('Document Definition', id, req, res);
-            return next(new AppError(404, "No documents found with this id"));
-          }
-         
-          ControllerLogger.logView('Document Definition', id, req, res);
-          res.status(200).json({
-            status: "success",
-            data: document,
-          });
-        } catch (err) {
-          ControllerLogger.logError('Get Document Definition by ID', err, req, res);
-          next(err);
-        }
-      }
+
 
       @httpPost('/')
       public async createDocumentDef(
@@ -94,31 +70,62 @@ export class  DocumentDefinitionController {
         }
       }
 
-      @httpPatch('/:id')
-      public async updateDocumentDef(
-        @requestParam('id') id: string,
-        @request() req: Request,
-        @response() res: Response,
-        @next() next: NextFunction
-      ) {
-        try {
-          const data = req.body;
-          
-          const document = await this.documentDefinitionService.updateDocumentDefinition(id, data);
-          
-          if (!document) {
-            ControllerLogger.logNotFound('Document Definition', id, req, res);
-            return next(new AppError(404, "No documents found with this id"));
-          }
-          
-          ControllerLogger.logSuccess('Document Definition updated', id, req, res);
-          res.status(200).json({
-            status: "success",
-            data: document,
-          });
-        } catch (err) {
-          ControllerLogger.logError('Update Document Definition', err, req, res);
-          next(err);
-        }
-      }
+
 }
+
+
+      // @httpPatch('/:id')
+      // public async updateDocumentDef(
+      //   @requestParam('id') id: string,
+      //   @request() req: Request,
+      //   @response() res: Response,
+      //   @next() next: NextFunction
+      // ) {
+      //   try {
+      //     const data = req.body;
+          
+      //     const document = await this.documentDefinitionService.updateDocumentDefinition(id, data);
+          
+      //     if (!document) {
+      //       ControllerLogger.logNotFound('Document Definition', id, req, res);
+      //       return next(new AppError(404, "No documents found with this id"));
+      //     }
+          
+      //     ControllerLogger.logSuccess('Document Definition updated', id, req, res);
+      //     res.status(200).json({
+      //       status: "success",
+      //       data: document,
+      //     });
+      //   } catch (err) {
+      //     ControllerLogger.logError('Update Document Definition', err, req, res);
+      //     next(err);
+      //   }
+      // }
+
+
+    // @httpGet('/:id')
+    // public async getDocumentDefById(
+    //     @requestParam('id') id: string,
+    //     @request() req: Request,
+    //     @response() res: Response,
+    //     @next() next: NextFunction
+    //   ) {
+    //     try {
+    //       const document = await this.documentDefinitionService.getDocumentDefinitionById(id);
+          
+    //       if (!document) {
+    //         ControllerLogger.logNotFound('Document Definition', id, req, res);
+    //         return next(new AppError(404, "No documents found with this id"));
+    //       }
+         
+    //       ControllerLogger.logView('Document Definition', id, req, res);
+    //       res.status(200).json({
+    //         status: "success",
+    //         data: document,
+    //       });
+    //     } catch (err) {
+    //       ControllerLogger.logError('Get Document Definition by ID', err, req, res);
+    //       next(err);
+    //     }
+    //   }
+
