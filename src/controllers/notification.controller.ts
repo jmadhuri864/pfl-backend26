@@ -20,21 +20,7 @@ export class NotificationController {
     this.bucketName = process.env.DO_SPACES_BUCKET || 'your-bucket-name';
   }
 
- /* @httpPost("/testNotification")
-  public async testNotification(@request() req: Request, @response() res: Response): Promise<void> {
-// const userId=res.locals.id;
-// console.log(userId)
-    const {userId,message } = req.body;
-    if (!userId || !message) {
-        res.status(400).json({ success: false, message: "userId and message are required" });
-        return;
-      }
-    // Emit notification event to the specific user's room
-    this.io.to(userId).emit("newNotification", { message, userId });
 
-    // Respond back to confirm
-    res.status(200).json({ success: true, message: "Notification sent to frontend" });
-  }*/
 
   @httpGet("/getallNotification")
   public async getAllNotification(@request() req: Request, @response() res: Response): Promise<void> {
@@ -50,12 +36,6 @@ export class NotificationController {
     res.status(200).json({ data });
   }
 
-  @httpPatch("/mark-read/:id")
-  public async markAsRead(@requestParam('id') id: string, @request() req: Request, @response() res: Response): Promise<void> {
-    const userId = res.locals.user.id;
-    await this.notificationService.markAsRead(id, userId);
-    res.status(200).json({ message: 'Notification marked as read' });
-  }
 
   @httpPatch("/mark-all-read")
   public async markAllAsRead(@request() req: Request, @response() res: Response): Promise<void> {
@@ -97,3 +77,29 @@ export class NotificationController {
     return `https://${this.bucketName}.sgp1.digitaloceanspaces.com/${s3Key}`;
   }
 }
+
+
+  // @httpPatch("/mark-read/:id")
+  // public async markAsRead(@requestParam('id') id: string, @request() req: Request, @response() res: Response): Promise<void> {
+  //   const userId = res.locals.user.id;
+  //   await this.notificationService.markAsRead(id, userId);
+  //   res.status(200).json({ message: 'Notification marked as read' });
+  // }
+
+
+   /* @httpPost("/testNotification")
+  public async testNotification(@request() req: Request, @response() res: Response): Promise<void> {
+// const userId=res.locals.id;
+// console.log(userId)
+    const {userId,message } = req.body;
+    if (!userId || !message) {
+        res.status(400).json({ success: false, message: "userId and message are required" });
+        return;
+      }
+    // Emit notification event to the specific user's room
+    this.io.to(userId).emit("newNotification", { message, userId });
+
+    // Respond back to confirm
+    res.status(200).json({ success: true, message: "Notification sent to frontend" });
+  }*/
+

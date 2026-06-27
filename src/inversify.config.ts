@@ -81,12 +81,10 @@ import { CropRepository } from "./repositories/crop.repository";
 import { Farmer } from "./entities/farmer.entity";
 import { DeliveryDetails } from "./entities/deliveryDetailsCust.entity";
 import { DeliveryDetailsCustRepository } from "./repositories/deliveryDetailsCust.repository";
-import { DeliveryDetailsCustService } from "./services/DeliveryDetailsCust.service";
 
 import { StatutoryDetails } from "./entities/statutoryCust.entity";
 import { StatutoryDetailsCustRepository } from "./repositories/statutoryDetails.repository";
-import { StatutoryDetailsCustService } from "./services/statutoryDetails.service";
-import { StatutoryDetailsCustController } from "./controllers/statutoryDetails.controller";
+
 import { ProductSpecification} from "./entities/productSpecificationCust.entity";
 import { ProductSpecificationCustRepository } from "./repositories/productspecification.repository";
 
@@ -94,7 +92,6 @@ import { BankDetailsvendRepository } from "./repositories/vendorBankDetails.repo
 import { BankDetailsvend } from "./entities/bankDetailsVend.entity";
 import { VendorSaleInfo } from "./entities/vendorsaleinfo.entity";
 import { VendorSaleInfoRepository } from "./repositories/vendorSaleInfo.repository";
-import { DeliveryDetailsCustController } from "./controllers/deliverydetailsCust.controller";
 import { BankDetailsvendService } from "./services/vendorBankDetails.service";
 import { VendorSaleInfoService } from "./services/vendorsaleinfo.service";
 import { PaymentTermsRepository } from "./repositories/paymentTermsCust.repository";
@@ -187,8 +184,7 @@ import { InwardRegisterService } from "./services/inwardRegister.service";
 import { InwardRegisterController } from "./controllers/inwardRegister.controller";
 import { DepartmentforApproveRepository } from "./repositories/departmentforapprove.repository";
 import { Departments } from "./entities/deparmentforapproval.entity";
-import { DepartmentforApproveService } from "./services/deparment.service";
-import { DepartmentforApproveController } from "./controllers/departments.controller";
+
 import { LaborRegister } from "./entities/labourregister.entity";
 import { LaborRegisterRepository } from "./repositories/labourRegister.repository";
 import { LaborRegisterService } from "./services/labourRegister.service";
@@ -342,8 +338,7 @@ import { SuperAdminController } from "./controllers/superAdmin.controller";
 import { ReportController } from "./controllers/report.controller";
 import { ReportService } from "./services/report.service";
 import { SalesReportService } from "./services/salesReport.service";
-import { RoleController } from "./controllers/role.controller";
-import { RoleService } from "./services/role.service";
+
 import { RoleRepository } from "./repositories/role.repository";
 import { Role } from "./entities/role.entity";
 import { StockCorrectionRepository } from "./repositories/stockCorrection.repository";
@@ -727,8 +722,7 @@ container.bind<DeliveryDetailsCustRepository>(TYPES.DeliveryDetailsCustRepositor
   return dataSource.getRepository(DeliveryDetails).extend(DeliveryDetailsCustRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 
-container.bind<DeliveryDetailsCustService>(TYPES.DeliveryDetailsCustService).to(DeliveryDetailsCustService);
-container.bind<DeliveryDetailsCustController>(TYPES.DeliveryDetailsCustController).to(DeliveryDetailsCustController);
+
 
 //----------------------------statutorydetailsCust---------------
 container.bind<StatutoryDetailsCustRepository>(TYPES.StatutoryDetailsCustRepository).toDynamicValue((context) => {
@@ -736,8 +730,7 @@ container.bind<StatutoryDetailsCustRepository>(TYPES.StatutoryDetailsCustReposit
   return dataSource.getRepository(StatutoryDetails).extend(StatutoryDetailsCustRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
 
-container.bind<StatutoryDetailsCustService>(TYPES.StatutoryDetailsCustService).to(StatutoryDetailsCustService);
-container.bind<StatutoryDetailsCustController>(TYPES.StatutoryDetailsCustController).to(StatutoryDetailsCustController);
+
 
 //---------------------------payment_terms_customer---------------------------------
 // Assuming TYPES.paymentTermsRepository is a symbol or string used to identify the repository
@@ -947,8 +940,7 @@ container.bind<DepartmentforApproveRepository>(TYPES.DepartmentforApproveReposit
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(Departments).extend(DepartmentforApproveRepository);
 }).inRequestScope(); // or .singletonScope() depending on your scope requirements
-container.bind<DepartmentforApproveService>(TYPES.DepartmentforApproveService).to(DepartmentforApproveService).inSingletonScope();
-container.bind<DepartmentforApproveController>(TYPES.DepartmentforApproveController).to(DepartmentforApproveController).inSingletonScope();
+
 
 //------------------------------------labour-register-----------------------------------------
 container.bind<LaborRegisterRepository>(TYPES.LaborRegisterRepository).toDynamicValue((context) => {
@@ -1389,8 +1381,7 @@ container.bind<RoleRepository>(TYPES.RoleRepository).toDynamicValue((context) =>
   const dataSource = context.container.get<DataSource>(TYPES.DataSource);
   return dataSource.getRepository(Role).extend(RoleRepository);
 }).inRequestScope();
-container.bind<RoleService>(TYPES.RoleService).to(RoleService).inSingletonScope();
-container.bind<RoleController>(TYPES.RoleController).to(RoleController).inSingletonScope();
+
 
 // stockCorrection
 container.bind<StockCorrectionRepository>(TYPES.StockCorrectionRepository).toDynamicValue((context) => {

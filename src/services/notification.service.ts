@@ -120,14 +120,7 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(notificationId: string, userId: string): Promise<void> {
-    await this.notificationRepository
-      .createQueryBuilder()
-      .update()
-      .set({ isRead: true })
-      .where('id = :notificationId AND user_id = :userId', { notificationId, userId })
-      .execute();
-  }
+
 
   async markAllAsRead(userId: string): Promise<void> {
     await this.notificationRepository
@@ -268,3 +261,14 @@ export class NotificationService {
     return buffer as unknown as Buffer;
   }
 }
+
+
+  // async markAsRead(notificationId: string, userId: string): Promise<void> {
+  //   await this.notificationRepository
+  //     .createQueryBuilder()
+  //     .update()
+  //     .set({ isRead: true })
+  //     .where('id = :notificationId AND user_id = :userId', { notificationId, userId })
+  //     .execute();
+  // }
+

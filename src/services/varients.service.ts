@@ -22,42 +22,7 @@ export class ProductVarientsService {
     this.productRepository = this.dataSource.getRepository(Product);
   }
 
-  public async createVarient(productId: string, data: any): Promise<any> {
-    const product = await this.productRepository.findOne({
-      where: { id: productId },
-      select: ['id', 'name', 'prefix'],
-    });
 
-    if (!product) {
-      throw new Error(`Product with ID ${productId} not found`);
-    }
-
-    const variants = await Promise.all(
-      data.map(async (item: any) => {
-        const variant = this.productVarientRepository.create({
-          ...item,
-          product,
-          productName: product.name,
-          variantName: await getVariantIdentifier(
-            product.name,  item.count, item.size, item.variety, item.origin, item.brand
-          ),
-          variantCode: await generateVariantCode(
-            product.id,
-            product.prefix,
-            item.count,
-            item.size,
-            item.variety,
-            item.origin,
-            item.brand,
-          ),
-        });
-
-        return variant;
-      }),
-    );
-
-    return await this.productVarientRepository.save(variants);
-  }
 
   async getVarientsByIds(ids: string[]): Promise<any[]> {
     if (!ids || ids.length === 0) return [];
@@ -100,6 +65,43 @@ export class ProductVarientsService {
     }
 }
 
+
+  // public async createVarient(productId: string, data: any): Promise<any> {
+  //   const product = await this.productRepository.findOne({
+  //     where: { id: productId },
+  //     select: ['id', 'name', 'prefix'],
+  //   });
+
+  //   if (!product) {
+  //     throw new Error(`Product with ID ${productId} not found`);
+  //   }
+
+  //   const variants = await Promise.all(
+  //     data.map(async (item: any) => {
+  //       const variant = this.productVarientRepository.create({
+  //         ...item,
+  //         product,
+  //         productName: product.name,
+  //         variantName: await getVariantIdentifier(
+  //           product.name,  item.count, item.size, item.variety, item.origin, item.brand
+  //         ),
+  //         variantCode: await generateVariantCode(
+  //           product.id,
+  //           product.prefix,
+  //           item.count,
+  //           item.size,
+  //           item.variety,
+  //           item.origin,
+  //           item.brand,
+  //         ),
+  //       });
+
+  //       return variant;
+  //     }),
+  //   );
+
+  //   return await this.productVarientRepository.save(variants);
+  // }
 
 
 export async function generateVariantCode(

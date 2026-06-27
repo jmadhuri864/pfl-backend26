@@ -59,34 +59,7 @@ public streamNotifications(
 }
 
 
-  /**
-   * Get SSE connection status
-   * GET /sse/status
-   */
-  @httpGet('/status')
-  public async getStatus(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction
-  ) {
-    try {
-      const userId = res.locals.user?.id;
-      
-      const status = {
-        totalConnections: this.sseService.getActiveConnectionsCount(),
-        activeUsers: this.sseService.getActiveUsers().length,
-        userConnected: userId ? this.sseService.isUserConnected(userId) : false,
-      };
 
-      res.status(200).json({
-        status: 'success',
-        data: status,
-      });
-    } catch (error) {
-      logger.error('Error getting SSE status:', error);
-      next(error);
-    }
-  }
 
   /**
    * Test SSE endpoint - Simple test without full auth
@@ -145,3 +118,34 @@ public streamNotifications(
     }
   }
 }
+
+
+  // /**
+  //  * Get SSE connection status
+  //  * GET /sse/status
+  //  */
+  // @httpGet('/status')
+  // public async getStatus(
+  //   @request() req: Request,
+  //   @response() res: Response,
+  //   @next() next: NextFunction
+  // ) {
+  //   try {
+  //     const userId = res.locals.user?.id;
+      
+  //     const status = {
+  //       totalConnections: this.sseService.getActiveConnectionsCount(),
+  //       activeUsers: this.sseService.getActiveUsers().length,
+  //       userConnected: userId ? this.sseService.isUserConnected(userId) : false,
+  //     };
+
+  //     res.status(200).json({
+  //       status: 'success',
+  //       data: status,
+  //     });
+  //   } catch (error) {
+  //     logger.error('Error getting SSE status:', error);
+  //     next(error);
+  //   }
+  // }
+

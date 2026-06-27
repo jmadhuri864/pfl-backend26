@@ -63,54 +63,7 @@ public async createTarget(
   }
 }
 
-//TODO: Get Procurement Target of all employees of logged in manager
-@httpGet("/manager/pending")
-async getPendingTargets(@request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction) {
-  const managerId = res.locals.user.id;
 
-  const data = await this.procurementTargetService
-    .getTargetsForManagerApproval(
-      managerId,
-      DepartmentEnum.PURCHASE
-    );
-
-  return res.status(200).json({
-    status: "success",
-    data,
-  });
-}
-
-//TODO: Update Procurement Target Status (Approve/Reject) and also can update target quantity by Manager
-@httpPatch('/:id')
-async updateTargetStatus(
-  @requestParam('id') id: string,
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    // const managerId = res.locals.user.id;
-    // const payload = req.body;
-
-    // TODO: Implement the update logic
-    // const updatedTarget = await this.procurementTargetService.updateTargetStatus(
-    //   id,
-    //   managerId,
-    //   payload
-    // );
-
-    return res.status(200).json({
-      status: "success",
-      message: "Update functionality not yet implemented"
-      //data: updatedTarget
-    });
-  } catch (error) {
-    logger.error('Error updating procurement target status', error);
-    next(error);
-  }
-}
 
 //TODO: Get all procurement targets
 @httpGet("/getAll")
@@ -139,46 +92,9 @@ async getAllTargets(
   }
 }
 
-//TODO: Get all procurement targets (simple version for debugging)
-@httpGet("/getAllSimple")
-async getAllTargetsSimple(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    const employeeId = res.locals.user?.id; 
-    const data = await this.procurementTargetService.getAllTargetsSimple(employeeId);
 
-    return res.status(200).json({
-      status: "success",
-      data: data.targets,
-    });
-  } catch (error) {
-    logger.error('Error fetching all procurement targets (simple)', error);
-    next(error);
-  }
-}
 
-//TODO: Debug endpoint to get ALL targets without filtering
-@httpGet("/debug")
-async getAllTargetsDebug(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    const data = await this.procurementTargetService.getAllTargetsDebug();
 
-    return res.status(200).json({
-      status: "success",
-      data,
-    });
-  } catch (error) {
-    logger.error('Error in debug endpoint', error);
-    next(error);
-  }
-}
 
 //TODO: Get Monthly Plan View for Procurement Target
 @httpGet('/monthly-plan-view')
@@ -281,30 +197,7 @@ async getMonthlyPlanUpdateStructured(
     });
   }
 }
- //TODO: Update Procurement Target Status (Approve/Reject) and also can update target quantity  by Manager
-@httpPatch('/get/:id')
-async updateSalesTargetStatus(
-  @requestParam('id') id: string,
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-  
-    const result =
-      await this.procurementTargetService.updateStatus(
-        id,
-        req.body,
-      );
 
-    return res.status(200).json({
-      status: 'success',
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-}
 
 //TODO:Get Plane In Brif excel format
 @httpGet('/dashboard-summary/plan-in-brief/download')
@@ -443,3 +336,129 @@ public async downloadPlanInBriefExcel(
     }
   }
 }
+
+
+//  //TODO: Update Procurement Target Status (Approve/Reject) and also can update target quantity  by Manager
+// @httpPatch('/get/:id')
+// async updateSalesTargetStatus(
+//   @requestParam('id') id: string,
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+  
+//     const result =
+//       await this.procurementTargetService.updateStatus(
+//         id,
+//         req.body,
+//       );
+
+//     return res.status(200).json({
+//       status: 'success',
+//       data: result,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// }
+
+
+// //TODO: Debug endpoint to get ALL targets without filtering
+// @httpGet("/debug")
+// async getAllTargetsDebug(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+//     const data = await this.procurementTargetService.getAllTargetsDebug();
+
+//     return res.status(200).json({
+//       status: "success",
+//       data,
+//     });
+//   } catch (error) {
+//     logger.error('Error in debug endpoint', error);
+//     next(error);
+//   }
+// }
+
+
+// @httpGet("/getAllSimple")
+// async getAllTargetsSimple(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+//     const employeeId = res.locals.user?.id; 
+//     const data = await this.procurementTargetService.getAllTargetsSimple(employeeId);
+
+//     return res.status(200).json({
+//       status: "success",
+//       data: data.targets,
+//     });
+//   } catch (error) {
+//     logger.error('Error fetching all procurement targets (simple)', error);
+//     next(error);
+//   }
+// }
+
+
+
+// //TODO: Get all procurement targets (simple version for debugging)
+
+
+// //TODO: Update Procurement Target Status (Approve/Reject) and also can update target quantity by Manager
+// @httpPatch('/:id')
+// async updateTargetStatus(
+//   @requestParam('id') id: string,
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+//     // const managerId = res.locals.user.id;
+//     // const payload = req.body;
+
+//     // TODO: Implement the update logic
+//     // const updatedTarget = await this.procurementTargetService.updateTargetStatus(
+//     //   id,
+//     //   managerId,
+//     //   payload
+//     // );
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Update functionality not yet implemented"
+//       //data: updatedTarget
+//     });
+//   } catch (error) {
+//     logger.error('Error updating procurement target status', error);
+//     next(error);
+//   }
+// }
+
+
+
+// //TODO: Get Procurement Target of all employees of logged in manager
+// @httpGet("/manager/pending")
+// async getPendingTargets(@request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction) {
+//   const managerId = res.locals.user.id;
+
+//   const data = await this.procurementTargetService
+//     .getTargetsForManagerApproval(
+//       managerId,
+//       DepartmentEnum.PURCHASE
+//     );
+
+//   return res.status(200).json({
+//     status: "success",
+//     data,
+//   });
+// }
+
+
