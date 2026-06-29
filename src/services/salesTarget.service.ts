@@ -130,159 +130,9 @@ export class SalesTargetService {
         }
     }
 
-    // Get customer-wise product sales
-    async getCustomerWiseProductSales(employeeId: string, month: number, year: number) {
-        const startDate = new Date(year, month - 1, 1, 0, 0, 0, 0);
-        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-        console.log("Date range:", { startDate, endDate });
 
-        const employee = await this.userRepository.findOne({
-            where: { id: employeeId }
-        });
 
-        const salesTarget = await this.salesTargetRepository
-            .createQueryBuilder("st")
-            .where("st.employee = :employeeId", { employeeId })
-            .andWhere("st.month = :month", { month })
-            .andWhere("st.year = :year", { year })
-            .getOne();
-
-        if (!salesTarget) {
-            return {
-                employeeId,
-                employeeName: employee?.firstName + " " + employee?.lastName,
-                month: `${year}-${month}`,
-                monthlySummary: { target: 0, achieved: 0, percentage: 0 },
-                customers: []
-            };
-        }
-
-        const targetProducts = await this.salesTargetProduct.find({
-            where: { target: { id: salesTarget.id } },
-            relations: ["customer", "product"]
-        });
-
-        const customerMap = new Map<string, any>();
-        let monthlyTargetTotal = 0;
-        let monthlyAchievedTotal = 0;
-
-        for (const tp of targetProducts) {
-            const customerId = tp.customer.id;
-
-            if (!customerMap.has(customerId)) {
-                customerMap.set(customerId, {
-                    customerId: tp.customer.id,
-                    customerName: tp.customer.organisationName,
-                    products: []
-                });
-            }
-
-            const weeks = await this.weeklySalesRepo.find({
-                where: { productTarget: { id: tp.id } },
-                order: { weekNo: "ASC" }
-            });
-
-            let productTargetTotal = 0;
-            let productAchievedTotal = 0;
-            const weeklyData = [];
-
-            for (const week of weeks) {
-                const achievedResult = await this.salesAchivementRepo
-                    .createQueryBuilder("a")
-                    .select("COALESCE(SUM(a.achievedAmount),0)", "total")
-                    .where("a.weeklySales = :weekId", { weekId: week.id })
-                    .getRawOne();
-
-                const weeklyAchieved = Number(achievedResult.total);
-                const weeklyTarget = Number(week.saleAmount);
-
-                productTargetTotal += weeklyTarget;
-                productAchievedTotal += weeklyAchieved;
-                monthlyTargetTotal += weeklyTarget;
-                monthlyAchievedTotal += weeklyAchieved;
-
-                const startDate = week.weekStartDate ? new Date(week.weekStartDate) : null;
-                const endDate = week.weekEndDate ? new Date(week.weekEndDate) : null;
-
-                weeklyData.push({
-                    weekNo: week.weekNo,
-                    dateRange: `${startDate?.toISOString().slice(0, 10) || ''} to ${endDate?.toISOString().slice(0, 10) || ''}`,
-                    target: weeklyTarget,
-                    achieved: weeklyAchieved,
-                    percentage: weeklyTarget > 0 ? Number(((weeklyAchieved / weeklyTarget) * 100).toFixed(2)) : 0
-                });
-            }
-
-            customerMap.get(customerId).products.push({
-                productId: tp.product.id,
-                productName: tp.product.name,
-                weekly: weeklyData,
-                total: {
-                    target: productTargetTotal,
-                    achieved: productAchievedTotal,
-                    percentage: productTargetTotal > 0 ? Number(((productAchievedTotal / productTargetTotal) * 100).toFixed(2)) : 0
-                }
-            });
-        }
-
-        return {
-            employeeId,
-            employeeName: employee?.firstName + " " + employee?.lastName,
-            month: `${year}-${month}`,
-            monthlySummary: {
-                target: monthlyTargetTotal,
-                achieved: monthlyAchievedTotal,
-                percentage: monthlyTargetTotal > 0 ? Number(((monthlyAchievedTotal / monthlyTargetTotal) * 100).toFixed(2)) : 0
-            },
-            customers: Array.from(customerMap.values())
-        };
-    }
-
-    // Review target
-    async reviewTarget(targetId: string, reviewData: any, reviewerId: string) {
-        try {
-            const target = await this.salesTargetRepository.findOne({
-                where: { id: targetId }
-            });
-
-            if (!target) {
-                throw new Error("Sales target not found");
-            }
-
-            if (reviewData.status) {
-                target.status = reviewData.status;
-            }
-
-            await this.salesTargetRepository.save(target);
-            return target;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    // Update status
-    async updateStatus(targetId: string, status: Status, managerId: string) {
-        try {
-            const target = await this.salesTargetRepository.findOne({
-                where: { id: targetId }
-            });
-
-            if (!target) {
-                throw new Error("Sales target not found");
-            }
-
-            target.status = status;
-            await this.salesTargetRepository.save(target);
-
-            return {
-                message: "Status updated successfully",
-                target
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
 
     // Get all targets with pagination
     async getalltargets(employeeId: string, page: number = 1, limit: number = 10) {
@@ -583,98 +433,7 @@ export class SalesTargetService {
         };
     }
 
-    // Generate monthly plan Excel (3 sheets)
-    async generateMonthlyPlanExcel(targetId: string) {
-        try {
-            const data = await this.getMonthlyPlanViewStructured(targetId);
-
-            const workbook = new ExcelJS.Workbook();
-
-            // Sheet 1: Summary
-            const summarySheet = workbook.addWorksheet('Summary');
-            summarySheet.columns = [
-                { header: 'Employee', key: 'employee', width: 25 },
-                { header: 'Month', key: 'month', width: 10 },
-                { header: 'Year', key: 'year', width: 10 },
-                { header: 'Total Amount', key: 'total', width: 15 }
-            ];
-            summarySheet.addRow({
-                employee: data.employee,
-                month: data.month,
-                year: data.year,
-                total: data.monthlyTotalQty
-            });
-
-            // Sheet 2: Customer-wise breakdown
-            const customerSheet = workbook.addWorksheet('Customer Breakdown');
-            customerSheet.columns = [
-                { header: 'Customer', key: 'customer', width: 30 },
-                { header: 'Total Amount', key: 'total', width: 15 }
-            ];
-            data.plan.forEach((customer: any) => {
-                customerSheet.addRow({
-                    customer: customer.customer,
-                    total: customer.customerSalesTotAmt
-                });
-            });
-
-            // Sheet 3: Detailed plan
-            const detailSheet = workbook.addWorksheet('Detailed Plan');
-            detailSheet.columns = [
-                { header: 'Customer', key: 'customer', width: 25 },
-                { header: 'Product', key: 'product', width: 25 },
-                { header: 'Week 1', key: 'week1', width: 12 },
-                { header: 'Week 2', key: 'week2', width: 12 },
-                { header: 'Week 3', key: 'week3', width: 12 },
-                { header: 'Week 4', key: 'week4', width: 12 },
-                { header: 'Week 5', key: 'week5', width: 12 },
-                { header: 'Total', key: 'total', width: 12 }
-            ];
-
-            data.plan.forEach((customer: any) => {
-                customer.salesTarget.forEach((product: any) => {
-                    const weekData: any = { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0 };
-                    product.weeklyTargets.forEach((week: any) => {
-                        weekData[`week${week.weekNo}`] = week.amount;
-                    });
-
-                    detailSheet.addRow({
-                        customer: customer.customer,
-                        product: product.product,
-                        week1: weekData.week1,
-                        week2: weekData.week2,
-                        week3: weekData.week3,
-                        week4: weekData.week4,
-                        week5: weekData.week5,
-                        total: product.weeklyTargetsTotAmt
-                    });
-                });
-            });
-
-            const exportDir = path.join(process.cwd(), 'exports', 'monthly-plans');
-            if (!fs.existsSync(exportDir)) {
-                fs.mkdirSync(exportDir, { recursive: true });
-            }
-
-            const filename = `Sales_Target_${targetId}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            const filePath = path.join(exportDir, filename);
-            const relativePath = path.join('monthly-plans', filename);
-
-            await workbook.xlsx.writeFile(filePath);
-
-            const buffer = await workbook.xlsx.writeBuffer();
-
-            return {
-                buffer: Buffer.from(buffer),
-                filename,
-                filePath,
-                relativePath,
-                contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
+ 
 
     // Generate view plan Excel (single sheet)
     async generateViewPlanExcel(targetId: string) {
@@ -740,67 +499,7 @@ export class SalesTargetService {
         }
     }
 
-    // Generate monthly business plan Excel
-    async generateMonthlyBusinessPlanExcel(targetId: string) {
-        try {
-            const data = await this.getMonthlyPlanViewStructured(targetId);
-
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Monthly Business Plan');
-
-            // Add title
-            worksheet.mergeCells('A1:H1');
-            worksheet.getCell('A1').value = 'Monthly Sales Business Plan';
-            worksheet.getCell('A1').font = { size: 16, bold: true };
-            worksheet.getCell('A1').alignment = { horizontal: 'center' };
-
-            // Add employee info
-            worksheet.getCell('A2').value = 'Employee:';
-            worksheet.getCell('B2').value = data.employee;
-            worksheet.getCell('A3').value = 'Month/Year:';
-            worksheet.getCell('B3').value = `${data.month}/${data.year}`;
-
-            // Add headers
-            worksheet.getRow(5).values = ['Customer', 'Product', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Total'];
-            worksheet.getRow(5).font = { bold: true };
-
-            let rowIndex = 6;
-            data.plan.forEach((customer: any) => {
-                customer.salesTarget.forEach((product: any) => {
-                    const weekData: any = { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0 };
-                    product.weeklyTargets.forEach((week: any) => {
-                        weekData[`week${week.weekNo}`] = week.amount;
-                    });
-
-                    worksheet.getRow(rowIndex).values = [
-                        customer.customer,
-                        product.product,
-                        weekData.week1,
-                        weekData.week2,
-                        weekData.week3,
-                        weekData.week4,
-                        weekData.week5,
-                        product.weeklyTargetsTotAmt
-                    ];
-                    rowIndex++;
-                });
-            });
-
-            const exportDir = path.join(process.cwd(), 'exports', 'monthly-plans');
-            if (!fs.existsSync(exportDir)) {
-                fs.mkdirSync(exportDir, { recursive: true });
-            }
-
-            const fileName = `Sales_Target_${targetId}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            const filePath = path.join(exportDir, fileName);
-
-            await workbook.xlsx.writeFile(filePath);
-
-            return { fileName, filePath };
-        } catch (error) {
-            throw error;
-        }
-    }
+  
 
     // Get target performance
     async getTargetPerformance(
@@ -1351,3 +1050,320 @@ export class SalesTargetService {
         }
     }
 }
+
+
+  // // Generate monthly business plan Excel
+    // async generateMonthlyBusinessPlanExcel(targetId: string) {
+    //     try {
+    //         const data = await this.getMonthlyPlanViewStructured(targetId);
+
+    //         const workbook = new ExcelJS.Workbook();
+    //         const worksheet = workbook.addWorksheet('Monthly Business Plan');
+
+    //         // Add title
+    //         worksheet.mergeCells('A1:H1');
+    //         worksheet.getCell('A1').value = 'Monthly Sales Business Plan';
+    //         worksheet.getCell('A1').font = { size: 16, bold: true };
+    //         worksheet.getCell('A1').alignment = { horizontal: 'center' };
+
+    //         // Add employee info
+    //         worksheet.getCell('A2').value = 'Employee:';
+    //         worksheet.getCell('B2').value = data.employee;
+    //         worksheet.getCell('A3').value = 'Month/Year:';
+    //         worksheet.getCell('B3').value = `${data.month}/${data.year}`;
+
+    //         // Add headers
+    //         worksheet.getRow(5).values = ['Customer', 'Product', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Total'];
+    //         worksheet.getRow(5).font = { bold: true };
+
+    //         let rowIndex = 6;
+    //         data.plan.forEach((customer: any) => {
+    //             customer.salesTarget.forEach((product: any) => {
+    //                 const weekData: any = { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0 };
+    //                 product.weeklyTargets.forEach((week: any) => {
+    //                     weekData[`week${week.weekNo}`] = week.amount;
+    //                 });
+
+    //                 worksheet.getRow(rowIndex).values = [
+    //                     customer.customer,
+    //                     product.product,
+    //                     weekData.week1,
+    //                     weekData.week2,
+    //                     weekData.week3,
+    //                     weekData.week4,
+    //                     weekData.week5,
+    //                     product.weeklyTargetsTotAmt
+    //                 ];
+    //                 rowIndex++;
+    //             });
+    //         });
+
+    //         const exportDir = path.join(process.cwd(), 'exports', 'monthly-plans');
+    //         if (!fs.existsSync(exportDir)) {
+    //             fs.mkdirSync(exportDir, { recursive: true });
+    //         }
+
+    //         const fileName = `Sales_Target_${targetId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    //         const filePath = path.join(exportDir, fileName);
+
+    //         await workbook.xlsx.writeFile(filePath);
+
+    //         return { fileName, filePath };
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+   // // Generate monthly plan Excel (3 sheets)
+    // async generateMonthlyPlanExcel(targetId: string) {
+    //     try {
+    //         const data = await this.getMonthlyPlanViewStructured(targetId);
+
+    //         const workbook = new ExcelJS.Workbook();
+
+    //         // Sheet 1: Summary
+    //         const summarySheet = workbook.addWorksheet('Summary');
+    //         summarySheet.columns = [
+    //             { header: 'Employee', key: 'employee', width: 25 },
+    //             { header: 'Month', key: 'month', width: 10 },
+    //             { header: 'Year', key: 'year', width: 10 },
+    //             { header: 'Total Amount', key: 'total', width: 15 }
+    //         ];
+    //         summarySheet.addRow({
+    //             employee: data.employee,
+    //             month: data.month,
+    //             year: data.year,
+    //             total: data.monthlyTotalQty
+    //         });
+
+    //         // Sheet 2: Customer-wise breakdown
+    //         const customerSheet = workbook.addWorksheet('Customer Breakdown');
+    //         customerSheet.columns = [
+    //             { header: 'Customer', key: 'customer', width: 30 },
+    //             { header: 'Total Amount', key: 'total', width: 15 }
+    //         ];
+    //         data.plan.forEach((customer: any) => {
+    //             customerSheet.addRow({
+    //                 customer: customer.customer,
+    //                 total: customer.customerSalesTotAmt
+    //             });
+    //         });
+
+    //         // Sheet 3: Detailed plan
+    //         const detailSheet = workbook.addWorksheet('Detailed Plan');
+    //         detailSheet.columns = [
+    //             { header: 'Customer', key: 'customer', width: 25 },
+    //             { header: 'Product', key: 'product', width: 25 },
+    //             { header: 'Week 1', key: 'week1', width: 12 },
+    //             { header: 'Week 2', key: 'week2', width: 12 },
+    //             { header: 'Week 3', key: 'week3', width: 12 },
+    //             { header: 'Week 4', key: 'week4', width: 12 },
+    //             { header: 'Week 5', key: 'week5', width: 12 },
+    //             { header: 'Total', key: 'total', width: 12 }
+    //         ];
+
+    //         data.plan.forEach((customer: any) => {
+    //             customer.salesTarget.forEach((product: any) => {
+    //                 const weekData: any = { week1: 0, week2: 0, week3: 0, week4: 0, week5: 0 };
+    //                 product.weeklyTargets.forEach((week: any) => {
+    //                     weekData[`week${week.weekNo}`] = week.amount;
+    //                 });
+
+    //                 detailSheet.addRow({
+    //                     customer: customer.customer,
+    //                     product: product.product,
+    //                     week1: weekData.week1,
+    //                     week2: weekData.week2,
+    //                     week3: weekData.week3,
+    //                     week4: weekData.week4,
+    //                     week5: weekData.week5,
+    //                     total: product.weeklyTargetsTotAmt
+    //                 });
+    //             });
+    //         });
+
+    //         const exportDir = path.join(process.cwd(), 'exports', 'monthly-plans');
+    //         if (!fs.existsSync(exportDir)) {
+    //             fs.mkdirSync(exportDir, { recursive: true });
+    //         }
+
+    //         const filename = `Sales_Target_${targetId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    //         const filePath = path.join(exportDir, filename);
+    //         const relativePath = path.join('monthly-plans', filename);
+
+    //         await workbook.xlsx.writeFile(filePath);
+
+    //         const buffer = await workbook.xlsx.writeBuffer();
+
+    //         return {
+    //             buffer: Buffer.from(buffer),
+    //             filename,
+    //             filePath,
+    //             relativePath,
+    //             contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    //         };
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+    // // Update status
+    // async updateStatus(targetId: string, status: Status, managerId: string) {
+    //     try {
+    //         const target = await this.salesTargetRepository.findOne({
+    //             where: { id: targetId }
+    //         });
+
+    //         if (!target) {
+    //             throw new Error("Sales target not found");
+    //         }
+
+    //         target.status = status;
+    //         await this.salesTargetRepository.save(target);
+
+    //         return {
+    //             message: "Status updated successfully",
+    //             target
+    //         };
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+
+    // // Review target
+    // async reviewTarget(targetId: string, reviewData: any, reviewerId: string) {
+    //     try {
+    //         const target = await this.salesTargetRepository.findOne({
+    //             where: { id: targetId }
+    //         });
+
+    //         if (!target) {
+    //             throw new Error("Sales target not found");
+    //         }
+
+    //         if (reviewData.status) {
+    //             target.status = reviewData.status;
+    //         }
+
+    //         await this.salesTargetRepository.save(target);
+    //         return target;
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+
+
+    // // Get customer-wise product sales
+    // async getCustomerWiseProductSales(employeeId: string, month: number, year: number) {
+    //     const startDate = new Date(year, month - 1, 1, 0, 0, 0, 0);
+    //     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    //     console.log("Date range:", { startDate, endDate });
+
+    //     const employee = await this.userRepository.findOne({
+    //         where: { id: employeeId }
+    //     });
+
+    //     const salesTarget = await this.salesTargetRepository
+    //         .createQueryBuilder("st")
+    //         .where("st.employee = :employeeId", { employeeId })
+    //         .andWhere("st.month = :month", { month })
+    //         .andWhere("st.year = :year", { year })
+    //         .getOne();
+
+    //     if (!salesTarget) {
+    //         return {
+    //             employeeId,
+    //             employeeName: employee?.firstName + " " + employee?.lastName,
+    //             month: `${year}-${month}`,
+    //             monthlySummary: { target: 0, achieved: 0, percentage: 0 },
+    //             customers: []
+    //         };
+    //     }
+
+    //     const targetProducts = await this.salesTargetProduct.find({
+    //         where: { target: { id: salesTarget.id } },
+    //         relations: ["customer", "product"]
+    //     });
+
+    //     const customerMap = new Map<string, any>();
+    //     let monthlyTargetTotal = 0;
+    //     let monthlyAchievedTotal = 0;
+
+    //     for (const tp of targetProducts) {
+    //         const customerId = tp.customer.id;
+
+    //         if (!customerMap.has(customerId)) {
+    //             customerMap.set(customerId, {
+    //                 customerId: tp.customer.id,
+    //                 customerName: tp.customer.organisationName,
+    //                 products: []
+    //             });
+    //         }
+
+    //         const weeks = await this.weeklySalesRepo.find({
+    //             where: { productTarget: { id: tp.id } },
+    //             order: { weekNo: "ASC" }
+    //         });
+
+    //         let productTargetTotal = 0;
+    //         let productAchievedTotal = 0;
+    //         const weeklyData = [];
+
+    //         for (const week of weeks) {
+    //             const achievedResult = await this.salesAchivementRepo
+    //                 .createQueryBuilder("a")
+    //                 .select("COALESCE(SUM(a.achievedAmount),0)", "total")
+    //                 .where("a.weeklySales = :weekId", { weekId: week.id })
+    //                 .getRawOne();
+
+    //             const weeklyAchieved = Number(achievedResult.total);
+    //             const weeklyTarget = Number(week.saleAmount);
+
+    //             productTargetTotal += weeklyTarget;
+    //             productAchievedTotal += weeklyAchieved;
+    //             monthlyTargetTotal += weeklyTarget;
+    //             monthlyAchievedTotal += weeklyAchieved;
+
+    //             const startDate = week.weekStartDate ? new Date(week.weekStartDate) : null;
+    //             const endDate = week.weekEndDate ? new Date(week.weekEndDate) : null;
+
+    //             weeklyData.push({
+    //                 weekNo: week.weekNo,
+    //                 dateRange: `${startDate?.toISOString().slice(0, 10) || ''} to ${endDate?.toISOString().slice(0, 10) || ''}`,
+    //                 target: weeklyTarget,
+    //                 achieved: weeklyAchieved,
+    //                 percentage: weeklyTarget > 0 ? Number(((weeklyAchieved / weeklyTarget) * 100).toFixed(2)) : 0
+    //             });
+    //         }
+
+    //         customerMap.get(customerId).products.push({
+    //             productId: tp.product.id,
+    //             productName: tp.product.name,
+    //             weekly: weeklyData,
+    //             total: {
+    //                 target: productTargetTotal,
+    //                 achieved: productAchievedTotal,
+    //                 percentage: productTargetTotal > 0 ? Number(((productAchievedTotal / productTargetTotal) * 100).toFixed(2)) : 0
+    //             }
+    //         });
+    //     }
+
+    //     return {
+    //         employeeId,
+    //         employeeName: employee?.firstName + " " + employee?.lastName,
+    //         month: `${year}-${month}`,
+    //         monthlySummary: {
+    //             target: monthlyTargetTotal,
+    //             achieved: monthlyAchievedTotal,
+    //             percentage: monthlyTargetTotal > 0 ? Number(((monthlyAchievedTotal / monthlyTargetTotal) * 100).toFixed(2)) : 0
+    //         },
+    //         customers: Array.from(customerMap.values())
+    //     };
+    // }
+
+

@@ -105,86 +105,11 @@ async getMonthlyPlanUpdateStructured(
   }
 }
 
-@httpGet("/:employeeId/customer-product-sales")
-async getCustomerWiseProductSales(
-  @requestParam("employeeId") employeeId: string,
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const { month, year } = req.query;
-    const data = await this.salesTargetService.getCustomerWiseProductSales(
-      employeeId,
-      Number(month),
-      Number(year)
-    );
-    
-    return res.status(200).json({
-      status: "success",
-      data,
-    });
-  } catch (error: any) {
-    logger.error('Error fetching customer-wise product sales', error);
-    return res.status(500).json({
-      status: "error",
-      message: "Internal server error"
-    });
-  }
-}
 
-@httpPut("/:id/review")
-async reviewSalesTarget(
-  @requestParam("id") targetId: string,
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const data = await this.salesTargetService.reviewTarget(
-      targetId,
-      req.body,
-      res.locals.user.id
-    );
-    
-    return res.status(200).json({
-      status: "success",
-      data,
-    });
-  } catch (error: any) {
-    logger.error('Error reviewing sales target', error);
-    return res.status(500).json({
-      status: "error",
-      message: "Internal server error"
-    });
-  }
-}
 
-@httpPatch('/:id/status')
-async updateSalesTargetStatus(
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const targetId = req.params.id;
-    const { status } = req.body;
-    const managerId = res.locals.user.id;
 
-    const result = await this.salesTargetService.updateStatus(
-      targetId,
-      status,
-      managerId
-    );
 
-    return res.status(200).json({
-      success: true,
-      message: result.message
-    });
-  } catch (error: any) {
-    return res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-}
+
 
 //TODO: Get all sales targets
 @httpGet("/getAll")
@@ -214,92 +139,9 @@ async getAllTargets(
   }
 }
 
-//TODO: Generate Excel for Monthly Plan View (3 sheets)
-@httpGet('/monthly-plan-excel/:id')
-async generateMonthlyPlanExcel(
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const targetId = req.params.id;
 
-    if (!targetId) {
-      return res.status(400).json({
-        success: false,
-        message: "targetId is required"
-      });
-    }
 
-    const excelData = await this.salesTargetService.generateMonthlyPlanExcel(targetId);
 
-    // Set headers for file download
-    res.setHeader('Content-Type', excelData.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${excelData.filename}"`);
-    res.setHeader('Content-Length', Buffer.byteLength(excelData.buffer));
-
-    // Log the file creation
-    logger.info(`Excel file generated and saved: ${excelData.relativePath}`);
-
-    // Send the Excel file
-    return res.send(excelData.buffer);
-
-  } catch (error: any) {
-    logger.error('Error generating monthly plan Excel', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error"
-    });
-  }
-}
-
-//TODO: Get file info for Monthly Plan Excel (3 sheets)
-@httpGet('/monthly-plan-excel-info/get/:id')
-async getMonthlyPlanExcelInfo(
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const targetId = req.params.id;
-
-    if (!targetId) {
-      return res.status(400).json({
-        success: false,
-        message: "targetId is required"
-      });
-    }
-
-    const excelData = await this.salesTargetService.generateMonthlyPlanExcel(targetId);
-
-    // Get the base URL from request headers
-    const protocol = req.get('X-Forwarded-Proto') || req.protocol;
-    const host = req.get('Host');
-    const baseUrl = `${protocol}://${host}`;
-
-    // Return file information with accessible URLs
-    return res.status(200).json({
-      success: true,
-      data: {
-        filename: excelData.filename,
-        filePath: excelData.relativePath,
-        targetId: targetId,
-        generatedAt: new Date().toISOString(),
-        message: "Excel file generated and saved successfully",
-        // URLs for frontend access
-        downloadUrl: `${baseUrl}/sales-target/monthly-plan-excel/${targetId}`,
-        fileUrl: `${baseUrl}/files/${excelData.relativePath}`,
-        // Alternative streaming URL for large files
-        streamUrl: `${baseUrl}/stream/sales-target/monthly-plan-excel/${targetId}`
-      }
-    });
-
-  } catch (error: any) {
-    logger.error('Error generating monthly plan Excel info', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error"
-    });
-  }
-}
 
 //TODO: Generate Excel for View Plan Only (single sheet)
 @httpGet('/view-plan-excel/:id')
@@ -339,54 +181,6 @@ async generateViewPlanExcel(
   }
 }
 
-//TODO: Get file info for View Plan Excel (single sheet)
-@httpGet('/view-plan-excel-info/:id')
-async getViewPlanExcelInfo(
-  @request() req: Request,
-  @response() res: Response
-) {
-  try {
-    const targetId = req.params.id;
-
-    if (!targetId) {
-      return res.status(400).json({
-        success: false,
-        message: "targetId is required"
-      });
-    }
-
-    const excelData = await this.salesTargetService.generateViewPlanExcel(targetId);
-
-    // Get the base URL from request headers
-    const protocol = req.get('X-Forwarded-Proto') || req.protocol;
-    const host = req.get('Host');
-    const baseUrl = `${protocol}://${host}`;
-
-    // Return file information with accessible URLs
-    return res.status(200).json({
-      success: true,
-      data: {
-        filename: excelData.filename,
-        filePath: excelData.relativePath,
-        targetId: targetId,
-        generatedAt: new Date().toISOString(),
-        message: "View Plan Excel file generated and saved successfully",
-        // URLs for frontend access
-        downloadUrl: `${baseUrl}/sales-target/view-plan-excel/${targetId}`,
-        fileUrl: `${baseUrl}/files/${excelData.relativePath}`,
-        // Alternative streaming URL for large files
-        streamUrl: `${baseUrl}/stream/sales-target/view-plan-excel/${targetId}`
-      }
-    });
-
-  } catch (error: any) {
-    logger.error('Error generating view plan Excel info', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error"
-    });
-  }
-}
 
 //TODO: Serve Excel file by filename (for direct file access)
 @httpGet('/files/:folder/:filename')
@@ -460,53 +254,7 @@ async serveExcelFile(
   }
 }
 
-//TODO: Generate Enhanced Monthly Business Plan Excel with Business Intelligence
-@httpGet('/excel/monthly-business-plan/:id')
-async generateMonthlyBusinessPlanExcel(
-  @request() req: Request,
-  @response() res: Response,
-  @next() next: NextFunction
-) {
-  try {
-    const targetId = req.params.id;
-    const loggedInUserId = res.locals.user.id;
-    const userName = res.locals.user.firstName + ' ' + res.locals.user.lastName;
 
-    logger.info(`${userName}: Generating enhanced monthly business plan Excel for target ${targetId}`, {
-      userId: loggedInUserId,
-      targetId,
-      ip: req.ip
-    });
-
-    const result = await this.salesTargetService.generateMonthlyBusinessPlanExcel(targetId);
-
-    logger.info(`${userName}: Enhanced monthly business plan Excel generated successfully`, {
-      userId: loggedInUserId,
-      targetId,
-      fileName: result.fileName,
-      ip: req.ip
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Enhanced monthly business plan Excel generated successfully",
-      data: {
-        fileName: result.fileName,
-        filePath: result.filePath,
-        downloadUrl: `/api/sales-target/download/${result.fileName}`
-      }
-    });
-  } catch (error: any) {
-    logger.error(`Error generating enhanced monthly business plan Excel: ${error.message}`, {
-      userId: res.locals.user?.id,
-      targetId: req.params.id,
-      error: error.message,
-      stack: error.stack,
-      ip: req.ip
-    });
-    next(error);
-  }
-}
 
 //TODO: Get target performance by customer, product, and employee
 @httpGet('/performance/:employeeId/:month/:year')
@@ -621,3 +369,277 @@ async getSalesSummary(
   }
 }
 }
+
+
+// //TODO: Generate Enhanced Monthly Business Plan Excel with Business Intelligence
+// @httpGet('/excel/monthly-business-plan/:id')
+// async generateMonthlyBusinessPlanExcel(
+//   @request() req: Request,
+//   @response() res: Response,
+//   @next() next: NextFunction
+// ) {
+//   try {
+//     const targetId = req.params.id;
+//     const loggedInUserId = res.locals.user.id;
+//     const userName = res.locals.user.firstName + ' ' + res.locals.user.lastName;
+
+//     logger.info(`${userName}: Generating enhanced monthly business plan Excel for target ${targetId}`, {
+//       userId: loggedInUserId,
+//       targetId,
+//       ip: req.ip
+//     });
+
+//     const result = await this.salesTargetService.generateMonthlyBusinessPlanExcel(targetId);
+
+//     logger.info(`${userName}: Enhanced monthly business plan Excel generated successfully`, {
+//       userId: loggedInUserId,
+//       targetId,
+//       fileName: result.fileName,
+//       ip: req.ip
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Enhanced monthly business plan Excel generated successfully",
+//       data: {
+//         fileName: result.fileName,
+//         filePath: result.filePath,
+//         downloadUrl: `/api/sales-target/download/${result.fileName}`
+//       }
+//     });
+//   } catch (error: any) {
+//     logger.error(`Error generating enhanced monthly business plan Excel: ${error.message}`, {
+//       userId: res.locals.user?.id,
+//       targetId: req.params.id,
+//       error: error.message,
+//       stack: error.stack,
+//       ip: req.ip
+//     });
+//     next(error);
+//   }
+// }
+
+
+// //TODO: Get file info for View Plan Excel (single sheet)
+// @httpGet('/view-plan-excel-info/:id')
+// async getViewPlanExcelInfo(
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const targetId = req.params.id;
+
+//     if (!targetId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "targetId is required"
+//       });
+//     }
+
+//     const excelData = await this.salesTargetService.generateViewPlanExcel(targetId);
+
+//     // Get the base URL from request headers
+//     const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+//     const host = req.get('Host');
+//     const baseUrl = `${protocol}://${host}`;
+
+//     // Return file information with accessible URLs
+//     return res.status(200).json({
+//       success: true,
+//       data: {
+//         filename: excelData.filename,
+//         filePath: excelData.relativePath,
+//         targetId: targetId,
+//         generatedAt: new Date().toISOString(),
+//         message: "View Plan Excel file generated and saved successfully",
+//         // URLs for frontend access
+//         downloadUrl: `${baseUrl}/sales-target/view-plan-excel/${targetId}`,
+//         fileUrl: `${baseUrl}/files/${excelData.relativePath}`,
+//         // Alternative streaming URL for large files
+//         streamUrl: `${baseUrl}/stream/sales-target/view-plan-excel/${targetId}`
+//       }
+//     });
+
+//   } catch (error: any) {
+//     logger.error('Error generating view plan Excel info', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error"
+//     });
+//   }
+// }
+
+
+
+// //TODO: Generate Excel for Monthly Plan View (3 sheets)
+// @httpGet('/monthly-plan-excel/:id')
+// async generateMonthlyPlanExcel(
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const targetId = req.params.id;
+
+//     if (!targetId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "targetId is required"
+//       });
+//     }
+
+//     const excelData = await this.salesTargetService.generateMonthlyPlanExcel(targetId);
+
+//     // Set headers for file download
+//     res.setHeader('Content-Type', excelData.contentType);
+//     res.setHeader('Content-Disposition', `attachment; filename="${excelData.filename}"`);
+//     res.setHeader('Content-Length', Buffer.byteLength(excelData.buffer));
+
+//     // Log the file creation
+//     logger.info(`Excel file generated and saved: ${excelData.relativePath}`);
+
+//     // Send the Excel file
+//     return res.send(excelData.buffer);
+
+//   } catch (error: any) {
+//     logger.error('Error generating monthly plan Excel', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error"
+//     });
+//   }
+// }
+
+
+// //TODO: Get file info for Monthly Plan Excel (3 sheets)
+// @httpGet('/monthly-plan-excel-info/get/:id')
+// async getMonthlyPlanExcelInfo(
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const targetId = req.params.id;
+
+//     if (!targetId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "targetId is required"
+//       });
+//     }
+
+//     const excelData = await this.salesTargetService.generateMonthlyPlanExcel(targetId);
+
+//     // Get the base URL from request headers
+//     const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+//     const host = req.get('Host');
+//     const baseUrl = `${protocol}://${host}`;
+
+//     // Return file information with accessible URLs
+//     return res.status(200).json({
+//       success: true,
+//       data: {
+//         filename: excelData.filename,
+//         filePath: excelData.relativePath,
+//         targetId: targetId,
+//         generatedAt: new Date().toISOString(),
+//         message: "Excel file generated and saved successfully",
+//         // URLs for frontend access
+//         downloadUrl: `${baseUrl}/sales-target/monthly-plan-excel/${targetId}`,
+//         fileUrl: `${baseUrl}/files/${excelData.relativePath}`,
+//         // Alternative streaming URL for large files
+//         streamUrl: `${baseUrl}/stream/sales-target/monthly-plan-excel/${targetId}`
+//       }
+//     });
+
+//   } catch (error: any) {
+//     logger.error('Error generating monthly plan Excel info', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error"
+//     });
+//   }
+// }
+
+
+// @httpPatch('/:id/status')
+// async updateSalesTargetStatus(
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const targetId = req.params.id;
+//     const { status } = req.body;
+//     const managerId = res.locals.user.id;
+
+//     const result = await this.salesTargetService.updateStatus(
+//       targetId,
+//       status,
+//       managerId
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: result.message
+//     });
+//   } catch (error: any) {
+//     return res.status(400).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// }
+
+
+// @httpPut("/:id/review")
+// async reviewSalesTarget(
+//   @requestParam("id") targetId: string,
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const data = await this.salesTargetService.reviewTarget(
+//       targetId,
+//       req.body,
+//       res.locals.user.id
+//     );
+    
+//     return res.status(200).json({
+//       status: "success",
+//       data,
+//     });
+//   } catch (error: any) {
+//     logger.error('Error reviewing sales target', error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Internal server error"
+//     });
+//   }
+// }
+
+
+// @httpGet("/:employeeId/customer-product-sales")
+// async getCustomerWiseProductSales(
+//   @requestParam("employeeId") employeeId: string,
+//   @request() req: Request,
+//   @response() res: Response
+// ) {
+//   try {
+//     const { month, year } = req.query;
+//     const data = await this.salesTargetService.getCustomerWiseProductSales(
+//       employeeId,
+//       Number(month),
+//       Number(year)
+//     );
+    
+//     return res.status(200).json({
+//       status: "success",
+//       data,
+//     });
+//   } catch (error: any) {
+//     logger.error('Error fetching customer-wise product sales', error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Internal server error"
+//     });
+//   }
+// }
+

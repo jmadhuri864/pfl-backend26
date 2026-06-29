@@ -285,30 +285,7 @@ export class WorkflowHierarchyService {
   }
 
 
-  /**
-   * Clean duplicate entries from workflow hierarchy
-   */
-  async cleanDuplicates(department?: DepartmentEnum) {
-    const query = department
-      ? `DELETE FROM workflow_hierarchy
-         WHERE id NOT IN (
-           SELECT MIN(id)
-           FROM workflow_hierarchy
-           WHERE department = $1
-           GROUP BY ancestor_id, descendant_id, department, depth
-         )
-         AND department = $1`
-      : `DELETE FROM workflow_hierarchy
-         WHERE id NOT IN (
-           SELECT MIN(id)
-           FROM workflow_hierarchy
-           GROUP BY ancestor_id, descendant_id, department, depth
-         )`;
 
-    const params = department ? [department] : [];
-    const result = await this.workflowHierarchyRepository.query(query, params);
-    return { message: 'Duplicates cleaned successfully.', deletedCount: result.rowCount ?? 0 };
-  }
 
   async removeRelation(
     department: DepartmentEnum,
@@ -499,6 +476,32 @@ async updateBranch(
 
 
 }
+
+
+  // /**
+  //  * Clean duplicate entries from workflow hierarchy
+  //  */
+  // async cleanDuplicates(department?: DepartmentEnum) {
+  //   const query = department
+  //     ? `DELETE FROM workflow_hierarchy
+  //        WHERE id NOT IN (
+  //          SELECT MIN(id)
+  //          FROM workflow_hierarchy
+  //          WHERE department = $1
+  //          GROUP BY ancestor_id, descendant_id, department, depth
+  //        )
+  //        AND department = $1`
+  //     : `DELETE FROM workflow_hierarchy
+  //        WHERE id NOT IN (
+  //          SELECT MIN(id)
+  //          FROM workflow_hierarchy
+  //          GROUP BY ancestor_id, descendant_id, department, depth
+  //        )`;
+
+  //   const params = department ? [department] : [];
+  //   const result = await this.workflowHierarchyRepository.query(query, params);
+  //   return { message: 'Duplicates cleaned successfully.', deletedCount: result.rowCount ?? 0 };
+  // }
 
 
 // async getUserWorkflowsByDepartment(userId: string) {

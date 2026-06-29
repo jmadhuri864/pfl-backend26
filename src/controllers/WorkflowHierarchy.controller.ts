@@ -262,47 +262,50 @@ const newSubordinateId=newSubordinate;
 
 
 
-  /**
-   * Clean duplicate entries from workflow hierarchy
-   * DELETE /workflow/clean-duplicates/:department? (department is optional)
-   */
-  @httpDelete("/clean-duplicates/:department?")
-  async cleanDuplicates(req: Request, res: Response) {
-    try {
-      const { department: rawDepartment } = req.params;
 
-      const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
-
-      const result = await this.workflowService.cleanDuplicates(
-        department
-      );
-
-      ControllerLogger.logSuccess('Workflow duplicates cleaned', `${result.deletedCount} removed`, req, res);
-
-      // Send notification for workflow duplicates cleanup
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Workflow duplicates cleaned: ${result.deletedCount} entries removed`,
-      //     userId
-      //   );
-      // }
-
-      return res.status(200).json({
-        status: "success",
-        data: result
-      });
-    } catch (error: any) {
-      ControllerLogger.logError('Workflow duplicates cleanup', error, req, res);
-      return res.status(500).json({
-        status: "error",
-        message: error.message
-      });
-    }
-  }
 
 
 }
+
+
+  // /**
+  //  * Clean duplicate entries from workflow hierarchy
+  //  * DELETE /workflow/clean-duplicates/:department? (department is optional)
+  //  */
+  // @httpDelete("/clean-duplicates/:department?")
+  // async cleanDuplicates(req: Request, res: Response) {
+  //   try {
+  //     const { department: rawDepartment } = req.params;
+
+  //     const department = rawDepartment ? normalizeDepartment(rawDepartment) : undefined;
+
+  //     const result = await this.workflowService.cleanDuplicates(
+  //       department
+  //     );
+
+  //     ControllerLogger.logSuccess('Workflow duplicates cleaned', `${result.deletedCount} removed`, req, res);
+
+  //     // Send notification for workflow duplicates cleanup
+  //     // const userId = res.locals.user?.id;
+  //     // if (userId) {
+  //     //   await this.notificationService.createNoti(
+  //     //     `Workflow duplicates cleaned: ${result.deletedCount} entries removed`,
+  //     //     userId
+  //     //   );
+  //     // }
+
+  //     return res.status(200).json({
+  //       status: "success",
+  //       data: result
+  //     });
+  //   } catch (error: any) {
+  //     ControllerLogger.logError('Workflow duplicates cleanup', error, req, res);
+  //     return res.status(500).json({
+  //       status: "error",
+  //       message: error.message
+  //     });
+  //   }
+  // }
 
 
 // @httpGet("/user/details/:id")
