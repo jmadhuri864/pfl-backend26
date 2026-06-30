@@ -179,6 +179,11 @@ export class PMPVoucherController {
     try {
       const voucherData: CreatePMPVoucherDto = req.body;
       const voucherDataAny = voucherData as any;
+
+      if (voucherData.kyc === true || (voucherData.kyc as any) === 'true')
+    {
+      voucherData.kyc=true;
+    }
       
       // Use helper function to handle file URL extraction
       setAttachmentUrls(voucherDataAny, req.files as any[]);
@@ -226,7 +231,8 @@ export class PMPVoucherController {
     @next() next: NextFunction
   ) {
     try {
-      const updatedBy=res.locals.updatedBy
+      const updatedBy=res.locals.updatedBy;
+      console.log("updated by............",updatedBy)
       const { id } = req.params;
       const updatedData: UpdatePMPVoucherDto = req.body;
       const updateAny = updatedData as any;

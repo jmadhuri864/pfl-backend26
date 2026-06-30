@@ -103,6 +103,7 @@ export class TPVoucher extends Model {
 
   @Column({ nullable: true })
   receiverName: string;
+  
   @Column({ nullable: true })
   kyc: boolean;
 

@@ -284,7 +284,7 @@ export class GetAqrForUpdateResponseDto {
   product: string | null;
   variant: string | null;
 
-  arrivalDate: string | null;       // ISO "YYYY-MM-DD" (converted from DB format)
+  arrivalDate: Date | null;       // ISO "YYYY-MM-DD" (converted from DB format)
   arrivedQty: string | null;
   samplingQty: string | null;
 

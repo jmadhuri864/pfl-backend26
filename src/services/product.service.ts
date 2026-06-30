@@ -240,6 +240,8 @@ export class ProductService {
       meta: data1.meta,
     };
 
+    console.log("result.........................",result)
+
     await this.cacheService.set(key, result, CACHE_TTL);
     return result;
   }

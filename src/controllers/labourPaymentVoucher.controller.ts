@@ -150,6 +150,10 @@ export class LabourPaymentVoucherController {
       logger.info("Creating new Labour Payment Voucher");
       const voucherData: CreateLPVoucherDto & Record<string, any> = req.body;
       
+      if(voucherData.kyc===true||(voucherData.kyc) as any === 'true')
+      {
+        voucherData.kyc=true;
+      }
       // Use helper function to handle file URL extraction
       setAttachmentUrls(voucherData, req.files as any[]);
      Object.keys( voucherData).forEach((key) => {

@@ -37,18 +37,22 @@ export class TPVoucherController {
 
   @httpPost('/', uploadAttachments)
   public async createTPVoucher(
-    @requestBody() tpVoucherData: any,
+    @requestBody() tpVoucherData:CreateTPVoucherDto ,
     @request() req:Request,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
+      console.log("tpvoucherdata......",tpVoucherData);
       logger.info('Received request to create TPVoucher');
       
       // Use helper function to handle file URL extraction
       setAttachmentUrls(tpVoucherData, req.files as any[]);
     
-    
+    if (tpVoucherData.kyc === true || (tpVoucherData.kyc as any) === 'true')
+    {
+      tpVoucherData.kyc=true;
+    }
      
       tpVoucherData.requestedBy = res.locals.user.id;
       tpVoucherData.requestingDepartment = res.locals.user.selectDepartment;

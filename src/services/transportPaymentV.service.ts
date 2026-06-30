@@ -90,6 +90,7 @@ export class TPVoucherService {
         (tpvoucherData as any).products = products;
       }
 
+      
       const newVoucher = queryRunner.manager.create(this.tpVoucherRepository.target, tpvoucherData as any) as unknown as TPVoucher;
       const saveVoucher = await queryRunner.manager.save(newVoucher) as unknown as TPVoucher;
       const document = await this.documentbService.createDocument({

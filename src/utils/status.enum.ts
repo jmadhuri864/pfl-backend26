@@ -28,7 +28,7 @@ export enum Department {
  
   HR='hr',
     OPERATIONS = 'operations',
-    SALE = 'sales',
+    SALE = 'sale',
       PROCUREMENT = 'procurement',
   IT='it',
   BUSINESS_DEVELOPMENT='business development',

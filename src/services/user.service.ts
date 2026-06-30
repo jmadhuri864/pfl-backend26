@@ -140,13 +140,22 @@ if (input.roles && input.roles.length > 0) {
   roles = Array.from(new Set([...roles, ...validRoles]));
 }
 
-// Handle departments
-let departments: Department[] = [];
-if (input.departments && input.departments.length > 0) {
-  departments = input.departments.filter((d: string) =>
-    Object.values(Department).includes(d as Department)
-  ) as Department[];
-}
+    // Handle departments — accepts both 'departments' (array) and 'department' (array or string)
+    // Normalises to lowercase so 'HR', 'hr', 'Hr' all match
+    let departments: Department[] = [];
+    const rawDepts: any[] = input.departments?.length
+      ? input.departments
+      : Array.isArray(input.department)
+      ? input.department
+      : input.department
+      ? [input.department]
+      : [];
+
+    if (rawDepts.length > 0) {
+      departments = rawDepts
+        .map((d: any) => (typeof d === 'string' ? d.toLowerCase().trim() : d))
+        .filter((d: string) => Object.values(Department).includes(d as Department)) as Department[];
+    }
 
     const user = this.userRepository.create({
       ...input,

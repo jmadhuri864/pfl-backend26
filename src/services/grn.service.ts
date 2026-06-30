@@ -578,10 +578,12 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy?.id || null,
-      dealSlipId: {
-        id: grn.dealSlipId?.id || null,
-        dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
-      },
+      dealSlipId:grn.dealSlipId?.id || null,
+        
+      // dealSlipId: {
+      //   id: grn.dealSlipId?.id || null,
+      //   dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
+      // },
 
       purchaseType: grn.purchaseType,
       otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
