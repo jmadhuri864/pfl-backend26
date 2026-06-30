@@ -133,10 +133,13 @@ export interface GrnDetailDto {
   id: string;
   companyName: string | null;
   purchaseInstructionsBy?: string | { id?: string; firstName?: string; lastName?: string } | null;
-  dealSlipId: {
-    id: string | null;
-    dealSlipNo: string | null;
-  };
+  dealSlipId: 
+     string | null;
+
+  // dealSlipId: {
+  //   id: string | null;
+  //   dealSlipNo: string | null;
+  // };
   purchaseType?: PurchaseType | null;
   otherPurchaseForSalesLoc?: string | null;
   otherPurchaseLoc?: string | null;

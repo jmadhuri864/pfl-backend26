@@ -115,10 +115,13 @@ export class GrnController {
 
       if (req.file) {
         const imageUrl = req.file.path;
+        console.log("imageurl..............",imageUrl);
         if (imageUrl) {
           grnData.billImage = imageUrl;
         }
       }
+
+      console.log("billImage.......",grnData.billImage);
 
       // Object.keys(req.body).forEach((key) => {
       //   if (grnData[key] === "null") grnData[key] = null;

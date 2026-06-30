@@ -17,6 +17,7 @@ import { In, DataSource } from 'typeorm';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { CreatePMPVoucherDto, PMPVoucherListItemDto, PMPVoucherDetailDto, UpdatePMPVoucherDto } from '../dtos/pmpVoucher.dto';
+import { formatAddress } from '../utils/addressFormate.utils';
 
 @injectable()
 export class PMPVoucherService {
@@ -72,6 +73,7 @@ export class PMPVoucherService {
     const vouchers = voucherIds.length
       ? await this.pmpVoucherRepository
           .createQueryBuilder('v')
+          //.leftJoinAndSelect('v.address','address')
           .leftJoinAndSelect('v.companyName', 'companyName')
           .leftJoinAndSelect('v.grnNo', 'grnNo')
           .leftJoinAndSelect('v.materials', 'materials')
@@ -98,12 +100,17 @@ export class PMPVoucherService {
           createdDate,
           createdTime,
           id: rd.id,
+          kyc:rd.kyc,
+          purpose:rd.purpose || null,
+          altContactNo:rd.altContactNo || null,
+          contactNo:rd.contactNo || null,
           voucherNo: rd.voucherNo || null,
           approvalStatus: rd.approvalStatus || null,
           debitCreditTo: rd.debitCreditTo || null,
           payReceivedFrom: rd.payReceivedFrom || null,
           location: rd.location || null,
           sellerName: rd.sellerName || null,
+          address:rd.address ? formatAddress(rd.address) : '',
           companyName: rd.companyName?.name || null,
           grnNo: rd.grnNo?.grnNo || null,
           totalAmt: rd.totalAmt ?? null,
@@ -437,11 +444,11 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
 
     try {
 
-       const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER)
+      //  const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(voucherData.requestedBy, DocumentTypeEnum.PACKAGING_MATERIAL_VOUCHER)
 
-      if (!approvalFlowExit) {
-        throw new Error('Approval flow not found');
-      }
+      // if (!approvalFlowExit) {
+      //   throw new Error('Approval flow not found');
+      // }
 
       voucherData.voucherNo = await this.generatePMPVoucherNo();
 

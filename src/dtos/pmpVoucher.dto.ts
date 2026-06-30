@@ -73,6 +73,7 @@ export interface PMPVoucherListItemDto {
   payReceivedFrom?: string | null;
   location?: string | null;
   sellerName?: string | null;
+  address?:string | null;
   companyName?: string | null;
   grnNo?: string | null;
   totalAmt?: number | null;
@@ -87,6 +88,16 @@ export interface PMPVoucherListItemDto {
   createdBy?: string | null;
 }
 
+
+export interface GetSellerAddressDto{
+id?: string;
+  address1?: string;
+  address2?: string;
+  location?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
 export interface PMPVoucherDetailDto {
   id: string;
   voucherNo?: string | null;

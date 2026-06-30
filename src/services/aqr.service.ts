@@ -90,16 +90,16 @@ export class AqrService {
   public async createAqr(data: CreateAqrDto): Promise<Aqr> {
     const requestedBy = data.requestedBy!;
 
-    const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(
-      requestedBy,
-      DocDefEnum.OPERATION,
-    );
-    if (!approvalFlow) {
-      throw new AppError(
-        400,
-        "No approval flow configured for this user. Please contact the admin to create an approval flow before creating a AQR.",
-      );
-    }
+    // const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(
+    //   requestedBy,
+    //   DocDefEnum.OPERATION,
+    // );
+    // if (!approvalFlow) {
+    //   throw new AppError(
+    //     400,
+    //     "No approval flow configured for this user. Please contact the admin to create an approval flow before creating a AQR.",
+    //   );
+    // }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -223,7 +223,7 @@ export class AqrService {
       fromLocation: result.fromLocation?.id || null,
       product: result.product?.id || null,
       variant: result.variant?.id || null,
-      arrivalDate: toIsoDate(result.arrivalDate as any),
+      arrivalDate: result.arrivalDate || null,
       arrivedQty: result.arrivedQty,
       samplingQty: result.samplingQty,
       purchaseBy: result.purchaseBy?.id || null,

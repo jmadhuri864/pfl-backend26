@@ -392,6 +392,41 @@ export class RfpaController {
     }
   }
 
+  @httpGet('/:id/update')
+public async getRfpaByIdByUpdate(
+  @requestParam('id') rfpaId: string,
+  @request() req: Request,
+  @response() res: Response,
+  @next() next: NextFunction,
+): Promise<void> {
+  try {
+    //logger.info(`Fetching RFPA with ID: ${rfpaId}`);
+    const rfpa: RfpaUpdateFormDto | null = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
+
+    if (!rfpa) {
+      logger.warn(`RFPA with ID ${rfpaId} not found`);
+      ControllerLogger.logError(
+        'RFPA retrieval for update',
+        new AppError(404, 'RFPA not found'),
+        req,
+        res,
+      );
+      throw new AppError(404, 'RFPA not found');
+    }
+    //logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
+    //ControllerLogger.logView('RFPA (for update)', rfpaId, req, res);
+    res.status(200).json({
+      status: 'success',
+      data: rfpa,
+      //message:"rfpa is created"
+    });
+  } catch (error) {
+    logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
+    ControllerLogger.logError('RFPA retrieval for update', error, req, res);
+    next(error);
+  }
+}
+
   @httpDelete('/:id', checkPermission('rfpa', 'delete'))
   public async deleteRfpas(
     @request() req: Request,
@@ -819,40 +854,7 @@ export class RfpaController {
 
 
 
-// @httpGet('/:id/update')
-// public async getRfpaByIdByUpdate(
-//   @requestParam('id') rfpaId: string,
-//   @request() req: Request,
-//   @response() res: Response,
-//   @next() next: NextFunction,
-// ): Promise<void> {
-//   try {
-//     logger.info(`Fetching RFPA with ID: ${rfpaId}`);
-//     const rfpa: RfpaUpdateFormDto | null = await this.rfpaService.getRFQByIdForUpdate(rfpaId);
 
-//     if (!rfpa) {
-//       logger.warn(`RFPA with ID ${rfpaId} not found`);
-//       ControllerLogger.logError(
-//         'RFPA retrieval for update',
-//         new AppError(404, 'RFPA not found'),
-//         req,
-//         res,
-//       );
-//       throw new AppError(404, 'RFPA not found');
-//     }
-//     logger.info(`Successfully fetched RFPA with ID: ${rfpaId}`);
-//     ControllerLogger.logView('RFPA (for update)', rfpaId, req, res);
-//     res.status(200).json({
-//       status: 'success',
-//       data: rfpa,
-//       //message:"rfpa is created"
-//     });
-//   } catch (error) {
-//     logger.error(`Error fetching RFPA with ID ${rfpaId}:`, error);
-//     ControllerLogger.logError('RFPA retrieval for update', error, req, res);
-//     next(error);
-//   }
-// }
 
 
 

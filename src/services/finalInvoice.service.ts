@@ -547,6 +547,10 @@ export class FinalInvoiceService {
         'deliveryAddress.address1', 'deliveryAddress.address2', 'deliveryAddress.location',
         'deliveryAddress.city', 'deliveryAddress.state', 'deliveryAddress.pincode',
       ])
+      .addSelect(
+        '(SELECT COALESCE(SUM(ip."grossWeight"), 0) FROM invoice_products ip WHERE ip.invoice_id = invoice.id)',
+        'grossProductWeight',
+      )
       .addSelect('doc.id', 'docId')
       .addSelect('doc.status', 'docStatus')
       .addSelect('doc.createdAt', 'docCreatedAt')
@@ -612,6 +616,9 @@ export class FinalInvoiceService {
         fromLocation: (invoice as any).fromLocation?.name ?? null,
         totalProductAmount: invoice.totalProductAmount,
         netProductWeight: invoice.netProductWeight,
+        grossProductWeight: r.grossProductWeight !== null && r.grossProductWeight !== undefined
+          ? Number(r.grossProductWeight)
+          : null,
         totalAmount: invoice.totalAmount,
         billingAddress: formatAddr((invoice as any).billingAddress),
         deliveryAddress: formatAddr((invoice as any).deliveryAddress),

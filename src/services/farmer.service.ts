@@ -1002,6 +1002,75 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
     await this.invalidateFarmerCache();
     return result;
   }
+
+  async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
+  const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
+  const cached = await this.cacheService.get<FarmerListResponseDto>(key);
+  if (cached) return cached;
+
+  const queryBuilder = this.farmerRepository
+    .createQueryBuilder('farmer')
+    .leftJoin('farmer.createdBy', 'createdBy')
+    .leftJoin('farmer.residensialAddress', 'residensialAddress')
+    .leftJoin('farmer.farmAddress', 'farmAddress')
+    .select([
+      'farmer.id', 'farmer.status', 'farmer.farmerCode',
+      'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
+      'farmer.primaryMobileNo', 'farmer.secondaryMobileNo', 'farmer.email',
+      'farmer.gender', 'farmer.dob', 'farmer.totalLandArea', 'farmer.cultivationArea',
+      'farmer.landHoldingStatus', 'farmer.landStatus', 'farmer.idProofNo', 'farmer.createdAt',
+      'createdBy.firstName', 'createdBy.lastName',
+      'residensialAddress.address1', 'residensialAddress.address2', 'residensialAddress.location',
+      'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
+      'farmAddress.address1', 'farmAddress.address2', 'farmAddress.location',
+      'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
+    ])
+    .orderBy('farmer.createdAt', 'DESC');
+
+  const farmers = await buildQuery(queryBuilder, options, 'farmer');
+
+  const formatAddr = (addr: any): string => addr
+    ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
+        .filter(Boolean).join(' ')
+    : '';
+
+  const response: FarmerListResponseDto = {
+    data: farmers.data.map((farmer: any): FarmerListItemDto => {
+      const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
+      return {
+        id: farmer.id,
+        status: farmer.status,
+        farmerCode: farmer.farmerCode?.toUpperCase() ?? '',
+        farmerfName: farmer.farmerfName,
+        farmermName: farmer.farmermName,
+        farmerlName: farmer.farmerlName,
+        primaryMobileNo: farmer.primaryMobileNo,
+        secondaryMobileNo: farmer.secondaryMobileNo,
+        email: farmer.email,
+        gender: farmer.gender,
+        dob: farmer.dob,
+        totalLandArea: farmer.totalLandArea,
+        cultivationArea: farmer.cultivationArea,
+        landHoldingStatus: farmer.landHoldingStatus,
+        landStatus: farmer.landStatus,
+        idProofNo: farmer.idProofNo,
+        residensialAddress: formatAddr(farmer.residensialAddress),
+        farmAddress: formatAddr(farmer.farmAddress),
+        createdBy: farmer.createdBy
+          ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
+          : null,
+        createdDate,
+        createdTime,
+        
+      };
+    }),
+    meta: farmers.meta,
+  };
+
+  await this.cacheService.set(key, response, CACHE_TTL);
+  return response;
+}
+
     
   }
 
@@ -1344,74 +1413,7 @@ async createFarmerwithExcel(fileUrl: string): Promise<any> {
   // }
 
 
-  // async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
-//   const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
-//   const cached = await this.cacheService.get<FarmerListResponseDto>(key);
-//   if (cached) return cached;
-
-//   const queryBuilder = this.farmerRepository
-//     .createQueryBuilder('farmer')
-//     .leftJoin('farmer.createdBy', 'createdBy')
-//     .leftJoin('farmer.residensialAddress', 'residensialAddress')
-//     .leftJoin('farmer.farmAddress', 'farmAddress')
-//     .select([
-//       'farmer.id', 'farmer.status', 'farmer.farmerCode',
-//       'farmer.farmerfName', 'farmer.farmermName', 'farmer.farmerlName',
-//       'farmer.primaryMobileNo', 'farmer.secondaryMobileNo', 'farmer.email',
-//       'farmer.gender', 'farmer.dob', 'farmer.totalLandArea', 'farmer.cultivationArea',
-//       'farmer.landHoldingStatus', 'farmer.landStatus', 'farmer.idProofNo', 'farmer.createdAt',
-//       'createdBy.firstName', 'createdBy.lastName',
-//       'residensialAddress.address1', 'residensialAddress.address2', 'residensialAddress.location',
-//       'residensialAddress.city', 'residensialAddress.state', 'residensialAddress.pincode',
-//       'farmAddress.address1', 'farmAddress.address2', 'farmAddress.location',
-//       'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
-//     ])
-//     .orderBy('farmer.createdAt', 'DESC');
-
-//   const farmers = await buildQuery(queryBuilder, options, 'farmer');
-
-//   const formatAddr = (addr: any): string => addr
-//     ? [addr.address1, addr.address2, addr.location, addr.city, addr.state, addr.pincode]
-//         .filter(Boolean).join(' ')
-//     : '';
-
-//   const response: FarmerListResponseDto = {
-//     data: farmers.data.map((farmer: any): FarmerListItemDto => {
-//       const { createdDate, createdTime } = formatDateTime(farmer.createdAt);
-//       return {
-//         id: farmer.id,
-//         status: farmer.status,
-//         farmerCode: farmer.farmerCode?.toUpperCase() ?? '',
-//         farmerfName: farmer.farmerfName,
-//         farmermName: farmer.farmermName,
-//         farmerlName: farmer.farmerlName,
-//         primaryMobileNo: farmer.primaryMobileNo,
-//         secondaryMobileNo: farmer.secondaryMobileNo,
-//         email: farmer.email,
-//         gender: farmer.gender,
-//         dob: farmer.dob,
-//         totalLandArea: farmer.totalLandArea,
-//         cultivationArea: farmer.cultivationArea,
-//         landHoldingStatus: farmer.landHoldingStatus,
-//         landStatus: farmer.landStatus,
-//         idProofNo: farmer.idProofNo,
-//         residensialAddress: formatAddr(farmer.residensialAddress),
-//         farmAddress: formatAddr(farmer.farmAddress),
-//         createdBy: farmer.createdBy
-//           ? `${farmer.createdBy.firstName} ${farmer.createdBy.lastName}`
-//           : null,
-//         createdDate,
-//         createdTime,
-        
-//       };
-//     }),
-//     meta: farmers.meta,
-//   };
-
-//   await this.cacheService.set(key, response, CACHE_TTL);
-//   return response;
-// }
-
+  
 
   // async getFarmerByIdForUpdate(id: string) {
   //   const key = `${CACHE_PREFIX}:idForUpdate:${id}`;

@@ -91,7 +91,7 @@ export class SecondSaleService {
       // if (!approvalFlowExit) {
       //   throw new Error('Approval flow not found');
       // }
-//console.log(secondSaleData)
+console.log("secondsaledata.....................",secondSaleData);
       // 1. Normalize variant IDs
       let variantIds: string[] = [];
       const variants_raw = (secondSaleData as any).variants;
@@ -140,7 +140,7 @@ const secondSale = this.secondSaleRepository.create({
 
 // Save through queryRunner so it's part of the transaction
 const savedSecondSale = await queryRunner.manager.save(SecondSale, secondSale);
-
+console.log("savedsecodsale...................",savedSecondSale);
       // 6. Create associated document
       const document = await this.documentbService.createDocument({
         type: DocumentTypeEnum.SECOND_SALE,

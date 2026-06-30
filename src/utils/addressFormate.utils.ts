@@ -6,10 +6,10 @@ export function formatAddress(address?: Address): string {
   const parts = [
     address.address1,
     address.address2,
+    address.location,
     address.city,
     address.state,
-    address.pincode,
-    address.location,
+    address.pincode, 
   ];
 
   return parts.filter(Boolean).join(', ');

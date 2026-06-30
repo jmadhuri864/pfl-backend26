@@ -93,24 +93,26 @@ export interface CreateInvoiceDto {
 export type UpdateInvoiceDto = Partial<CreateInvoiceDto>;
 
 export interface InvoiceListItemDto {
+  documentId?: string | null;
+  overAllStatus?: string | null;
+  createdBy?: string | null;
+  createdDate?: string | null;
+  createdTime?: string | null;
   id: string;
   invoiceNo?: string | null;
   invoiceDate?: Date | null;
+  vehicleNo?: string | null;
   companyName?: string | null;
+  deliveryChallan?: string | null;
   customerName?: string | null;
   poNumber?: string | null;
   fromLocation?: string | null;
-  vehicleNo?: string | null;
-  placeOfSupply?: string | null;
   totalProductAmount?: number | null;
+  netProductWeight?: number | null;
+  grossProductWeight?: number | null;
   totalAmount?: number | null;
-  totalAmtInWords?: string | null;
-  taxAmount?: number | null;
-  discount?: number | null;
-  freight?: number | null;
-  otherCharges?: number | null;
-  createdAt?: Date | null;
-  createdBy?: string | null;
+  billingAddress?: string | null;
+  deliveryAddress?: string | null;
 }
 
 export interface InvoiceDetailDto {
