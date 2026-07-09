@@ -2,8 +2,8 @@ import { tz } from "moment-timezone";
 
 export default {
   origin: "http://localhost:8002",
-  accessTokenExpiresIn:3000,
-  refreshTokenExpiresIn:20000,
+  accessTokenExpiresIn: 480,   // 8 hours
+  refreshTokenExpiresIn: 1440, // 24 hours
   redisCacheExpiresIn: 60,
   port: process.env.PORT,
   accessTokenPrivateKey: process.env.JWT_ACCESS_TOKEN_PRIVATE_KEY,

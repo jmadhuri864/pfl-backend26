@@ -263,7 +263,55 @@ export class FarmerController {
     }
   }
 
+// @httpGet('/')
+//   public async getAllFarmers(
+//     @request() req: Request,
+//     @response() res: Response,
+//     @next() next: NextFunction,
+//   ) {
+//     try {
+//       const { page, limit, search, sort } = req.query;
 
+//       const queryOptions: PaginationOptions = {
+//         page: page ? Number(page) : undefined,
+//         limit: limit ? Number(limit) : undefined,
+//         filters: {},
+//         sort: (sort as string) || undefined,
+//         search: (search as string) || '',
+//       };
+      
+//       const farmers = await this.farmerService.getAllFarmers(queryOptions);
+
+//       if (!farmers) {
+//         ControllerLogger.logOperationFailed('Get All', 'Farmers', 'No records found', req, res);
+//         return next(new AppError(404, 'No farmers found'));
+//       }
+      
+//       // 🔔 Send notification for get all farmers
+//       // try {
+//       //   const userId = res.locals.user?.id;
+//       //   if (userId) {
+//       //     await this.notificationService.createNoti(
+//       //       `Retrieved ${farmers.meta.total} farmers`,
+//       //       userId
+//       //     );
+//       //   }
+//       // } catch (notifError) {
+//       // }
+      
+//       ControllerLogger.logGetAllRecords('Farmers', req, res);
+//       res.status(200).json({
+//         status: 'success',
+//         data: farmers.data,
+//         allRecords: farmers.meta.total,
+//         totalPages: farmers.meta.pages,
+//         page: farmers.meta.page,
+//       });
+//     } catch (err) {
+//       ControllerLogger.logError('Get All Farmers', err, req, res);
+//       next(err);
+//     }
+//   }
 
   @httpGet('/view/:id')
   public async getFarmerByIdforview(
