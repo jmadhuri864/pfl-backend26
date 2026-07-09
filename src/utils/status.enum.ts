@@ -24,21 +24,17 @@ export enum FileType {
   
 export enum Department {
   ADMIN='admin',
-
- 
   HR='hr',
-    OPERATIONS = 'operations',
-    SALE = 'sale',
-      PROCUREMENT = 'procurement',
+  OPERATIONS = 'operations',
+  SALE = 'sale',
+  PROCUREMENT = 'procurement',
   IT='it',
-  BUSINESS_DEVELOPMENT='business development',
+  BUSINESS_DEVELOPMENT='business_development',
   EXPORTS='exports',
-  BRANDING_MARKETING='branding & marketing',
+  BRANDING_MARKETING='branding_&_marketing',
   FARMING='farming',
-  QUALITY_CHECKING='quality checking',
+  QUALITY_CHECKING='quality_checking',
   // INVENTORY='inventory',
-
-
   OTHER='other'
 }
 

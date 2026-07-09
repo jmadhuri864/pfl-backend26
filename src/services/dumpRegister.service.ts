@@ -102,11 +102,11 @@ export class DumpRegisterService{
 
     async createDumpRegister(data: CreateDumpRegisterDto): Promise<any> {
        // 1. Validate approval flow exists before doing anything else
-      const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, DocDefEnum.OPERATION);
+      // const approvalFlow = await this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, DocDefEnum.OPERATION);
 
-      if (!approvalFlow) {
-        throw new AppError(400, 'No approval flow configured for this user. Please contact the admin to create an approval flow before creating a Dump Register.');
-      }
+      // if (!approvalFlow) {
+      //   throw new AppError(400, 'No approval flow configured for this user. Please contact the admin to create an approval flow before creating a Dump Register.');
+      // }
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();

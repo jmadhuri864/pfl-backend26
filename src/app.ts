@@ -29,7 +29,7 @@ import { seedDocumentDefDatabase } from './seed/documentSeed';
 //import { LogCleanupService } from './services/logCleanup.service';
 import { TYPES } from './types';
 // Import LogCleanupController to ensure it's registered
-import './controllers/logCleanup.controller';
+//import './controllers/logCleanup.controller';
 
 /* ───────────── Allowed Origins ───────────── */
 const allowedOrigins = [

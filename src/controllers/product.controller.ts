@@ -387,8 +387,8 @@ public async softDeleteMultipleProducts(
 ) {
   try {
 
-    const { productIds } = req.body;
-
+    const { ids } = req.body;
+    const productIds=ids;
     if (!Array.isArray(productIds) || productIds.length === 0) {
       ControllerLogger.logError(
         "Product bulk deletion",

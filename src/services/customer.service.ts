@@ -329,7 +329,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
       customerCategory: cust.customerCategory?.name,
       primaryContactNo: cust.primaryContactNo,
       emailPrimary: cust.emailPrimary,
-      customerAddress: `${cust.customerAddress?.address1 || ''} ${cust.customerAddress?.address2 || ''} ${cust.customerAddress?.city || ''} ${cust.customerAddress?.state || ''} ${cust.customerAddress?.pincode || ''}`.trim() || null,
+      customerAddress: `${cust.customerAddress?.address1|| ''} , ${cust.customerAddress?.address2 || ''}  ${cust.customerAddress?.city || ''} , ${cust.customerAddress?.state || ''} , ${cust.customerAddress?.pincode || ''}`.trim() || null,
       contactPersonName: `${cust.billingDetails?.contactPersonFName ?? ''} ${cust.billingDetails?.contactPersonMName ?? ''} ${cust.billingDetails?.contactPersonLName ?? ''}`.trim() || null,
     };
   });

@@ -52,30 +52,31 @@ export class AddressService {
 
     throw new Error('Invalid pincode or no data found');
   }
+
+  //TODO:Create
+  public async create(addressData: Partial<Address>): Promise<Address> {
+    const address = this.addressRepository.create(addressData);
+    return this.addressRepository.save(address);
+  }
+
+  //TODO:Update ───────────────────────────────────────────────────────────────
+
+  public async update(id: string, addressData: Partial<Address>): Promise<Address> {
+    let address = await this.addressRepository.findOneBy({ id });
+
+    if (address) {
+      Object.assign(address, addressData);
+      const saved = await this.addressRepository.save(address);
+      await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
+      return saved;
+    }
+
+    return this.create(addressData);
+  }
 }
 
 
-  // // ─── Create ───────────────────────────────────────────────────────────────
-
-  // public async create(addressData: Partial<Address>): Promise<Address> {
-  //   const address = this.addressRepository.create(addressData);
-  //   return this.addressRepository.save(address);
-  // }
-
-  // // ─── Update ───────────────────────────────────────────────────────────────
-
-  // public async update(id: string, addressData: Partial<Address>): Promise<Address> {
-  //   let address = await this.addressRepository.findOneBy({ id });
-
-  //   if (address) {
-  //     Object.assign(address, addressData);
-  //     const saved = await this.addressRepository.save(address);
-  //     await this.cacheService.del(`${CACHE_PREFIX}:id:${id}`);
-  //     return saved;
-  //   }
-
-  //   return this.create(addressData);
-  // }
+  
 
   // // ─── Find By ID ───────────────────────────────────────────────────────────
 
