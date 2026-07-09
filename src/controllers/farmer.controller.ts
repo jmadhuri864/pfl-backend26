@@ -613,11 +613,6 @@ export class FarmerController {
       next(error);
     }
   }
-
- 
-
-
-
   //TODO:Delete Mutilple
    @httpDelete("/delete/multiple")
   public async softDeleteMultipleFarmers(

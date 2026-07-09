@@ -56,8 +56,8 @@ export class CustomerController {
       { name: 'billingAddressProofCopy', maxCount: 1 },
       { name: 'deliveryAddressProofCopy', maxCount: 1 },
       { name: 'docEvidenceCopy', maxCount: 1 },
-      { name: 'mandiLicenceCopy', maxCount: 1 },
-      { name: 'regiCopy', maxCount: 1 },
+      { name: 'keyMobileNumbers[mandiLicenceCopy]', maxCount: 1 },
+      { name: 'keyMobileNumbers[regiCopy]', maxCount: 1 },
       { name: 'electricityBillCopy', maxCount: 1 },
       { name: 'visitingCardCopy', maxCount: 1 },
       { name: 'lc', maxCount: 1 },
@@ -122,11 +122,11 @@ export class CustomerController {
       if (files.docEvidenceCopy?.[0])
         customerData.paymentTerms.docEvidenceCopy =
           (files.docEvidenceCopy[0] as any).location;
-      if (files.mandiLicenceCopy?.[0])
+      if (files['keyMobileNumbers[mandiLicenceCopy]'][0])
         customerData.keyMobileNumbers.mandiLicenceCopy =
-          (files.mandiLicenceCopy[0] as any).location;
-      if (files.regiCopy?.[0])
-        customerData.keyMobileNumbers.regiCopy = (files.regiCopy[0] as any).location;
+          (files['keyMobileNumbers[mandiLicenceCopy]'][0] as any).location;
+      if (files['keyMobileNumbers[regiCopy]'][0] )
+        customerData.keyMobileNumbers.regiCopy = (files['keyMobileNumbers[regiCopy]'][0] as any).location;
       if (files.electricityBillCopy?.[0])
         customerData.keyMobileNumbers.electricityBillCopy =
           (files.electricityBillCopy[0] as any).location;

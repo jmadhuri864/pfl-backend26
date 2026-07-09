@@ -110,7 +110,15 @@ export class PMPVoucherService {
           payReceivedFrom: rd.payReceivedFrom || null,
           location: rd.location || null,
           sellerName: rd.sellerName || null,
-          address:rd.address ? formatAddress(rd.address) : '',
+         //address:rd.address ? formatAddress(rd.address) : '',
+         address:{
+            address1:rd.address?.address1,
+            address2:rd.address?.address2,
+            location:rd.address?.location,
+            city:rd.address?.city,
+            state:rd.address?.state,
+            pincode:rd.address?.pincode
+         },
           companyName: rd.companyName?.name || null,
           grnNo: rd.grnNo?.grnNo || null,
           totalAmt: rd.totalAmt ?? null,
