@@ -12,12 +12,15 @@ import { PaginationOptions } from "../utils/pagination";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { CreateAqrDto, UpdateAqrDto } from "../dtos/aqr.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 @controller("/aqr", deserializeUser, requireUser)
 export class AqrController {
   constructor(
     @inject(TYPES.AqrService) private aqrService: AqrService,
     @inject(TYPES.NotificationService) private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
   ) {}
 
   // ─── Create ───────────────────────────────────────────────────────────────
@@ -28,6 +31,8 @@ public async createAqr(
   @next() next: NextFunction,
 ): Promise<Response | void> {
   try {
+    const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+
     const aqrData: CreateAqrDto = { ...req.body, requestedBy: res.locals.user.id };
     const createdAqr = await this.aqrService.createAqr(aqrData);
 
@@ -40,7 +45,23 @@ public async createAqr(
       .createNoti("AQR created successfully and submitted for approval", res.locals.user.id)
       .catch(() => {});
 
-    ControllerLogger.logSuccess("AQR created", createdAqr.id, req, res);
+    // Single activity log - skip apiLogger middleware & ControllerLogger DB log
+    res.locals.skipApiLogging = true;
+    this.activityLogService.logActivity({
+      userId: res.locals.user.id,
+      userName,
+      action: ActivityAction.CREATE,
+      module: ActivityModule.AQR,
+      entityName: 'AQR',
+      entityId: createdAqr.id,
+      description: `${userName} has created AQR ${createdAqr.aqrNo || createdAqr.id}`,
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent'),
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 201,
+    }).catch(() => {});
+
     return res.status(201).json({ status: "success", message: "AQR created successfully" });
   } catch (error) {
     ControllerLogger.logError("AQR creation", error, req, res);
@@ -201,6 +222,7 @@ public async createAqr(
   ): Promise<Response | void> {
     try {
       const { id } = req.params;
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       const updatedAqr = await this.aqrService.updateAqr(id, req.body, res.locals.updatedBy);
 
       if (!updatedAqr) {
@@ -211,6 +233,22 @@ public async createAqr(
       this.notificationService
         .createNoti("AQR updated successfully", res.locals.user.id)
         .catch(() => {});
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.AQR,
+        entityName: 'AQR',
+        entityId: id,
+        description: `${userName} has updated AQR ${updatedAqr.aqrNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess("AQR updated", id, req, res);
       return res.status(200).json({ status: "success", message: "AQR updated successfully", });
@@ -259,6 +297,7 @@ public async createAqr(
   ): Promise<Response | void> {
     try {
       const { id } = req.params;
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       const deleted = await this.aqrService.deleteAqr(id);
 
       if (!deleted) {
@@ -267,6 +306,23 @@ public async createAqr(
       }
 
       ControllerLogger.logSuccess("AQR deleted", id, req, res);
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.AQR,
+        entityName: 'AQR',
+        entityId: id,
+        description: `${userName} has deleted AQR ${deleted.aqrNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       return res.status(200).json({ status: "success", message: "AQR deleted successfully" });
     } catch (error) {
       ControllerLogger.logError("AQR deletion", error, req, res);
@@ -288,8 +344,28 @@ public async createAqr(
         return next(new AppError(400, "An array of AQR IDs is required"));
       }
 
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       const result = await this.aqrService.deleteMultipleAqrs(ids);
-      res.status(200).json({ message: result.message, success: result.success, failed: result.failed });
+
+      const deletedNos = result.success.map(s => s.aqrNo || s.id).join(', ');
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.AQR,
+        entityName: 'AQR',
+        description: `${userName} has bulk deleted ${result.success.length} AQR(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+      res.status(200).json({ message: result.message, success: result.success.map(s => s.id), failed: result.failed });
     } catch (error) {
       ControllerLogger.logError("AQR bulk delete", error, req, res);
       next(error);

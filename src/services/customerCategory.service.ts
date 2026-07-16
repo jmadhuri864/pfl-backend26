@@ -119,7 +119,7 @@ export class CustomerCategoryService {
     return this.getById(id);
   }
 
-  public async deleteCustomerCategory(id: string): Promise<boolean> {
+  public async deleteCustomerCategory(id: string): Promise<{ name: string } | null> {
     const customerCategory = await this.customerCategoryRepository.findOne({
       where: { id },
     });
@@ -137,14 +137,21 @@ export class CustomerCategoryService {
     await this.customerCategoryRepository.save(customerCategory);
     await this.invalidateCache(id);
 
-    return true;
+    return { name: customerCategory.name };
   }
 
-  async softDeleteCustomerCategory(userIds: string[]) {
+  async softDeleteCustomerCategory(ids: string[]): Promise<{ affected?: number | null; deleted: { id: string; name: string }[] }> {
+    // Fetch names before deletion for activity log
+    const categories = await this.customerCategoryRepository.find({
+      where: { id: In(ids) },
+      select: ['id', 'name'],
+    });
+    const deleted = categories.map(c => ({ id: c.id, name: c.name }));
+
     const result = await this.customerCategoryRepository.softDelete({
-      id: In(userIds),
+      id: In(ids),
     });
     await this.invalidateCache();
-    return result;
+    return { affected: result.affected, deleted };
   }
 }

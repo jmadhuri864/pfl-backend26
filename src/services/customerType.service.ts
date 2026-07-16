@@ -123,7 +123,7 @@ export class CustomerTypeService {
     return saved;
   }
 
-  public async deleteCustomerType(id: string): Promise<boolean> {
+  public async deleteCustomerType(id: string): Promise<{ name: string } | null> {
     const customerType = await this.customerTypeRepository.findOne({
       where: { id },
     });
@@ -141,14 +141,21 @@ export class CustomerTypeService {
     await this.customerTypeRepository.save(customerType);
     await this.invalidateCache(id);
 
-    return true;
+    return { name: customerType.name };
   }
 
-  async softDeleteCustomerType(typeIds: string[]) {
+  async softDeleteCustomerType(typeIds: string[]): Promise<{ affected?: number | null; deleted: { id: string; name: string }[] }> {
+    // Fetch names before deletion for activity log
+    const types = await this.customerTypeRepository.find({
+      where: { id: In(typeIds) },
+      select: ['id', 'name'],
+    });
+    const deleted = types.map(t => ({ id: t.id, name: t.name }));
+
     const result = await this.customerTypeRepository.softDelete({
       id: In(typeIds),
     });
     await this.invalidateCache();
-    return result;
+    return { affected: result.affected, deleted };
   }
 }

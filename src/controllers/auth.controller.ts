@@ -263,7 +263,7 @@ const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
         userName: name,
         action: ActivityAction.LOGIN,
         module: ActivityModule.OTHER,
-        description: `User logged in`,
+        description: `${name} has logged in`,
         ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -348,12 +348,13 @@ const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
 
       // Log logout activity (fire-and-forget)
       if (user) {
+        const userName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
         this.activityLogService.logActivity({
           userId: user.id,
-          userName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+          userName,
           action: ActivityAction.LOGOUT,
           module: ActivityModule.OTHER,
-          description: `User logged out`,
+          description: `${userName} has logged out`,
           ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
           userAgent: req.get('user-agent'),
           endpoint: req.originalUrl,

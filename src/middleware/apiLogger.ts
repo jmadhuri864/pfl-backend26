@@ -353,37 +353,6 @@ export const apiLogger = (req: Request, res: Response, next: NextFunction) => {
     // Log the user-friendly message with IP address
     UserLogger.infoWithIp(readableMessage, user, clientIp);
 
-    // ── DB Activity Log (fire-and-forget, only for authenticated users) ──────
-    if (user?.id) {
-      setImmediate(() => {
-        try {
-          const activityLogService = container.get<UserActivityLogService>(TYPES.UserActivityLogService);
-          const { action, module, description } = resolveActivity(req.method, req.originalUrl, statusCode);
-
-          activityLogService.logActivity({
-            userId: user.id,
-            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-            action,
-            module,
-            description,
-            metadata: {
-              params: req.params,
-              query: req.query,
-            },
-            ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
-            userAgent: req.get('user-agent'),
-            endpoint: req.originalUrl,
-            httpMethod: req.method,
-            statusCode,
-            responseTime: duration,
-            isError: statusCode >= 400,
-          }).catch(() => {});
-        } catch (_) {
-          // Never break the response
-        }
-      });
-    }
-    
     // Call original json method
     return originalJson.call(this, body);
   };

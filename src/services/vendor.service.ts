@@ -1491,7 +1491,7 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
 
 
   async getVendorByIdWithFilter(id: string): Promise<any> {
-    const key = `${CACHE_PREFIX}:filter:id:${id}`;
+    const key = `${CACHE_PREFIX}:filter:id:v2:${id}`;
     const cached = await this.cacheService.get<any>(key);
     if (cached) return cached;
 
@@ -1503,12 +1503,17 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
       .leftJoinAndSelect("vendor.officeAddress", "officeAddress")
       .leftJoinAndSelect("vendor.category", "category")
       .leftJoinAndSelect("vendor.subcategory", "subcategory")
+      .leftJoinAndSelect("vendor.createdBy", "createdBy")
       .select([
         "vendor.id",
         "vendor.companyName",
         "vendor.vendorCode",
         "vendor.officeContactNo",
         "vendor.officeEmail",
+        "vendor.paymentMode",
+        "vendor.proposedPaymentTerms",
+        "vendor.creditTerms",
+        "vendor.status",
         "category.name",
         "subcategory.name",
         "vendorSaleInfo.contactFName",
@@ -1521,6 +1526,9 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
         "officeAddress.city",
         "officeAddress.state",
         "officeAddress.pincode",
+        "createdBy.id",
+        "createdBy.firstName",
+        "createdBy.lastName",
       ]);
 
     if (isUuid) {
@@ -1538,6 +1546,13 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
       vendorCode: vendor.vendorCode,
       officeContactNo: vendor.officeContactNo,
       officeEmail: vendor.officeEmail,
+      paymentMode: vendor.paymentMode ?? null,
+      proposedPaymentTerms: vendor.proposedPaymentTerms ?? null,
+      creditTerms: vendor.creditTerms ?? null,
+      status: vendor.status ?? null,
+      createdBy: vendor.createdBy
+        ? `${vendor.createdBy.firstName || ""} ${vendor.createdBy.lastName || ""}`.trim()
+        : null,
       contactPersonName: vendor.vendorSaleInfo
         ? `${vendor.vendorSaleInfo.contactFName || ""} ${
             vendor.vendorSaleInfo.contactMName || ""

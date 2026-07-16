@@ -31,7 +31,7 @@ export enum ActivityModule {
   AQR= 'AQR',
   GRN = 'GRN',
   RFPA = 'RFPA',
-  AQR = 'AQR',
+  
   DEAL_SLIP = 'DEAL_SLIP',
   INVOICE = 'INVOICE',
   CUSTOMER = 'CUSTOMER',
@@ -52,11 +52,11 @@ export enum ActivityModule {
   INWARD_REGISTER = 'INWARD_REGISTER',
   INVENTORY = 'INVENTORY',
   VOUCHER = 'VOUCHER',
-  DUMP_REGISTER = 'DUMP_REGISTER',
+  
   UOM = 'UOM',
   SECOND_SALE = 'SECOND_SALE',
   RETURN = 'RETURN',
-  RETURN_TO_VENDOR = 'RETURN_TO_VENDOR',
+ 
   OTHER = 'OTHER',
 }
 

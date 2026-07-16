@@ -31,6 +31,8 @@ import { CreateFarmerDto } from '../dtos/farmer.dto';
 import { Status } from '../utils/status.enum';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/farmers',deserializeUser, requireUser)
 export class FarmerController {
@@ -41,6 +43,8 @@ export class FarmerController {
     private readonly pdfGeneratorService: PdfGeneratorService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private readonly activityLogService: UserActivityLogService,
   ) {}
 
   @httpPost(
@@ -91,7 +95,23 @@ export class FarmerController {
         `New farmer created: ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
         res.locals.user.id,
       );
-      
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.OTHER,
+        entityName: 'Farmer',
+        entityId: farmer.id,
+        description: `${userName} created farmer "${[farmer.farmerfName, farmer.farmermName, farmer.farmerlName].filter(Boolean).join(' ')}" (${farmer.farmerCode})`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Farmer created', farmer.id, req, res);
       res.status(201).json({
         status: 'success',
@@ -534,7 +554,23 @@ export class FarmerController {
         `Farmer details updated for: ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
         res.locals.user.id,
       );
-      
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.OTHER,
+        entityName: 'Farmer',
+        entityId: id,
+        description: `${userName} updated farmer "${[farmer.farmerfName, farmer.farmermName, farmer.farmerlName].filter(Boolean).join(' ')}" (${farmer.farmerCode})`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Farmer updated', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -577,6 +613,23 @@ export class FarmerController {
       // }
 
       ControllerLogger.logSuccess('Farmer deleted', id, req, res);
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER,
+        entityName: 'Farmer',
+        entityId: id,
+        description: `${userName} deleted farmer ${id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: 'success',
         message: 'Farmer deleted successfully',
@@ -691,16 +744,23 @@ export class FarmerController {
         req,
         res
       );
-  
-      // Send notification
-      // const userId = res.locals.user?.id;
-      // if (userId) {
-      //   await this.notificationService.createNoti(
-      //     `Multiple farmers soft deleted: ${farmerIds.length}`,
-      //     userId
-      //   );
-      // }
-  
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER,
+        entityName: 'Farmer',
+        description: `${userName} bulk deleted ${farmerIds.length} farmer(s)`,
+        metadata: { ids: farmerIds, count: farmerIds.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       return res.status(200).json({
         status: "success",
         message: "Farmers soft deleted successfully",

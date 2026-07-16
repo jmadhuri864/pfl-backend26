@@ -106,6 +106,22 @@ export interface BulkDeleteBranchDto {
   ids: string[];
 }
 
+export interface DeletedBranchItemDto {
+  id: string;
+  name: string;
+  type: BranchType;
+}
+
 export interface BulkDeleteBranchResultDto {
   affected?: number | null;
+  deleted: DeletedBranchItemDto[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete single branch result DTO
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DeleteBranchResultDto {
+  name: string;
+  type: BranchType;
 }

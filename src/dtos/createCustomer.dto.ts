@@ -130,3 +130,58 @@ export interface CustomerCategoryResponseDto {
 export interface CreateCustomerCategoryDto {
   name: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete result DTOs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Returned by deleteCustomer service method */
+export interface DeleteCustomerResultDto {
+  organisationName: string;
+}
+
+/** Item in the deleted array from softDeleteCustomers */
+export interface DeletedCustomerItemDto {
+  id: string;
+  organisationName: string;
+}
+
+/** Returned by softDeleteCustomers service method */
+export interface BulkDeleteCustomerResultDto {
+  affected?: number | null;
+  deleted: DeletedCustomerItemDto[];
+}
+
+/** Returned by deleteCustomerCategory service method */
+export interface DeleteCustomerCategoryResultDto {
+  name: string;
+}
+
+/** Item in the deleted array from softDeleteCustomerCategory */
+export interface DeletedCustomerCategoryItemDto {
+  id: string;
+  name: string;
+}
+
+/** Returned by softDeleteCustomerCategory service method */
+export interface BulkDeleteCustomerCategoryResultDto {
+  affected?: number | null;
+  deleted: DeletedCustomerCategoryItemDto[];
+}
+
+/** Returned by deleteCustomerType service method */
+export interface DeleteCustomerTypeResultDto {
+  name: string;
+}
+
+/** Item in the deleted array from softDeleteCustomerType */
+export interface DeletedCustomerTypeItemDto {
+  id: string;
+  name: string;
+}
+
+/** Returned by softDeleteCustomerType service method */
+export interface BulkDeleteCustomerTypeResultDto {
+  affected?: number | null;
+  deleted: DeletedCustomerTypeItemDto[];
+}

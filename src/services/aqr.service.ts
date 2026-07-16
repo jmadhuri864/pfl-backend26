@@ -14,7 +14,7 @@ import { ApprovalFlowService } from "./approvalFlow.service";
 import { SelectQueryBuilder, DataSource, In, DeepPartial } from "typeorm";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { CacheService } from "./cache.service";
-import { AqrListItemDto, CreateAqrDto, FarmerPartyDto, GetAqrByIdForViewResponseDto, GetAqrForUpdateResponseDto, UpdateAqrDto, VendorPartyDto } from "../dtos/aqr.dto";
+import { AqrListItemDto, BulkDeleteAqrResultDto, CreateAqrDto, DeleteAqrResultDto, FarmerPartyDto, GetAqrByIdForViewResponseDto, GetAqrForUpdateResponseDto, UpdateAqrDto, VendorPartyDto } from "../dtos/aqr.dto";
 import { Source } from "../utils/status.enum";
 import { AqrParameter } from "../entities/aqrQuality.entity";
 
@@ -660,7 +660,7 @@ export class AqrService {
 
 
 
-  public async deleteAqr(id: string): Promise<boolean> {
+  public async deleteAqr(id: string): Promise<DeleteAqrResultDto | null> {
     const aqr = await this.aqrRepo.findOne({ where: { id } });
     if (!aqr) throw new AppError(404, `AQR with ID ${id} not found`);
 
@@ -672,7 +672,7 @@ export class AqrService {
     await this.aqrRepo.save(aqr);
     await this.invalidateAqrCache(id);
 
-    return true;
+    return { aqrNo: aqr.aqrNo };
   }
 
   // ─── Search ───────────────────────────────────────────────────────────────
@@ -685,8 +685,8 @@ export class AqrService {
 
   // ─── Delete Multiple ──────────────────────────────────────────────────────
 
-  public async deleteMultipleAqrs(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-    const success: string[] = [];
+  public async deleteMultipleAqrs(ids: string[]): Promise<BulkDeleteAqrResultDto> {
+    const success: { id: string; aqrNo: string }[] = [];
     const failed: { id: string; reason: string }[] = [];
 
     for (const id of ids) {
@@ -702,7 +702,7 @@ export class AqrService {
 
         await this.aqrRepo.softDelete(aqr.id);
         await this.aqrRepo.update(aqr.id, { isDeleted: true } as any);
-        success.push(id);
+        success.push({ id, aqrNo: aqr.aqrNo });
       } catch (error: any) {
         failed.push({ id, reason: error.message || "Unknown error" });
       }

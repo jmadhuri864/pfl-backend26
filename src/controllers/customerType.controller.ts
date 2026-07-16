@@ -19,6 +19,8 @@ import { captureUser, deserializeUser, requireUser } from "../middleware/deseria
 import { PaginationOptions } from "../utils/pagination";
 import { NotificationService } from "../services/notification.service";
 import { CreateCustomerTypeDto } from "../dtos/createCustomer.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 @controller("/customerType",deserializeUser,requireUser)
 export class CustomerTypeController {
@@ -27,6 +29,8 @@ export class CustomerTypeController {
     private customerTypeService: CustomerTypeService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   @httpGet("/")
@@ -149,6 +153,23 @@ export class CustomerTypeController {
       } catch (notifError) {
       }
 
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerType',
+        entityId: customerType.id,
+        description: `${userName} created customer type "${customerType.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Customer Type created', customerType.id, req, res);
       res.status(201).json({
         status: "success",
@@ -194,6 +215,23 @@ export class CustomerTypeController {
       } catch (notifError) {
       }
 
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerType',
+        entityId: id,
+        description: `${userName} updated customer type "${updatedCustomerType.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Customer Type updated', id, req, res);
       res.status(200).json({
         status: "success",
@@ -220,19 +258,23 @@ export class CustomerTypeController {
         ControllerLogger.logNotFound('Customer Type', id, req, res);
         return res.status(404).json({ message: 'Customer Type not found' });
       }
-    
-      // 🔔 Send notification for customer type deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Customer type  deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Customer type deletion notification error:', notifError);
-      // }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerType',
+        entityId: id,
+        description: `${userName} deleted customer type "${success.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
     
       ControllerLogger.logSuccess('Customer Type deleted', id, req, res);
       res.status(200).json({
@@ -268,21 +310,30 @@ public async softDeleteMultipleCustomerType(
 
     const result = await this.customerTypeService.softDeleteCustomerType(customerTypeIds);
 
+    // 📝 Activity log
+    const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+    const deletedList = result.deleted.map(t => `"${t.name}"`).join(', ');
+    this.activityLogService.logActivity({
+      userId: res.locals.user.id,
+      userName,
+      action: ActivityAction.DELETE,
+      module: ActivityModule.CUSTOMER,
+      entityName: 'CustomerType',
+      description: `${userName} bulk deleted ${result.deleted.length} customer type(s): ${deletedList}`,
+      metadata: { ids: customerTypeIds, count: customerTypeIds.length },
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent'),
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+    }).catch(() => {});
+
     ControllerLogger.logSuccess(
       "CustomerType bulk soft deleted",
       customerTypeIds.join(","),
       req,
       res
     );
-
-    // Send notification
-    // const userId = res.locals.user?.id;
-    // if (userId) {
-    //   await this.notificationService.createNoti(
-    //     `Multiple CustomerType soft deleted: ${customerTypeIds.length}`,
-    //     userId
-    //   );
-    // }
 
     return res.status(200).json({
       status: "success",

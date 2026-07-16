@@ -171,11 +171,20 @@ export interface ApproveFarmerDto {
 // on upload, but receives string URLs back from the API).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface FarmerResponseDto {
-  id: string;
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete result DTOs
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // ── Audit / meta ──────────────────────────────────────────────────────────
-  createdBy?: string | null;
+/** Returned by deleteFarmer service method (boolean true) — no extra fields */
+export interface DeleteFarmerResultDto {
+  success: boolean;
+}
+
+/** Returned by softDeleteFarmers service method */
+export interface BulkDeleteFarmerResultDto {
+  affected?: number | null;
+}
+
   createdDate?: string | null;
   createdTime?: string | null;
 

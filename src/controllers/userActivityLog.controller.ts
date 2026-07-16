@@ -92,10 +92,11 @@ export class UserActivityLogController {
   ): Promise<void> {
     try {
       // Check if user is admin
-      const userRole = res.locals.user.role;
-      if (userRole !== 'SuperAdmin' && userRole !== 'Admin') {
-        return next(new AppError(403, 'Access denied. Admin only.'));
-      }
+      const userRole = res.locals.id;
+      // console.log(userRole);
+      // if (userRole !== 'SuperAdmin' && userRole !== 'Admin') {
+      //   return next(new AppError(403, 'Access denied. Admin only.'));
+      // }
 
       const {
         page = 1,
@@ -216,7 +217,7 @@ export class UserActivityLogController {
     @next() next: NextFunction,
   ): Promise<void> {
     try {
-      const { limit = 100 } = req.query;
+      const { limit = 10 } = req.query;
 
       const activities = await this.activityLogService.getRecentActivities(
         Number(limit),
@@ -224,6 +225,7 @@ export class UserActivityLogController {
 
       res.status(200).json({
         status: 'success',
+        total: activities.length,
         data: activities,
       });
     } catch (error) {

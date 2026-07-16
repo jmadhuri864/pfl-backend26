@@ -44,7 +44,7 @@ export const uploadSingle = multer({
   storage: multerS3({
     s3,
     bucket: process.env.DO_SPACES_BUCKET!,
-    acl: 'public', // Use pre-signed URLs for access — do not expose publicly
+    acl: 'public-read', // Use pre-signed URLs for access — do not expose publicly
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: (_req, file, cb) => {
       const timestamp = Date.now();

@@ -23,7 +23,7 @@ import {
 } from './middleware/timezone';
 import logger from './utils/logger';
 import AppError from './utils/appError';
-import { apiLogger, errorLogger } from './middleware/apiLogger';
+//import { apiLogger, errorLogger } from './middleware/apiLogger';
 import './cron/cronJob';
 import { seedDocumentDefDatabase } from './seed/documentSeed';
 //import { LogCleanupService } from './services/logCleanup.service';
@@ -118,11 +118,8 @@ const startServer = async () => {
 
       // Main CORS handler - MUST be before any other middleware that might set headers
       app.use((req, res, next) => {
-        const origin = req.headers.origin as string;
-
-        // Development: allow all origins
-        res.setHeader("Access-Control-Allow-Origin", origin || "*");
-        res.setHeader("Access-Control-Allow-Credentials", "true");
+        // Allow all origins
+        res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, Cache-Control, X-Requested-With");
         res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS,PUT");
 
@@ -136,11 +133,7 @@ const startServer = async () => {
 
       // SSE-specific middleware - only for the streaming endpoint
       app.use("/sse/notifications", (req, res, next) => {
-        const origin = req.headers.origin as string;
-        if (origin && allowedOrigins.includes(origin)) {
-          res.setHeader("Access-Control-Allow-Origin", origin);
-          res.setHeader("Access-Control-Allow-Credentials", "true");
-        }
+        res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Connection", "keep-alive");
@@ -157,7 +150,7 @@ const startServer = async () => {
       app.use(logRequestMiddleware);
       
       // Add API logging middleware (should be after user middleware)
-      app.use(apiLogger);
+      //app.use(apiLogger);
 
       app.get('/', (_req: Request, res: Response) => {
         logger.info('Request received');
@@ -167,7 +160,7 @@ const startServer = async () => {
 
     inversifyServer.setErrorConfig((app) => {
       // Add error logging middleware
-      app.use(errorLogger);
+      //app.use(errorLogger);
 
       app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         if (err instanceof AppError) {

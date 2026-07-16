@@ -1939,7 +1939,7 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
       await this.invalidateCustomerCache(customerId);
       return saved;
     }
-  public async deleteCustomer(id: string): Promise<boolean> {
+  public async deleteCustomer(id: string): Promise<{ organisationName: string } | null> {
     const customer = await this.customerRepository.findOne({
       where: { id },
     });
@@ -1962,9 +1962,17 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
     customer.customerCode = null as any;
     await this.customerRepository.save(customer);
     await this.invalidateCustomerCache(id);
-    return true;
+    return { organisationName: customer.organisationName };
   }
-  async softDeleteCustomers(userIds: string[]) {
+
+  async softDeleteCustomers(userIds: string[]): Promise<{ affected?: number | null; deleted: { id: string; organisationName: string }[] }> {
+    // Fetch names before deletion for activity log
+    const customers = await this.customerRepository.find({
+      where: { id: In(userIds) },
+      select: ['id', 'organisationName'],
+    });
+    const deleted = customers.map(c => ({ id: c.id, organisationName: c.organisationName }));
+
     // Null out customerCode before soft-deleting so the unique constraint
     // slot is freed and the code is never re-blocked.
     await this.customerRepository
@@ -1976,6 +1984,6 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
 
     const result = await this.customerRepository.softDelete({ id: In(userIds) });
     await this.invalidateCustomerCache();
-    return result;
+    return { affected: result.affected, deleted };
   }
 }

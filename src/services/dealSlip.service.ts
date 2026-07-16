@@ -475,9 +475,9 @@ public async getAllDealSlipsNo(
   return nosResponse;
 }
 
-public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
-  const exists = await this.dealSlipRepository.count({ where: { id: dealSlipId } });
-  if (!exists) {
+public async deleteDealSlip(dealSlipId: string): Promise<{ dealSlipNo: string } | null> {
+  const dealSlip = await this.dealSlipRepository.findOne({ where: { id: dealSlipId }, select: ['id', 'dealSlipNo'] });
+  if (!dealSlip) {
     throw new AppError(404, `Deal Slip with ID ${dealSlipId} not found`);
   }
 
@@ -487,7 +487,7 @@ public async deleteDealSlip(dealSlipId: string): Promise<boolean> {
 
   await this.dealSlipRepository.update({ id: dealSlipId }, { deletionScheduledAt: sixMonthsFromNow } as any);
   await this.invalidateDealSlipCache(dealSlipId);
-  return true;
+  return { dealSlipNo: dealSlip.dealSlipNo };
 }
 
  public async getAllDealSlips(queryOptions: PaginationOptions, userId: string): Promise<DealSlipListResponseDto> {
@@ -714,8 +714,8 @@ public async getDealSlipByIdForView(docid: string, userId: string): Promise<Deal
 }
 
 
-public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipResultDto> {
-  if (!ids.length) return { message: 'No IDs provided' };
+public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipResultDto & { deletedNos: string[] }> {
+  if (!ids.length) return { message: 'No IDs provided', deletedNos: [] };
 
   const [dealSlips, relatedDocuments] = await Promise.all([
     this.dealSlipRepository.find({ where: { id: In(ids) } }),
@@ -729,6 +729,8 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipR
   const foundIds = new Set(dealSlips.map(d => d.id));
   const missingId = ids.find(id => !foundIds.has(id));
   if (missingId) throw new AppError(404, `Deal Slip with ID ${missingId} not found`);
+
+  const deletedNos = dealSlips.map(d => d.dealSlipNo).filter(Boolean) as string[];
 
   const docIds = relatedDocuments.map(d => d.id);
  
@@ -763,7 +765,7 @@ public async deleteMultipleDealSlips(ids: string[]): Promise<BulkDeleteDealSlipR
     this.cacheService.invalidatePattern(`${CACHE_PREFIX}:filter:*`),
   ]);
 
-  return { message: 'dealSlip records marked for deletion successfully' };
+  return { message: 'dealSlip records marked for deletion successfully', deletedNos };
 }
  
 }

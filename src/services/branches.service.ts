@@ -15,6 +15,8 @@ import {
   BranchListResponseDto,
   BranchFilterItemDto,
   BulkDeleteBranchResultDto,
+  DeleteBranchResultDto,
+  DeletedBranchItemDto,
 } from '../dtos/branch.dto';
 
 const CACHE_TTL = 300; // 5 minutes
@@ -100,13 +102,19 @@ export class BranchessService {
 
   // ─── Soft Delete Multiple ─────────────────────────────────────────────────
 
-  async softDeleteBranches(ids: string[], branchType: BranchType): Promise<BulkDeleteBranchResultDto> {
+  async softDeleteBranches(ids: string[], branchType: BranchType): Promise<BulkDeleteBranchResultDto & { deleted: { id: string; name: string; type: BranchType }[] }> {
+    // Fetch names+types before deletion for activity log
+    const branches = await this.branchesRepository.find({
+      where: { id: In(ids) },
+      select: ['id', 'name', 'type'],
+    });
+    const deleted = branches.map(b => ({ id: b.id, name: b.name, type: b.type }));
+
     const result = await this.branchesRepository.softDelete({
       id: In(ids),
-      //type: branchType,
     });
     await this.invalidateBranchCache();
-    return result;
+    return { ...result, deleted };
   }
 
   // ─── Get By ID ────────────────────────────────────────────────────────────
@@ -215,7 +223,7 @@ export class BranchessService {
 
   // ─── Delete (schedule) ────────────────────────────────────────────────────
 
-  async deleteBranch(id: string, branchType: BranchType): Promise<boolean> {
+  async deleteBranch(id: string, branchType: BranchType): Promise<{ name: string; type: BranchType } | null> {
     const branch = await this.branchesRepository.findOne({
       where: { id, type: branchType },
     });
@@ -230,6 +238,6 @@ export class BranchessService {
     await this.branchesRepository.save(branch);
     await this.invalidateBranchCache(id, branchType);
 
-    return true;
+    return { name: branch.name, type: branch.type };
   }
 }

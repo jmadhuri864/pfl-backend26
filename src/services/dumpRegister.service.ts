@@ -739,11 +739,11 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
-      const dumpRegister = await this.dumpProductRepository.findOne({
+      const dumpRegister = await this.dumpRegisterRepository.findOne({
         where: { id },
       });
       if (!dumpRegister) {
-        failed.push({ id, reason: 'AQR not found' });
+        failed.push({ id, reason: 'Dump Register not found' });
         continue;
       }
       const relatedDocument = await this.documentbRepository.findOne({

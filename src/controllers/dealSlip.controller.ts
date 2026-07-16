@@ -21,6 +21,8 @@ import {
   BulkDeleteDealSlipDto,
   BulkDeleteDealSlipResultDto,
 } from "../dtos/dealSlip.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 
 @controller('/dealSlip', deserializeUser, requireUser)
@@ -31,6 +33,8 @@ export class DealSlipController {
     private dealSlipService: DealSlipService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   @httpGet('/recyclebin')
@@ -223,6 +227,23 @@ export class DealSlipController {
         }
       } catch (notifError) {
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.DEAL_SLIP,
+        entityName: 'DealSlip',
+        entityId: dealSlip.id,
+        description: `${userName} created deal slip "${dealSlip.dealSlipNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       ControllerLogger.logSuccess('Deal Slip created', dealSlip.id, req, res);
       res.status(200).json({
@@ -272,6 +293,23 @@ export class DealSlipController {
         }
       } catch (notifError) {
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.DEAL_SLIP,
+        entityName: 'DealSlip',
+        entityId: dealSlipId,
+        description: `${userName} updated deal slip "${updatedDealSlip.dealSlipNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       ControllerLogger.logSuccess('Deal Slip updated', dealSlipId, req, res);
       res.status(200).json({
@@ -376,19 +414,23 @@ export class DealSlipController {
         ControllerLogger.logNotFound('Deal Slip', id, req, res);
         return res.status(404).json({ message: 'Deal Slip not found' });
       }
-      
-      // 🔔 Send notification for deal slip deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Deal slip with ID ${id} deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Deal slip deletion notification error:', notifError);
-      // }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.DEAL_SLIP,
+        entityName: 'DealSlip',
+        entityId: id,
+        description: `${userName} deleted deal slip "${success.dealSlipNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       ControllerLogger.logSuccess('Deal Slip deleted', id, req, res);
       res.status(200).json({
@@ -443,18 +485,23 @@ export class DealSlipController {
     try {
       const result: BulkDeleteDealSlipResultDto = await this.dealSlipService.deleteMultipleDealSlips(body.ids);
 
-      // 🔔 Send notification for multiple deal slips deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `${ids.ids.length} Deal Slip(s) deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Delete multiple deal slips notification error:', notifError);
-      // }
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      const deletedList = (result as any).deletedNos?.map((no: string) => `"${no}"`).join(', ') || body.ids.join(', ');
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.DEAL_SLIP,
+        entityName: 'DealSlip',
+        description: `${userName} bulk deleted ${body.ids.length} deal slip(s): ${deletedList}`,
+        metadata: { ids: body.ids, count: body.ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Multiple Deal Slips deleted', `${body.ids.length} items`, req, res);
       res.status(200).json({

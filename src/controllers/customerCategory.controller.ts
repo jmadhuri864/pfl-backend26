@@ -15,8 +15,7 @@ import {
 import { inject } from "inversify";
 import { TYPES } from "../types";
 import { CustomerCategoryService } from "../services/customerCategory.service";
-import AppError from "../utils/appError"; // Assuming you have a custom error class
-import { CustomerCategory } from "../entities/customerCategory.entity";
+import AppError from "../utils/appError";
 
 import { captureUser, deserializeUser, requireUser } from "../middleware/deserializeUser";
 
@@ -24,6 +23,8 @@ import { PaginationOptions } from "../utils/pagination";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
 import { CreateCustomerCategoryDto } from "../dtos/createCustomer.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 @controller("/customerCategory",deserializeUser,requireUser)
 export class CustomerCategoryController {
@@ -32,6 +33,8 @@ export class CustomerCategoryController {
     private customerCategoryService: CustomerCategoryService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   @httpGet("/")
@@ -162,6 +165,23 @@ export class CustomerCategoryController {
         }
       } catch (notifError) {
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerCategory',
+        entityId: (category as any)?.id,
+        description: `${userName} created customer category "${category.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
       
       // Log successful creation
       ControllerLogger.logSuccess('Customer Category created', (category as any)?.id || 'unknown', req, res);
@@ -211,6 +231,23 @@ export class CustomerCategoryController {
         }
       } catch (notifError) {
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerCategory',
+        entityId: id,
+        description: `${userName} updated customer category "${categoryData.name || category.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       // Log successful update
       ControllerLogger.logSuccess('Customer Category updated', id, req, res);
@@ -239,19 +276,23 @@ export class CustomerCategoryController {
         ControllerLogger.logOperationFailed('Delete', 'Customer Category', 'not found or could not be deleted', req, res);
         return res.status(404).json({ message: 'Customer Category not found' });
       }
-      
-      // 🔔 Send notification for customer category deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Customer category  deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Customer category deletion notification error:', notifError);
-      // }
+
+      // � Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'CustomerCategory',
+        entityId: id,
+        description: `${userName} deleted customer category "${success.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer Category deleted', id, req, res);
@@ -288,21 +329,30 @@ public async softDeleteMultipleCustomerCategory(
 
     const result = await this.customerCategoryService.softDeleteCustomerCategory(customerCategoryIds);
 
+    // 📝 Activity log
+    const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+    const deletedList = result.deleted.map(c => `"${c.name}"`).join(', ');
+    this.activityLogService.logActivity({
+      userId: res.locals.user.id,
+      userName,
+      action: ActivityAction.DELETE,
+      module: ActivityModule.CUSTOMER,
+      entityName: 'CustomerCategory',
+      description: `${userName} bulk deleted ${result.deleted.length} customer category(s): ${deletedList}`,
+      metadata: { ids: customerCategoryIds, count: customerCategoryIds.length },
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent'),
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+    }).catch(() => {});
+
     ControllerLogger.logSuccess(
       "CustomerCategory bulk soft deleted",
       customerCategoryIds.join(","),
       req,
       res
     );
-
-    // Send notification
-    // const userId = res.locals.user?.id;
-    // if (userId) {
-    //   await this.notificationService.createNoti(
-    //     `Multiple customerCategory soft deleted: ${customerCategoryIds.length}`,
-    //     userId
-    //   );
-    // }
 
     return res.status(200).json({
       status: "success",

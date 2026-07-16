@@ -300,3 +300,25 @@ export class GetAqrForUpdateResponseDto {
   createdTime?: string | null | Date;
   parameters: AqrParameterResponseDto[];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete result DTOs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Returned by deleteAqr service method */
+export interface DeleteAqrResultDto {
+  aqrNo: string;
+}
+
+/** Item in the success array from deleteMultipleAqrs */
+export interface DeletedAqrItemDto {
+  id: string;
+  aqrNo: string;
+}
+
+/** Returned by deleteMultipleAqrs service method */
+export interface BulkDeleteAqrResultDto {
+  success: DeletedAqrItemDto[];
+  failed: { id: string; reason: string }[];
+  message: string;
+}

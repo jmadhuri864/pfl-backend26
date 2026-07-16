@@ -19,6 +19,8 @@ import { captureUser, deserializeUser, requireUser } from '../middleware/deseria
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { NotificationService } from '../services/notification.service';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 import {
   CreateBranchDto,
   UpdateBranchDto,
@@ -35,6 +37,8 @@ export class BranchessController {
     private branchesService: BranchessService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   // ─── Create ───────────────────────────────────────────────────────────────
@@ -55,11 +59,28 @@ export class BranchessController {
       }
 
       const userId = res.locals.user?.id;
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+
       if (userId) {
         this.notificationService
           .createNoti(`${branch.type} "${branch.name}" created successfully`, userId)
           .catch(() => {});
       }
+
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.OTHER,
+        entityName: 'Branch',
+        entityId: branch.id,
+        description: `${userName} has created ${branch.type} "${branch.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess(`${branch.type} created`, branch.id, req, res);
       res.status(201).json({ status: 'success', message: `${branch.type} created successfully` });
@@ -182,11 +203,28 @@ export class BranchessController {
       }
 
       const userId = res.locals.user?.id;
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+
       if (userId) {
         this.notificationService
           .createNoti(`${branch.type} "${branch.name}" updated successfully`, userId)
           .catch(() => {});
       }
+
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.OTHER,
+        entityName: 'Branch',
+        entityId: id,
+        description: `${userName} has updated ${branch.type} "${branch.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Branch updated', id, req, res);
       res.status(200).json({ status: 'success', message: `${branch.type} data updated successfully` });
@@ -215,6 +253,23 @@ export class BranchessController {
         return next(new AppError(404, 'Branch not found or could not be deleted'));
       }
 
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER,
+        entityName: 'Branch',
+        entityId: id,
+        description: `${userName} has deleted ${result.type} "${result.name}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Branch deleted', id, req, res);
       res.status(200).json({ status: 'success', message: `${branchType} deleted successfully` });
     } catch (err) {
@@ -241,6 +296,24 @@ export class BranchessController {
       }
 
       const result = await this.branchesService.softDeleteBranches(branchIds, branchType);
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      const deletedList = result.deleted.map(b => `${b.type} "${b.name}"`).join(', ');
+
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER,
+        entityName: 'Branch',
+        description: `${userName} has bulk deleted ${result.deleted.length} branch(es): ${deletedList}`,
+        metadata: { ids: branchIds, count: branchIds.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Branch bulk soft deleted', branchIds.join(','), req, res);
       res.status(200).json({

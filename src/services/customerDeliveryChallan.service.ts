@@ -32,6 +32,7 @@ import {
   CustomerDeliveryChallanViewDto,
   CustomerDeliveryChallanListResponseDto,
   BulkDeleteCustomerDCResultDto,
+  DeleteCustomerDeliveryChallanResultDto,
 } from '../dtos/customerDeliveryChallan.dto';
 
 const CACHE_PREFIX = 'cdc';
@@ -745,17 +746,19 @@ export class CustomerDeliveryChallanService {
     }
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string): Promise<DeleteCustomerDeliveryChallanResultDto | null> {
     try {
-      
+      const challan = await this.challanRepository.findOne({ where: { id }, select: ['id', 'challanNo'] });
+      if (!challan) return null;
+
       const result = await this.challanRepository.delete(id);
       await this.invalidateCDCCache(id);
-      return result.affected !== 0;
+      return result.affected !== 0 ? { challanNo: challan.challanNo } : null;
     } catch (err) {
       logger.error(`Error deleting delivery challan with ID: ${id}`, {
         error: err,
       });
-      return false;
+      return null;
     }
   }
   public async deleteMultipleCustomerDC(ids: string[]): Promise<BulkDeleteCustomerDCResultDto> {

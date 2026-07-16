@@ -27,13 +27,12 @@ import { uploadAttachments } from '../middleware/upload.middleware';
 import { setAttachmentUrls } from '../utils/fileUploadHelper';
 import {
   CreateCustomerDeliveryChallanDto,
-  UpdateCustomerDeliveryChallanDto,
   CustomerDeliveryChallanUpdateFormDto,
   CustomerDeliveryChallanViewDto,
   CustomerDeliveryChallanListResponseDto,
-  BulkDeleteCustomerDCDto,
-  BulkDeleteCustomerDCResultDto,
 } from '../dtos/customerDeliveryChallan.dto';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/customer-delivery-challan', deserializeUser, requireUser)
 export class CustomerDeliveryChallanController {
@@ -42,6 +41,8 @@ export class CustomerDeliveryChallanController {
     private customerDeliveryChallanService: CustomerDeliveryChallanService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   @httpPost('/', uploadAttachments)
@@ -79,6 +80,23 @@ export class CustomerDeliveryChallanController {
         }
       } catch (notifError) {
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+        entityName: 'CustomerDeliveryChallan',
+        entityId: challan.id,
+        description: `${userName} created customer delivery challan "${challan.challanNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Customer Delivery Challan created', challan.id, req, res);
       res.status(201).json({
@@ -272,6 +290,23 @@ export class CustomerDeliveryChallanController {
       } catch (notifError) {
       }
 
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+        entityName: 'CustomerDeliveryChallan',
+        entityId: id,
+        description: `${userName} updated customer delivery challan "${challan.challanNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Customer Delivery Challan updated', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -301,18 +336,22 @@ export class CustomerDeliveryChallanController {
         );
       }
 
-      // 🔔 Send notification for customer delivery challan deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Customer delivery challan deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Customer delivery challan deletion notification error:', notifError);
-      // }
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+        entityName: 'CustomerDeliveryChallan',
+        entityId: id,
+        description: `${userName} deleted customer delivery challan "${result.challanNo}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Customer Delivery Challan deleted', id, req, res);
       res.status(200).json({
@@ -337,18 +376,24 @@ export class CustomerDeliveryChallanController {
           return next(new AppError(400, 'An array of AQR IDs is required'));
         }
         const result = await this.customerDeliveryChallanService.deleteMultipleCustomerDC(ids);
-  
-        // 🔔 Send notification for bulk AQR deletion
-        // try {
-        //   const userId = res.locals.user.id;
-        //   await this.notificationService.createNoti(
-        //     `Bulk delete operation completed: ${result.success} Customer DC deleted successfully, ${result.failed} failed`,
-        //     userId
-        //   );
-        // } catch (notifError) {
-        //   console.log('Notification error:', notifError);
-        // }
-  
+
+        // 📝 Activity log
+        const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+        this.activityLogService.logActivity({
+          userId: res.locals.user.id,
+          userName,
+          action: ActivityAction.DELETE,
+          module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+          entityName: 'CustomerDeliveryChallan',
+          description: `${userName} bulk deleted ${result.success.length} customer delivery challan(s)`,
+          metadata: { ids, success: result.success, failed: result.failed },
+          ipAddress: req.ip || '',
+          userAgent: req.get('user-agent'),
+          endpoint: req.originalUrl,
+          httpMethod: req.method,
+          statusCode: 200,
+        }).catch(() => {});
+
         res.status(200).json({
           message: result.message,
           success: result.success,

@@ -30,6 +30,8 @@ import { DeliveryDetailsDto } from '../dtos/deliveryDetails.dto';
 import { PaymentTermsDto } from '../dtos/paydetails.dto';
 import { StatutoryDetailsDto } from '../dtos/statutoryDetails.dto';
 import { KeyMobileNoDto } from '../dtos/keyMobileNo.dto';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 
 @controller('/customers', deserializeUser, requireUser)
@@ -39,6 +41,8 @@ export class CustomerController {
     private customerService: CustomerService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService)
+    private activityLogService: UserActivityLogService,
   ) {}
 
   @httpPost(
@@ -151,6 +155,23 @@ export class CustomerController {
         const customerName = customerData.organisationName || 'New Customer';
         this.notificationService.createNoti(`Customer "${customerName}" created successfully`, userId).catch(() => {});
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'Customer',
+        entityId: customer.id,
+        description: `${userName} created customer "${customer.organisationName}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
       
       // Log successful creation
       const customerId = customer?.id || 'unknown';
@@ -767,6 +788,23 @@ customerData.bankDetails ??= {} as BankDetailsDto;
         const customerName = customerData.organisationName || updatedCustomer?.organisationName || 'Customer';
         this.notificationService.createNoti(`Customer "${customerName}" updated successfully`, userId2).catch(() => {});
       }
+
+      // 📝 Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'Customer',
+        entityId: id,
+        description: `${userName} updated customer "${updatedCustomer?.organisationName || id}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       // Log successful update
       ControllerLogger.logSuccess('Customer updated', id, req, res);
@@ -796,19 +834,23 @@ customerData.bankDetails ??= {} as BankDetailsDto;
         ControllerLogger.logOperationFailed('Delete', 'Customer', 'not found or could not be deleted', req, res);
         return res.status(404).json({ message: 'Customer not found' });
       }
-      
-      // 🔔 Send notification for customer deletion
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Customer with ID ${id} deleted successfully`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Customer deletion notification error:', notifError);
-      // }
+
+      // � Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.CUSTOMER,
+        entityName: 'Customer',
+        entityId: id,
+        description: `${userName} deleted customer "${deletedCustomer.organisationName}"`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer deleted', id, req, res);
@@ -920,6 +962,24 @@ public async softDeleteMultipleCustomers(
     }
 
     const result = await this.customerService.softDeleteCustomers(ids);
+
+    // 📝 Activity log
+    const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+    const deletedList = result.deleted.map(c => `"${c.organisationName}"`).join(', ');
+    this.activityLogService.logActivity({
+      userId: res.locals.user.id,
+      userName,
+      action: ActivityAction.DELETE,
+      module: ActivityModule.CUSTOMER,
+      entityName: 'Customer',
+      description: `${userName} bulk deleted ${result.deleted.length} customer(s): ${deletedList}`,
+      metadata: { ids, count: ids.length },
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent'),
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 200,
+    }).catch(() => {});
 
     ControllerLogger.logSuccess(
       "Customer bulk soft deleted",

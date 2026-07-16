@@ -46,6 +46,29 @@ export class UserActivityLogService {
     ) { }
 
     /**
+     * Map a UserActivityLog entity to a clean response object
+     */
+    private mapLog(log: UserActivityLog): Record<string, any> {
+        return {
+            id: log.id,
+            userName: log.userName,
+            userId: log.userId,
+            action: log.action,
+            module: log.module,
+            description: log.description,
+            entityName: log.entityName ?? null,
+            entityId: log.entityId ?? null,
+            ipAddress: log.ipAddress ?? null,
+            endpoint: log.endpoint ?? null,
+            httpMethod: log.httpMethod ?? null,
+            statusCode: log.statusCode ?? null,
+            isError: log.isError,
+            errorMessage: log.errorMessage ?? null,
+            createdAt: log.createdAt,
+        };
+    }
+
+    /**
      * Log user activity
      */
     async logActivity(options: LogActivityOptions): Promise<void> {
@@ -86,7 +109,7 @@ export class UserActivityLogService {
         filters?: ActivityLogFilters,
         page: number = 1,
         limit: number = 50
-    ): Promise<{ data: UserActivityLog[]; total: number; pages: number }> {
+    ): Promise<{ data: any[]; total: number; pages: number }> {
         const where: FindOptionsWhere<UserActivityLog> = { userId };
 
         if (filters) {
@@ -109,7 +132,7 @@ export class UserActivityLogService {
         });
 
         return {
-            data,
+            data: data.map(this.mapLog),
             total,
             pages: Math.ceil(total / limit),
         };
@@ -122,7 +145,7 @@ export class UserActivityLogService {
         filters?: ActivityLogFilters,
         page: number = 1,
         limit: number = 50
-    ): Promise<{ data: UserActivityLog[]; total: number; pages: number }> {
+    ): Promise<{ data: any[]; total: number; pages: number }> {
         const where: FindOptionsWhere<UserActivityLog> = {};
 
         if (filters) {
@@ -147,7 +170,7 @@ export class UserActivityLogService {
         });
 
         return {
-            data,
+            data: data.map(this.mapLog),
             total,
             pages: Math.ceil(total / limit),
         };
@@ -210,12 +233,13 @@ export class UserActivityLogService {
     /**
      * Get recent activities across all users
      */
-    async getRecentActivities(limit: number = 100): Promise<UserActivityLog[]> {
-        return this.activityLogRepo.find({
+    async getRecentActivities(limit: number = 100): Promise<any[]> {
+        const data = await this.activityLogRepo.find({
             relations: ['user'],
             order: { createdAt: 'DESC' },
             take: limit,
         });
+        return data.map(this.mapLog);
     }
 
     /**

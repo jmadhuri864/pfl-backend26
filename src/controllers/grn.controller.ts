@@ -112,9 +112,9 @@ export class GrnController {
     try {
       
       const grnData:CreateGrnDto = req.body;
-
+console.log(req.body);
       if (req.file) {
-        const imageUrl = req.file.path;
+        const imageUrl = (req.file as any).location;
         console.log("imageurl..............",imageUrl);
         if (imageUrl) {
           grnData.billImage = imageUrl;
@@ -266,6 +266,7 @@ export class GrnController {
       });
     } catch (error) {
       ControllerLogger.logError('GRN creation', error, req, res);
+      console.log(error);
       if (error instanceof Error) {
                return next(new AppError(400, error.message)); // ← sends 400 with real message
              }

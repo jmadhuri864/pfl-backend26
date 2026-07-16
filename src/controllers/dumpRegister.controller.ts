@@ -22,12 +22,15 @@ import {
   CreateDumpRegisterDto,
   UpdateDumpRegisterDto,
 } from "../dtos/dumpRegister.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 @controller("/dumpRegister", deserializeUser, requireUser)
 export class DumpRegisterController {
   constructor(
     @inject(TYPES.DumpRegisterService) private readonly dumpRegisterService: DumpRegisterService,
-    @inject(TYPES.NotificationService) private readonly notificationService: NotificationService
+    @inject(TYPES.NotificationService) private readonly notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private readonly activityLogService: UserActivityLogService,
   ) {}
 
   @httpPost("/")
@@ -52,6 +55,22 @@ export class DumpRegisterController {
         `New dump register created`,
         res.locals.user.id
       );
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.CREATE,
+        module: ActivityModule.DUMP_REGISTER,
+        entityName: 'DumpRegister',
+        entityId: dumpRegister.id,
+        description: `${userName} created dump register ${dumpRegister.id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 201,
+      }).catch(() => {});
 
       ControllerLogger.logSuccess('Dump Register created', dumpRegister.id, req, res);
       res.status(201).json({
@@ -247,6 +266,22 @@ export class DumpRegisterController {
         res.locals.user.id
       );
 
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.DUMP_REGISTER,
+        entityName: 'DumpRegister',
+        entityId: id,
+        description: `${userName} updated dump register ${id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('Dump Register updated', id, req, res);
       res.status(200).json({
         status: "success",
@@ -288,6 +323,23 @@ export class DumpRegisterController {
       // }
 
       ControllerLogger.logSuccess('Dump Register deleted', id, req, res);
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.DUMP_REGISTER,
+        entityName: 'DumpRegister',
+        entityId: id,
+        description: `${userName} deleted dump register ${id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 204,
+      }).catch(() => {});
+
       res.status(204).send();
     } catch (err) {
       ControllerLogger.logError('Delete Dump Register', err, req, res);
@@ -336,10 +388,25 @@ export class DumpRegisterController {
       // }
       
       ControllerLogger.logSuccess('Multiple Dump Registers deleted', `${ids.length} items`, req, res);
+
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.DUMP_REGISTER,
+        entityName: 'DumpRegister',
+        description: `${userName} bulk deleted ${ids.length} dump register(s)`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         message: result.message,
-        success: result.success,
-        failed: result.failed,
       });
     } catch (error) {
       ControllerLogger.logError('Delete Multiple Dump Registers', error, req, res);

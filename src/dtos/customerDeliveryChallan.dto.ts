@@ -288,6 +288,11 @@ export interface BulkDeleteCustomerDCDto {
   ids: string[];
 }
 
+/** Returned by delete (single) service method */
+export interface DeleteCustomerDeliveryChallanResultDto {
+  challanNo: string;
+}
+
 export interface BulkDeleteCustomerDCResultDto {
   success: string[];
   failed: { id: string; reason: string }[];

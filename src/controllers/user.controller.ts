@@ -22,8 +22,6 @@ import { ControllerLogger } from "../utils/controllerLogger";
 import { PaginationOptions } from "../utils/pagination";
 import { OfficesService } from "../services/office.service";
 import { BranchessService } from "../services/branches.service";
-import { Branches } from "../entities/branches.entity";
-import { OfficesData } from "../entities/offices.entity";
 import { parseExcel } from "../utils/excelParser";
 import { uploadSingle } from "../middleware/uploadsingle.middleware";
 import {
@@ -49,7 +47,7 @@ export class UserController {
 ) {}
 async resolveLocation(id: string): Promise<{
   type: 'BRANCH' | 'OFFICE';
-  entity: Branches | OfficesData;
+  entity: { id: string };
 }> {
   const branch = await this.branchService.getBranchByIdAndType(id);
   if (branch) {

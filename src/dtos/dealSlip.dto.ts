@@ -199,4 +199,6 @@ export interface BulkDeleteDealSlipDto {
 
 export interface BulkDeleteDealSlipResultDto {
   message: string;
+  /** dealSlipNo of each successfully scheduled deal slip */
+  deletedNos: string[];
 }
