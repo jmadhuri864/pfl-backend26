@@ -119,17 +119,22 @@ export class AuthController {
   ) {
     try {
       const refresh_token = req.body.refreshToken;
+      console.log('[refresh-token] token present:', !!refresh_token);
       if (!refresh_token) {
+        console.log('[refresh-token] FAIL: no token in body');
         return next(new AppError(403, 'You need to re-authenticate. Please log in.'));
       }
 
       // Fast blacklist check via Redis
-      if (await this.isTokenBlacklisted(refresh_token)) {
+      const isBlacklisted = await this.isTokenBlacklisted(refresh_token);
+      console.log('[refresh-token] isBlacklisted:', isBlacklisted);
+      if (isBlacklisted) {
         logger.warn(`Blacklisted refresh token used from IP: ${req.ip}`);
         return next(new AppError(401, 'You need to re-authenticate. Please log in.'));
       }
 
       const decoded = verifyJwt<{ sub: string }>(refresh_token, 'refreshTokenPublicKey');
+      console.log('[refresh-token] decoded:', decoded ? `userId=${decoded.sub}` : 'NULL - invalid/expired');
       if (!decoded) {
         logger.warn(`Invalid refresh token from IP: ${req.ip}`);
         return next(new AppError(403, 'You need to re-authenticate. Please log in.'));
@@ -292,6 +297,7 @@ const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
       res.status(200).json({
         status: 'success',
         access_token,
+        refresh_token,
         id: user.id,
         userName: name,
         roles: user.roles,
