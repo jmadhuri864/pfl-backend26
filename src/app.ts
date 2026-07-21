@@ -23,7 +23,7 @@ import {
 } from './middleware/timezone';
 import logger from './utils/logger';
 import AppError from './utils/appError';
-//import { apiLogger, errorLogger } from './middleware/apiLogger';
+
 import './cron/cronJob';
 import { seedDocumentDefDatabase } from './seed/documentSeed';
 //import { LogCleanupService } from './services/logCleanup.service';
@@ -148,9 +148,6 @@ const startServer = async () => {
       app.use(timezoneMiddleware);
       app.use(TransformResponseMiddleware.transform);
       app.use(logRequestMiddleware);
-      
-      // Add API logging middleware (should be after user middleware)
-      //app.use(apiLogger);
 
       app.get('/', (_req: Request, res: Response) => {
         logger.info('Request received');
@@ -159,9 +156,6 @@ const startServer = async () => {
     });
 
     inversifyServer.setErrorConfig((app) => {
-      // Add error logging middleware
-      //app.use(errorLogger);
-
       app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         if (err instanceof AppError) {
           logger.error(`AppError: ${err.message}`, {

@@ -45,8 +45,7 @@ public async createAqr(
       .createNoti("AQR created successfully and submitted for approval", res.locals.user.id)
       .catch(() => {});
 
-    // Single activity log - skip apiLogger middleware & ControllerLogger DB log
-    res.locals.skipApiLogging = true;
+    // Single activity log
     this.activityLogService.logActivity({
       userId: res.locals.user.id,
       userName,
