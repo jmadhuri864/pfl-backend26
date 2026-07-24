@@ -20,7 +20,6 @@ import { BranchessRepository } from '../repositories/branches.repository';
 import { CreateGrnDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
 import { GrnProductHistoryService } from './grnProductHistory.service';
 import { GrnProduct } from '../entities/grnProduct.entity';
-import { ammountStatus } from '../utils/status.enum';
 
 interface SourceMetrics {
   totalPurchases: number;
@@ -818,7 +817,35 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
 
     const updatedGrn = await queryRunner.manager.save(this.grnRepository.target, grn);
 
+    // If document is approved and GRN is edited, reset status back to hold
+    // Use queryRunner.manager to stay within the same transaction
+    const document = await queryRunner.manager.findOne(this.documentbRepository.target, {
+      where: { document_type_id: id },
+    });
+    if (!document) {
+      await queryRunner.rollbackTransaction();
+      throw new AppError(404, 'Document not found');
+    }
+    let approvalFlowNeedsRestart = false;
+    if (document.status === DocumentStatus.APPROVED) {
+      // Reset status and clear approval info so the document goes back through
+      // the approval flow — keeps same document ID and audit trail intact
+      document.status = DocumentStatus.HOLD;
+      document.approvalInfo = null as any;
+      document.remarks = 'Document reset to hold due to GRN edit after approval';
+      await queryRunner.manager.save(this.documentbRepository.target, document);
+      approvalFlowNeedsRestart = true;
+    }
+
     await queryRunner.commitTransaction();
+
+    // Re-start the approval flow if the document was reset (after commit so
+    // the document is visible to startApprovalFlow's DB connection)
+    if (approvalFlowNeedsRestart) {
+      try {
+        await this.documentbService.startApprovalFlow(document.id);
+      } catch (_) { /* non-critical — log if needed */ }
+    }
 
     // ── Clear ALL caches (Redis + TypeORM query cache) ───────────────────────
     await this.auditLogService.logChange('GRN', grn.id, originalGrn, grnData, modifiedByUserId);
