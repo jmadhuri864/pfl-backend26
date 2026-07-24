@@ -624,6 +624,7 @@ export class DeliveryChallanService {
     dcType: string,
     page?: number,
     limit?: number,
+    search?: string,
   ): Promise<any> {
     const typeMap: Record<string, string> = {
       'stock-transfer': 'stock-transfer-delivery-challan',
@@ -634,22 +635,80 @@ export class DeliveryChallanService {
     const type = typeMap[dcType];
     if (!type) throw new Error(`Invalid dcType: ${dcType}. Use 'stock-transfer', 'other', or 'customer'`);
 
+    // Build where condition with search
+    const whereCondition: any = { type };
+    
+    if (search?.trim()) {
+      // Search by ID or challanNo using OR condition
+      whereCondition.id = search.trim();
+    }
+
     if (!page || !limit) {
-      const data = await this.deliveryChallanRepo.find({
-        where: { type } as any,
-        select: ['id', 'challanNo'],
-        order: { createdAt: 'DESC' },
-      });
+      let data: any[];
+      
+      if (search?.trim()) {
+        // If search provided, try ID match first, then challanNo
+        const byId = await this.deliveryChallanRepo.findOne({
+          where: { id: search.trim(), type } as any,
+          select: ['id', 'challanNo'],
+        });
+        
+        if (byId) {
+          data = [byId];
+        } else {
+          data = await this.deliveryChallanRepo
+            .createQueryBuilder('dc')
+            .select(['dc.id', 'dc.challanNo'])
+            .where('dc.type = :type', { type })
+            .andWhere('dc.challanNo ILIKE :search', { search: `%${search.trim()}%` })
+            .orderBy('dc.createdAt', 'DESC')
+            .getMany();
+        }
+      } else {
+        data = await this.deliveryChallanRepo.find({
+          where: { type } as any,
+          select: ['id', 'challanNo'],
+          order: { createdAt: 'DESC' },
+        });
+      }
+      
       return { data, total: data.length, page: 1, totalPages: 1 };
     }
 
-    const [data, total] = await this.deliveryChallanRepo.findAndCount({
-      where: { type } as any,
-      select: ['id', 'challanNo'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    // With pagination
+    let data: any[];
+    let total: number;
+    
+    if (search?.trim()) {
+      // Try ID match first
+      const byId = await this.deliveryChallanRepo.findOne({
+        where: { id: search.trim(), type } as any,
+        select: ['id', 'challanNo'],
+      });
+      
+      if (byId) {
+        data = [byId];
+        total = 1;
+      } else {
+        [data, total] = await this.deliveryChallanRepo
+          .createQueryBuilder('dc')
+          .select(['dc.id', 'dc.challanNo'])
+          .where('dc.type = :type', { type })
+          .andWhere('dc.challanNo ILIKE :search', { search: `%${search.trim()}%` })
+          .orderBy('dc.createdAt', 'DESC')
+          .skip((page - 1) * limit)
+          .take(limit)
+          .getManyAndCount();
+      }
+    } else {
+      [data, total] = await this.deliveryChallanRepo.findAndCount({
+        where: { type } as any,
+        select: ['id', 'challanNo'],
+        order: { createdAt: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+    }
 
     return {
       data,

@@ -371,8 +371,9 @@ logger.info('Successfully fetched all Delivery Challan numbers');
 
       const page = req.query.page ? parseInt(req.query.page as string) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const search = req.query.search as string | undefined;
 
-      const result = await this.deliveryChallanService.getDcTypeNumbers(dcType, page, limit);
+      const result = await this.deliveryChallanService.getDcTypeNumbers(dcType, page, limit, search);
       res.status(200).json({
         status: 'success',
         data: result.data,

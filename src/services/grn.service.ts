@@ -18,7 +18,7 @@ import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { BranchessRepository } from '../repositories/branches.repository';
 import { CreateGrnDto, DeleteGrnResultDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
-import { ammountStatus } from '../utils/status.enum';
+import { GrnProductHistoryService } from './grnProductHistory.service';
 import { BulkDeleteResultDto } from '../dtos/general.dto';
 
 interface SourceMetrics {
@@ -44,6 +44,8 @@ export class GrnService {
     @inject(TYPES.AuditLogService) private readonly auditLogService: AuditLogService,
     @inject(TYPES.DocumentbService) private readonly documentbService: DocumentbService,
     @inject(TYPES.DataSource) private readonly dataSource: DataSource,
+    @inject(TYPES.GrnProductHistoryService)
+    private readonly grnProductHistoryService: GrnProductHistoryService,
   ) { }
 
   private readonly CACHE_PREFIX = 'grn';
@@ -789,7 +791,44 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
 
   console.log('Saving updated GRN:', grn);
 
-  const updatedGrn = await this.grnRepository.save(grn);
+  // ── History tracking + save inside a single transaction ──────────────────
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  let updatedGrn: any;
+  try {
+    // Track product edits BEFORE writing new values (current state is still in DB)
+    if (payload.grnProducts && Array.isArray(payload.grnProducts)) {
+      const productEdits = payload.grnProducts
+        .filter((p: any) => p.id) // only products that already exist
+        .map((p: any) => ({
+          id: p.id as string,
+          quantity: p.quantity !== undefined ? Number(p.quantity) : undefined,
+          unitPrice: p.unitPrice !== undefined ? Number(p.unitPrice) : undefined,
+        }));
+
+      if (productEdits.length > 0) {
+        await this.grnProductHistoryService.trackProductEdits(
+          id,
+          productEdits,
+          updatedBy,
+          queryRunner, // share the transaction
+        );
+      }
+    }
+
+    // Save the updated GRN (grn_products cascade-saves via TypeORM)
+    updatedGrn = await queryRunner.manager.save(grn);
+
+    await queryRunner.commitTransaction();
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   await this.auditLogService.logChange(
     'GRN',
@@ -984,10 +1023,10 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
   let searchedResults = filteredResults;
 
   if (filter?.search) {
-    const search = filter.search.toLowerCase();
-
+    const search = filter.search.toLowerCase().trim();
     searchedResults = filteredResults.filter(r =>
-      r.grnNo.toLowerCase().includes(search)
+      r.grnNo.toLowerCase().includes(search) ||
+      r.id.toLowerCase() === search  // exact ID match
     );
   }
 

@@ -241,7 +241,10 @@ export class StockTranferDeliveryChallanController {
 
       res.status(200).json({
         status: 'success',
-        ...challans,
+        data: challans.data,
+        allRecords: challans.meta.total,
+        totalPages: challans.meta.totalPages,
+        page: challans.meta.page,
       });
     } catch (err) {
       logger.error('Error fetching all challans', { error: err });

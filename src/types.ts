@@ -462,6 +462,8 @@ RegistrationReportsController:Symbol.for("RegistrationReportsController"),
   StockCorrectionRepository: Symbol.for("StockCorrectionRepository"),
   StockCorrectionService: Symbol.for("StockCorrectionService"),
   StockCorrectionController: Symbol.for("StockCorrectionController"),
+    GrnProductHistoryRepository:Symbol.for("GrnProductHistoryRepository"),
+    GrnProductHistoryService:Symbol.for("GrnProductHistoryService")
 
 };
 

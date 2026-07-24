@@ -454,8 +454,11 @@ public async getAllDealSlipsNo(
 
   let searchedResults = filteredResults;
   if (filter?.search) {
-    const term = filter.search.toLowerCase();
-    searchedResults = filteredResults.filter(item => item.dealSlipNo.toLowerCase().includes(term));
+    const term = filter.search.toLowerCase().trim();
+    searchedResults = filteredResults.filter(item =>
+      item.dealSlipNo.toLowerCase().includes(term) ||
+      item.id.toLowerCase() === term  // exact ID match
+    );
   }
 
   const page = filter.page || 1;

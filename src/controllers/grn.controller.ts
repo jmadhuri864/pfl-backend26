@@ -38,6 +38,7 @@ import { ActivityAction, ActivityModule } from '../entities/userActivityLog.enti
 import { ControllerLogger } from '../utils/controllerLogger';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
 import { CreateGrnDto, UpdateGrnDto } from '../dtos/grn.dto';
+import { GrnProductHistoryService } from '../services/grnProductHistory.service';
 
 @controller('/grns', deserializeUser, requireUser)
 export class GrnController {
@@ -53,7 +54,8 @@ export class GrnController {
     @inject(TYPES.UserRepository) private readonly userRepository: UserRepository,
     @inject(TYPES.UserActivityLogService)
     private readonly activityLogService: UserActivityLogService,
-
+    @inject(TYPES.GrnProductHistoryService)
+    private readonly grnProductHistoryService: GrnProductHistoryService,
   ) {
     this.s3Client = new S3Client({
       credentials: {
@@ -542,6 +544,46 @@ console.log(req.body);
     } catch (error) {
       ControllerLogger.logError('GRN numbers retrieval', error, req, res);
       next(error); // Pass any errors to the error-handling middleware
+    }
+  }
+
+  //TODO: Get edit history for all products in a GRN
+  @httpGet('/:id/product-history')
+  public async getGrnProductHistory(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const history = await this.grnProductHistoryService.getGrnHistory(id);
+      res.status(200).json({
+        status: 'success',
+        data: history,
+      });
+    } catch (error) {
+      ControllerLogger.logError('GRN product history retrieval', error, req, res);
+      next(error);
+    }
+  }
+
+  //TODO: Get edit history for a specific GRN product
+  @httpGet('/product/:grnProductId/history')
+  public async getProductHistory(
+    @requestParam('grnProductId') grnProductId: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const history = await this.grnProductHistoryService.getProductHistory(grnProductId);
+      res.status(200).json({
+        status: 'success',
+        data: history,
+      });
+    } catch (error) {
+      ControllerLogger.logError('GRN single-product history retrieval', error, req, res);
+      next(error);
     }
   }
 

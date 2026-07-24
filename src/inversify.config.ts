@@ -408,6 +408,10 @@ import { FinalInvoiceReportService } from "./services/finalInvoiceReport.service
 import { TestController } from "./controllers/test.controller";
 import { DashboardService } from "./services/dashboard.service";
 import { DashboardController } from "./controllers/dashboard.controller";
+
+import { GrnProductHistoryRepository } from "./repositories/grnProductHistory.repository";
+import { GrnProductHistory } from "./entities/grnProductHistory.entity";
+import { GrnProductHistoryService } from "./services/grnProductHistory.service";
 const container = new Container();
 //socket server
 // Initialize Socket.IO server
@@ -1391,4 +1395,10 @@ container.bind<StockCorrectionRepository>(TYPES.StockCorrectionRepository).toDyn
 container.bind<StockCorrectionService>(TYPES.StockCorrectionService).to(StockCorrectionService).inSingletonScope();
 container.bind<StockCorrectionController>(TYPES.StockCorrectionController).to(StockCorrectionController).inSingletonScope();
 
+//grnhistory
+container.bind<GrnProductHistoryRepository>(TYPES.GrnProductHistoryRepository).toDynamicValue((context) => {
+  const dataSource = context.container.get<DataSource>(TYPES.DataSource);
+  return dataSource.getRepository(GrnProductHistory).extend(GrnProductHistoryRepository);
+}).inRequestScope();
+container.bind<GrnProductHistoryService>(TYPES.GrnProductHistoryService).to(GrnProductHistoryService).inSingletonScope();
 export { container };

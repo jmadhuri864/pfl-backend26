@@ -421,7 +421,7 @@ export class AqrService {
     const aqrMap = new Map(aqrs.map((a) => [a.id, a]));
 
     let relatedDataOnly = deletedDocs.map((doc) => {
-      const rd = aqrMap.get(doc.document_type_id) as any;
+      const rd = aqrMap.get(doc.document_type_id ?? '') as any;
       if (!rd) return null;
       const selectedParty = rd.source === "vendor"
         ? rd.selectedVendor?.id || null
@@ -673,6 +673,7 @@ export class AqrService {
     await this.invalidateAqrCache(id);
 
     return { aqrNo: aqr.aqrNo };
+    
   }
 
   // ─── Search ───────────────────────────────────────────────────────────────

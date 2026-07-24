@@ -718,27 +718,47 @@ export class PostReturnByCustomerService {
     await this.cacheService.set(cacheKey, idResult, this.CACHE_TTL);
     return idResult;
   }
-  async getAllRBCNumbers(page?: number, limit?: number): Promise<RBCNumbersResponseDto> {
-    const cacheKey = `${this.CACHE_PREFIX}:numbers:${page ?? 'all'}:${limit ?? 'all'}`;
+  async getAllRBCNumbers(page?: number, limit?: number, search?: string): Promise<RBCNumbersResponseDto> {
+    const cacheKey = `${this.CACHE_PREFIX}:numbers:${page ?? 'all'}:${limit ?? 'all'}:${search ?? ''}`;
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
     if (!page || !limit) {
-      const data = await this.postReturnByCustomerRepository.find({
+      const allData = await this.postReturnByCustomerRepository.find({
         select: ['id', 'rbcNo'],
         order: { createdAt: 'DESC' },
       });
+
+      let data = allData;
+      if (search?.trim()) {
+        const term = search.trim().toLowerCase();
+        data = allData.filter(r =>
+          r.rbcNo?.toLowerCase().includes(term) ||
+          r.id.toLowerCase() === term  // exact ID match
+        );
+      }
+
       const result = { data, total: data.length, page: 1, totalPages: 1 };
       await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
       return result;
     }
 
-    const [data, total] = await this.postReturnByCustomerRepository.findAndCount({
+    const allData = await this.postReturnByCustomerRepository.find({
       select: ['id', 'rbcNo'],
       order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
     });
+
+    let filtered = allData;
+    if (search?.trim()) {
+      const term = search.trim().toLowerCase();
+      filtered = allData.filter(r =>
+        r.rbcNo?.toLowerCase().includes(term) ||
+        r.id.toLowerCase() === term  // exact ID match
+      );
+    }
+
+    const total = filtered.length;
+    const data = filtered.slice((page - 1) * limit, page * limit);
 
     const result = {
       data,

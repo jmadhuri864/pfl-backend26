@@ -136,12 +136,9 @@ export interface GrnDetailDto {
   companyName: string | null;
   purchaseInstructionsBy?: string | { id?: string; firstName?: string; lastName?: string } | null;
   dealSlipId: 
-     string | null;
-
-  // dealSlipId: {
-  //   id: string | null;
-  //   dealSlipNo: string | null;
-  // };
+    | { id: string | null; dealSlipNo: string | null }
+    | string
+    | null;
   purchaseType?: PurchaseType | null;
   otherPurchaseForSalesLoc?: string | null;
   otherPurchaseLoc?: string | null;

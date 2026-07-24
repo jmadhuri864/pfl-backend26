@@ -229,7 +229,8 @@ export class PostReturnByCustomerController {
     try {
       const page = req.query.page ? parseInt(req.query.page as string) : undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const result = await this.postReturnByCustomerService.getAllRBCNumbers(page, limit);
+      const search = req.query.search as string | undefined;
+      const result = await this.postReturnByCustomerService.getAllRBCNumbers(page, limit, search);
       res.status(200).json({
         status: 'success',
         data: result.data,
