@@ -409,9 +409,9 @@ import { TestController } from "./controllers/test.controller";
 import { DashboardService } from "./services/dashboard.service";
 import { DashboardController } from "./controllers/dashboard.controller";
 
-import { GrnProductHistoryRepository } from "./repositories/grnProductHistory.repository";
-import { GrnProductHistory } from "./entities/grnProductHistory.entity";
 import { GrnProductHistoryService } from "./services/grnProductHistory.service";
+import { GrnProductHistory } from "./entities/grnProductHistory.entity";
+import { GrnProductHistoryRepository } from "./repositories/grnProductHistory.repository";
 const container = new Container();
 //socket server
 // Initialize Socket.IO server

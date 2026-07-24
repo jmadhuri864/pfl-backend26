@@ -17,9 +17,10 @@ import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository'
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { BranchessRepository } from '../repositories/branches.repository';
-import { CreateGrnDto, DeleteGrnResultDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
+import { CreateGrnDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
 import { GrnProductHistoryService } from './grnProductHistory.service';
-import { BulkDeleteResultDto } from '../dtos/general.dto';
+import { GrnProduct } from '../entities/grnProduct.entity';
+import { ammountStatus } from '../utils/status.enum';
 
 interface SourceMetrics {
   totalPurchases: number;
@@ -44,8 +45,7 @@ export class GrnService {
     @inject(TYPES.AuditLogService) private readonly auditLogService: AuditLogService,
     @inject(TYPES.DocumentbService) private readonly documentbService: DocumentbService,
     @inject(TYPES.DataSource) private readonly dataSource: DataSource,
-    @inject(TYPES.GrnProductHistoryService)
-    private readonly grnProductHistoryService: GrnProductHistoryService,
+    @inject(TYPES.GrnProductHistoryService) private readonly grnProductHistoryService: GrnProductHistoryService,
   ) { }
 
   private readonly CACHE_PREFIX = 'grn';
@@ -304,7 +304,6 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         const related = grnMap.get(doc.document_type_id!)!;
         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {
-          ammountStatus:related.ammountStatus,
           id: related.id,
           documentId: doc.id,
           overAllStatus: doc.status,
@@ -336,7 +335,6 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
           purchaseLocation: related.purchaseLocation?.name || null,
           purchaseForSalesLocation: related.purchaseForSalesLocation?.name || null,
           grnNo: related.grnNo || null,
-          
           paymentInfo: {
             id: related.paymentInfo?.id || null,
             paymentTerms: related.paymentInfo?.paymentTerms || null,
@@ -449,8 +447,8 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       const { createdDate, createdTime } = formatDateTime(rawDate);
 
       const viewResult: GrnDetailDto = {
-        ammountStatus:grn.ammountStatus,
         id: grn.id,
+        ammountStatus: grn.ammountStatus,
         companyName: grn.companyName?.name ?? null,
         purchaseInstructionsBy: grn.purchaseInstructionsBy
           ? `${grn.purchaseInstructionsBy.firstName || ''} ${grn.purchaseInstructionsBy.lastName || ''}`.trim()
@@ -582,17 +580,16 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
     const updateResult: GrnDetailDto = {
-      ammountStatus:grn.ammountStatus,
       id: grn.id,
+      ammountStatus: grn.ammountStatus,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy?.id || null,
-      dealSlipId:grn.dealSlipId?.id || null,
-        
+      dealSlipId: grn.dealSlipId?.id || null,
+
       // dealSlipId: {
       //   id: grn.dealSlipId?.id || null,
       //   dealSlipNo: grn.dealSlipId?.dealSlipNo || null,
       // },
-
       purchaseType: grn.purchaseType,
       otherPurchaseForSalesLoc: grn.otherPurchaseForSalesLoc || null,
       otherPurchaseLoc: grn.otherPurchaseLoc || null,
@@ -628,9 +625,9 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
 
       purchaseBy: grn.purchaseBy
         ? {
-            firstName: grn.purchaseBy.firstName || '',
-            lastName: grn.purchaseBy.lastName || '',
-          }
+          firstName: grn.purchaseBy.firstName || '',
+          lastName: grn.purchaseBy.lastName || '',
+        }
         : null,
 
       paymentInfo: grn.paymentInfo
@@ -652,7 +649,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         productName: product.productName?.id ?? null,
         variant: product.variant?.id || null,
         uom: product.uom?.id ?? null,
-       
+
         amount: product.amount,
         rtv: product.rtv,
         netWeight: product.netWeight,
@@ -674,11 +671,137 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
   public async updateGrn(
   id: string,
   grnData: UpdateGrnDto,
-  updatedBy: string,
+  updatedBy: string | any,
 ): Promise<any> {
-  const grn = await this.grnRepository.findOne({
-    where: { id },
-    relations: [
+  // Safely extract just the UUID — controller may pass full User object
+  const modifiedByUserId: string =
+    typeof updatedBy === 'string' ? updatedBy : updatedBy?.id ?? updatedBy;
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // Fetch the current GRN with its products inside the transaction
+    const grn = await queryRunner.manager.findOne(this.grnRepository.target, {
+      where: { id },
+      relations: [
+        'companyName',
+        'purchaseInstructionsBy',
+        'purchaseLocation',
+        'purchaseForSalesLocation',
+        'dealSlipId',
+        'selectedVendor',
+        'selectedFarmer',
+        'purchaseBy',
+        'paymentInfo',
+        'grnProducts',
+        'grnProducts.productName',
+        'grnProducts.uom',
+        'grnProducts.variant',
+      ],
+    });
+
+    if (!grn) {
+      await queryRunner.rollbackTransaction();
+      return null;
+    }
+
+    const originalGrn = { ...grn };
+
+    // ── Build history records before applying the update ─────────────────────
+    if (grnData.grnProducts && grnData.grnProducts.length > 0) {
+      // Build a map of existing products by id for quick lookup
+      const existingProductMap = new Map(
+        grn.grnProducts.map((p) => [p.id, p]),
+      );
+
+      const historyRecords = grnData.grnProducts
+        .filter((incoming) => incoming.id && existingProductMap.has(incoming.id!))
+        .map((incoming) => {
+          const existing = existingProductMap.get(incoming.id!)!;
+          return {
+            grnId: grn.id,
+            grnProductId: existing.id,
+            productId: existing.productName?.id ?? null,
+            oldQuantity: Number(existing.quantity ?? 0),
+            newQuantity: Number(incoming.quantity ?? existing.quantity ?? 0),
+            oldRate: Number(existing.unitPrice ?? 0),
+            newRate: Number(incoming.unitPrice ?? existing.unitPrice ?? 0),
+            modifiedById: modifiedByUserId,
+          };
+        });
+
+      // Requirement 2, 3, 12 — only writes rows where qty or rate actually changed
+      await this.grnProductHistoryService.createHistoryForChangedProducts(
+        queryRunner.manager,
+        historyRecords,
+      );
+    }
+
+    // ── Apply the update to the GRN ──────────────────────────────────────────
+    const payload = { ...grnData } as any;
+    delete payload.id;
+    delete payload.variants;
+
+    const relatedFields: any = {};
+
+    if (payload.companyName) relatedFields.companyName = { id: payload.companyName };
+    if (payload.purchaseInstructionsBy) relatedFields.purchaseInstructionsBy = { id: payload.purchaseInstructionsBy };
+    if (payload.purchaseLocation) relatedFields.purchaseLocation = { id: payload.purchaseLocation };
+    if (payload.purchaseForSalesLocation) relatedFields.purchaseForSalesLocation = { id: payload.purchaseForSalesLocation };
+    if (payload.dealSlipId) relatedFields.dealSlipId = { id: payload.dealSlipId };
+    if (payload.selectedVendor) {
+      relatedFields.selectedVendor =
+        typeof payload.selectedVendor === 'string'
+          ? { id: payload.selectedVendor }
+          : payload.selectedVendor;
+    }
+    if (payload.selectedFarmer) {
+      relatedFields.selectedFarmer =
+        typeof payload.selectedFarmer === 'string'
+          ? { id: payload.selectedFarmer }
+          : payload.selectedFarmer;
+    }
+    if (payload.purchaseBy) relatedFields.purchaseBy = { id: payload.purchaseBy };
+    if ('paymentInfo' in payload) {
+      relatedFields.paymentInfo = payload.paymentInfo
+        ? {
+            id: payload.paymentInfo.id,
+            paymentMode: payload.paymentInfo.paymentMode,
+            paymentDate: payload.paymentInfo.paymentDate,
+            advancePaidAmt: payload.paymentInfo.advancePaidAmt,
+            remainingAmt: payload.paymentInfo.remainingAmt,
+            paymentTerms: payload.paymentInfo.paymentTerms,
+            dueDate: payload.paymentInfo.dueDate,
+            creditPeriod: payload.paymentInfo.creditPeriod,
+          }
+        : null;
+    }
+    if (payload.grnProducts) {
+      relatedFields.grnProducts = payload.grnProducts.map((product: any) => ({
+        id: product.id,
+        quantity: product.quantity,
+        unitPrice: product.unitPrice,
+        productName: product.productName ? { id: product.productName } : undefined,
+        variant: product.variant ? { id: product.variant } : undefined,
+        uom: product.uom ? { id: product.uom } : undefined,
+        amount: product.amount,
+        rtv: product.rtv,
+        netWeight: product.netWeight,
+        grossWeight: product.grossWeight,
+        packingMaterialWeight: product.packingMaterialWeight,
+        revisedRate: product.revisedRate,
+        revisedQuantity: product.revisedQuantity,
+        purchaseDate: product.purchaseDate,
+        dispatchDate: product.dispatchDate,
+        deliveryDate: product.deliveryDate,
+        deliveryLocation: product.deliveryLocation,
+        expectedHarvestDate: product.expectedHarvestDate,
+      }));
+    }
+
+    const scalarPayload = { ...payload };
+    [
       'companyName',
       'purchaseInstructionsBy',
       'purchaseLocation',
@@ -689,170 +812,80 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       'purchaseBy',
       'paymentInfo',
       'grnProducts',
-      'grnProducts.productName',
-      'grnProducts.uom',
-      'grnProducts.variant',
-    ],
-  });
-  console.log('Fetched GRN:', grn);
+    ].forEach((key) => delete scalarPayload[key]);
 
-  if (!grn) return null;
+    Object.assign(grn, scalarPayload, relatedFields);
 
-  const originalGrn = { ...grn };
-
-  const payload = { ...grnData } as any;
-  delete payload.id;
-  delete payload.variants;
-
-  const relatedFields: any = {};
-
-  if (payload.companyName) {
-    relatedFields.companyName = { id: payload.companyName };
-  }
-  if (payload.purchaseInstructionsBy) {
-    relatedFields.purchaseInstructionsBy = { id: payload.purchaseInstructionsBy };
-  }
-  if (payload.purchaseLocation) {
-    relatedFields.purchaseLocation = { id: payload.purchaseLocation };
-  }
-  if (payload.purchaseForSalesLocation) {
-    relatedFields.purchaseForSalesLocation = { id: payload.purchaseForSalesLocation };
-  }
-  if (payload.dealSlipId) {
-    relatedFields.dealSlipId = { id: payload.dealSlipId };
-  }
-  if (payload.selectedVendor) {
-    relatedFields.selectedVendor =
-      typeof payload.selectedVendor === 'string'
-        ? { id: payload.selectedVendor }
-        : payload.selectedVendor;
-  }
-  if (payload.selectedFarmer) {
-    relatedFields.selectedFarmer =
-      typeof payload.selectedFarmer === 'string'
-        ? { id: payload.selectedFarmer }
-        : payload.selectedFarmer;
-  }
-  if (payload.purchaseBy) {
-    relatedFields.purchaseBy = { id: payload.purchaseBy };
-  }
-  if ('paymentInfo' in payload) {
-    relatedFields.paymentInfo = payload.paymentInfo
-      ? {
-          id: payload.paymentInfo.id,
-          paymentMode: payload.paymentInfo.paymentMode,
-          paymentDate: payload.paymentInfo.paymentDate,
-          advancePaidAmt: payload.paymentInfo.advancePaidAmt,
-          remainingAmt: payload.paymentInfo.remainingAmt,
-          paymentTerms: payload.paymentInfo.paymentTerms,
-          dueDate: payload.paymentInfo.dueDate,
-          creditPeriod: payload.paymentInfo.creditPeriod,
-        }
-      : null;
-  }
-  if (payload.grnProducts) {
-    relatedFields.grnProducts = payload.grnProducts.map((product: any) => ({
-      id: product.id,
-      quantity: product.quantity,
-      unitPrice: product.unitPrice,
-      productName: product.productName ? { id: product.productName } : undefined,
-      variant: product.variant ? { id: product.variant } : undefined,
-      uom: product.uom ? { id: product.uom } : undefined,
-      amount: product.amount,
-      rtv: product.rtv,
-      netWeight: product.netWeight,
-      grossWeight: product.grossWeight,
-      packingMaterialWeight: product.packingMaterialWeight,
-      revisedRate: product.revisedRate,
-      revisedQuantity: product.revisedQuantity,
-      purchaseDate: product.purchaseDate,
-      dispatchDate: product.dispatchDate,
-      deliveryDate: product.deliveryDate,
-      deliveryLocation: product.deliveryLocation,
-      expectedHarvestDate: product.expectedHarvestDate,
-    }));
-  }
-
-  const scalarPayload = { ...payload };
-  [
-    'companyName',
-    'purchaseInstructionsBy',
-    'purchaseLocation',
-    'purchaseForSalesLocation',
-    'dealSlipId',
-    'selectedVendor',
-    'selectedFarmer',
-    'purchaseBy',
-    'paymentInfo',
-    'grnProducts',
-  ].forEach((key) => delete scalarPayload[key]);
-
-  Object.assign(grn, scalarPayload, relatedFields);
-
-  console.log('Saving updated GRN:', grn);
-
-  // ── History tracking + save inside a single transaction ──────────────────
-  const queryRunner = this.dataSource.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
-
-  let updatedGrn: any;
-  try {
-    // Track product edits BEFORE writing new values (current state is still in DB)
-    if (payload.grnProducts && Array.isArray(payload.grnProducts)) {
-      const productEdits = payload.grnProducts
-        .filter((p: any) => p.id) // only products that already exist
-        .map((p: any) => ({
-          id: p.id as string,
-          quantity: p.quantity !== undefined ? Number(p.quantity) : undefined,
-          unitPrice: p.unitPrice !== undefined ? Number(p.unitPrice) : undefined,
-        }));
-
-      if (productEdits.length > 0) {
-        await this.grnProductHistoryService.trackProductEdits(
-          id,
-          productEdits,
-          updatedBy,
-          queryRunner, // share the transaction
-        );
-      }
-    }
-
-    // Save the updated GRN (grn_products cascade-saves via TypeORM)
-    updatedGrn = await queryRunner.manager.save(grn);
+    const updatedGrn = await queryRunner.manager.save(this.grnRepository.target, grn);
 
     await queryRunner.commitTransaction();
+
+    // ── Clear ALL caches (Redis + TypeORM query cache) ───────────────────────
+    await this.auditLogService.logChange('GRN', grn.id, originalGrn, grnData, modifiedByUserId);
+
+    // 1. TypeORM database query cache — clears stale getAllGrns / getById queries
+    try {
+      await this.dataSource.queryResultCache?.clear();
+    } catch (_) { /* non-critical */ }
+
+    // 2. Redis cache — grn:all:*, grn:numbers:*, grn:id:grnId etc.
+    await this.invalidateCache(id);
+
+    // 3. Redis cache — grn:view:docId and grn:update:docId (keyed by document id)
+    try {
+      const doc = await this.documentbRepository.findOne({
+        where: { document_type_id: id } as any,
+        select: ['id'] as any,
+      });
+      if (doc?.id) {
+        await Promise.all([
+          this.cacheService.del(`${this.CACHE_PREFIX}:view:${doc.id}`),
+          this.cacheService.del(`${this.CACHE_PREFIX}:update:${doc.id}`),
+        ]);
+      }
+    } catch (_) { /* non-critical */ }
+
+    return updatedGrn;
   } catch (error) {
     await queryRunner.rollbackTransaction();
+    console.error('Error updating GRN:', error);
     throw error;
   } finally {
     await queryRunner.release();
   }
-  // ─────────────────────────────────────────────────────────────────────────
-
-  await this.auditLogService.logChange(
-    'GRN',
-    grn.id,
-    originalGrn,
-    grnData,
-    updatedBy,
-  );
-
-  await this.invalidateCache(id);
-  return updatedGrn;
 }
 
-  public async deleteGrn(id: string): Promise<DeleteGrnResultDto> {
+  /** Fetch the product-level edit history for an entire GRN (by GRN id). */
+  public async getGrnProductHistory(grnId: string): Promise<any[]> {
+    const records = await this.grnProductHistoryService.getHistoryByGrnId(grnId);
+    return records.map((r) => ({
+      id: r.id,
+      grnId: r.grn?.id,
+      grnProductId: r.grnProduct?.id,
+      productId: r.product?.id ?? null,
+      version: r.version,
+      oldQuantity: r.oldQuantity,
+      newQuantity: r.newQuantity,
+      oldRate: r.oldRate,
+      newRate: r.newRate,
+      modifiedBy: r.modifiedBy
+        ? `${r.modifiedBy.firstName ?? ''} ${r.modifiedBy.lastName ?? ''}`.trim()
+        : null,
+      modifiedAt: r.modifiedAt,
+    }));
+  }
+
+  public async deleteGrn(id: string): Promise<boolean> {
     const exists = await this.grnRepository.count({ where: { id } });
     if (!exists) throw new AppError(404, `GRN with ID ${id} not found`);
-    const grn = await this.grnRepository.findOne({ where: { id } });
+
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
     await this.grnRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return {grnNo:grn?.grnNo};
+    return true;
   }
 
 
@@ -1056,12 +1089,8 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     return serialNo;
   }
 
-  public async deleteMultipleGrns(ids: string[]):Promise<BulkDeleteResultDto> {
-    
-     const success: { id: string; No: string }[] = [];
-    const failed: { id: string; reason: string }[] = [];
-
-    //if (!ids.length) return { message: 'No IDs provided' };
+  public async deleteMultipleGrns(ids: string[]) {
+    if (!ids.length) return { message: 'No IDs provided' };
 
     const [grns, relatedDocuments] = await Promise.all([
       this.grnRepository.find({ where: { id: In(ids) } }),
@@ -1090,7 +1119,8 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     ]);
 
     await Promise.all(ids.map(id => this.invalidateCache(id)));
-      return { success, failed, message: `Deletion completed. Success: ${success.length}, Failed: ${failed.length}` };
+
+    return { message: 'GRN records marked for deletion successfully' };
   }
 
 }

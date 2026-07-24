@@ -25,12 +25,14 @@ export class ProductVarientsService {
 
 
   async getVarientsByIds(ids: string[]): Promise<any[]> {
-    if (!ids || ids.length === 0) return [];
+    // Filter out empty strings, nulls, undefined — frontend may send ""
+    const validIds = ids.filter((id) => id && id.trim() !== '');
+    if (!validIds || validIds.length === 0) return [];
 
     return await this.productVarientRepository
       .createQueryBuilder('varient')
       .select(['varient.id', 'varient.variantName', 'varient.variantCode'])
-      .where('varient.id IN (:...ids)', { ids })
+      .where('varient.id IN (:...ids)', { ids: validIds })
       .getMany();
   }
 

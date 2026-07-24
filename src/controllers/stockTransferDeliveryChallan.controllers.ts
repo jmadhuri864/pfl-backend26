@@ -21,8 +21,6 @@ import {
   BulkDeleteSTChallanDto,
   BulkDeleteSTChallanResultDto,
 } from "../dtos/stockTransferDeliveryChallan.dto";
-import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
-import { UserActivityLogService } from "../services/userActivityLog.service";
 
 @controller('/tranfer-delivery-challan', deserializeUser, requireUser)
 export class StockTranferDeliveryChallanController {
@@ -31,9 +29,7 @@ export class StockTranferDeliveryChallanController {
         @inject(TYPES.StockTransferDeliveryChallanService)
         private readonly stockTransferDeliveryChallanService: StockTransferDeliveryChallanService,
         @inject(TYPES.NotificationService)
-        private notificationService: NotificationService,
-        @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
-  
+        private notificationService: NotificationService
       ) {}
  @httpPost('/', uploadAttachments)
   public async create(
@@ -69,22 +65,6 @@ export class StockTranferDeliveryChallanController {
         );
       }
 
-      // Single activity log
-          this.activityLogService.logActivity({
-            userId: res.locals.user.id,
-            userName,
-            action: ActivityAction.CREATE,
-            module: ActivityModule.STOCK_TRANSFER_DELIVERY_CHALLAN,
-            entityName: 'STOCK_TRANSFER_DELIVERY_CHALLAN',
-            entityId: challan.id,
-            description: `${userName} has created STOCK_TRANSFER_DELIVERY_CHALLAN ${challan.challanNo || challan.id}`,
-            ipAddress: req.ip || '',
-            userAgent: req.get('user-agent'),
-            endpoint: req.originalUrl,
-            httpMethod: req.method,
-            statusCode: 201,
-          }).catch(() => {});
-
       res.status(201).json({
         status: 'success',
         message: 'Stock transfer delivery challan created successfully',
@@ -114,7 +94,6 @@ export class StockTranferDeliveryChallanController {
         return next(new AppError(400, 'An array of DC for Stock Transfer IDs is required'));
       }
       const result = await this.stockTransferDeliveryChallanService.deleteMultipleDCForStockTransfer(ids);
-      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
       ControllerLogger.logSuccess('Stock Transfer Delivery Challan multiple deletion', `${ids.length} records`, req, res);
 
       // Send notification for multiple stock transfer delivery challan deletion
@@ -125,23 +104,6 @@ export class StockTranferDeliveryChallanController {
       //     userId
       //   );
       // }
-
-       // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.DELETE,
-        module: ActivityModule.STOCK_TRANSFER_DELIVERY_CHALLAN,
-        entityName: 'STOCK_TRANSFER_DELIVERY_CHALLAN',
-        description: `${userName} has bulk deleted ${result.success.length} STOCK_TRANSFER_DELIVERY_CHALLAN(s): ${deletedNos}`,
-        metadata: { ids, count: ids.length },
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
-
 
       res.status(200).json({
         message: result.message,
@@ -241,10 +203,7 @@ export class StockTranferDeliveryChallanController {
 
       res.status(200).json({
         status: 'success',
-        data: challans.data,
-        allRecords: challans.meta.total,
-        totalPages: challans.meta.totalPages,
-        page: challans.meta.page,
+        ...challans,
       });
     } catch (err) {
       logger.error('Error fetching all challans', { error: err });
@@ -286,22 +245,6 @@ export class StockTranferDeliveryChallanController {
         );
       }
 
-       // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.UPDATE,
-        module: ActivityModule.STOCK_TRANSFER_DELIVERY_CHALLAN,
-        entityName: 'STOCK_TRANSFER_DELIVERY_CHALLAN',
-        entityId: id,
-        description: `${userName} has updated STOCK_TRANSFER_DELIVERY_CHALLAN ${updated.challanNo || id}`,
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
-
       res.status(200).json({
         status: 'success',
         message: 'Stock transfer delivery challan updated successfully',
@@ -338,24 +281,6 @@ export class StockTranferDeliveryChallanController {
       //     userId
       //   );
       // }
-
-      // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.DELETE,
-        module: ActivityModule.STOCK_TRANSFER_DELIVERY_CHALLAN,
-        entityName: 'STOCK_TRANSFER_DELIVERY_CHALLAN',
-        entityId: id,
-        description: `${userName} has deleted STOCK_TRANSFER_DELIVERY_CHALLAN ${deleted.No || id}`,
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
-
-
 
       res.status(200).json({
         status: 'success',

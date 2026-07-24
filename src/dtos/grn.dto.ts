@@ -135,10 +135,7 @@ export interface GrnDetailDto {
   ammountStatus:ammountStatus;
   companyName: string | null;
   purchaseInstructionsBy?: string | { id?: string; firstName?: string; lastName?: string } | null;
-  dealSlipId: 
-    | { id: string | null; dealSlipNo: string | null }
-    | string
-    | null;
+  dealSlipId: string | { id: string | null; dealSlipNo: string | null } | null;
   purchaseType?: PurchaseType | null;
   otherPurchaseForSalesLoc?: string | null;
   otherPurchaseLoc?: string | null;

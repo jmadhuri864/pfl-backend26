@@ -263,11 +263,18 @@ export class ProductController {
     try {
       const { ids } = req.body;
 
-      if (!Array.isArray(ids) || ids.length === 0) {
-        throw new AppError(400, 'ids must be a non-empty array');
+      if (!Array.isArray(ids)) {
+        throw new AppError(400, 'ids must be an array');
       }
 
-      const products = await this.productService.getProductsByIds(ids);
+      // Filter empty strings before passing to service
+      const validIds = ids.filter((id: any) => id && String(id).trim() !== '');
+      if (validIds.length === 0) {
+        res.status(200).json({ status: 'success', data: [] });
+        return;
+      }
+
+      const products = await this.productService.getProductsByIds(validIds);
 
       res.status(200).json({
         status: 'success',

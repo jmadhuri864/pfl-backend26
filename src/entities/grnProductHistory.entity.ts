@@ -1,45 +1,23 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import Model from './model.entity';
 import { GRN } from './grn.entity';
 import { GrnProduct } from './grnProduct.entity';
 import { Product } from './product.entity';
 import { User } from './user.entity';
 
 /**
- * Tracks edit history for GRN product line-items.
- *
- * A new record is created **only** when quantity or unitPrice actually changes.
+ * Stores an immutable audit trail for every quantity/rate change on a GRN product.
  * Version is maintained per grn_product (not per GRN).
  */
 @Entity({ name: 'grn_product_history' })
-export class GrnProductHistory {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class GrnProductHistory extends Model {
+  // ── Foreign keys ────────────────────────────────────────────────────────────
 
-  // ── FK columns (stored as plain UUIDs for easy querying) ──────────────────
-
-  @Column({ name: 'grn_id', type: 'uuid', nullable: true })
-  grnId: string | null;
-
-  @Column({ name: 'grn_product_id', type: 'uuid', nullable: true })
-  grnProductId: string | null;
-
-  @Column({ name: 'product_id', type: 'uuid', nullable: true })
-  productId: string | null;
-
-  // ── Relations ─────────────────────────────────────────────────────────────
-
-  @ManyToOne(() => GRN, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => GRN, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'grn_id' })
   grn: GRN;
 
-  @ManyToOne(() => GrnProduct, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => GrnProduct, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'grn_product_id' })
   grnProduct: GrnProduct;
 
@@ -47,40 +25,31 @@ export class GrnProductHistory {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  // ── Versioning (per grn_product) ──────────────────────────────────────────
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'modified_by_id' })
+  modifiedBy: User;
 
-  /**
-   * Incremented per grn_product_id.
-   * Version 1 = first edit after initial creation.
-   */
+  // ── Version counter (per grn_product) ───────────────────────────────────────
+
+  /** Starts at 1 for the first edit; increments with every subsequent change. */
   @Column({ type: 'int', default: 1 })
   version: number;
 
-  // ── Quantity change ───────────────────────────────────────────────────────
+  // ── Snapshot of what changed ─────────────────────────────────────────────────
 
-  @Column({ name: 'old_quantity', type: 'decimal', precision: 10, scale: 2, nullable: true })
-  oldQuantity: number | null;
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  oldQuantity: number;
 
-  @Column({ name: 'new_quantity', type: 'decimal', precision: 10, scale: 2, nullable: true })
-  newQuantity: number | null;
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  newQuantity: number;
 
-  // ── Rate (unitPrice) change ───────────────────────────────────────────────
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  oldRate: number;
 
-  @Column({ name: 'old_rate', type: 'decimal', precision: 10, scale: 2, nullable: true })
-  oldRate: number | null;
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  newRate: number;
 
-  @Column({ name: 'new_rate', type: 'decimal', precision: 10, scale: 2, nullable: true })
-  newRate: number | null;
-
-  // ── Audit ─────────────────────────────────────────────────────────────────
-
-  @Column({ name: 'modified_by', type: 'uuid', nullable: true })
-  modifiedBy: string | null;
-
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'modified_by' })
-  modifiedByUser: User;
-
-  @CreateDateColumn({ name: 'modified_at' })
+  /** Timestamp when this history record was created (= when the edit happened). */
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   modifiedAt: Date;
 }

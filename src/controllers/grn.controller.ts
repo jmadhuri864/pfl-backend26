@@ -38,7 +38,6 @@ import { ActivityAction, ActivityModule } from '../entities/userActivityLog.enti
 import { ControllerLogger } from '../utils/controllerLogger';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
 import { CreateGrnDto, UpdateGrnDto } from '../dtos/grn.dto';
-import { GrnProductHistoryService } from '../services/grnProductHistory.service';
 
 @controller('/grns', deserializeUser, requireUser)
 export class GrnController {
@@ -54,8 +53,7 @@ export class GrnController {
     @inject(TYPES.UserRepository) private readonly userRepository: UserRepository,
     @inject(TYPES.UserActivityLogService)
     private readonly activityLogService: UserActivityLogService,
-    @inject(TYPES.GrnProductHistoryService)
-    private readonly grnProductHistoryService: GrnProductHistoryService,
+
   ) {
     this.s3Client = new S3Client({
       credentials: {
@@ -240,7 +238,7 @@ console.log(req.body);
           module: ActivityModule.GRN,
           entityName: 'GRN',
           entityId: newGrn.id,
-          description: `${userName} has created GRN ${newGrn.grnNo || newGrn.id}`,
+          description: `Created GRN ${newGrn.grnNo}`,
           metadata: {
             grnNo: newGrn.grnNo,
             totalAmt: newGrn.totalAmt,
@@ -547,46 +545,6 @@ console.log(req.body);
     }
   }
 
-  //TODO: Get edit history for all products in a GRN
-  @httpGet('/:id/product-history')
-  public async getGrnProductHistory(
-    @requestParam('id') id: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const history = await this.grnProductHistoryService.getGrnHistory(id);
-      res.status(200).json({
-        status: 'success',
-        data: history,
-      });
-    } catch (error) {
-      ControllerLogger.logError('GRN product history retrieval', error, req, res);
-      next(error);
-    }
-  }
-
-  //TODO: Get edit history for a specific GRN product
-  @httpGet('/product/:grnProductId/history')
-  public async getProductHistory(
-    @requestParam('grnProductId') grnProductId: string,
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const history = await this.grnProductHistoryService.getProductHistory(grnProductId);
-      res.status(200).json({
-        status: 'success',
-        data: history,
-      });
-    } catch (error) {
-      ControllerLogger.logError('GRN single-product history retrieval', error, req, res);
-      next(error);
-    }
-  }
-
   //TODO: Update GRN by Image(Billing)
   @httpPut('/:id', uploadSingle.single('billImage'), captureUser)
   public async updateGrn(
@@ -634,23 +592,10 @@ console.log(req.body);
           user
         );
         
-         // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.UPDATE,
-        module: ActivityModule.GRN,
-        entityName: 'GRN',
-        entityId: id,
-        description: `${userName} has updated GRN ${updatedGrn.grnNo || id}`,
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
+
         
       ControllerLogger.logSuccess('GRN updated', updatedGrn.id, req, res);
+
       res.status(200).json({
         status: 'success',
         message: 'GRN updated successfully',
@@ -692,22 +637,6 @@ console.log(req.body);
 
       ControllerLogger.logSuccess('GRN deleted', id, req, res);
 
-       // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.DELETE,
-        module: ActivityModule.GRN,
-        entityName: 'GRN',
-        entityId: id,
-        description: `${userName} has deleted GRN ${success.grnNo || id}`,
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
-
       res.status(200).json({
         status: 'success',
         message: 'Grn deleted successfully',
@@ -734,8 +663,6 @@ console.log(req.body);
       }
 
       const result = await this.grnService.deleteMultipleGrns(ids);
-      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
-
 // await this.notificationService.createNoti(
 //           `${ids.length} GRNs deleted successfully`,
 //           deletedBy
@@ -744,26 +671,42 @@ console.log(req.body);
     
 
       ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
-      // Activity log
-      this.activityLogService.logActivity({
-        userId: res.locals.user.id,
-        userName,
-        action: ActivityAction.DELETE,
-        module: ActivityModule.GRN,
-        entityName: 'GRN',
-        description: `${userName} has bulk deleted ${result.success.length} GRN(s): ${deletedNos}`,
-        metadata: { ids, count: ids.length },
-        ipAddress: req.ip || '',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
+
       res.status(200).json({
         message: result.message,
       });
     } catch (error) {
       ControllerLogger.logError('Multiple GRNs deletion', error, req, res);
+      next(error);
+    }
+  }
+
+  /**
+   * GET /grns/:id/product-history
+   * Returns the full edit history for all products in a GRN.
+   * Use this endpoint to test the history feature.
+   *
+   * Response example:
+   * [
+   *   { grnProductId, productId, version, oldQuantity, newQuantity,
+   *     oldRate, newRate, modifiedBy, modifiedAt }
+   * ]
+   */
+  @httpGet('/:id/product-history')
+  public async getGrnProductHistory(
+    @requestParam('id') id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const history = await this.grnService.getGrnProductHistory(id);
+      res.status(200).json({
+        status: 'success',
+        data: history,
+      });
+    } catch (error) {
+      ControllerLogger.logError('GRN product history retrieval', error, req, res);
       next(error);
     }
   }
