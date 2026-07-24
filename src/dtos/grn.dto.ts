@@ -1,4 +1,5 @@
 import {
+  ammountStatus,
   Department,
   Source,
 } from '../utils/status.enum';
@@ -131,6 +132,7 @@ export interface GrnListItemDto {
 
 export interface GrnDetailDto {
   id: string;
+  ammountStatus:ammountStatus;
   companyName: string | null;
   purchaseInstructionsBy?: string | { id?: string; firstName?: string; lastName?: string } | null;
   dealSlipId: 
@@ -179,4 +181,9 @@ export interface GrnDetailDto {
   } | null;
   paymentInfo?: PaymentInfoDto | null;
   grnProducts: GrnProductDto[];
+}
+
+/** Returned by deleteGrn service method */
+export interface DeleteGrnResultDto {
+  grnNo?: string;
 }

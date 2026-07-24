@@ -7,12 +7,18 @@ import { NextFunction, Request, Response } from "express";
 import { ControllerLogger } from "../utils/controllerLogger";
 import { NotificationService } from "../services/notification.service";
 import { ReturnToVendorService } from "../services/retrunToVendor.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
+import { UserActivityLogService } from "../services/userActivityLog.service";
 
 @controller("/return-to-vendor", deserializeUser, requireUser)
 export class ReturnToVendorController {
 
   constructor(@inject(TYPES.ReturnToVendorService) private returnToVendorService: ReturnToVendorService,
-    @inject(TYPES.NotificationService) private notificationService: NotificationService) {
+    @inject(TYPES.NotificationService) private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
+  ) 
+    {
 
   }
 
@@ -38,6 +44,23 @@ export class ReturnToVendorController {
           userId
         );
       }
+
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.RETURN_TO_VENDOR,
+            entityName: 'RETURN_TO_VENDOR',
+            entityId: newPostReturn.id,
+            description: `${userName} has created RETURN_TO_VENDOR ${newPostReturn.rtvNo || newPostReturn.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
 
       res.status(201).json({
         status: "success",
@@ -200,6 +223,23 @@ export class ReturnToVendorController {
       } catch (notifError) {
       }
 
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.RETURN_TO_VENDOR,
+        entityName: 'RETURN_TO_VENDOR',
+        entityId: id,
+        description: `${userName} has updated RETURN_TO_VENDOR ${updatedReturn.rtvNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: "success",
         data: updatedReturn.id,
@@ -220,6 +260,23 @@ export class ReturnToVendorController {
     try {
       const { id } = req.params;
       const result = await this.returnToVendorService.softDeleteReturn(id);
+      
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.RETURN_TO_VENDOR,
+        entityName: 'RETURN_TO_VENDOR',
+        entityId: id,
+        description: `${userName} has deleted RETURN_TO_VENDOR ${result.id || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+      
       return res.status(200).json({
         success: true,
         message: result.message,
@@ -244,8 +301,27 @@ export class ReturnToVendorController {
       }
 
       const result = await this.returnToVendorService.deleteMultipleReturnToVendor(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
       ControllerLogger.logSuccess('Return to vendor multiple deletion', `${ids.length} records`, req, res);
+      
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.RETURN_TO_VENDOR,
+        entityName: 'RETURN_TO_VENDOR',
+        description: `${userName} has bulk deleted ${result.success.length} RETURN_TO_VENDOR(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       return res.status(200).json({
         status: 'success',
         message: result.message,

@@ -20,6 +20,8 @@ import {
   BulkDeleteRBCDto,
   BulkDeleteRBCResultDto,
 } from "../dtos/postReturnByCustomer.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 
 
 @controller("/returns",deserializeUser,requireUser)
@@ -28,7 +30,9 @@ export class PostReturnByCustomerController {
     @inject(TYPES.PostReturnByCustomerService)
     private postReturnByCustomerService: PostReturnByCustomerService,
     @inject(TYPES.NotificationService)
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+
   ) {}
 
   @httpGet("/")
@@ -175,6 +179,7 @@ export class PostReturnByCustomerController {
         return next(new AppError(400, 'An array of RBC IDs is required'));
       }
       const result = await this.postReturnByCustomerService.deleteMultipleRBC(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
       // 🔔 Send notification for bulk AQR deletion
       // try {
@@ -186,6 +191,22 @@ export class PostReturnByCustomerController {
       // } catch (notifError) {
       //   console.log('Notification error:', notifError);
       // }
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.RETURN_BY_CUSTOMER,
+        entityName: 'RETURN_BY_CUSTOMER',
+        description: `${userName} has bulk deleted ${result.success.length} RETURN_BY_CUSTOMER(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});      
 
       res.status(200).json({
         message: result.message,
@@ -245,6 +266,22 @@ export class PostReturnByCustomerController {
           userId
         );
       }
+
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.RETURN_BY_CUSTOMER,
+            entityName: 'RETURN_BY_CUSTOMER',
+            entityId: newPostReturn.id,
+            description: `${userName} has created RETURN_BY_CUSTOMER ${newPostReturn.rbcNo || newPostReturn.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
       
       res.status(201).json({
         status: "success",
@@ -269,11 +306,6 @@ export class PostReturnByCustomerController {
       @next() next: NextFunction
     ) {
       try {
-      
-        
-        
-       
-      
         const updatedBy = res.locals.updatedBy;
         const clientIp = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'Unknown';
         const postreturn = await this.postReturnByCustomerService.updatePostReturnByCustomer(id, data, updatedBy, clientIp);
@@ -294,6 +326,23 @@ export class PostReturnByCustomerController {
           );
         }
         
+          // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.RETURN_BY_CUSTOMER,
+        entityName: 'RETURN_BY_CUSTOMER',
+        entityId: id,
+        description: `${userName} has updated RETURN_BY_CUSTOMER ${postreturn.rbcNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
         res.status(200).json({
           status: "success",
           message: "postreturn updated successfully",

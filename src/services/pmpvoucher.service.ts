@@ -1,4 +1,4 @@
-import { inject, injectable } from 'inversify';
+import { id, inject, injectable } from 'inversify';
 import { PMPVoucherRepository } from '../repositories/pmpvoucher.repository';
 import { PMPVoucher } from '../entities/packingMaterialVoucher.entity';
 import { TYPES } from '../types';
@@ -18,6 +18,8 @@ import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { CreatePMPVoucherDto, PMPVoucherListItemDto, PMPVoucherDetailDto, UpdatePMPVoucherDto } from '../dtos/pmpVoucher.dto';
 import { formatAddress } from '../utils/addressFormate.utils';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import { string } from 'zod';
 
 @injectable()
 export class PMPVoucherService {
@@ -525,17 +527,20 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     return savedVoucher;
   }
 
-  async deleteVoucher(id: string): Promise<boolean> {
+  async deleteVoucher(id: string): Promise<DeleteResultDto | null> {
     const exists = await this.pmpVoucherRepository.count({ where: { id } });
     if (!exists) throw new AppError(404, `Voucher with ID ${id} not found`);
-
+    const pmpVoucher=await this.pmpVoucherRepository.findOne({where:{id}});
+    if(!pmpVoucher){
+      throw new AppError(404,`PMP_VOUCHER with ID ${id} not found`)
+    }
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
     await this.pmpVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return true;
+    return {No:pmpVoucher.voucherNo};
   }
 
   public async generatePMPVoucherNo(): Promise<string> {
@@ -557,8 +562,10 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
     return `PMPV-${formattedDate}`;
   }
 
-  public async deleteMultiplePMPVoucher(ids: string[]): Promise<{ message: string }> {
-    if (!ids.length) return { message: 'No IDs provided' };
+  public async deleteMultiplePMPVoucher(ids: string[]): Promise<BulkDeleteResultDto> {
+   // if (!ids.length) return { message: 'No IDs provided' };
+    const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
 
     const [pmpVouchers, relatedDocuments] = await Promise.all([
       this.pmpVoucherRepository.find({ where: { id: In(ids) } }),
@@ -599,8 +606,10 @@ public async getAllRecycleBinVouchers(queryOptions: PaginationOptions, userId: s
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
     ]);
-
-    return { message: 'PMPVoucher records marked for deletion successfully' };
+    pmpVouchers.map((v)=>{
+      success.push({id:v.id,No:v.voucherNo});
+    })
+    return {success,failed,message:'Deleted Successfully'};
   }
 
 }

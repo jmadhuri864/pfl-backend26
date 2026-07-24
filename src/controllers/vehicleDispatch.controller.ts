@@ -21,6 +21,8 @@ import { NotificationService } from "../services/notification.service";
 import { deserialize } from "v8";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { PaginationOptions } from "../utils/pagination";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
+import { UserActivityLogService } from "../services/userActivityLog.service";
 
 @controller("/vehicleDispatches",deserializeUser,requireUser)
 export class VehicleDispatchController {
@@ -28,7 +30,9 @@ export class VehicleDispatchController {
     @inject(TYPES.VehicleDispatchService)
     private vehicleDispatchService: VehicleDispatchService,
     @inject(TYPES.NotificationService)
-    private notificationService: NotificationService // Inject NotificationService
+    private notificationService: NotificationService, // Inject NotificationService
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) {}
 
   @httpPost("/")
@@ -83,6 +87,22 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       }
 
       ControllerLogger.logSuccess('Vehicle Dispatch created', vehicleDispatch.id, req, res);
+       // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.VEHICAL_DISPATCH,
+            entityName: 'VEHICAL_DISPATCH',
+            entityId: vehicleDispatch.id,
+            description: `${userName} has created VEHICAL_DISPATCH ${vehicleDispatch.vehicleDispatchNo || vehicleDispatch.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+     
       res.status(201).json({
         status: "success",
         message: "Vehicle Dispatch created successfully",
@@ -205,6 +225,24 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       }
 
       ControllerLogger.logSuccess('Vehicle Dispatch updated', id, req, res);
+      
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.VEHICAL_DISPATCH,
+        entityName: 'VEHICAL_DISPATCH',
+        entityId: id,
+        description: `${userName} has updated VEHICAL_DISPATCH ${updatedDispatch.vehicleDispatchNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: "success",
         message: "Vehicle Dispatch updated successfully",
@@ -223,6 +261,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
   public async deleteVehicleDispatch(
     @requestParam("id") id: string,
     @response() res: Response,
+    @request() req:Request,
     @next() next: NextFunction
   ) {
     try {
@@ -247,6 +286,22 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       // }
 
       
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.VEHICAL_DISPATCH,
+        entityName: 'VEHICAL_DISPATCH',
+        entityId: id,
+        description: `${userName} has deleted VEHICAL_DISPATCH ${result.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: "success",
         message: "Vehicle Dispatch has been deleted",
@@ -378,6 +433,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
           return next(new AppError(400, 'An array of Vehicle Dispatch IDs is required'));
         }
         const result = await this.vehicleDispatchService.deleteMultipleVehicleDispatch(ids);
+        const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
         // Send notification for multiple vehicle dispatch deletion
         // const userId = res.locals.user?.id;
@@ -389,6 +445,24 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
         // }
 
         ControllerLogger.logSuccess('Vehicle Dispatch multiple deletion', `${ids.length} records`, req, res);
+        
+        // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.VEHICAL_DISPATCH,
+        entityName: 'VEHICAL_DISPATCH',
+        description: `${userName} has bulk deleted ${result.success.length} VEHICAL_DISPATCH(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
         res.status(200).json({
           message: result.message,
           success: result.success,

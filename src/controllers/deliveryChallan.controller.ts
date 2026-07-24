@@ -27,6 +27,8 @@ import { NotificationService } from '../services/notification.service';
 import { uploadSingle } from '../middleware/uploadsingle.middleware';
 import { upload, uploadAttachments } from '../middleware/upload.middleware';
 import { setAttachmentUrls } from '../utils/fileUploadHelper';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/deliveryChallan', deserializeUser, requireUser)
 export class DeliveryChallanController {
@@ -35,6 +37,7 @@ export class DeliveryChallanController {
   constructor(
     @inject(TYPES.DeliveryChallanService) private deliveryChallanService: DeliveryChallanService,
     @inject(TYPES.NotificationService) private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
   ) {this.s3Client = new S3Client({
     credentials: {
       accessKeyId: process.env.ACCESS_KEY!,
@@ -77,8 +80,25 @@ public async createDeliveryChallan(
         }
       } catch (notifError) {
       }
+
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+            entityName: 'Customer Delivery Challan',
+            entityId: deliveryChallan.id,
+            description: `${userName} has created Customer Delivery Challan ${deliveryChallan.challanNo || deliveryChallan.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
       
       logger.info(`Delivery Challan created successfully`);
+
       res.status(201).json({
         status: 'success',
         message:"Delivery Challan Successfully Created",
@@ -233,7 +253,24 @@ next(err); // Unhandled errors
       } catch (notifError) {
       }
       
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+        entityName: 'Customer Delivery Challan',
+        entityId: id,
+        description: `${userName} has updated Customer Delivery Challan ${updatedChallan.challanNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       logger.info(`Delivery Challan updated successfully`);
+
       res.status(200).json({
         status: 'success',
         data: updatedChallan,
@@ -248,6 +285,7 @@ next(err); // Unhandled errors
   public async deleteDeliveryChallan(
     @requestParam('id') id: string,
     @response() res: Response,
+    @request() req: Request,
     @next() next: NextFunction
   ) {
     try {
@@ -273,6 +311,21 @@ next(err); // Unhandled errors
       // }
     
       logger.info(`Delivery Challan deleted successfully`);
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
+        entityName: 'Customer Delivery Challan',
+        entityId: id,
+        description: `${userName} has deleted Customer Delivery Challan ${success.No||id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       res.status(204).json({
         status: 'success',
         message: 'Delivery Challan deleted successfully',

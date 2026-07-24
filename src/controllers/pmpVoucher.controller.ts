@@ -16,12 +16,16 @@ import { uploadSingle } from "../middleware/uploadsingle.middleware";
 import { upload, uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
 import { CreatePMPVoucherDto, UpdatePMPVoucherDto } from "../dtos/pmpVoucher.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 //,deserializeUser, requireUser
 @controller("/pmpvoucher",deserializeUser, requireUser)
 export class PMPVoucherController {
   constructor(
     @inject(TYPES.PMPVoucherService) private pmpVoucherService: PMPVoucherService,
-    @inject(TYPES.NotificationService) private notificationService: NotificationService
+    @inject(TYPES.NotificationService) private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) {}
 
   // Get all vouchers
@@ -208,6 +212,22 @@ export class PMPVoucherController {
         );
       }
       
+        // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.PMP_VOUCHER,
+            entityName: 'PMP_VOUCHER',
+            entityId: newVoucher.id,
+            description: `${userName} has created PMP_VOUCHER ${newVoucher.voucherNo || newVoucher.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
       res.status(201).json({
         status: "success",
         message: 'Packing Material Payment Voucher created successfully',
@@ -263,6 +283,23 @@ export class PMPVoucherController {
         );
       }
       
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.PMP_VOUCHER,
+        entityName: 'PMP_VOUCHER',
+        entityId: id,
+        description: `${userName} has updated PMP_VOUCHER ${updatedVoucher.voucherNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: "success",
         data: updatedVoucher,
@@ -302,6 +339,22 @@ export class PMPVoucherController {
       //     userId
       //   );
       // }
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.PMP_VOUCHER,
+        entityName: 'PMP_VOUCHER',
+        entityId: id,
+        description: `${userName} has deleted PMP_VOUCHER ${success.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       res.status(200).json({ 
         status: "success",
@@ -324,9 +377,27 @@ export class PMPVoucherController {
             return next(new AppError(400, 'An array of AQR IDs is required'));
           }
           const result = await this.pmpVoucherService.deleteMultiplePMPVoucher(ids);
-          
+          const deletedNos = result.success.map(s => s.No || s.id).join(', ');
+
           ControllerLogger.logSuccess('Multiple PMP Vouchers deleted', `${ids.length} items`, req, res);
           
+          // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.PMP_VOUCHER,
+        entityName: 'PMP_VOUCHER',
+        description: `${userName} has bulk deleted ${result.success.length} PMP_VOUCHER(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
           res.status(200).json({
             message: result.message,
             // success: result.success,

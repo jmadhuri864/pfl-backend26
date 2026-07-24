@@ -64,7 +64,7 @@ export class DumpRegisterController {
         module: ActivityModule.DUMP_REGISTER,
         entityName: 'DumpRegister',
         entityId: dumpRegister.id,
-        description: `${userName} created dump register ${dumpRegister.id}`,
+        description: `${userName} has created dump register ${dumpRegister.dumpNo||dumpRegister.id}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -274,7 +274,7 @@ export class DumpRegisterController {
         module: ActivityModule.DUMP_REGISTER,
         entityName: 'DumpRegister',
         entityId: id,
-        description: `${userName} updated dump register ${id}`,
+        description: `${userName} has updated dump register ${dumpRegister.dumpNo||id}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -332,15 +332,15 @@ export class DumpRegisterController {
         module: ActivityModule.DUMP_REGISTER,
         entityName: 'DumpRegister',
         entityId: id,
-        description: `${userName} deleted dump register ${id}`,
+        description: `${userName} has deleted dump register ${result.No||id}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
         httpMethod: req.method,
-        statusCode: 204,
+        statusCode: 200,
       }).catch(() => {});
 
-      res.status(204).send();
+      res.status(200).send();
     } catch (err) {
       ControllerLogger.logError('Delete Dump Register', err, req, res);
       next(err);
@@ -373,7 +373,8 @@ export class DumpRegisterController {
       }
       
       const result = await this.dumpRegisterService.deleteMultipleDumpRegisters(ids);
-      
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
+
       // 🔔 Send notification for multiple dump registers deletion
       // try {
       //   const userId = res.locals.user?.id;
@@ -396,7 +397,7 @@ export class DumpRegisterController {
         action: ActivityAction.DELETE,
         module: ActivityModule.DUMP_REGISTER,
         entityName: 'DumpRegister',
-        description: `${userName} bulk deleted ${ids.length} dump register(s)`,
+        description: `${userName} has bulk deleted ${result.success.length} dump register(s): ${deletedNos}`,
         metadata: { ids, count: ids.length },
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),

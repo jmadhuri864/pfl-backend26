@@ -14,6 +14,8 @@ import { ILike, In, SelectQueryBuilder } from 'typeorm';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import AppError from '../utils/appError';
 
 @injectable()
 export class VehicleDispatchService {
@@ -357,7 +359,7 @@ const serialNo = await this.generateSerialNo();
     return updatedDispatch;
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string): Promise<DeleteResultDto | null> {
     // Step 1: Find the vehicle dispatch by ID
     const dispatch = await this.vehicleDispatchRepository.findOne({
       where: { id },
@@ -365,7 +367,7 @@ const serialNo = await this.generateSerialNo();
 
     // Step 2: If the vehicle dispatch doesn't exist, return false
     if (!dispatch) {
-      return false;
+      throw new AppError(404,`Distpatch with ID ${id} not found`);
     }
 
     // Step 3: Calculate the date 6 months ahead
@@ -382,7 +384,7 @@ const serialNo = await this.generateSerialNo();
     await this.vehicleDispatchRepository.save(dispatch);
 
     await this.invalidateCache(id);
-    return true;
+    return {No:dispatch.vehicleDispatchNo};
   }
 //Todo:Get All Vehical Dispatch..By Vaishali
   public async getAllvehicalDispatch(queryOptions: PaginationOptions, userId: string): Promise<any> {
@@ -718,8 +720,8 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
   }
 }
 
-public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
+public async deleteMultipleVehicleDispatch(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success:{ id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];  
   for (const id of ids) {
       const vehicalDispatch = await this.vehicleDispatchRepository.findOne({
@@ -744,7 +746,7 @@ public async deleteMultipleVehicleDispatch(ids: string[]): Promise<{ success: st
 
       await this.vehicleDispatchRepository.softDelete(vehicalDispatch.id);
       await this.vehicleDispatchRepository.update(vehicalDispatch.id, { isDeleted: true } as any);
-
+      success.push({id,No:vehicalDispatch.vehicleDispatchNo})
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
     await this.invalidateCache();

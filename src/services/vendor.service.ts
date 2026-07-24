@@ -103,7 +103,20 @@ async createVendor(vendorDto: CreateVendorDto & Record<string, any>): Promise<Ve
     const user = await this.userRepository.findOneBy({id: vendorDto.createdBy});
 
     // Always set status to draft - must go through submit → pending → approve flow
-    vendorDto.status = Status.DRAFT;
+   // vendorDto.status = Status.DRAFT;
+
+   if (!user) {
+           throw new AppError(404, 'User not found');
+         }
+
+     // If the logged-in user is an admin or verifier, bypass the approval flow and set status to approved directly
+      if (user.roles && (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER))) {
+        vendorDto.status = Status.APPROVED;
+      }
+      else{
+        vendorDto.status = Status.PENDING;
+      }
+
     if(vendorDto.listOfAllProducts && Array.isArray(vendorDto.listOfAllProducts)){
       const productIds = vendorDto.listOfAllProducts.map((p: any) => p.id || p);
       
@@ -257,31 +270,25 @@ async createVendor(vendorDto: CreateVendorDto & Record<string, any>): Promise<Ve
   }
 
 async approveVendor(vendorId: string, approverId: string, status: Status) {
-  const approver = await this.userRepository.findOne({ where: { id: approverId } });
-  if (!approver) throw new Error("Approver not found");
+  // Validate status — only approved or rejected are valid outcomes
+  if (status !== Status.APPROVED && status !== Status.REJECTED) {
+    throw new AppError(400, `Invalid status '${status}'. Only 'approved' or 'rejected' are allowed.`);
+  }
 
-  const isAdmin = approver.roles && approver.roles.includes("admin" as Role);
-  if (!isAdmin) {
-    throw new Error("Only admin can approve vendors");
+  const approver = await this.userRepository.findOne({ where: { id: approverId } });
+  if (!approver) throw new AppError(404, 'Approver not found');
+
+  // Only VERIFIER role can approve/reject vendors
+  if (!approver.roles || !approver.roles.includes(Role.VERIFIER)) {
+    throw new AppError(403, 'Only a Verifier can approve or reject vendors');
   }
 
   const vendor = await this.vendorRepository.findOne({ where: { id: vendorId } });
-  if (!vendor) throw new Error("Vendor not found");
+  if (!vendor) throw new AppError(404, 'Vendor not found');
 
-  // Admin: draft asel tar directly approve karu shakto (DRAFT → approved)
-  // Non-admin (future): faqt pending aselach approve hota — but currently only admin reaches here
-  // If vendor is draft → only admin can approve directly
-  // If vendor is pending → admin can approve
-  // Any other status → cannot approve
-  if (vendor.status === Status.DRAFT) {
-    // Admin can directly approve draft — no submit step required
-  } else if (vendor.status === Status.PENDING) {
-    // Normal flow — pending → approve
-  } else {
-    throw new AppError(
-      400,
-      `Vendor cannot be approved because its current status is '${vendor.status}'. Only vendors with status 'draft' or 'pending' can be approved or rejected.`
-    );
+  // Vendor must be in 'pending' status — draft means not yet submitted
+  if (vendor.status !== Status.PENDING) {
+    throw new AppError(400, `Vendor cannot be approved because its current status is '${vendor.status}'. Only vendors with status 'pending' can be approved or rejected.`);
   }
 
   vendor.status = status;
@@ -367,7 +374,7 @@ async getVendorByIdforview(id: string): Promise<VendorViewResponseDto> {
       'vendorBankDetails.beneficiaryFName', 'vendorBankDetails.beneficiaryMName', 'vendorBankDetails.beneficiaryLName',
       'vendorBankDetails.bankName', 'vendorBankDetails.typeOfAcc', 'vendorBankDetails.ifscCode',
       'vendorBankDetails.swiftNo', 'vendorBankDetails.invoiceCurrency',
-      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque',
+      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque','vendorBankDetails.bankCompanyName',
       'branchAddress.address1', 'branchAddress.address2', 'branchAddress.location',
       'branchAddress.city', 'branchAddress.state', 'branchAddress.pincode',
       'ref1Address.address1', 'ref1Address.address2', 'ref1Address.location',
@@ -476,6 +483,7 @@ async getVendorByIdforview(id: string): Promise<VendorViewResponseDto> {
           beneficiaryMName: vendor.vendorBankDetails.beneficiaryMName,
           beneficiaryLName: vendor.vendorBankDetails.beneficiaryLName,
           bankName: vendor.vendorBankDetails.bankName,
+          bankCompanyName:vendor.vendorBankDetails.bankCompanyName,
           typeOfAcc: vendor.vendorBankDetails.typeOfAcc,
           ifscCode: vendor.vendorBankDetails.ifscCode,
           swiftNo: vendor.vendorBankDetails.swiftNo,
@@ -594,7 +602,7 @@ async getVendorByIdforupdate(id: string): Promise<VendorUpdateFormDto> {
       'vendorBankDetails.beneficiaryFName', 'vendorBankDetails.beneficiaryMName', 'vendorBankDetails.beneficiaryLName',
       'vendorBankDetails.bankName', 'vendorBankDetails.typeOfAcc', 'vendorBankDetails.ifscCode',
       'vendorBankDetails.swiftNo', 'vendorBankDetails.invoiceCurrency',
-      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque',
+      'vendorBankDetails.cancelledChequeCopy', 'vendorBankDetails.ifCancelledCheque','vendorBankDetails.bankCompanyName',
       'branchAddress.address1', 'branchAddress.address2', 'branchAddress.location',
       'branchAddress.city', 'branchAddress.state', 'branchAddress.pincode',
       'ref1Address.address1', 'ref1Address.address2', 'ref1Address.location',
@@ -662,6 +670,7 @@ async getVendorByIdforupdate(id: string): Promise<VendorUpdateFormDto> {
       beneficiaryMName: vendor.vendorBankDetails.beneficiaryMName,
       beneficiaryLName: vendor.vendorBankDetails.beneficiaryLName,
       bankName: vendor.vendorBankDetails.bankName,
+      bankCompanyName:vendor.vendorBankDetails.bankCompanyName,
       typeOfAcc: vendor.vendorBankDetails.typeOfAcc,
       ifscCode: vendor.vendorBankDetails.ifscCode,
       swiftNo: vendor.vendorBankDetails.swiftNo,
@@ -1094,9 +1103,15 @@ async createVendorWithExcel(fileUrl: string): Promise<any> {
 //   };
 // }
 
-public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorListResponseDto> {
+public async getAllVendors1(queryOptions: PaginationOptions, userId: string): Promise<VendorListResponseDto> {
+  // Fetch the user to check their role
+  const user = await this.userRepository.findOneBy({ id: userId });
+  const isPrivileged = user?.roles &&
+    (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER));
+
+  // Include userId in cache key so different users don't share results
   const hash = createHash('md5').update(JSON.stringify(queryOptions)).digest('hex');
-  const key = `${CACHE_PREFIX}:list:${hash}`;
+  const key = `${CACHE_PREFIX}:list:${userId}:${hash}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
 
@@ -1127,6 +1142,11 @@ public async getAllVendors1(queryOptions: PaginationOptions): Promise<VendorList
       'category.name',
     ])
     .orderBy('vendor.createdAt', 'DESC');
+
+  // Non-privileged users only see vendors they created
+  if (!isPrivileged) {
+    queryBuilder.where('createdBy.id = :userId', { userId });
+  }
 
   const vendors = await buildQuery(queryBuilder, queryOptions, 'vendor');
 

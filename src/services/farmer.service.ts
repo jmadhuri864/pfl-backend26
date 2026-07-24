@@ -68,8 +68,14 @@ export class FarmerService {
 
 
 
-  async getAllFarmers(options: PaginationOptions): Promise<FarmerListResponseDto> {
-  const key = `${CACHE_PREFIX}:list:${JSON.stringify(options)}`;
+  async getAllFarmers(options: PaginationOptions, userId: string): Promise<FarmerListResponseDto> {
+  // Fetch the user to check their role
+  const user = await this.userRepository.findOneBy({ id: userId });
+  const isPrivileged = user?.roles &&
+    (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER));
+
+  // Include userId in cache key so different users don't share results
+  const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(options)}`;
   const cached = await this.cacheService.get<FarmerListResponseDto>(key);
   if (cached) return cached;
 
@@ -91,6 +97,11 @@ export class FarmerService {
       'farmAddress.city', 'farmAddress.state', 'farmAddress.pincode',
     ])
     .orderBy('farmer.createdAt', 'DESC');
+
+  // Non-privileged users only see farmers they created
+  if (!isPrivileged) {
+    queryBuilder.where('createdBy.id = :userId', { userId });
+  }
 
   const farmers = await buildQuery(queryBuilder, options, 'farmer');
 
@@ -610,24 +621,28 @@ export class FarmerService {
     return updated!;
   }
 
-  async approveFarmer(farmerId: string, approverId: string,status:Status) {
+  async approveFarmer(farmerId: string, approverId: string, status: Status) {
+    // Validate status — only approved or rejected are valid outcomes
+    if (status !== Status.APPROVED && status !== Status.REJECTED) {
+      throw new AppError(400, `Invalid status '${status}'. Only 'approved' or 'rejected' are allowed.`);
+    }
+
     const approver = await this.userRepository.findOne({
       where: { id: approverId },
-     
     });
-    if (!approver) throw new Error('Approver not found');
+    if (!approver) throw new AppError(404, 'Approver not found');
 
-    if (!approver.roles || !approver.roles.includes('admin' as Role)) {
-      throw new Error('Only admin can approve farmers');
+    // Only VERIFIER role can approve/reject farmers
+    if (!approver.roles || !approver.roles.includes(Role.VERIFIER)) {
+      throw new AppError(403, 'Only a Verifier can approve or reject farmers');
     }
 
     const farmer = await this.farmerRepository.findOne({
       where: { id: farmerId },
     });
-    if (!farmer) throw new Error('farmer not found');
+    if (!farmer) throw new AppError(404, 'Farmer not found');
 
-    // Farmer must be in 'pending' status before it can be approved or rejected.
-    // A 'draft' farmer has not been submitted yet, so it cannot be approved.
+    // Farmer must be in 'pending' status — draft means not yet submitted
     if (farmer.status !== Status.PENDING) {
       throw new AppError(400, `Farmer cannot be approved because its current status is '${farmer.status}'. Only farmers with status 'pending' can be approved or rejected.`);
     }
@@ -677,7 +692,9 @@ export class FarmerService {
     // status and farmerCode are set internally — not from client input
     const entityData = {
       ...farmerData,
-      status: Status.DRAFT,
+      status: (user && user.roles && (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER)))
+        ? Status.APPROVED
+        : Status.PENDING,
       farmerCode: `${farmPrefix}${String(farmNext).padStart(4, '0')}`,
     };
 

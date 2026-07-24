@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
 // DTOs imported earlier
 
 @injectable()
@@ -506,17 +507,19 @@ public async getAllRecycleBinVouchers(
     return voucher;
   }
 
-  async deleteVoucher(id: string): Promise<boolean> {
+  async deleteVoucher(id: string): Promise<DeleteResultDto | null> {
     const exists = await this.cashVoucherRepository.count({ where: { id } });
     if (!exists) throw new AppError(404, `Voucher with ID ${id} not found`);
-
+    const voucher = await this.cashVoucherRepository.findOne({ where: { id } });
+        if (!voucher) throw new AppError(404, `voucher with ID ${id} not found`);
+    
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
     await this.cashVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return true;
+    return {No:voucher?.voucherNo};
   }
 
   public async generateVoucherNo(): Promise<string> {
@@ -546,9 +549,10 @@ public async getAllRecycleBinVouchers(
   }
 
 
-  public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<{ message: string }> {
-    if (!ids.length) return { message: 'No IDs provided' };
-
+  public async deleteMultipleMultiCashVoucher(ids: string[]): Promise<BulkDeleteResultDto> {
+   // if (!ids.length) return { message: 'No IDs provided' };
+     const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
     const [vouchers, relatedDocuments] = await Promise.all([
       this.cashVoucherRepository.find({ where: { id: In(ids) } }),
       this.documentbRepository
@@ -589,7 +593,12 @@ public async getAllRecycleBinVouchers(
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
     ]);
 
-    return { message: 'MultiCashVoucher records marked for deletion successfully' };
+    vouchers.map((v)=>{
+      success.push({id:v.id,No:v.voucherNo});
+    })
+
+    return { success, failed, message: `Deletion completed. Success: ${success.length}, Failed: ${failed.length}` };
+   // return { message: 'MultiCashVoucher records marked for deletion successfully' };
   }
 
 }

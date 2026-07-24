@@ -128,9 +128,10 @@ public async getAllVendors(
   @response() res: Response,
   @next() next: NextFunction
 ) {
-  try {const { page, limit, search, sort} = req.query;
+  try {
+    const { page, limit, search, sort} = req.query;
             
-        
+        const userId=res.locals.user.id;
               const queryOptions: PaginationOptions = {
                 page: page ? Number(page) : undefined,  
                 limit: limit ? Number(limit) : undefined,
@@ -140,7 +141,7 @@ public async getAllVendors(
                 search: search as string|| '',
               };
     //const subcategoryId = req.query.search as string; // Extract subcategoryId from query
-    const vendors = await this.vendorService.getAllVendors1(queryOptions); // Correct method name
+    const vendors = await this.vendorService.getAllVendors1(queryOptions,userId); // Correct method name
 
     // Send notification for vendor list access
     // const userId = res.locals.user?.id;
@@ -294,6 +295,10 @@ public async getAllVendorsWithselectedSub(
           userId
         );
       }
+
+      console.log("......................................................")
+      console.log("new cendor............",newVendor);
+      console.log("......................................................")
 
       res.status(201).json({
         status: "success",

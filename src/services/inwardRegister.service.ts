@@ -39,6 +39,7 @@ import {
   UpdateInwardRegisterDto,
 } from '../dtos/inwardRegister.dto';
 import { InwardProduct } from '../entities/inwardProduct.entity';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
 
 
 function normalizeDateFormat(date: string | null | undefined): string | null | undefined {
@@ -728,7 +729,7 @@ console.log(transformedInwardRegister)
 // }
 
 
-  public async deleteInwardRegister(id: string): Promise<void> {
+  public async deleteInwardRegister(id: string): Promise<DeleteResultDto> {
     const inwardRegister = await this.inwardRegisterRepo.findOne({
       where: { id },
     });
@@ -751,6 +752,7 @@ console.log(transformedInwardRegister)
     await this.inwardRegisterRepo.save(inwardRegister);
     console.log(`InwardRegister with ID ${id} marked for deletion.`);
     await this.invalidateCache(id);
+    return {No:inwardRegister.inwardNo};
   }
 
 
@@ -1182,8 +1184,8 @@ public async getInwardregisterByIdForView(docid: string, userId: string): Promis
   }
 
 
-public async deleteMultipleInwardRegister(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
+public async deleteMultipleInwardRegister(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success: { id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];  
   for (const id of ids) {
       const inwardRegister = await this.inwardRegisterRepo.findOne({
@@ -1208,7 +1210,7 @@ public async deleteMultipleInwardRegister(ids: string[]): Promise<{ success: str
 
       await this.inwardRegisterRepo.softDelete(inwardRegister.id);
       await this.inwardRegisterRepo.update(inwardRegister.id, { isDeleted: true } as any);
-
+       success.push({ id, No: inwardRegister.inwardNo });
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
     return { success, failed, message};

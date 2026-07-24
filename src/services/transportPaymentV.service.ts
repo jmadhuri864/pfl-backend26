@@ -26,6 +26,8 @@ import {
   TPVoucherUpdateFormDto,
   BulkDeleteTPVoucherResultDto,
 } from '../dtos/transportPaymentVoucher.dto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import AppError from '../utils/appError';
 
 @injectable()
 export class TPVoucherService {
@@ -505,17 +507,18 @@ public async getAllTPVouchers(
   return savedVoucher;
 }
 
-  public async deleteTPVoucher(id: string): Promise<boolean> {
+  public async deleteTPVoucher(id: string): Promise<DeleteResultDto | null> {
     const exists = await this.tpVoucherRepository.count({ where: { id } });
-    if (!exists) return false;
-
+   // if (!exists) return false;
+    const voucher=await this.tpVoucherRepository.findOne({where:{id}});
+    if(!voucher) throw new AppError(404,`Tp Vocuher with ID ${id} not found`);
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
     await this.tpVoucherRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return true;
+    return {No:voucher.voucherNo};
   }
 
   public async generateTransportPaymentVoucherNo(): Promise<string> {
@@ -537,9 +540,10 @@ public async getAllTPVouchers(
     return `TPV-${formattedDate}`;
   }
 
-  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<BulkDeleteTPVoucherResultDto> {
-    if (!ids.length) return { message: 'No IDs provided' };
-
+  public async deleteMultipleTransportPaymentVoucher(ids: string[]): Promise<BulkDeleteResultDto> {
+   // if (!ids.length) return { message: 'No IDs provided' };
+    const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
     const [tpVouchers, relatedDocuments] = await Promise.all([
       this.tpVoucherRepository.find({ where: { id: In(ids) } }),
       this.documentbRepository
@@ -580,7 +584,11 @@ public async getAllTPVouchers(
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:recycle:*`),
     ]);
 
-    return { message: 'Transport Payment Voucher records marked for deletion successfully' };
+    tpVouchers.map((v)=>{
+      success.push({id:v.id,No:v.voucherNo})
+    })
+
+    return { success,failed,message: 'Transport Payment Voucher records marked for deletion successfully' };
   }
 }
 

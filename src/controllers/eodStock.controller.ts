@@ -32,6 +32,8 @@ import {
   BulkDeleteEodStockDto,
   BulkDeleteEodStockResultDto,
 } from '../dtos/eodStock.dto';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/eodStock', deserializeUser, requireUser)
 export class EodStockController {
@@ -40,6 +42,7 @@ export class EodStockController {
     private eodStockService: EodStockService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
   ) {}
 
   @httpPost('/')
@@ -64,7 +67,25 @@ export class EodStockController {
         res.locals.user.id,
       );
       
+     
       ControllerLogger.logSuccess('EOD Stock created', stock.id, req, res);
+      
+       // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.EOD_STOCK,
+            entityName: 'EOD_STOCK',
+            entityId: stock.id,
+            description: `${userName} has created EOD_STOCK ${stock.eodNo || stock.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+     
       res.status(201).json({
         status: 'success',
         message: 'Eod Stock created successfully',
@@ -246,6 +267,22 @@ export class EodStockController {
       } catch (notifError) {
       }
 
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.EOD_STOCK,
+        entityName: 'EOD_STOCK',
+        entityId: id,
+        description: `${userName} has updated EOD_STOCK ${updatedStock.eodNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       ControllerLogger.logSuccess('EOD Stock updated', id, req, res);
       res.status(200).json({
         status: 'success',
@@ -345,6 +382,23 @@ export class EodStockController {
       // }
 
       ControllerLogger.logSuccess('EOD Stock deleted', id, req, res);
+      
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.EOD_STOCK,
+        entityName: 'EOD_STOCK',
+        entityId: id,
+        description: `${userName} has deleted EOD_STOCK ${result.No||id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(204).send();
     } catch (err) {
       ControllerLogger.logError('Delete EOD Stock', err, req, res);
@@ -364,7 +418,9 @@ export class EodStockController {
         return next(new AppError(400, 'An array of EODStock IDs is required'));
       }
       const result = await this.eodStockService.deleteMultipleEodStock(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
+      //const deletedNos = result.success.map(s => s.eodNo || s.id).join(', ');
       // 🔔 Send notification for bulk AQR deletion
       // try {
       //   const userId = res.locals.user.id;
@@ -375,6 +431,23 @@ export class EodStockController {
       // } catch (notifError) {
       //   console.log('Notification error:', notifError);
       // }
+
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.EOD_STOCK,
+        entityName: 'EOD_STOCK',
+        description: `${userName} has bulk deleted ${result.success.length} EOD_STOCK(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       res.status(200).json({
         message: result.message,

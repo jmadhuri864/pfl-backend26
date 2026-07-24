@@ -132,7 +132,7 @@ export class FarmerController {
   ) {
     try {
       const { page, limit, search, sort } = req.query;
-
+      const userId=res.locals.user.id;
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
         limit: limit ? Number(limit) : undefined,
@@ -141,7 +141,7 @@ export class FarmerController {
         search: (search as string) || '',
       };
       
-      const farmers = await this.farmerService.getAllFarmers(queryOptions);
+      const farmers = await this.farmerService.getAllFarmers(queryOptions,userId);
 
       if (!farmers) {
         ControllerLogger.logOperationFailed('Get All', 'Farmers', 'No records found', req, res);

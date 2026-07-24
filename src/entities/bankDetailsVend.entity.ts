@@ -82,6 +82,11 @@ export class BankDetailsvend extends Model {
     })
     ifCancelledCheque: boolean;
 
+
+    @Column( { nullable: true })
+    bankCompanyName:string;
+
+    
     // One-to-One relationship with Vendor
     @OneToOne(() => Vendor, (vendor) => vendor.vendorBankDetails,{ onDelete: "SET NULL" })
     vendor: Vendor;

@@ -34,6 +34,9 @@ import {
   BulkDeleteRfpaResultDto,
   RfpaDocumentViewResponseDto,
 } from '../dtos/rfpa.dto';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { BulkDeleteResultDto } from '../dtos/general.dto';
 
 @controller('/rfpa', deserializeUser, requireUser)
 export class RfpaController {
@@ -42,6 +45,8 @@ export class RfpaController {
     private readonly rfpaService: RfpaService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) { }
 
 
@@ -220,6 +225,23 @@ export class RfpaController {
         logger.warn('RFPA create notification failed:', notifError);
       }
 
+       // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.RFPA,
+            entityName: 'RFPA',
+            entityId: newRfpa.id,
+            description: `${userName} has created RFPA ${newRfpa.rfpaId || newRfpa.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
+
       res.status(201).json({
         status: 'success',
         message: 'RFPA created successfully',
@@ -276,6 +298,23 @@ export class RfpaController {
           userId,
         );
       }
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.RFPA,
+        entityName: 'RFPA',
+        entityId: rfpaId,
+        description: `${userName} has updated RFPA ${updatedRfpa.rfpaId || rfpaId}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
 
       res.status(200).json({
         status: 'success',
@@ -467,6 +506,22 @@ public async getRfpaByIdByUpdate(
       //     userId,
       //   );
       // }
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.RFPA,
+        entityName: 'RFPA',
+        entityId: id,
+        description: `${userName} has deleted RFPA ${success.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
       res.status(200).json({
         status: 'success',
@@ -796,7 +851,8 @@ public async getRfpaByIdByUpdate(
         );
         return next(new AppError(400, 'An array of RFPA IDs is required'));
       }
-      const result: BulkDeleteRfpaResultDto = await this.rfpaService.deleteMultipleRFPA(ids);
+      const result: BulkDeleteResultDto = await this.rfpaService.deleteMultipleRFPA(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
       ControllerLogger.logSuccess(
         'RFPA multiple deletion',
@@ -804,6 +860,23 @@ public async getRfpaByIdByUpdate(
         req,
         res,
       );
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.RFPA,
+        entityName: 'RFPA',
+        description: `${userName} has bulk deleted ${result.success.length} RFPA(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         message: result.message,
       });

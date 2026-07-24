@@ -18,6 +18,8 @@ import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { CreateInvoiceDto, InvoiceDetailDto, InvoiceListItemDto } from '../dtos/invoice.dto';
+import { ammountStatus } from '../utils/status.enum';
+import { BulkDeleteResultDto } from '../dtos/general.dto';
 
 @injectable()
 export class FinalInvoiceService {
@@ -406,7 +408,7 @@ export class FinalInvoiceService {
         'invoice.discount', 'invoice.freight', 'invoice.otherCharges', 'invoice.createdAt',
         'company.id', 'company.name', 'company.officeAddress', 'company.gstNo', 'company.fassaiNo',
         'bankDetails.bankName', 'bankDetails.accountNo', 'bankDetails.branch', 'bankDetails.ifscCode',
-        'deliveryChallan.challanNo',
+        'deliveryChallan.challanNo','invoice.ammountStatus',
         'customer.id', 'customer.organisationName', 'customer.customerCode',
         'customer.primaryContactNo', 'customer.secondaryContactNo',
         'statutory.gstn', 'statutory.panNo',
@@ -435,6 +437,7 @@ export class FinalInvoiceService {
     const companyBankDetails = invoice.companyName?.bankDetails?.[0] ?? null;
 
     const result = {
+      ammountStatus:invoice.ammountStatus,
       id: invoice.id,
       documentId: document.id,
       overAllStatus: document.overAllStatus,
@@ -514,11 +517,14 @@ export class FinalInvoiceService {
     userId: string,
   ): Promise<{ data: InvoiceListItemDto[]; meta: { total: number; page: number; pages: number } }> {
     const cacheKey = `${this.CACHE_PREFIX}:all:${userId}:${createHash('md5').update(JSON.stringify(queryOptions)).digest('hex')}`;
+    console.log("in invoice service — cache key:", cacheKey);
     const cached = await this.cacheService.get<any>(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      console.log("in invoice service — returning cached result");
+      return cached;
+    }
 
     const { search, sort, page = 1, limit = 10 } = queryOptions;
-
     // Single joined query — invoice + document in one shot
     const qb = this.invoiceRepository
       .createQueryBuilder('invoice')
@@ -539,7 +545,7 @@ export class FinalInvoiceService {
       .select([
         'invoice.id', 'invoice.invoiceNo', 'invoice.invoiceDate', 'invoice.vehicleNo',
         'invoice.poNumber', 'invoice.totalProductAmount', 'invoice.netProductWeight',
-        'invoice.totalAmount', 'invoice.createdAt',
+        'invoice.totalAmount', 'invoice.ammountStatus', 'invoice.createdAt',
         'company.name', 'deliveryChallan.challanNo',
         'customerName.organisationName', 'fromLocation.name',
         'billingAddress.address1', 'billingAddress.address2', 'billingAddress.location',
@@ -594,12 +600,14 @@ export class FinalInvoiceService {
           .filter(Boolean).join(' ')
       : null;
 
+
     const data: InvoiceListItemDto[] = raw.entities.map((invoice, i) => {
       const r = raw.raw[i];
       const { createdDate, createdTime } = formatDateTime(r.docCreatedAt ?? invoice.createdAt);
       const firstName = r.lastActionByFirstName ?? '';
       const lastName = r.lastActionByLastName ?? '';
       return {
+        ammountStatus:invoice.ammountStatus,
         documentId: r.docId,
         overAllStatus: r.docStatus,
         createdBy: `${firstName} ${lastName}`.trim(),
@@ -625,10 +633,12 @@ export class FinalInvoiceService {
       };
     });
 
+    //console.log(data)
     const result = {
       data,
       meta: { total, page, pages: Math.ceil(total / limit) },
     };
+    console.log("dattttttttaaaaaaaaaaaaa",data);
     await this.cacheService.set(cacheKey, result, this.CACHE_TTL);
     return result;
   }
@@ -811,8 +821,8 @@ export class FinalInvoiceService {
         throw new Error(`Failed to fetch invoice for PDF generation: ${error.message}`);
       }
     }
-    public async deleteMultipleFinalInvoices(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-  const success: string[] = [];
+    public async deleteMultipleFinalInvoices(ids: string[]): Promise<BulkDeleteResultDto> {
+   const success: { id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -837,7 +847,7 @@ export class FinalInvoiceService {
       await this.invoiceRepository.softDelete(finalInvoice.id);
       await this.invoiceRepository.update(finalInvoice.id, { isDeleted: true } as any);
       await this.invalidateCache(finalInvoice.id);
-      success.push(id);
+      success.push({id, No: finalInvoice.invoiceNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
