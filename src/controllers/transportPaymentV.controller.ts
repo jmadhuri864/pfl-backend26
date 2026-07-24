@@ -27,12 +27,16 @@ import {
   BulkDeleteTPVoucherDto,
   BulkDeleteTPVoucherResultDto,
 } from '../dtos/transportPaymentVoucher.dto';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { UserActivityLogService } from '../services/userActivityLog.service';
 
 @controller('/tpvoucher', deserializeUser, requireUser)
 export class TPVoucherController {
   constructor(
     @inject(TYPES.TPVoucherService) private tpVoucherService: TPVoucherService,
-    @inject(TYPES.NotificationService) private notificationService: NotificationService
+    @inject(TYPES.NotificationService) private notificationService: NotificationService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) {}
 
   @httpPost('/', uploadAttachments)
@@ -74,6 +78,23 @@ export class TPVoucherController {
         );
       }
 
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.TRANSPORT_PAYMENT,
+            entityName: 'TRANSPORT_PAYMENT',
+            entityId: createdVoucher.id,
+            description: `${userName} has created TRANSPORT_PAYMENT ${createdVoucher.voucherNo || createdVoucher.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
+          
       res.status(201).json({
         status: 'success',
         message: 'Transport Payment Voucher created successfully',
@@ -265,6 +286,23 @@ export class TPVoucherController {
         );
       }
 
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.TRANSPORT_PAYMENT,
+        entityName: 'TRANSPORT_PAYMENT',
+        entityId: id,
+        description: `${userName} has updated TRANSPORT_PAYMENT ${updatedVoucher.voucherNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: 'success',
         // data: updatedVoucher,
@@ -309,6 +347,23 @@ export class TPVoucherController {
       //   );
       // }
 
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.AQR,
+        entityName: 'AQR',
+        entityId: id,
+        description: `${userName} has deleted AQR ${success.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: "success",
         message: "TPVoucher deleted successfully"
@@ -334,6 +389,7 @@ export class TPVoucherController {
             return next(new AppError(400, 'An array of Transport Payment Voucher IDs is required'));
           }
           const result = await this.tpVoucherService.deleteMultipleTransportPaymentVoucher(ids);
+          const deletedNos = result.success.map(s => s.No || s.id).join(', ');
           ControllerLogger.logSuccess('Transport Payment Voucher multiple deletion', `${ids.length} records`, req, res);
 
           // Send notification for multiple transport payment voucher deletion
@@ -344,6 +400,22 @@ export class TPVoucherController {
           //     userId
           //   );
           // }
+
+           // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.TRANSPORT_PAYMENT,
+        entityName: 'TRANSPORT_PAYMENT',
+        description: `${userName} has bulk deleted ${result.success.length} TRANSPORT_PAYMENT(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
           res.status(200).json({
             message: result.message,

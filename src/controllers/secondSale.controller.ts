@@ -25,6 +25,8 @@ import logger from '../utils/logger';
 import { PaginationOptions } from '../utils/pagination';
 import { ControllerLogger } from '../utils/controllerLogger';
 import { CreateSecondSaleDto, UpdateSecondSaleDto } from '../dtos/secondSale.dto';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
+import { UserActivityLogService } from '../services/userActivityLog.service';
 
 @controller('/secondSales', deserializeUser, requireUser)
 export class SecondSaleController {
@@ -33,6 +35,8 @@ export class SecondSaleController {
     private secondSaleService: SecondSaleService,
     @inject(TYPES.NotificationService)
     private notificationService: NotificationService, // Inject NotificationService
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) {}
 
   // Create a new second sale
@@ -76,6 +80,22 @@ export class SecondSaleController {
       );
 
       ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
+       // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.SECOND_SALE,
+            entityName: 'SECOND_SALE',
+            entityId: secondSale.id,
+            description: `${userName} has created SECOND_SALE ${secondSale.secondSaleNo || secondSale.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
       res.status(201).json({
         status: 'success',
         message: 'Second sale created successfully',
@@ -265,6 +285,22 @@ export class SecondSaleController {
       );
 
       ControllerLogger.logSuccess('Second Sale updated', id, req, res);
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.SECOND_SALE,
+        entityName: 'SECOND_SALE',
+        entityId: id,
+        description: `${userName} has updated SECOND_SALE ${secondSale.secondSaleNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: 'success',
         message: 'Second sale updated successfully',
@@ -312,6 +348,23 @@ export class SecondSaleController {
       //   );
       // }
 
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.SECOND_SALE,
+        entityName: 'SECOND_SALE',
+        entityId: id,
+        description: `${userName} has deleted SECOND_SALE ${result.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: 'success',
         message: 'Second Sale deleted successfully',
@@ -338,6 +391,7 @@ export class SecondSaleController {
             return next(new AppError(400, 'An array of Second Sale IDs is required'));
           }
           const result = await this.secondSaleService.deleteMultipleSecondSale(ids);
+          const deletedNos = result.success.map(s => s.No || s.id).join(', ');
           ControllerLogger.logSuccess('Second Sale multiple deletion', `${ids.length} records`, req, res);
 
           // Send notification for multiple second sale deletion
@@ -348,6 +402,22 @@ export class SecondSaleController {
           //     userId
           //   );
           // }
+
+             // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.SECOND_SALE,
+        entityName: 'SECOND_SALE',
+        description: `${userName} has bulk deleted ${result.success.length} SECOND_SALE(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
 
           res.status(200).json({
             message: result.message,

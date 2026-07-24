@@ -36,6 +36,7 @@ import { ApprovalFlowService } from "./approvalFlow.service";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { ProductVarientRepository } from "../repositories/varients.repository";
 import { InventoryStockRepository } from "../repositories/inventoryStock.repository";
+import { BulkDeleteResultDto, DeleteResultDto } from "../dtos/general.dto";
 
 
 
@@ -694,7 +695,7 @@ public async updateDumpRegister(
 
     
      
-async deleteDumpRegister(id: string): Promise<boolean> {
+async deleteDumpRegister(id: string): Promise<DeleteResultDto | null> {
   
   const dumpRegister = await this.dumpRegisterRepository.findOne({
     where: { id },
@@ -720,7 +721,7 @@ async deleteDumpRegister(id: string): Promise<boolean> {
   await this.invalidateDumpCache(id);
 
   //console.log(`Dump Register with ID ${id} marked for deletion in 6 months.`);
-  return true;
+  return {No:dumpRegister.dumpNo};
 }
 
 
@@ -734,8 +735,8 @@ async deleteDumpRegister(id: string): Promise<boolean> {
 
 
 
-public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
-  const success: string[] = [];
+public async deleteMultipleDumpRegisters(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success: { id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -761,7 +762,7 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
 
       await this.dumpRegisterRepository.softDelete(dumpRegister.id);
       await this.dumpRegisterRepository.update(dumpRegister.id, { isDeleted: true } as any);
-      success.push(id);
+      success.push({id,No:dumpRegister.dumpNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
@@ -769,7 +770,7 @@ public async deleteMultipleDumpRegisters(ids: string[]): Promise<any> {
   // const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
   // return { success, failed, message };
   await this.invalidateDumpCache();
-  return { message: 'Dump records marked for deletion successfully' };
+  return { success,failed,message: 'Dump records marked for deletion successfully' };
 }
 
 }

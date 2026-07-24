@@ -23,6 +23,7 @@ import { ProductVarientRepository } from "../repositories/varients.repository";
 import { DocumentbRepository } from "../repositories/documentb.repository";
 import { CacheService } from "./cache.service";
 import { CreateSecondSaleDto, SecondSaleDetailDto, SecondSaleListItemDto, SecondSaleListResponseDto, UpdateSecondSaleDto } from "../dtos/secondSale.dto";
+import { BulkDeleteResultDto, DeleteResultDto } from "../dtos/general.dto";
 
 
 @injectable()
@@ -699,7 +700,7 @@ console.log(document.id)
   }
 
   // Method to delete a Second Sale document (schedule deletion 6 months later)
-  public async deleteSecondSale(id: string): Promise<boolean> {
+  public async deleteSecondSale(id: string): Promise<DeleteResultDto | null> {
     // Step 1: Find the Second Sale by ID
     const secondSale = await this.secondSaleRepository.findOne({
       where: { id },
@@ -707,7 +708,8 @@ console.log(document.id)
 
     // Step 2: If the Second Sale doesn't exist, return false
     if (!secondSale) {
-      return false;
+      throw new Error("Second sale not exits");
+       new AppError;
     }
 
     // Step 3: Calculate the date 6 months ahead
@@ -721,11 +723,15 @@ console.log(document.id)
     secondSale.deletionScheduledAt = sixMonthsFromNow;
     await this.secondSaleRepository.save(secondSale);
     await this.invalidateCache(id);
-    return true;
+
+    if(!secondSale.secondSaleNo){
+         return null;
+    }
+     return {No:secondSale.secondSaleNo}; 
   }
 
-  public async deleteMultipleSecondSale(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-    const success: string[] = [];
+  public async deleteMultipleSecondSale(ids: string[]): Promise<BulkDeleteResultDto> {
+    const success:{id: string; No: string }[] = [];
     const failed: { id: string; reason: string }[] = [];
     for (const id of ids) {
       const secondSale = await this.secondSaleRepository.findOne({
@@ -751,9 +757,12 @@ console.log(document.id)
       await this.secondSaleRepository.softDelete(secondSale.id);
       await this.secondSaleRepository.update(secondSale.id, { isDeleted: true } as any);
 
+      if(secondSale.secondSaleNo)
+      success.push({id,No:secondSale.secondSaleNo})
     }
     const message = `Deletion completed. Success: ${success.length}, Failed: ${failed.length}`;
     await this.invalidateCache();
+    
     return { success, failed, message };
 
   }

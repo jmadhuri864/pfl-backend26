@@ -17,13 +17,17 @@ import { uploadSingle } from "../middleware/uploadsingle.middleware";
 import { upload, uploadAttachments } from "../middleware/upload.middleware";
 import { setAttachmentUrls } from "../utils/fileUploadHelper";
 import { CreateMultiCashVoucherDto, UpdateMultiCashVoucherDto } from "../dtos/multiCashVoucher.dto";
+import { UserActivityLogService } from "../services/userActivityLog.service";
+import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 //,deserializeUser,requireUser
 @controller('/multiCashVoucher',deserializeUser,requireUser)
 export class  MultiCashVoucherController {
 
     constructor(
       @inject(TYPES.MultiCashVoucherService) private multicashVoucherService: MultiCashVoucherService,
-      @inject(TYPES.NotificationService) private notificationService: NotificationService
+      @inject(TYPES.NotificationService) private notificationService: NotificationService,
+      @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+      
     ) {}
 
     @httpPost("/", uploadAttachments)
@@ -60,6 +64,23 @@ export class  MultiCashVoucherController {
         );
       }
    
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.MULTI_CASH_VOUCHER,
+            entityName: 'MULTI_CASH_VOUCHER',
+            entityId: newVoucher.id,
+            description: `${userName} has created MULTI_CASH_VOUCHER ${newVoucher.voucherNo || newVoucher.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+
+
       res.status(201).json({
         status: "success",
         message: 'Multi Cash Payment Voucher created successfully',
@@ -259,6 +280,23 @@ export class  MultiCashVoucherController {
         );
       }
 
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.MULTI_CASH_VOUCHER,
+        entityName: 'MULTI_CASH_VOUCHER',
+        entityId: id,
+        description: `${userName} has updated AQR ${updatedVoucher.voucherNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: "success",
         data: updatedVoucher,
@@ -295,6 +333,22 @@ export class  MultiCashVoucherController {
             //    );
             //  }
 
+
+             // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.MULTI_CASH_VOUCHER,
+        entityName: 'MULTI_CASH_VOUCHER',
+        entityId: id,
+        description: `${userName} has deleted MULTI_CASH_VOUCHER ${voucher.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
              res.status(200).json({ 
               status: "success", 
               message: "Voucher deleted successfully" });
@@ -318,9 +372,26 @@ export class  MultiCashVoucherController {
               return next(new AppError(400, 'An array of MultiCashVoucher IDs is required'));
             }
             const result = await this.multicashVoucherService.deleteMultipleMultiCashVoucher(ids);
-            
+            const deletedNos = result.success.map(s => s.No || s.id).join(', ');
+
             ControllerLogger.logSuccess(`${ids.length} Multi Cash Vouchers deleted`, ids.join(', '), req, res);
 
+
+             // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.MULTI_CASH_VOUCHER,
+        entityName: 'MULTI_CASH_VOUCHER',
+        description: `${userName} has bulk deleted ${result.success.length} MULTI_CASH_VOUCHER(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
             res.status(200).json({
               message: result.message,
               // success: result.success,

@@ -15,6 +15,7 @@ import {
   Department,
   Source,
   Status,
+  ammountStatus
 } from '../utils/status.enum';
 import { User } from './user.entity';
 import { Farmer } from './farmer.entity';
@@ -323,6 +324,13 @@ timeIn: string | null;
    @Column({ default: false })
     isLPVoucherCreated: boolean;
 
+    @Column( {
+         type: 'enum',
+         enum: ammountStatus,
+         default:ammountStatus.UNPAID,
+         nullable:true
+        })
+        ammountStatus:ammountStatus   
 }
 // @Column({
 //   type: "timestamp",

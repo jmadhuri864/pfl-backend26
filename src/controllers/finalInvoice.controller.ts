@@ -24,6 +24,8 @@ import { PaginationOptions } from '../utils/pagination';
 import { NotificationService } from '../services/notification.service';
 import { PdfGeneratorService } from '../utils/pdfGenerator';
 import { CreateInvoiceDto } from '../dtos/invoice.dto';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/final-invoice', deserializeUser, requireUser)
 export class FinalInvoiceController {
@@ -34,7 +36,65 @@ export class FinalInvoiceController {
     private notificationService: NotificationService,
     @inject(TYPES.PdfGeneratorService)
     private pdfGeneratorService: PdfGeneratorService,
+    @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
   ) {}
+
+  @httpGet('/')
+  public async getAllInvoices(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      console.log("in controller")
+      const { page, limit, search, sort } = req.query;
+      const queryOptions: PaginationOptions = {
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        filters: {},
+        sort: (sort as string) || undefined,
+        search: (search as string) || '',
+      };
+
+      const userId = res.locals.user.id;
+
+      const invoices = await this.finalInvoiceService.getAll(
+        queryOptions,
+        userId
+      );
+
+      if (!invoices || invoices.data.length === 0) {
+        ControllerLogger.logOperationFailed('Get All', 'Final Invoices', 'No records found', req, res);
+        return next(new AppError(404, 'No final invoices found'));
+      }
+
+      // 🔔 Send notification for get all invoices
+      // try {
+      //   const userId = res.locals.user?.id;
+      //   if (userId) {
+      //     await this.notificationService.createNoti(
+      //       `Retrieved ${invoices.meta.total} final invoices`,
+      //       userId
+      //     );
+      //   }
+      // } catch (notifError) {
+      //   console.log('Get all final invoices notification error:', notifError);
+      // }
+
+      ControllerLogger.logGetAllRecords('Final Invoices', req, res);
+      res.status(200).json({
+        status: 'success',
+        data: invoices.data,
+        allRecords: invoices.meta.total,
+        totalPages: invoices.meta.pages,
+        page: invoices.meta.page,
+      });
+    } catch (err) {
+      ControllerLogger.logError('Get All Final Invoices', err, req, res);
+      next(err);
+    }
+  }
+
 
   @httpPost('/:deliveryChallanId')
   public async createInvoice(
@@ -73,6 +133,23 @@ export class FinalInvoiceController {
       }
 
       ControllerLogger.logSuccess('Final Invoice created', invoice.id, req, res);
+      
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.INVOICE,
+            entityName: 'INVOICE',
+            entityId: invoice.id,
+            description: `${userName} has created INVOICE ${invoice.invoiceNo || invoice.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
+      
       res.status(201).json({
         status: 'success',
         message: 'Final invoice created successfully',
@@ -126,61 +203,7 @@ export class FinalInvoiceController {
 
   
 
-  @httpGet('/')
-  public async getAllInvoices(
-    @request() req: Request,
-    @response() res: Response,
-    @next() next: NextFunction,
-  ) {
-    try {
-      const { page, limit, search, sort } = req.query;
-      const queryOptions: PaginationOptions = {
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
-        filters: {},
-        sort: (sort as string) || undefined,
-        search: (search as string) || '',
-      };
-
-      const userId = res.locals.user.id;
-
-      const invoices = await this.finalInvoiceService.getAll(
-        queryOptions,
-        userId
-      );
-
-      if (!invoices || invoices.data.length === 0) {
-        ControllerLogger.logOperationFailed('Get All', 'Final Invoices', 'No records found', req, res);
-        return next(new AppError(404, 'No final invoices found'));
-      }
-
-      // 🔔 Send notification for get all invoices
-      // try {
-      //   const userId = res.locals.user?.id;
-      //   if (userId) {
-      //     await this.notificationService.createNoti(
-      //       `Retrieved ${invoices.meta.total} final invoices`,
-      //       userId
-      //     );
-      //   }
-      // } catch (notifError) {
-      //   console.log('Get all final invoices notification error:', notifError);
-      // }
-
-      ControllerLogger.logGetAllRecords('Final Invoices', req, res);
-      res.status(200).json({
-        status: 'success',
-        data: invoices.data,
-        allRecords: invoices.meta.total,
-        totalPages: invoices.meta.pages,
-        page: invoices.meta.page,
-      });
-    } catch (err) {
-      ControllerLogger.logError('Get All Final Invoices', err, req, res);
-      next(err);
-    }
-  }
-
+  
 
 
   @httpPost('/pdf/download')
@@ -250,6 +273,7 @@ export class FinalInvoiceController {
         return next(new AppError(400, 'An array of FinalInvoice IDs is required'));
       }
       const result = await this.finalInvoiceService.deleteMultipleFinalInvoices(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
       // 🔔 Send notification for bulk AQR deletion
       // try {
@@ -261,6 +285,23 @@ export class FinalInvoiceController {
       // } catch (notifError) {
       //   console.log('Notification error:', notifError);
       // }
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.INVOICE,
+        entityName: 'INVOICE',
+        description: `${userName} has bulk deleted ${result.success.length} INVOICE(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
 
       res.status(200).json({
         message: result.message,

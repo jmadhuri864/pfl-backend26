@@ -4,6 +4,7 @@ import { Customer } from '../entities/customer.entity';
 import { Branches } from '../entities/branches.entity';
 import { Address } from '../entities/address.entity';
 import { User } from '../entities/user.entity';
+import { ammountStatus } from '../utils/status.enum';
 
 export interface InvoiceProductDto {
   id?: string | null;
@@ -94,6 +95,7 @@ export type UpdateInvoiceDto = Partial<CreateInvoiceDto>;
 
 export interface InvoiceListItemDto {
   documentId?: string | null;
+  ammountStatus:ammountStatus;
   overAllStatus?: string | null;
   createdBy?: string | null;
   createdDate?: string | null;

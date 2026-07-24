@@ -51,6 +51,11 @@ export enum Source {
   FARMER = 'farmer',
 }
 
+export enum ammountStatus{
+    PAID='paid',
+    UNPAID='unpaid'
+}
+
 
 
 

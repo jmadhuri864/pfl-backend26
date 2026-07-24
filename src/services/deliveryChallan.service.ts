@@ -21,6 +21,7 @@ import { InventoryStockRepository } from '../repositories/inventoryStock.reposit
 import path from 'node:path';
 import ejs from 'ejs';
 import puppeteer from 'puppeteer';
+import { DeleteResultDto } from '../dtos/general.dto';
 
 @injectable()
 export class DeliveryChallanService {
@@ -545,7 +546,7 @@ export class DeliveryChallanService {
     return savedChallan;
   }
   
-  public async deleteDeliveryChallan(id: string): Promise<boolean> {
+  public async deleteDeliveryChallan(id: string): Promise<DeleteResultDto| null> {
     // Find the Delivery Challan by ID
     const deliveryChallan = await this.deliveryChallanRepo.findOne({
       where: { id },
@@ -571,7 +572,7 @@ export class DeliveryChallanService {
     await this.deliveryChallanRepo.save(deliveryChallan);
 
    
-    return true;
+    return {No:deliveryChallan.challanNo};
   }
 
   public async generateVoucherNo(): Promise<string> {

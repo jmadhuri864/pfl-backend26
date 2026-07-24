@@ -238,7 +238,7 @@ console.log(req.body);
           module: ActivityModule.GRN,
           entityName: 'GRN',
           entityId: newGrn.id,
-          description: `Created GRN ${newGrn.grnNo}`,
+          description: `${userName} has created GRN ${newGrn.grnNo || newGrn.id}`,
           metadata: {
             grnNo: newGrn.grnNo,
             totalAmt: newGrn.totalAmt,
@@ -592,10 +592,23 @@ console.log(req.body);
           user
         );
         
-
+         // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.GRN,
+        entityName: 'GRN',
+        entityId: id,
+        description: `${userName} has updated GRN ${updatedGrn.grnNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
         
       ControllerLogger.logSuccess('GRN updated', updatedGrn.id, req, res);
-
       res.status(200).json({
         status: 'success',
         message: 'GRN updated successfully',
@@ -637,6 +650,22 @@ console.log(req.body);
 
       ControllerLogger.logSuccess('GRN deleted', id, req, res);
 
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.GRN,
+        entityName: 'GRN',
+        entityId: id,
+        description: `${userName} has deleted GRN ${success.grnNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: 'success',
         message: 'Grn deleted successfully',
@@ -663,6 +692,8 @@ console.log(req.body);
       }
 
       const result = await this.grnService.deleteMultipleGrns(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
+
 // await this.notificationService.createNoti(
 //           `${ids.length} GRNs deleted successfully`,
 //           deletedBy
@@ -671,7 +702,21 @@ console.log(req.body);
     
 
       ControllerLogger.logSuccess(`${ids.length} GRNs deleted`, ids.join(', '), req, res);
-
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.GRN,
+        entityName: 'GRN',
+        description: `${userName} has bulk deleted ${result.success.length} GRN(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       res.status(200).json({
         message: result.message,
       });

@@ -46,6 +46,7 @@ import {
   BulkDeleteRfpaResultDto,
   RfpaDocumentViewResponseDto,
 } from '../dtos/rfpa.dto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
 
 export interface RFPAWithRelatedData extends RFPA {
   relatedData?: any;
@@ -744,8 +745,12 @@ export class RfpaService {
 
 
 
-  async deleteRfpa(id: string): Promise<boolean> {
+  async deleteRfpa(id: string): Promise<DeleteResultDto | null> {
     const exists = await this.rfpaRepository.count({ where: { id } });
+    const rfpa=await this.rfpaRepository.findOne({where:{id}})
+    if(!rfpa){
+      throw new AppError(404,`RFPA with ID${id} not found`)
+    }
     if (!exists) {
       throw new Error(`RFPA with ID ${id} not found`);
     }
@@ -756,7 +761,7 @@ export class RfpaService {
 
     await this.rfpaRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return true;
+    return {No:rfpa.rfpaId};
   }
 
 
@@ -1004,8 +1009,10 @@ export class RfpaService {
 
 
 
-  async deleteMultipleRFPA(ids: string[]): Promise<BulkDeleteRfpaResultDto> {
-    if (!ids.length) return { message: 'No IDs provided' };
+  async deleteMultipleRFPA(ids: string[]): Promise<BulkDeleteResultDto> {
+    //if (!ids.length) return { message: 'No IDs provided' };
+    const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
 
     const [rfpas, relatedDocuments] = await Promise.all([
       this.rfpaRepository.find({ where: { id: In(ids) } }),
@@ -1051,7 +1058,10 @@ export class RfpaService {
       this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:rfpanumbers:*`),
     ]);
 
-    return { message: 'RFPA records marked for deletion successfully' };
+    rfpas.map((v)=>{
+      success.push({id:v.id,No:v.rfpaId});
+    })
+    return { success,failed,message: 'RFPA records marked for deletion successfully' };
   }
 
   async getRFQByIdForUpdate(id: string): Promise<RfpaUpdateFormDto | null> {

@@ -17,7 +17,9 @@ import { ApprovalFlowRepository } from '../repositories/approvalFlow.repository'
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { BranchessRepository } from '../repositories/branches.repository';
-import { CreateGrnDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
+import { CreateGrnDto, DeleteGrnResultDto, GrnDetailDto, GrnListItemDto, UpdateGrnDto } from '../dtos/grn.dto';
+import { ammountStatus } from '../utils/status.enum';
+import { BulkDeleteResultDto } from '../dtos/general.dto';
 
 interface SourceMetrics {
   totalPurchases: number;
@@ -300,6 +302,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
         const related = grnMap.get(doc.document_type_id!)!;
         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {
+          ammountStatus:related.ammountStatus,
           id: related.id,
           documentId: doc.id,
           overAllStatus: doc.status,
@@ -331,6 +334,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
           purchaseLocation: related.purchaseLocation?.name || null,
           purchaseForSalesLocation: related.purchaseForSalesLocation?.name || null,
           grnNo: related.grnNo || null,
+          
           paymentInfo: {
             id: related.paymentInfo?.id || null,
             paymentTerms: related.paymentInfo?.paymentTerms || null,
@@ -443,6 +447,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       const { createdDate, createdTime } = formatDateTime(rawDate);
 
       const viewResult: GrnDetailDto = {
+        ammountStatus:grn.ammountStatus,
         id: grn.id,
         companyName: grn.companyName?.name ?? null,
         purchaseInstructionsBy: grn.purchaseInstructionsBy
@@ -575,6 +580,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     const { createdDate, createdTime } = formatDateTime(rawDate);
     console.log(grn.timeIn);
     const updateResult: GrnDetailDto = {
+      ammountStatus:grn.ammountStatus,
       id: grn.id,
       companyName: grn.companyName?.id ?? null,
       purchaseInstructionsBy: grn.purchaseInstructionsBy?.id || null,
@@ -797,17 +803,17 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
   return updatedGrn;
 }
 
-  public async deleteGrn(id: string): Promise<boolean> {
+  public async deleteGrn(id: string): Promise<DeleteGrnResultDto> {
     const exists = await this.grnRepository.count({ where: { id } });
     if (!exists) throw new AppError(404, `GRN with ID ${id} not found`);
-
+    const grn = await this.grnRepository.findOne({ where: { id } });
     const sixMonthsFromNow = new Date();
     sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
     sixMonthsFromNow.setHours(0, 0, 0, 0);
 
     await this.grnRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
-    return true;
+    return {grnNo:grn?.grnNo};
   }
 
 
@@ -1011,8 +1017,12 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     return serialNo;
   }
 
-  public async deleteMultipleGrns(ids: string[]) {
-    if (!ids.length) return { message: 'No IDs provided' };
+  public async deleteMultipleGrns(ids: string[]):Promise<BulkDeleteResultDto> {
+    
+     const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
+
+    //if (!ids.length) return { message: 'No IDs provided' };
 
     const [grns, relatedDocuments] = await Promise.all([
       this.grnRepository.find({ where: { id: In(ids) } }),
@@ -1041,8 +1051,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     ]);
 
     await Promise.all(ids.map(id => this.invalidateCache(id)));
-
-    return { message: 'GRN records marked for deletion successfully' };
+      return { success, failed, message: `Deletion completed. Success: ${success.length}, Failed: ${failed.length}` };
   }
 
 }

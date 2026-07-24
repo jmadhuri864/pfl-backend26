@@ -23,6 +23,9 @@ import {
   BulkDeleteODCResultDto,
 } from '../dtos/otherDeliveryChallan.dto';
 import { OtherDeliveryChallan } from '../entities/otherDeliveryChallan.entity';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import { result } from 'lodash';
+import AppError from '../utils/appError';
 
 
 @injectable()
@@ -490,22 +493,25 @@ export class OtherDeliveryChallanService {
     }
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string): Promise<DeleteResultDto | null> {
+   const chalan=await this.challanRepository.findOne({where:{id}});
+   if (!chalan) throw new AppError(404, `AQR with ID ${id} not found`);
     try {
       const result = await this.challanRepository.softDelete(id);
       await this.challanRepository.update(id, { isDeleted: true } as any);
       if (result.affected !== 0) await this.invalidateCache(id);
-      return result.affected !== 0;
+      //return result.affected !== 0;
     } catch (err) {
       logger.error(`Error deleting other delivery challan with ID: ${id}`, {
         error: err,
       });
-      return false;
+      
     }
+    return {No:chalan.challanNo};
   }
 
-  public async deleteMultipleOtherDeliveryChallans(ids: string[]): Promise<{ success: string[]; failed: { id: string; reason: string }[]; message: string }> {
-    const success: string[] = [];
+  public async deleteMultipleOtherDeliveryChallans(ids: string[]): Promise<BulkDeleteResultDto> {
+     const success: { id: string; No: string }[] = [];
     const failed: { id: string; reason: string }[] = [];
 
     for (const id of ids) {
@@ -530,7 +536,7 @@ export class OtherDeliveryChallanService {
         await this.challanRepository.update(challan.id, { isDeleted: true } as any);
 
         await this.invalidateCache(id);
-        success.push(id);
+        success.push({id,No:challan.challanNo});
       } catch (error: any) {
         failed.push({ id, reason: error.message || 'Unknown error' });
       }

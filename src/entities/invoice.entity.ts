@@ -14,7 +14,7 @@ import { User } from './user.entity';
 import { Customer } from './customer.entity';
 import { Address } from './address.entity';
 import { format } from 'date-fns-tz';
-import { Department, Status } from '../utils/status.enum';
+import { ammountStatus, Department, Status } from '../utils/status.enum';
 import { InvoiceProduct } from './invoiceProduct.entity';
 
 
@@ -86,7 +86,7 @@ export class Invoice extends Model {
   @JoinColumn({ name: 'deliveryAddres_id' })
   deliveryAddress: Address;
 
- @Column({ nullable: true })
+  @Column({ nullable: true })
   vehicleNo: string;
 
   @Column({ nullable: true })
@@ -99,7 +99,7 @@ export class Invoice extends Model {
   @Column('decimal', { precision: 20, scale: 4, nullable: true })
   netProductWeight: number;
 
- 
+
   @Column('decimal', { precision: 20, scale: 4, nullable: true })
   totalAmount: number;
 
@@ -119,7 +119,7 @@ export class Invoice extends Model {
   @Column('decimal', { precision: 20, scale: 4, nullable: true })
   taxAmount: number;
 
-  
+
   @Column('decimal', { precision: 20, scale: 4, nullable: true })
   discount: number;
 
@@ -129,10 +129,17 @@ export class Invoice extends Model {
   @Column('decimal', { precision: 20, scale: 4, nullable: true })
   otherCharges: number;
 
-@ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
   createdBy: User;
 
-  
+  @Column({
+    type: 'enum',
+    enum: ammountStatus,
+    default: ammountStatus.UNPAID,
+    nullable: true
+  })
+  ammountStatus: ammountStatus
+
 }
 

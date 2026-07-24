@@ -90,7 +90,7 @@ export class CustomerDeliveryChallanController {
         module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
         entityName: 'CustomerDeliveryChallan',
         entityId: challan.id,
-        description: `${userName} created customer delivery challan "${challan.challanNo}"`,
+        description: `${userName} has created customer delivery challan "${challan.challanNo || challan.id}"`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -299,7 +299,7 @@ export class CustomerDeliveryChallanController {
         module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
         entityName: 'CustomerDeliveryChallan',
         entityId: id,
-        description: `${userName} updated customer delivery challan "${challan.challanNo}"`,
+        description: `${userName} has updated customer delivery challan "${challan.challanNo || id}"`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -345,7 +345,7 @@ export class CustomerDeliveryChallanController {
         module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
         entityName: 'CustomerDeliveryChallan',
         entityId: id,
-        description: `${userName} deleted customer delivery challan "${result.challanNo}"`,
+        description: `${userName} has deleted customer delivery challan "${result.challanNo || id}"`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -376,6 +376,7 @@ export class CustomerDeliveryChallanController {
           return next(new AppError(400, 'An array of AQR IDs is required'));
         }
         const result = await this.customerDeliveryChallanService.deleteMultipleCustomerDC(ids);
+        const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
         // 📝 Activity log
         const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
@@ -385,7 +386,7 @@ export class CustomerDeliveryChallanController {
           action: ActivityAction.DELETE,
           module: ActivityModule.CUSTOMER_DELIVERY_CHALLAN,
           entityName: 'CustomerDeliveryChallan',
-          description: `${userName} bulk deleted ${result.success.length} customer delivery challan(s)`,
+          description: `${userName} has bulk deleted ${result.success.length} customer delivery challan(s): ${deletedNos}`,
           metadata: { ids, success: result.success, failed: result.failed },
           ipAddress: req.ip || '',
           userAgent: req.get('user-agent'),

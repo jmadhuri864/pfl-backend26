@@ -23,6 +23,7 @@ import {
   EodStockListResponseDto,
   BulkDeleteEodStockResultDto,
 } from '../dtos/eodStock.dto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
 
 @injectable() // Ensure this decorator is applied
 export class EodStockService {
@@ -560,7 +561,7 @@ const activeDocuments = typedDocuments;
     return stock;
   }
 
-  async deleteEodStock(id: string): Promise<boolean> {
+  async deleteEodStock(id: string): Promise<DeleteResultDto | null> {
     const stock = await this.eodRepository.findOne({
       where: { id },
     });
@@ -581,10 +582,10 @@ const activeDocuments = typedDocuments;
     await this.eodRepository.save(stock);
 
     
-    return true;
+    return { No: stock.eodNo };
   }
-public async deleteMultipleEodStock(ids: string[]): Promise<BulkDeleteEodStockResultDto> {
-  const success: string[] = [];
+public async deleteMultipleEodStock(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success: { id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -608,7 +609,7 @@ public async deleteMultipleEodStock(ids: string[]): Promise<BulkDeleteEodStockRe
 
       await this.eodRepository.softDelete(eodstock.id);
       await this.eodRepository.update(eodstock.id, { isDeleted: true } as any);
-      success.push(id);
+      success.push({id,No:eodstock.eodNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }

@@ -32,6 +32,7 @@ import {
   RBCNumbersResponseDto,
   BulkDeleteRBCResultDto,
 } from '../dtos/postReturnByCustomer.dto';
+import { BulkDeleteResultDto } from '../dtos/general.dto';
 export interface ReturnByCustomerReportFilter {
   startDate?: string;
   endDate?: string;
@@ -750,8 +751,8 @@ export class PostReturnByCustomerService {
   }
 
    //TODO:Delte Multiple
-public async deleteMultipleRBC(ids: string[]): Promise<BulkDeleteRBCResultDto> {
-  const success: string[] = [];
+public async deleteMultipleRBC(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success: {id: string; No: string}[]= []
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -777,7 +778,7 @@ public async deleteMultipleRBC(ids: string[]): Promise<BulkDeleteRBCResultDto> {
 
       await this.postReturnByCustomerRepository.softDelete(rbc.id);
       await this.postReturnByCustomerRepository.update(rbc.id, { isDeleted: true } as any);
-      success.push(id);
+      success.push({id,No:rbc.rbcNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }

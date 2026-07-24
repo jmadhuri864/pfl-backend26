@@ -94,7 +94,15 @@ export class CustomerService {
       }
 
       // Set status to draft regardless of role - must go through submit → pending → approve flow
-      customerData.status = Status.DRAFT;
+      //customerData.status = Status.DRAFT;
+
+      // If the logged-in user is an admin or verifier, bypass the approval flow and set status to approved directly
+      if (user.roles && (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER))) {
+        customerData.status = Status.APPROVED;
+      }
+      else{
+        customerData.status = Status.PENDING;
+      }
 
       // Generate customer code using raw SQL to bypass soft-delete filter
       const custYear = new Date().getFullYear();
@@ -274,8 +282,14 @@ export class CustomerService {
   }
 
   //TODO:New Code
-async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedResponse<CustomerListResponseDto>> {
-  const key = `${CACHE_PREFIX}:list:${JSON.stringify(queryOptions)}`;
+async findAllCustomers(queryOptions: PaginationOptions, userId: string): Promise<PaginatedResponse<CustomerListResponseDto>> {
+  // Fetch the user to check their role
+  const user = await this.userRepository.findOneBy({ id: userId });
+  const isPrivileged = user?.roles &&
+    (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.VERIFIER));
+
+  // Include userId in cache key so different users don't share results
+  const key = `${CACHE_PREFIX}:list:${userId}:${JSON.stringify(queryOptions)}`;
   const cached = await this.cacheService.get<any>(key);
   if (cached) return cached;
 
@@ -310,6 +324,11 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
       'billingDetails.contactPersonLName',
     ])
     .orderBy('customer.createdAt', 'DESC');
+
+  // Non-privileged users only see customers they created
+  if (!isPrivileged) {
+    queryBuilder.where('createdBy.id = :userId', { userId });
+  }
 
   const customers = await buildQuery(queryBuilder, queryOptions, 'customer');
 
@@ -1911,34 +1930,37 @@ async findAllCustomers(queryOptions: PaginationOptions): Promise<PaginatedRespon
     return updated!;
   }
 
-   async approveCustomer(customerId: string, approverId: string,status:Status) {
-      console.log('Approver ID:', approverId);
-      const approver = await this.userRepository.findOne({
-        where: { id: approverId },
-       
-      });
-      if (!approver) throw new Error('Approver not found');
-  
-      if (!approver.roles || !approver.roles.includes('admin' as Role)) {
-        throw new Error('Only admin can approve customers');
-      }
-  
-      const customer = await this.customerRepository.findOne({
-        where: { id: customerId },
-      });
-      if (!customer) throw new Error('customer not found');
-
-      // Customer must be in 'pending' or 'draft' status before it can be approved or rejected.
-      // Admin can directly approve a 'draft' customer (skipping the submit step).
-      if (customer.status !== Status.PENDING && customer.status !== Status.DRAFT) {
-        throw new AppError(400, `Customer cannot be approved because its current status is '${customer.status}'. Only customers with status 'pending' or 'draft' can be approved or rejected.`);
-      }
-  
-      customer.status = status;
-      const saved = await this.customerRepository.save(customer);
-      await this.invalidateCustomerCache(customerId);
-      return saved;
+  async approveCustomer(customerId: string, approverId: string, status: Status) {
+    // Validate status — only approved or rejected are valid outcomes
+    if (status !== Status.APPROVED && status !== Status.REJECTED) {
+      throw new AppError(400, `Invalid status '${status}'. Only 'approved' or 'rejected' are allowed.`);
     }
+
+    const approver = await this.userRepository.findOne({
+      where: { id: approverId },
+    });
+    if (!approver) throw new AppError(404, 'Approver not found');
+
+    // Only VERIFIER role can approve/reject customers
+    if (!approver.roles || !approver.roles.includes(Role.VERIFIER)) {
+      throw new AppError(403, 'Only a Verifier can approve or reject customers');
+    }
+
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+    if (!customer) throw new AppError(404, 'Customer not found');
+
+    // Customer must be in 'pending' status — draft means not yet submitted
+    if (customer.status !== Status.PENDING) {
+      throw new AppError(400, `Customer cannot be approved because its current status is '${customer.status}'. Only customers with status 'pending' can be approved or rejected.`);
+    }
+
+    customer.status = status;
+    const saved = await this.customerRepository.save(customer);
+    await this.invalidateCustomerCache(customerId);
+    return saved;
+  }
   public async deleteCustomer(id: string): Promise<{ organisationName: string } | null> {
     const customer = await this.customerRepository.findOne({
       where: { id },

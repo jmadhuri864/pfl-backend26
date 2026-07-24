@@ -24,6 +24,7 @@ import {
   SoftDeleteRTVResultDto,
   BulkDeleteRTVResultDto,
 } from "../dtos/returnToVendor.dto";
+import { BulkDeleteResultDto } from "../dtos/general.dto";
 
 @injectable()
 export class ReturnToVendorService {
@@ -667,9 +668,10 @@ export class ReturnToVendorService {
     }
 }
 
-    public async deleteMultipleReturnToVendor(ids: string[]): Promise<BulkDeleteRTVResultDto> {
-        if (!ids.length) return { message: 'No IDs provided' };
-
+    public async deleteMultipleReturnToVendor(ids: string[]): Promise<BulkDeleteResultDto> {
+       // if (!ids.length) return { message: 'No IDs provided' };
+    const success: { id: string; No: string }[] = [];
+    const failed: { id: string; reason: string }[] = [];
         const records = await this.postReturnToVendorRepository.find({
             where: { id: In(ids) },
             withDeleted: true,
@@ -700,6 +702,14 @@ export class ReturnToVendorService {
             this.cacheService.invalidatePattern(`${this.CACHE_PREFIX}:list:*`),
         ]);
 
-        return { message: 'Return to vendor records deleted successfully' };
+        for(let record of records)
+        {
+            if(record.rtvNo)
+            {
+                 success.push({id:record.id,No:record.rtvNo})
+            } 
+        }
+        
+        return { success,failed,message: 'Return to vendor records deleted successfully' };
     }
 }

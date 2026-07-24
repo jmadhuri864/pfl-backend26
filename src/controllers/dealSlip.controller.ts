@@ -1,4 +1,4 @@
-import { inject } from "inversify";
+import { id, inject } from "inversify";
 import { controller, httpGet, request, response, next, requestParam, httpPost, requestBody, httpPatch, httpDelete } from "inversify-express-utils";
 import { TYPES } from "../types";
 import { DealSlipService } from "../services/dealSlip.service";
@@ -228,8 +228,10 @@ export class DealSlipController {
       } catch (notifError) {
       }
 
-      // 📝 Activity log
+      
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+     
+      // Single activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -237,7 +239,7 @@ export class DealSlipController {
         module: ActivityModule.DEAL_SLIP,
         entityName: 'DealSlip',
         entityId: dealSlip.id,
-        description: `${userName} created deal slip "${dealSlip.dealSlipNo}"`,
+        description: `${userName} has created deal slip ${dealSlip.dealSlipNo || dealSlip.id}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -303,7 +305,7 @@ export class DealSlipController {
         module: ActivityModule.DEAL_SLIP,
         entityName: 'DealSlip',
         entityId: dealSlipId,
-        description: `${userName} updated deal slip "${updatedDealSlip.dealSlipNo}"`,
+        description: `${userName} has updated deal slip ${updatedDealSlip.dealSlipNo || dealSlipId}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -424,7 +426,7 @@ export class DealSlipController {
         module: ActivityModule.DEAL_SLIP,
         entityName: 'DealSlip',
         entityId: id,
-        description: `${userName} deleted deal slip "${success.dealSlipNo}"`,
+        description: `${userName} has deleted deal slip ${success.dealSlipNo || id}`,
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),
         endpoint: req.originalUrl,
@@ -484,7 +486,7 @@ export class DealSlipController {
   ) {
     try {
       const result: BulkDeleteDealSlipResultDto = await this.dealSlipService.deleteMultipleDealSlips(body.ids);
-
+      
       // 📝 Activity log
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       const deletedList = (result as any).deletedNos?.map((no: string) => `"${no}"`).join(', ') || body.ids.join(', ');
@@ -494,7 +496,7 @@ export class DealSlipController {
         action: ActivityAction.DELETE,
         module: ActivityModule.DEAL_SLIP,
         entityName: 'DealSlip',
-        description: `${userName} bulk deleted ${body.ids.length} deal slip(s): ${deletedList}`,
+        description: `${userName} has bulk deleted ${body.ids.length} deal slip(s): ${deletedList}`,
         metadata: { ids: body.ids, count: body.ids.length },
         ipAddress: req.ip || '',
         userAgent: req.get('user-agent'),

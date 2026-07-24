@@ -30,6 +30,9 @@ import {
   STDeliveryChallanListResponseDto,
   BulkDeleteSTChallanResultDto,
 } from '../dtos/stockTransferDeliveryChallan.dto';
+import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import { result } from 'lodash';
+import AppError from '../utils/appError';
 
 
 @injectable()
@@ -322,8 +325,8 @@ export class StockTransferDeliveryChallanService {
   }
 
   
-public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDeleteSTChallanResultDto> {
-  const success: string[] = [];
+public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDeleteResultDto> {
+  const success: { id: string; No: string }[] = [];
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -346,7 +349,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDelete
       await this.challanRepository.softDelete(dcForStockTransfer.id);
       await this.challanRepository.update(dcForStockTransfer.id, { isDeleted: true } as any);
       await this.invalidateCache(id);
-      success.push(id);
+      success.push({id,No:dcForStockTransfer.challanNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }
@@ -594,17 +597,20 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDelete
     }
   }
 
-  async delete(id: string): Promise<boolean> {
+  async delete(id: string): Promise<DeleteResultDto | null> {
+   
+   const stock=await this.challanRepository.findOne({where:{id}});
+    if(!stock) throw new AppError(404,`Stock with Id ${id} not found`);
     try {
       const result = await this.challanRepository.delete(id);
       if (result.affected !== 0) await this.invalidateCache(id);
-      return result.affected !== 0;
+     // return result.affected !== 0;
     } catch (err) {
       logger.error(`Error deleting stock transfer challan with ID: ${id}`, {
         error: err,
       });
-      return false;
     }
+     return {No:stock.challanNo};
   }
 }
 

@@ -410,7 +410,7 @@ async approveCustomer(
     try {
       
       const { page, limit, search, sort } = req.query;
-
+      const userId=res.locals.user.id;
       const queryOptions: PaginationOptions = {
         page: page ? Number(page) : undefined,
         limit: limit ? Number(limit) : undefined,
@@ -421,6 +421,7 @@ async approveCustomer(
       };
       const customers = await this.customerService.findAllCustomers(
         queryOptions,
+        userId
       );
       
       if (!customers || customers.data.length === 0) {

@@ -113,6 +113,22 @@ export class OtherDeliveryChallanController {
 
   ControllerLogger.logSuccess('Other Delivery Challan created', otherDeliveryChallan.id, req, res);
 
+      // Single activity log
+    this.activityLogService.logActivity({
+      userId: res.locals.user.id,
+      userName,
+      action: ActivityAction.CREATE,
+      module: ActivityModule.OTHER_DELIVERY_CHALLAN,
+      entityName: 'OTHER_DELIVERY_CHALLAN',
+      entityId: otherDeliveryChallan.id,
+      description: `${userName} has created OTHER_DELIVERY_CHALLAN ${otherDeliveryChallan.challanNo || otherDeliveryChallan.id}`,
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent'),
+      endpoint: req.originalUrl,
+      httpMethod: req.method,
+      statusCode: 201,
+    }).catch(() => {});
+
       res.status(201).json({
         status: 'success',
         message: 'Other Delivery Challan created successfully',
@@ -149,10 +165,10 @@ export class OtherDeliveryChallanController {
       }
 
       // 📊 Log activity
-      await this.logUserActivity(req, res, ActivityAction.VIEW,
-        `Viewed all Other Delivery Challans (${otherDeliveryChallans.data.length} items)`,
-        { metadata: { count: otherDeliveryChallans.data.length, filters: {}, page, limit } }
-      );
+      // await this.logUserActivity(req, res, ActivityAction.VIEW,
+      //   `Viewed all Other Delivery Challans (${otherDeliveryChallans.data.length} items)`,
+      //   { metadata: { count: otherDeliveryChallans.data.length, filters: {}, page, limit } }
+      // );
 
       // Log the successful list retrieval
       ControllerLogger.logList('Other Delivery Challan', req, res);
@@ -418,6 +434,22 @@ export class OtherDeliveryChallanController {
       // Log the successful update
       ControllerLogger.logSuccess('Other Delivery Challan updated', updatedOtherDeliveryChallan.id, req, res);
 
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.OTHER_DELIVERY_CHALLAN,
+        entityName: 'OTHER_DELIVERY_CHALLAN',
+        entityId: id,
+        description: `${userName} has updated OTHER_DELIVERY_CHALLAN ${updatedOtherDeliveryChallan.challanNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
       res.status(200).json({
         status: 'success',
         message: 'Other Delivery Challan updated successfully',
@@ -507,6 +539,23 @@ export class OtherDeliveryChallanController {
 
       ControllerLogger.logSuccess('Other Delivery Challan deleted', id, req, res);
 
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER_DELIVERY_CHALLAN,
+        entityName: 'OTHER_DELIVERY_CHALLAN',
+        entityId: id,
+        description: `${userName} has deleted OTHER_DELIVERY_CHALLAN ${success.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
+
       res.status(200).json({
         status: 'success',
         message: 'Other Delivery Challan deleted successfully',
@@ -532,8 +581,26 @@ export class OtherDeliveryChallanController {
       }
 
       const result = await this.otherDeliveryChallanService.deleteMultipleOtherDeliveryChallans(ids);
+      const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
       ControllerLogger.logSuccess(`${ids.length} Other Delivery Challans soft deleted`, ids.join(', '), req, res);
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.OTHER_DELIVERY_CHALLAN,
+        entityName: 'OTHER_DELIVERY_CHALLAN',
+        description: `${userName} has bulk deleted ${result.success.length} OTHER_DELIVERY_CHALLAN(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
+
 
       res.status(200).json({
         status: 'success',

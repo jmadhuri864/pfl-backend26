@@ -34,6 +34,7 @@ import {
   BulkDeleteCustomerDCResultDto,
   DeleteCustomerDeliveryChallanResultDto,
 } from '../dtos/customerDeliveryChallan.dto';
+import { BulkDeleteResultDto } from '../dtos/general.dto';
 
 const CACHE_PREFIX = 'cdc';
 const CACHE_TTL = 180;
@@ -761,8 +762,9 @@ export class CustomerDeliveryChallanService {
       return null;
     }
   }
-  public async deleteMultipleCustomerDC(ids: string[]): Promise<BulkDeleteCustomerDCResultDto> {
-  const success: string[] = [];
+  public async deleteMultipleCustomerDC(ids: string[]): Promise<BulkDeleteResultDto> {
+     const success: { id: string; No: string }[] = [];
+
   const failed: { id: string; reason: string }[] = [];
   for (const id of ids) {
     try {
@@ -788,7 +790,7 @@ export class CustomerDeliveryChallanService {
 
       await this.challanRepository.softDelete(customerDC.id);
       await this.challanRepository.update(customerDC.id, { isDeleted: true } as any);
-      success.push(id);
+      success.push({id,No:customerDC.challanNo});
     } catch (error: any) {
       failed.push({ id, reason: error.message || 'Unknown error' });
     }

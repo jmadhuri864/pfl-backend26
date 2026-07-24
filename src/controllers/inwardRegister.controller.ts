@@ -23,6 +23,8 @@ import { error } from 'console';
 import { PaginationOptions } from '../utils/pagination';
 import { NotificationService } from '../services/notification.service';
 import { CreateInwardRegisterDto, CreateInwardRegisterInput, UpdateInwardRegisterDto } from '../dtos/inwardRegister.dto';
+import { UserActivityLogService } from '../services/userActivityLog.service';
+import { ActivityAction, ActivityModule } from '../entities/userActivityLog.entity';
 
 @controller('/inwardRegister', deserializeUser, requireUser)
 export class InwardRegisterController {
@@ -31,6 +33,8 @@ export class InwardRegisterController {
     private inwardRegisterService: InwardRegisterService,
     @inject(TYPES.NotificationService)
     private readonly notificationService: NotificationService,
+   @inject(TYPES.UserActivityLogService) private activityLogService: UserActivityLogService,
+    
   ) {}
 
   @httpPost('/')
@@ -76,6 +80,21 @@ export class InwardRegisterController {
         );
       }
 
+      // Single activity log
+          this.activityLogService.logActivity({
+            userId: res.locals.user.id,
+            userName,
+            action: ActivityAction.CREATE,
+            module: ActivityModule.INWARD_REGISTER,
+            entityName: 'INWARD_REGISTER',
+            entityId: inwardRegister.id,
+            description: `${userName} has created INWARD_REGISTER ${inwardRegister.inwardNo || inwardRegister.id}`,
+            ipAddress: req.ip || '',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 201,
+          }).catch(() => {});
       res.status(201).json({
         status: 'success',
         message: 'Inward register created successfully',
@@ -237,6 +256,22 @@ export class InwardRegisterController {
           currentUserId
         );
       }
+
+      // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.UPDATE,
+        module: ActivityModule.INWARD_REGISTER,
+        entityName: 'INWARD_REGISTER',
+        entityId: id,
+        description: `${userName} has updated INWARD_REGISTER ${updatedInwardRegister.inwardNo || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       ControllerLogger.logSuccess('Inward_Register updated', updatedInwardRegister.id, req, res);
       res.status(200).json({
         status: 'success',
@@ -252,12 +287,13 @@ export class InwardRegisterController {
   @httpDelete('/:id')
   public async deleteInwardRegister(
     @requestParam('id') id: string,
+    @request() req:Request,
     @response() res: Response,
     @next() next: NextFunction,
   ): Promise<void> {
     try {
       // Call the service to delete the inward register
-      await this.inwardRegisterService.deleteInwardRegister(id);
+     let result= await this.inwardRegisterService.deleteInwardRegister(id);
       
       // Send notification for inward register deletion
       // const currentUserId = res.locals.user?.id;
@@ -267,6 +303,22 @@ export class InwardRegisterController {
       //     currentUserId
       //   );
       // }
+
+       // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.INWARD_REGISTER,
+        entityName: 'INWARD_REGISTER',
+        entityId: id,
+        description: `${userName} has deleted INWARD_REGISTER ${result.No || id}`,
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
       
       res
         .status(200)
@@ -400,6 +452,23 @@ export class InwardRegisterController {
           return next(new AppError(400, 'An array of AQR IDs is required'));
         }
         const result = await this.inwardRegisterService.deleteMultipleInwardRegister(ids);
+        const deletedNos = result.success.map(s => s.No || s.id).join(', ');
+
+        // Activity log
+      this.activityLogService.logActivity({
+        userId: res.locals.user.id,
+        userName,
+        action: ActivityAction.DELETE,
+        module: ActivityModule.INWARD_REGISTER,
+        entityName: 'INWARD_REGISTER',
+        description: `${userName} has bulk deleted ${result.success.length} INWARD_REGISTER(s): ${deletedNos}`,
+        metadata: { ids, count: ids.length },
+        ipAddress: req.ip || '',
+        userAgent: req.get('user-agent'),
+        endpoint: req.originalUrl,
+        httpMethod: req.method,
+        statusCode: 200,
+      }).catch(() => {});
         res.status(200).json({
           message: result.message,
           success: result.success,
