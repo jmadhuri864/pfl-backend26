@@ -100,7 +100,14 @@ export interface SecondSaleDetailDto {
   id: string;
   documentId?: string | null;
   overAllStatus?: string | null;
-  approvalSummary?: string | null;
+  approvalSummary?: {
+    verified?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    thirdApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+  } | null;
   secondSaleNo?: string | null;
   saleDate?: string | Date | null;
   companyName?: string | null;

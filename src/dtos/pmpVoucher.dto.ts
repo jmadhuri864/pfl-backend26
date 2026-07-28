@@ -73,7 +73,7 @@ export interface PMPVoucherListItemDto {
   payReceivedFrom?: string | null;
   location?: string | null;
   sellerName?: string | null;
-  address?:string | null;
+  address?: PMPVoucherAddressDto | null;
   companyName?: string | null;
   grnNo?: string | null;
   totalAmt?: number | null;
@@ -86,6 +86,10 @@ export interface PMPVoucherListItemDto {
   createdDate?: string | null;
   createdTime?: string | null;
   createdBy?: string | null;
+  kyc?: boolean | null;
+  purpose?: string | null;
+  contactNo?: string | null;
+  altContactNo?: string | null;
 }
 
 
@@ -129,5 +133,12 @@ export interface PMPVoucherDetailDto {
   overAllStatus?: string | null;
   documentId?: string | null;
   createdBy?: string | null;
-  approvalSummary?: string | null;
+  approvalSummary?: {
+    verified?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    thirdApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+  } | null;
 }

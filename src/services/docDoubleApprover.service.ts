@@ -307,12 +307,12 @@ export class DocDoubleApproverService {
         'document.id', 'document.document_type_id', 'document.status',
         'lastActionBy.firstName',
         'approvalInfo.id',
-        'verified.userName', 'verified.status',
-        'firstApproved.userName', 'firstApproved.status',
-        'secondApproved.userName', 'secondApproved.status',
-        'thirdApproved.userName', 'thirdApproved.status',
-        'firstFinalized.userName', 'firstFinalized.status',
-        'secondFinalized.userName', 'secondFinalized.status',
+        'verified.userId', 'verified.userName', 'verified.status',
+        'firstApproved.userId', 'firstApproved.userName', 'firstApproved.status',
+        'secondApproved.userId', 'secondApproved.userName', 'secondApproved.status',
+        'thirdApproved.userId', 'thirdApproved.userName', 'thirdApproved.status',
+        'firstFinalized.userId', 'firstFinalized.userName', 'firstFinalized.status',
+        'secondFinalized.userId', 'secondFinalized.userName', 'secondFinalized.status',
       ])
       .where('document.id = :id', { id })
       .getOne();
@@ -320,7 +320,7 @@ export class DocDoubleApproverService {
     if (!document) throw new Error(`Document with ID ${id} not found`);
 
     const a = document.approvalInfo;
-    const mapStage = (stage: any) => stage ? { name: stage.userName, status: stage.status } : null;
+    const mapStage = (stage: any) => stage ? { userId: stage.userId, name: stage.userName, status: stage.status } : null;
 
     return {
       documentId: document.id,

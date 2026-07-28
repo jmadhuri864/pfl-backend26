@@ -441,7 +441,7 @@ export class FinalInvoiceService {
       id: invoice.id,
       documentId: document.id,
       overAllStatus: document.overAllStatus,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       invoiceNo: invoice.invoiceNo,
       invoiceDate: invoice.invoiceDate,
       createdDate,

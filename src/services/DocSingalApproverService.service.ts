@@ -179,7 +179,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.REJECT;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id);
+          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id ?? undefined);
           // 🔔 Creator
           if (document.lastActionBy?.id) {
             await this.notificationService.createNoti(
@@ -200,7 +200,7 @@ export class DocSingalApproverService {
           document.status = DocumentStatus.COMPLETE;
           document.remarks = remark;
           await this.documentbRepository.save(document);
-          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id);
+          await this.invalidateRelatedCache(document.type, documentId, document.document_type_id ?? undefined);
 
           // 🔔 Actor
           await this.notificationService.createNoti(`You approved ${docLabel} at Approver Level 1`, userId);
@@ -309,6 +309,7 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
       ? {
           firstApproved: approvalInfo.firstApproved
             ? {
+                userId: approvalInfo.firstApproved.userId,
                 name: approvalInfo.firstApproved.userName,
                 status: approvalInfo.firstApproved.status,
                 reason: approvalInfo.firstApproved.reason,

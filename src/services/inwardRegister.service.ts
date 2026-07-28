@@ -1134,7 +1134,7 @@ public async getInwardregisterByIdForView(docid: string, userId: string): Promis
       createdBy: document.createdBy,
       createdDate,
       createdTime,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       selectedParty,
       id: inwardRegister.id,
       inwardType: inwardRegister.inwardType,

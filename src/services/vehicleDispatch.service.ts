@@ -1,4 +1,4 @@
-import { id, inject, injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { VehicleDispatchRepository } from '../repositories/vehicleDispatch.repository';
 import { VehicleDispatch } from '../entities/vehicleDispatch.entity';
 import { TYPES } from '../types';
@@ -15,6 +15,15 @@ import { DocumentbRepository } from '../repositories/documentb.repository';
 import { CacheService } from './cache.service';
 import { createHash } from 'crypto';
 import { BulkDeleteResultDto, DeleteResultDto } from '../dtos/general.dto';
+import {
+  CreateVehicleDispatchDto,
+  UpdateVehicleDispatchDto,
+  VehicleDispatchListItemDto,
+  VehicleDispatchListResponseDto,
+  VehicleDispatchViewDto,
+  VehicleDispatchUpdateFormDto,
+  BulkDeleteVehicleDispatchResultDto,
+} from '../dtos/vehicleDispatch.dto';
 import AppError from '../utils/appError';
 
 @injectable()
@@ -70,35 +79,36 @@ private async generateSerialNo(): Promise<string> {
 
 
 
-  async create(data: any): Promise<any> {
-
-    //TODO: Check approval flow is exit or not for logged user
-
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, DocDefEnum.VEHICLE_DISPATCH_REGISTER)
+  async create(data: CreateVehicleDispatchDto): Promise<VehicleDispatch> {
+    // Check approval flow exists for logged user
+    const approvalFlowExit = await this.approvalFlowService.findApprovalFlowForLoggedUser(
+      data.requestedBy!,
+      DocDefEnum.VEHICLE_DISPATCH_REGISTER,
+    );
 
     if (!approvalFlowExit) {
       throw new Error('Approval flow not found');
     }
 
 const serialNo = await this.generateSerialNo();
-      data.vehicleDispatchNo = serialNo;
+    const vehicleDispatch = this.vehicleDispatchRepository.create({
+      ...(data as any),
+      vehicleDispatchNo: serialNo,
+    });
     
-    const vehicleDispatch = this.vehicleDispatchRepository.create(data);
-    
-    const savedVehicalDispatch=await this.vehicleDispatchRepository.save(vehicleDispatch);
+    const savedVehicalDispatch = await this.vehicleDispatchRepository.save(vehicleDispatch) as unknown as VehicleDispatch;
 
     //Todo:By Vaishali
-           const document = await this.documentbService.createDocument({
-                  type: DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
-                  docDef: DocDefEnum.OPERATION,
-                 // totalAmt: rfpaData.totalAmt,
-                  status: DocumentStatus.HOLD,
-                  remarks: 'Document auto-created with Vehical_Dispatch',
-                  lastActionBy: { id: data.requestedBy },
-                  document_type_id: Array.isArray(savedVehicalDispatch) ? (savedVehicalDispatch[0] as VehicleDispatch)?.id : (savedVehicalDispatch as VehicleDispatch).id
-                }, );
-          
-                await this.documentbService.startApprovalFlow(document.id);
+    const document = await this.documentbService.createDocument({
+      type: DocumentTypeEnum.VEHICLE_DISPATCH_REGISTER,
+      docDef: DocDefEnum.OPERATION,
+      status: DocumentStatus.HOLD,
+      remarks: 'Document auto-created with Vehical_Dispatch',
+      lastActionBy: { id: data.requestedBy },
+      document_type_id: savedVehicalDispatch.id,
+    });
+
+    await this.documentbService.startApprovalFlow(document.id);
     
     await this.invalidateCache();
     return savedVehicalDispatch;
@@ -333,10 +343,11 @@ const serialNo = await this.generateSerialNo();
 
   async update(
     id: string,
-    data: Partial<VehicleDispatch>,
+    data: UpdateVehicleDispatchDto,
     updatedBy: string,
   ): Promise<VehicleDispatch | null> {
-    const dispatch = await this.findById(id);
+    // Load the actual entity (not the cached plain object) so TypeORM can track changes
+    const dispatch = await this.vehicleDispatchRepository.findOne({ where: { id } });
     if (!dispatch) {
       return null;
     }
@@ -712,7 +723,14 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
 
       // Related entity fields
       companyName: vehicalDispatch.companyName?.name || null,
-      clientAddress: vehicalDispatch.clientAddress?.address1||' '+vehicalDispatch.clientAddress?.address2||' '+vehicalDispatch.clientAddress?.location||' '+vehicalDispatch.clientAddress?.city||' '+vehicalDispatch.clientAddress?.state||' '+vehicalDispatch.clientAddress?.pincode||' ',
+      clientAddress: [
+        vehicalDispatch.clientAddress?.address1,
+        vehicalDispatch.clientAddress?.address2,
+        vehicalDispatch.clientAddress?.location,
+        vehicalDispatch.clientAddress?.city,
+        vehicalDispatch.clientAddress?.state,
+        vehicalDispatch.clientAddress?.pincode,
+      ].filter(Boolean).join(' ') || null,
       deliveryChallanNo: vehicalDispatch.deliveryChallanNo?.challanNo || null,
   };
   await this.cacheService.set(cacheKey, result, this.CACHE_TTL);

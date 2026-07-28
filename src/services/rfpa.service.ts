@@ -963,7 +963,7 @@ export class RfpaService {
       createdBy: document.createdBy,
       createdDate: formatDateTime(document.createdAt).createdDate,
       createdTime: formatDateTime(document.createdAt).createdTime,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
 
       rfpaId: rfpaEntity.rfpaId || null,
       remark: rfpaEntity.remark || null,

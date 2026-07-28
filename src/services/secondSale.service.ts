@@ -524,7 +524,7 @@ console.log(document.id)
       documentId: document.id,
       overAllStatus: document.overAllStatus,
       createdBy: document.createdBy,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       companyName: secondSale.companyName?.name ?? null,
       location: secondSale.location?.name ?? null,
       deliveryChallanNo: secondSale.deliveryChallanNo?.challanNo ?? null,

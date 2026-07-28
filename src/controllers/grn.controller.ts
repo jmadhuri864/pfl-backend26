@@ -713,6 +713,36 @@ console.log(req.body);
     }
   }
 
+  // TODO: Update GRN amount status (paid / unpaid)
+  @httpPut('/:id/amount-status')
+  public async updateAmountStatus(
+    @requestParam('id') id: string,
+    @request() req: Request<{ id: string }, {}, { ammountStatus: string }>,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { ammountStatus: status } = req.body;
+
+      if (!status || !['paid', 'unpaid'].includes(status)) {
+        return next(new AppError(400, 'Invalid status. Must be "paid" or "unpaid"'));
+      }
+
+      const result = await this.grnService.updateAmountStatus(id, status as any);
+
+      ControllerLogger.logSuccess('GRN amount status updated', id, req, res);
+
+      res.status(200).json({
+        status: 'success',
+        message: `GRN amount status updated to "${status}"`,
+        data: result,
+      });
+    } catch (error) {
+      ControllerLogger.logError('GRN amount status update', error, req, res);
+      next(error);
+    }
+  }
+
 }
 
 

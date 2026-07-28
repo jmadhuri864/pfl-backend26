@@ -565,7 +565,7 @@ export class CustomerDeliveryChallanService {
       createdTime,
       overAllStatus: document.overAllStatus,
       createdBy: document.createdBy,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
         id: p.id,
         productName: p.productName?.name ?? null,
@@ -671,7 +671,7 @@ export class CustomerDeliveryChallanService {
       .filter((doc) => doc.document_type_id && challanMap.has(doc.document_type_id))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((doc) => {
-        const challan = challanMap.get(doc.document_type_id);
+        const challan = challanMap.get(doc.document_type_id!);
         if (!challan) return null;
         const { createdDate, createdTime } = formatDateTime(doc.createdAt);
         return {

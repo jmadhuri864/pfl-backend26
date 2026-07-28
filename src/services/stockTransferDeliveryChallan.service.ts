@@ -439,7 +439,7 @@ public async deleteMultipleDCForStockTransfer(ids: string[]): Promise<BulkDelete
         createdTime,
         overAllStatus: document.overAllStatus,
         createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
+        approvalSummary: document.approvalSummary ?? null,
         deliveryChallanProducts: (challan.deliveryChallanProducts ?? []).map((p) => ({
           id: p.id,
           productName: p.productName?.name ?? null,

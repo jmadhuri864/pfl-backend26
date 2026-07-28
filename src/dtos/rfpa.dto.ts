@@ -263,7 +263,14 @@ export interface RfpaDocumentViewResponseDto {
   createdBy: any | null;
   createdDate: string | null;
   createdTime: string | null;
-  approvalSummary: any | null;
+  approvalSummary?: {
+    verified?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    thirdApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
+    firstFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+    secondFinalized?: { userId: string; name: string; status: string; reason: string | null } | null;
+  } | null;
 
   // ── RFPA fields ───────────────────────────────────────────────────────────
   rfpaId: string | null;

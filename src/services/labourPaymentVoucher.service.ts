@@ -247,7 +247,7 @@ remark:voucher.remark || null,
       createdDate: createdDate,
       overAllStatus: document.overAllStatus,
         createdBy: document.createdBy,
-        approvalSummary: document.approvalSummary,
+        approvalSummary: document.approvalSummary ?? null,
         documentId: document.id,
     };
 

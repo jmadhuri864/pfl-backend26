@@ -18,11 +18,11 @@ import logger from "../utils/logger";
 import { ControllerLogger } from "../utils/controllerLogger"; // if needed for file upload
 import { VehicleDispatchService } from "../services/vehicleDispatch.service";
 import { NotificationService } from "../services/notification.service";
-import { deserialize } from "v8";
 import { deserializeUser, requireUser } from "../middleware/deserializeUser";
 import { PaginationOptions } from "../utils/pagination";
 import { ActivityAction, ActivityModule } from "../entities/userActivityLog.entity";
 import { UserActivityLogService } from "../services/userActivityLog.service";
+import { CreateVehicleDispatchDto, UpdateVehicleDispatchDto } from "../dtos/vehicleDispatch.dto";
 
 @controller("/vehicleDispatches",deserializeUser,requireUser)
 export class VehicleDispatchController {
@@ -37,32 +37,16 @@ export class VehicleDispatchController {
 
   @httpPost("/")
   public async createVehicleDispatch(
-    @request() req: Request<{}, {}, any>, // Adjust the type to `any` for the request body
+    @request() req: Request<{}, {}, CreateVehicleDispatchDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
     try {
-      // logger.info("Attempting to create a new vehicle dispatch", {
-      //   requestedBy: res.locals.user.id,
-      // });
-//       const dispatchData = req.body;
-
-// // Convert empty strings to null for UUID fields
-// if (dispatchData. clientGRNNo === '') {
-//   dispatchData. clientGRNNo= null;
-// }
-// if (dispatchData.dcNo === '') {
-//   dispatchData.dcNo = null;
-// }
-const dispatchData = {
-  ...req.body,
-  // Handle null values for GRN and DC
-  //clientGRNNo: req.body.clientGRNNo || null,
-  dcNo: req.body.dcNo || null,
- 
-};
-
-dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
+      const dispatchData: CreateVehicleDispatchDto = {
+        ...req.body,
+        dcNo: req.body.dcNo || null,
+        requestedBy: res.locals.user.id,
+      };
 
 
       logger.debug("Vehicle dispatch data prepared for creation", dispatchData);
@@ -188,7 +172,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
   @httpPatch("/:id")
   public async updateVehicleDispatch(
     @requestParam("id") id: string,
-    @request() req: Request<{}, {}, any>, // Adjust the type to `any` for the request body
+    @request() req: Request<{}, {}, UpdateVehicleDispatchDto>,
     @response() res: Response,
     @next() next: NextFunction
   ) {
@@ -196,12 +180,11 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       logger.info("Updating vehicle dispatch details", {
         vehicleDispatchId: id,
       });
-      const data = req.body;
-      const updateBy=res.locals.user.id
+      const updateBy = res.locals.user.id;
       const updatedDispatch = await this.vehicleDispatchService.update(
         id,
         req.body,
-        updateBy
+        updateBy,
       );
       if (!updatedDispatch) {
         logger.warn("Vehicle Dispatch not found or could not be updated", {

@@ -698,7 +698,7 @@ public async getDealSlipByIdForView(docid: string, userId: string): Promise<Deal
       createdBy: document.createdBy,
       createdDate,
       createdTime,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       id: dealSlip.id,
       lotNo: dealSlip.lotNo,
       approvalNote: dealSlip.approvalNote,

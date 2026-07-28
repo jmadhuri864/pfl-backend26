@@ -6,6 +6,7 @@ import { GrnProductRepository } from '../repositories/grnProduct.repository';
 import { ILike, In, LessThan, MoreThanOrEqual, DataSource } from 'typeorm';
 import { AuditLogService } from './auditLog.service';
 import AppError from '../utils/appError';
+import { ammountStatus } from '../utils/status.enum';
 import { buildQueryFromArray, PaginationOptions } from '../utils/pagination';
 import { formatDateTime } from '../utils/dateUtils';
 import { DocumentbService, DocumentWithRelatedData } from './documentb.service';
@@ -921,6 +922,23 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     await this.grnRepository.update({ id }, { deletionScheduledAt: sixMonthsFromNow } as any);
     await this.invalidateCache(id);
     return true;
+  }
+
+  /**
+   * Update the ammountStatus (paid / unpaid) of a GRN by its ID.
+   */
+  public async updateAmountStatus(
+    id: string,
+    status: ammountStatus,
+  ): Promise<{ id: string; ammountStatus: ammountStatus }> {
+    const grn = await this.grnRepository.findOne({ where: { id } });
+    if (!grn) throw new AppError(404, `GRN with ID ${id} not found`);
+
+    grn.ammountStatus = status;
+    await this.grnRepository.save(grn);
+    await this.invalidateCache(id);
+
+    return { id: grn.id, ammountStatus: grn.ammountStatus };
   }
 
 

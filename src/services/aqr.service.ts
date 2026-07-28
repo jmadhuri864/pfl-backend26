@@ -601,7 +601,7 @@ export class AqrService {
       createdBy: document.createdBy,
       createdDate,
       createdTime,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       id: aqr.id,
       aqrFor: aqr.aqrFor,
       companyName: aqr.companyName?.id ?? null,

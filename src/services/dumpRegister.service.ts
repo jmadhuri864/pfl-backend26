@@ -488,7 +488,7 @@ const serialNo = await this.generateSerialNo();
       documentId: document.documentId,
       overAllStatus: document.overAllStatus,
       createdBy: document.createdBy,
-      approvalSummary: document.approvalSummary,
+      approvalSummary: document.approvalSummary ?? null,
       dumpNo: dumpRegister.dumpNo ?? null,
       grn: dumpRegister.grn?.grnNo ?? null,
       deliveryChallanNo: dumpRegister.deliveryChallanNo?.challanNo ?? null,
