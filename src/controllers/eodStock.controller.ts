@@ -69,7 +69,7 @@ export class EodStockController {
       
      
       ControllerLogger.logSuccess('EOD Stock created', stock.id, req, res);
-      
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
        // Single activity log
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
@@ -266,7 +266,7 @@ export class EodStockController {
         }
       } catch (notifError) {
       }
-
+const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
        // Activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -382,7 +382,7 @@ export class EodStockController {
       // }
 
       ControllerLogger.logSuccess('EOD Stock deleted', id, req, res);
-      
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -432,7 +432,7 @@ export class EodStockController {
       //   console.log('Notification error:', notifError);
       // }
 
-
+const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,

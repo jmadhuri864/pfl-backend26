@@ -81,9 +81,10 @@ export class GrnController {
   ): Promise<void> {
     try {
       const user = res.locals.user;
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       await this.activityLogService.logActivity({
         userId: user.id,
-        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        userName,
         action,
         module: ActivityModule.GRN,
         entityName: 'GRN',
@@ -231,9 +232,10 @@ console.log(req.body);
       // 📊 Log user activity
       try {
         const user = res.locals.user;
+        const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
         await this.activityLogService.logActivity({
           userId: requestedBy,
-          userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          userName,
           action: ActivityAction.CREATE,
           module: ActivityModule.GRN,
           entityName: 'GRN',
@@ -692,7 +694,7 @@ console.log(req.body);
    *     oldRate, newRate, modifiedBy, modifiedAt }
    * ]
    */
-  @httpGet('/:id/product-history')
+  @httpGet('/product-history/:id')
   public async getGrnProductHistory(
     @requestParam('id') id: string,
     @request() req: Request,

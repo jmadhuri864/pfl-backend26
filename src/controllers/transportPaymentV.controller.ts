@@ -77,7 +77,7 @@ export class TPVoucherController {
           userId
         );
       }
-
+const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Single activity log
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
@@ -285,7 +285,7 @@ export class TPVoucherController {
           userId
         );
       }
-
+const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
        // Activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -348,6 +348,7 @@ export class TPVoucherController {
       // }
 
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -402,6 +403,7 @@ export class TPVoucherController {
           // }
 
            // Activity log
+           const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

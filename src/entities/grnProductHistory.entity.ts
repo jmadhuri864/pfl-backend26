@@ -4,6 +4,7 @@ import { GRN } from './grn.entity';
 import { GrnProduct } from './grnProduct.entity';
 import { Product } from './product.entity';
 import { User } from './user.entity';
+import { ProductVarient } from './productVarient.entity';
 
 /**
  * Stores an immutable audit trail for every quantity/rate change on a GRN product.
@@ -24,6 +25,10 @@ export class GrnProductHistory extends Model {
   @ManyToOne(() => Product, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'product_id' })
   product: Product;
+
+  @ManyToOne(() => ProductVarient, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'variant_id' })
+  variant: ProductVarient;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'modified_by_id' })

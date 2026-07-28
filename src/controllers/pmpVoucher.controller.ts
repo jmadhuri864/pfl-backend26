@@ -213,6 +213,7 @@ export class PMPVoucherController {
       }
       
         // Single activity log
+        const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -284,6 +285,7 @@ export class PMPVoucherController {
       }
       
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -341,6 +343,7 @@ export class PMPVoucherController {
       // }
 
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -382,6 +385,7 @@ export class PMPVoucherController {
           ControllerLogger.logSuccess('Multiple PMP Vouchers deleted', `${ids.length} items`, req, res);
           
           // Activity log
+          const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

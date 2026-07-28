@@ -167,6 +167,9 @@ export class CustomerCategoryController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -182,6 +185,7 @@ export class CustomerCategoryController {
         httpMethod: req.method,
         statusCode: 201,
       }).catch(() => {});
+    }
       
       // Log successful creation
       ControllerLogger.logSuccess('Customer Category created', (category as any)?.id || 'unknown', req, res);
@@ -233,6 +237,9 @@ export class CustomerCategoryController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -248,6 +255,7 @@ export class CustomerCategoryController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
       
       // Log successful update
       ControllerLogger.logSuccess('Customer Category updated', id, req, res);
@@ -278,6 +286,10 @@ export class CustomerCategoryController {
       }
 
       // � Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
+
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -293,6 +305,7 @@ export class CustomerCategoryController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer Category deleted', id, req, res);
@@ -330,6 +343,9 @@ public async softDeleteMultipleCustomerCategory(
     const result = await this.customerCategoryService.softDeleteCustomerCategory(customerCategoryIds);
 
     // 📝 Activity log
+    // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
     const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
     const deletedList = result.deleted.map(c => `"${c.name}"`).join(', ');
     this.activityLogService.logActivity({
@@ -346,6 +362,7 @@ public async softDeleteMultipleCustomerCategory(
       httpMethod: req.method,
       statusCode: 200,
     }).catch(() => {});
+  }
 
     ControllerLogger.logSuccess(
       "CustomerCategory bulk soft deleted",

@@ -154,6 +154,9 @@ export class CustomerTypeController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -169,6 +172,7 @@ export class CustomerTypeController {
         httpMethod: req.method,
         statusCode: 201,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess('Customer Type created', customerType.id, req, res);
       res.status(201).json({
@@ -216,6 +220,9 @@ export class CustomerTypeController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -231,6 +238,7 @@ export class CustomerTypeController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess('Customer Type updated', id, req, res);
       res.status(200).json({
@@ -260,6 +268,9 @@ export class CustomerTypeController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -275,6 +286,7 @@ export class CustomerTypeController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
     
       ControllerLogger.logSuccess('Customer Type deleted', id, req, res);
       res.status(200).json({
@@ -311,6 +323,9 @@ public async softDeleteMultipleCustomerType(
     const result = await this.customerTypeService.softDeleteCustomerType(customerTypeIds);
 
     // 📝 Activity log
+    // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
     const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
     const deletedList = result.deleted.map(t => `"${t.name}"`).join(', ');
     this.activityLogService.logActivity({
@@ -327,7 +342,7 @@ public async softDeleteMultipleCustomerType(
       httpMethod: req.method,
       statusCode: 200,
     }).catch(() => {});
-
+  }
     ControllerLogger.logSuccess(
       "CustomerType bulk soft deleted",
       customerTypeIds.join(","),

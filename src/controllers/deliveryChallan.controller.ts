@@ -80,7 +80,7 @@ public async createDeliveryChallan(
         }
       } catch (notifError) {
       }
-
+const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Single activity log
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
@@ -252,7 +252,7 @@ next(err); // Unhandled errors
         }
       } catch (notifError) {
       }
-      
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Activity log
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -312,6 +312,7 @@ next(err); // Unhandled errors
     
       logger.info(`Delivery Challan deleted successfully`);
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

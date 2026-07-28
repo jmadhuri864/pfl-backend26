@@ -95,7 +95,9 @@ export class FarmerController {
         `New farmer created: ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
         res.locals.user.id,
       );
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -111,6 +113,7 @@ export class FarmerController {
         httpMethod: req.method,
         statusCode: 201,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess('Farmer created', farmer.id, req, res);
       res.status(201).json({
@@ -554,7 +557,9 @@ export class FarmerController {
         `Farmer details updated for: ${farmer.farmerfName} ${farmer.farmermName} ${farmer.farmerlName}`,
         res.locals.user.id,
       );
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -570,6 +575,7 @@ export class FarmerController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess('Farmer updated', id, req, res);
       res.status(200).json({
@@ -613,7 +619,9 @@ export class FarmerController {
       // }
 
       ControllerLogger.logSuccess('Farmer deleted', id, req, res);
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -629,7 +637,7 @@ export class FarmerController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
-
+    }
       res.status(200).json({
         status: 'success',
         message: 'Farmer deleted successfully',
@@ -744,7 +752,9 @@ export class FarmerController {
         req,
         res
       );
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -760,6 +770,7 @@ export class FarmerController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
 
       return res.status(200).json({
         status: "success",

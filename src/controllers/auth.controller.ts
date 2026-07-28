@@ -261,20 +261,23 @@ const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
       res.cookie('logged_in', true, { ...accessTokenCookieOptions, httpOnly: false });
 
       this.notificationService.createNoti('Login successfully', user.id).catch(() => {});
-
-      // Log login activity (fire-and-forget)
-      this.activityLogService.logActivity({
-        userId: user.id,
-        userName: name,
-        action: ActivityAction.LOGIN,
-        module: ActivityModule.OTHER,
-        description: `${name} has logged in`,
-        ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent'),
-        endpoint: req.originalUrl,
-        httpMethod: req.method,
-        statusCode: 200,
-      }).catch(() => {});
+      const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown User';
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
+        this.activityLogService.logActivity({
+          userId: user.id,
+          userName,
+          action: ActivityAction.LOGIN,
+          module: ActivityModule.OTHER,
+          description: `${name} has logged in`,
+          ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
+          userAgent: req.get('user-agent'),
+          endpoint: req.originalUrl,
+          httpMethod: req.method,
+          statusCode: 200,
+        }).catch(() => {});
+      }
 
       // // Fetch the logged-in user's children tree across all departments
       // const workflowTree = await this.workflowHierarchyService.getChildrenTreeForAllDepartments(user.id);
@@ -352,21 +355,25 @@ const isPasswordMatch = await bcrypt.compare(trimmedPassword, user.password);
         await this.activeSessionRepository.delete({ user_id: decoded.sub, is_active: true });
       }
 
-      // Log logout activity (fire-and-forget)
+      // Log logout activity (fire-and-forget) - skip for admin role
       if (user) {
-        const userName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-        this.activityLogService.logActivity({
-          userId: user.id,
-          userName,
-          action: ActivityAction.LOGOUT,
-          module: ActivityModule.OTHER,
-          description: `${userName} has logged out`,
-          ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
-          userAgent: req.get('user-agent'),
-          endpoint: req.originalUrl,
-          httpMethod: req.method,
-          statusCode: 200,
-        }).catch(() => {});
+        const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+        if (!isAdmin) {
+          //const userName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+          const userName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || (user as any).username || 'Unknown User';
+          this.activityLogService.logActivity({
+            userId: user.id,
+            userName,
+            action: ActivityAction.LOGOUT,
+            module: ActivityModule.OTHER,
+            description: `${userName} has logged out`,
+            ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown',
+            userAgent: req.get('user-agent'),
+            endpoint: req.originalUrl,
+            httpMethod: req.method,
+            statusCode: 200,
+          }).catch(() => {});
+        }
       }
 
       res.clearCookie('access_token');

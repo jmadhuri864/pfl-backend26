@@ -66,7 +66,9 @@ export class BranchessController {
           .createNoti(`${branch.type} "${branch.name}" created successfully`, userId)
           .catch(() => {});
       }
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -81,6 +83,7 @@ export class BranchessController {
         httpMethod: req.method,
         statusCode: 201,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess(`${branch.type} created`, branch.id, req, res);
       res.status(201).json({ status: 'success', message: `${branch.type} created successfully` });
@@ -210,7 +213,9 @@ export class BranchessController {
           .createNoti(`${branch.type} "${branch.name}" updated successfully`, userId)
           .catch(() => {});
       }
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -225,7 +230,7 @@ export class BranchessController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
-
+    }
       ControllerLogger.logSuccess('Branch updated', id, req, res);
       res.status(200).json({ status: 'success', message: `${branch.type} data updated successfully` });
     } catch (err) {
@@ -254,7 +259,9 @@ export class BranchessController {
       }
 
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -269,6 +276,7 @@ export class BranchessController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
 
       ControllerLogger.logSuccess('Branch deleted', id, req, res);
       res.status(200).json({ status: 'success', message: `${branchType} deleted successfully` });
@@ -299,7 +307,9 @@ export class BranchessController {
 
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       const deletedList = result.deleted.map(b => `${b.type} "${b.name}"`).join(', ');
-
+// Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -314,7 +324,7 @@ export class BranchessController {
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
-
+    }
       ControllerLogger.logSuccess('Branch bulk soft deleted', branchIds.join(','), req, res);
       res.status(200).json({
         status: 'success',

@@ -157,6 +157,9 @@ export class CustomerController {
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -172,6 +175,7 @@ export class CustomerController {
         httpMethod: req.method,
         statusCode: 201,
       }).catch(() => {});
+    }
       
       // Log successful creation
       const customerId = customer?.id || 'unknown';
@@ -791,6 +795,9 @@ customerData.bankDetails ??= {} as BankDetailsDto;
       }
 
       // 📝 Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -806,6 +813,7 @@ customerData.bankDetails ??= {} as BankDetailsDto;
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
       
       // Log successful update
       ControllerLogger.logSuccess('Customer updated', id, req, res);
@@ -837,6 +845,9 @@ customerData.bankDetails ??= {} as BankDetailsDto;
       }
 
       // � Activity log
+      // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
@@ -852,6 +863,7 @@ customerData.bankDetails ??= {} as BankDetailsDto;
         httpMethod: req.method,
         statusCode: 200,
       }).catch(() => {});
+    }
       
       // Log successful deletion
       ControllerLogger.logSuccess('Customer deleted', id, req, res);
@@ -965,6 +977,9 @@ public async softDeleteMultipleCustomers(
     const result = await this.customerService.softDeleteCustomers(ids);
 
     // 📝 Activity log
+    // Log login activity (fire-and-forget) - skip for admin role
+      const isAdmin = user.roles?.some((role: any) => role.name?.toLowerCase() === 'admin');
+      if (!isAdmin) {
     const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
     const deletedList = result.deleted.map(c => `"${c.organisationName}"`).join(', ');
     this.activityLogService.logActivity({
@@ -981,6 +996,7 @@ public async softDeleteMultipleCustomers(
       httpMethod: req.method,
       statusCode: 200,
     }).catch(() => {});
+  }
 
     ControllerLogger.logSuccess(
       "Customer bulk soft deleted",

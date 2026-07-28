@@ -226,6 +226,8 @@ export class RfpaController {
       }
 
        // Single activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+          //const userName = `${res.locals.user.firstName ?? ''} ${res.locals.user.lastName ?? ''}`.trim();
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -300,6 +302,8 @@ export class RfpaController {
       }
 
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      //const userName = `${res.locals.user.firstName ?? ''} ${res.locals.user.lastName ?? ''}`.trim();
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -508,6 +512,8 @@ public async getRfpaByIdByUpdate(
       // }
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      //const userName = `${res.locals.user.firstName ?? ''} ${res.locals.user.lastName ?? ''}`.trim();
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -862,6 +868,8 @@ public async getRfpaByIdByUpdate(
       );
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
+      //const userName = `${res.locals.user.firstName ?? ''} ${res.locals.user.lastName ?? ''}`.trim();
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

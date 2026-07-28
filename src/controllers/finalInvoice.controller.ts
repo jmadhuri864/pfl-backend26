@@ -133,7 +133,7 @@ export class FinalInvoiceController {
       }
 
       ControllerLogger.logSuccess('Final Invoice created', invoice.id, req, res);
-      
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       // Single activity log
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
@@ -287,6 +287,7 @@ export class FinalInvoiceController {
       // }
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

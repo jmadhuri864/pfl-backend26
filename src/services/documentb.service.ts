@@ -218,6 +218,7 @@ export class DocumentbService {
         ? {
           verified: approvalInfo.verified
             ? {
+              userId: approvalInfo.verified.userId,
               name: approvalInfo.verified.userName,
               status: approvalInfo.verified.status,
               reason: approvalInfo.verified?.reason || null,
@@ -225,6 +226,7 @@ export class DocumentbService {
             : null,
           firstApproved: approvalInfo.firstApproved
             ? {
+              userId: approvalInfo.firstApproved.userId,
               name: approvalInfo.firstApproved.userName,
               status: approvalInfo.firstApproved.status,
               reason: approvalInfo.firstApproved?.reason || null,
@@ -232,6 +234,7 @@ export class DocumentbService {
             : null,
           secondApproved: approvalInfo.secondApproved
             ? {
+              userId: approvalInfo.secondApproved.userId,
               name: approvalInfo.secondApproved.userName,
               status: approvalInfo.secondApproved.status,
               reason: approvalInfo.secondApproved?.reason || null,
@@ -239,6 +242,7 @@ export class DocumentbService {
             : null,
           thirdApproved: approvalInfo.thirdApproved
             ? {
+              userId: approvalInfo.thirdApproved.userId,
               name: approvalInfo.thirdApproved.userName,
               status: approvalInfo.thirdApproved.status,
               reason: approvalInfo.thirdApproved?.reason || null,
@@ -246,6 +250,7 @@ export class DocumentbService {
             : null,
           firstFinalized: approvalInfo.firstFinalized
             ? {
+              userId: approvalInfo.firstFinalized.userId,
               name: approvalInfo.firstFinalized.userName,
               status: approvalInfo.firstFinalized.status,
               reason: approvalInfo.firstFinalized?.reason || null,
@@ -253,6 +258,7 @@ export class DocumentbService {
             : null,
           secondFinalized: approvalInfo.secondFinalized
             ? {
+              userId: approvalInfo.secondFinalized.userId,
               name: approvalInfo.secondFinalized.userName,
               status: approvalInfo.secondFinalized.status,
               reason: approvalInfo.secondFinalized?.reason || null,

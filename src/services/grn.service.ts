@@ -447,6 +447,8 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
 
       const viewResult: GrnDetailDto = {
         id: grn.id,
+        overAllStatus: document.overAllStatus ?? null,
+        approvalSummary: document.approvalSummary ?? null,
         ammountStatus: grn.ammountStatus,
         companyName: grn.companyName?.name ?? null,
         purchaseInstructionsBy: grn.purchaseInstructionsBy
@@ -722,6 +724,7 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
             grnId: grn.id,
             grnProductId: existing.id,
             productId: existing.productName?.id ?? null,
+            variantId: existing.variant?.id ?? null,
             oldQuantity: Number(existing.quantity ?? 0),
             newQuantity: Number(incoming.quantity ?? existing.quantity ?? 0),
             oldRate: Number(existing.unitPrice ?? 0),
@@ -888,8 +891,12 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     return records.map((r) => ({
       id: r.id,
       grnId: r.grn?.id,
+      grnNo: r.grn?.grnNo ?? null,
       grnProductId: r.grnProduct?.id,
       productId: r.product?.id ?? null,
+      productName: r.product?.name ?? null,
+      variantId: r.variant?.id ?? null,
+      variantName: r.variant?.variantName ?? null,
       version: r.version,
       oldQuantity: r.oldQuantity,
       newQuantity: r.newQuantity,
@@ -898,7 +905,8 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
       modifiedBy: r.modifiedBy
         ? `${r.modifiedBy.firstName ?? ''} ${r.modifiedBy.lastName ?? ''}`.trim()
         : null,
-      modifiedAt: r.modifiedAt,
+      modifiedDate: formatDateTime(r.modifiedAt).createdDate,
+      modifiedTime: formatDateTime(r.modifiedAt).createdTime,
     }));
   }
 

@@ -23,6 +23,7 @@ import { DocumentPermission } from "./permission.entity";
     DC_TYPE_OTHER = "DC_TYPE_OTHER",
     SECOND_SALE = 'second-sale',
     PACKAGING_MATERIAL_VOUCHER = 'packaging-material-voucher',
+    VEHICLE_DISPATCH_REGISTER = 'vehicle-dispatch-register',
     // REPORT = "REPORT",
     // INVENTORY = "INVENTORY",
   }

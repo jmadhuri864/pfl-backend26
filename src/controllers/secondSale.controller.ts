@@ -81,6 +81,7 @@ export class SecondSaleController {
 
       ControllerLogger.logSuccess('Second Sale created', secondSale.id, req, res);
        // Single activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -286,6 +287,7 @@ export class SecondSaleController {
 
       ControllerLogger.logSuccess('Second Sale updated', id, req, res);
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -350,6 +352,7 @@ export class SecondSaleController {
 
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -404,6 +407,7 @@ export class SecondSaleController {
           // }
 
              // Activity log
+             const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

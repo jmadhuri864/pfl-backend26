@@ -46,6 +46,7 @@ export class ReturnToVendorController {
       }
 
       // Single activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -224,6 +225,7 @@ export class ReturnToVendorController {
       }
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -262,6 +264,7 @@ export class ReturnToVendorController {
       const result = await this.returnToVendorService.softDeleteReturn(id);
       
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -306,6 +309,7 @@ export class ReturnToVendorController {
       ControllerLogger.logSuccess('Return to vendor multiple deletion', `${ids.length} records`, req, res);
       
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

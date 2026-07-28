@@ -74,7 +74,7 @@ private async generateSerialNo(): Promise<string> {
 
     //TODO: Check approval flow is exit or not for logged user
 
-     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, 'vehicle-dispatch-register')
+     const approvalFlowExit = this.approvalFlowService.findApprovalFlowForLoggedUser(data.requestedBy, DocDefEnum.VEHICLE_DISPATCH_REGISTER)
 
     if (!approvalFlowExit) {
       throw new Error('Approval flow not found');

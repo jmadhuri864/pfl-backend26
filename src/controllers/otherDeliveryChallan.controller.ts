@@ -114,6 +114,7 @@ export class OtherDeliveryChallanController {
   ControllerLogger.logSuccess('Other Delivery Challan created', otherDeliveryChallan.id, req, res);
 
       // Single activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
     this.activityLogService.logActivity({
       userId: res.locals.user.id,
       userName,
@@ -435,6 +436,7 @@ export class OtherDeliveryChallanController {
       ControllerLogger.logSuccess('Other Delivery Challan updated', updatedOtherDeliveryChallan.id, req, res);
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -540,6 +542,7 @@ export class OtherDeliveryChallanController {
       ControllerLogger.logSuccess('Other Delivery Challan deleted', id, req, res);
 
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -586,6 +589,7 @@ export class OtherDeliveryChallanController {
       ControllerLogger.logSuccess(`${ids.length} Other Delivery Challans soft deleted`, ids.join(', '), req, res);
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

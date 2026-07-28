@@ -88,6 +88,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
 
       ControllerLogger.logSuccess('Vehicle Dispatch created', vehicleDispatch.id, req, res);
        // Single activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -227,6 +228,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
       ControllerLogger.logSuccess('Vehicle Dispatch updated', id, req, res);
       
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -287,6 +289,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
 
       
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -447,6 +450,7 @@ dispatchData.requestedBy = res.locals.user.id; // Set the requestedBy field
         ControllerLogger.logSuccess('Vehicle Dispatch multiple deletion', `${ids.length} records`, req, res);
         
         // Activity log
+        const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

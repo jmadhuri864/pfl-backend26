@@ -81,6 +81,7 @@ export class InwardRegisterController {
       }
 
       // Single activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
           this.activityLogService.logActivity({
             userId: res.locals.user.id,
             userName,
@@ -258,6 +259,7 @@ export class InwardRegisterController {
       }
 
       // Activity log
+      const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -305,6 +307,7 @@ export class InwardRegisterController {
       // }
 
        // Activity log
+       const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,
@@ -455,6 +458,7 @@ export class InwardRegisterController {
         const deletedNos = result.success.map(s => s.No || s.id).join(', ');
 
         // Activity log
+        const userName = `${res.locals.user.firstName || ''} ${res.locals.user.lastName || ''}`.trim() || res.locals.user.username || 'Unknown User';
       this.activityLogService.logActivity({
         userId: res.locals.user.id,
         userName,

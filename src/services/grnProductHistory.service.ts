@@ -8,6 +8,7 @@ export interface CreateHistoryParams {
   grnId: string;
   grnProductId: string;
   productId: string | null;
+  variantId: string | null;
   oldQuantity: number;
   newQuantity: number;
   oldRate: number;
@@ -72,6 +73,7 @@ export class GrnProductHistoryService {
         grn: { id: rec.grnId } as any,
         grnProduct: { id: rec.grnProductId } as any,
         product: rec.productId ? { id: rec.productId } : undefined,
+        variant: rec.variantId ? { id: rec.variantId } : undefined,
         version,
         oldQuantity: rec.oldQuantity,
         newQuantity: rec.newQuantity,
@@ -96,7 +98,7 @@ export class GrnProductHistoryService {
   ): Promise<GrnProductHistory[]> {
     return this.historyRepository.find({
       where: { grnProduct: { id: grnProductId } },
-      relations: ['modifiedBy', 'product'],
+      relations: ['modifiedBy', 'product', 'variant'],
       order: { version: 'ASC' },
     });
   }
@@ -107,7 +109,7 @@ export class GrnProductHistoryService {
   async getHistoryByGrnId(grnId: string): Promise<GrnProductHistory[]> {
     return this.historyRepository.find({
       where: { grn: { id: grnId } },
-      relations: ['grnProduct', 'product', 'modifiedBy'],
+      relations: ['grn', 'grnProduct', 'product', 'variant', 'modifiedBy'],
       order: { grnProduct: { id: 'ASC' }, version: 'ASC' },
     });
   }
