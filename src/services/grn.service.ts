@@ -931,12 +931,29 @@ public async getAllGrns(queryOptions: PaginationOptions, userId: string): Promis
     id: string,
     status: ammountStatus,
   ): Promise<{ id: string; ammountStatus: ammountStatus }> {
-    const grn = await this.grnRepository.findOne({ where: { id } });
+    console.log(id)
+    const grn = await this.grnRepository.findOne({ where: { id }, withDeleted: true });
     if (!grn) throw new AppError(404, `GRN with ID ${id} not found`);
 
     grn.ammountStatus = status;
     await this.grnRepository.save(grn);
+
+    // Invalidate grn:all:*, grn:numbers:*, grn:id:grnId etc.
     await this.invalidateCache(id);
+
+    // Also invalidate grn:view:docId and grn:update:docId (keyed by document id, not grn id)
+    try {
+      const doc = await this.documentbRepository.findOne({
+        where: { document_type_id: id } as any,
+        select: ['id'] as any,
+      });
+      if (doc?.id) {
+        await Promise.all([
+          this.cacheService.del(`${this.CACHE_PREFIX}:view:${doc.id}`),
+          this.cacheService.del(`${this.CACHE_PREFIX}:update:${doc.id}`),
+        ]);
+      }
+    } catch (_) { /* non-critical */ }
 
     return { id: grn.id, ammountStatus: grn.ammountStatus };
   }

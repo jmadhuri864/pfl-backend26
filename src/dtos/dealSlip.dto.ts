@@ -152,6 +152,7 @@ export interface DealSlipDocumentViewDto {
   createdDate: string | null;
   createdTime: string | null;
   approvalSummary?: {
+    createdBy?: { userId: string; name: string } | null;
     verified?: { userId: string; name: string; status: string; reason: string | null } | null;
     firstApproved?: { userId: string; name: string; status: string; reason: string | null } | null;
     secondApproved?: { userId: string; name: string; status: string; reason: string | null } | null;

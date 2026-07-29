@@ -693,10 +693,10 @@ public async getVehicalDispatchByIdForView(docid: string, userId:string): Promis
       const result = {
     documentId: document.documentId,
     overAllStatus: document.status,
-    createdBy: document.createdBy?.firstName + ' ' + document.createdBy?.lastName || null,
+    createdBy: document.createdBy?.name || null,
     createdDate,
     createdTime,
-    approvalSummary: document.approvalSummary,
+    approvalSummary: document.approvalSummary ?? null,
 // VehicleDispatch fields
       id: vehicalDispatch.id,
       date: vehicalDispatch.date || null,

@@ -197,6 +197,8 @@ export class DocumentbService {
         where: { id },
         relations: [
           'lastActionBy',
+          'approvalFlow',
+          'approvalFlow.creator',
           'approvalInfo',
           'approvalInfo.firstFinalized',
           'approvalInfo.secondFinalized',
@@ -214,8 +216,15 @@ export class DocumentbService {
      
 
       const approvalInfo = document.approvalInfo;
+      const creator = document.approvalFlow?.creator ?? null;
       const approvalInfoSummary = approvalInfo
         ? {
+          createdBy: creator
+            ? {
+              userId: creator.id,
+              name: `${creator.firstName} ${creator.lastName}`.trim(),
+            }
+            : null,
           verified: approvalInfo.verified
             ? {
               userId: approvalInfo.verified.userId,
@@ -266,14 +275,15 @@ export class DocumentbService {
             : null,
         }
         : null;
-//console.log("Approval Info Summary: ", approvalInfoSummary);
       const result = {
         documentId: document.id,
         documentTypeId: document.document_type_id,
         status: document.status,
         overAllStatus: document.status,
-        createdBy: document.lastActionBy ? `${document.lastActionBy.firstName} ${document.lastActionBy.lastName}` : null,
-        approvalSummary: approvalInfoSummary, // name + status summary
+        createdBy: document.lastActionBy
+          ? `${document.lastActionBy.firstName} ${document.lastActionBy.lastName}`
+          : null,
+        approvalSummary: approvalInfoSummary,
       };
       await this.cacheService.set(cacheKey, result, 30); // 30s TTL — status changes
       return result;

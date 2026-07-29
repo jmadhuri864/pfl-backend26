@@ -281,6 +281,7 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
         'approvalInfo.firstApproved', // include nested relation if needed
         'lastActionBy',
         'approvalFlow',
+        'approvalFlow.creator',
         'approvalFlow.approvers',
         'approvalFlow.approvers.firstApprover',
         'approvalFlow.approvers.firstApprover.users',
@@ -305,8 +306,12 @@ async getSingleApprovalDocumentById(documentId: string, userId: string): Promise
 
     // build approvalSummary if needed (reuse your logic)
     const approvalInfo = document.approvalInfo;
+    const creator = document.approvalFlow?.creator ?? null;
     const approvalInfoSummary = approvalInfo
       ? {
+          createdBy: creator
+            ? { userId: creator.id, name: `${creator.firstName} ${creator.lastName}`.trim() }
+            : null,
           firstApproved: approvalInfo.firstApproved
             ? {
                 userId: approvalInfo.firstApproved.userId,

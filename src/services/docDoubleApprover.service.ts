@@ -296,6 +296,8 @@ export class DocDoubleApproverService {
     const document = await this.documentbRepository
       .createQueryBuilder('document')
       .leftJoin('document.lastActionBy', 'lastActionBy')
+      .leftJoin('document.approvalFlow', 'approvalFlow')
+      .leftJoin('approvalFlow.creator', 'creator')
       .leftJoin('document.approvalInfo', 'approvalInfo')
       .leftJoin('approvalInfo.verified', 'verified')
       .leftJoin('approvalInfo.firstApproved', 'firstApproved')
@@ -306,6 +308,8 @@ export class DocDoubleApproverService {
       .select([
         'document.id', 'document.document_type_id', 'document.status',
         'lastActionBy.firstName',
+        'approvalFlow.id',
+        'creator.id', 'creator.firstName', 'creator.lastName',
         'approvalInfo.id',
         'verified.userId', 'verified.userName', 'verified.status',
         'firstApproved.userId', 'firstApproved.userName', 'firstApproved.status',
@@ -320,6 +324,7 @@ export class DocDoubleApproverService {
     if (!document) throw new Error(`Document with ID ${id} not found`);
 
     const a = document.approvalInfo;
+    const creator = document.approvalFlow?.creator ?? null;
     const mapStage = (stage: any) => stage ? { userId: stage.userId, name: stage.userName, status: stage.status } : null;
 
     return {
@@ -329,6 +334,9 @@ export class DocDoubleApproverService {
       overAllStatus: document.status,
       createdBy: document.lastActionBy?.firstName ?? null,
       approvalSummary: a ? {
+        createdBy: creator
+          ? { userId: creator.id, name: `${creator.firstName} ${creator.lastName}`.trim() }
+          : null,
         verified: mapStage(a.verified),
         firstApproved: mapStage(a.firstApproved),
         secondApproved: mapStage(a.secondApproved),
